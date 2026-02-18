@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" role="img" aria-label="Health care">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1d0b10"/>
+      <stop offset="100%" stop-color="#3a1020"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="700" fill="url(#bg)"/>
+  <circle cx="980" cy="160" r="180" fill="#fb7185" opacity="0.15"/>
+  <rect x="120" y="150" width="380" height="400" rx="34" fill="#15070b" opacity="0.82"/>
+  <path d="M305 250c46 0 84 38 84 84 0 57-84 133-84 133s-84-76-84-133c0-46 38-84 84-84zm0 38c-25 0-46 21-46 46 0 24 25 58 46 80 21-22 46-56 46-80 0-25-21-46-46-46z" fill="#fda4af"/>
+  <text x="560" y="320" fill="#f8fafc" font-size="72" font-family="Inter,Segoe UI,Arial" font-weight="700">Health Care</text>
+  <text x="560" y="380" fill="#cbd5e1" font-size="30" font-family="Inter,Segoe UI,Arial">Sleep • Stress • Recovery</text>
+</svg>

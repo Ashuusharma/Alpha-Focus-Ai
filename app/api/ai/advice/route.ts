@@ -1,0 +1,238 @@
+import { createHash } from "crypto";
+import { NextRequest, NextResponse } from "next/server";
+
+type AdviceRequest = {
+  issues: string[];
+  answers?: Record<string, string>;
+  locale?: string;
+};
+
+type AdviceResponse = {
+  summary: string;
+  actions: string[];
+  source: "ai" | "fallback";
+  meta?: {
+    cached: boolean;
+    remainingBudgetUsd?: number;
+  };
+};
+
+type CacheValue = {
+  expiresAt: number;
+  value: AdviceResponse;
+};
+
+const responseCache = new Map<string, CacheValue>();
+const requestWindowByIp = new Map<string, number[]>();
+const usageByDay = new Map<string, number>();
+
+function envNumber(name: string, fallback: number): number {
+  const raw = process.env[name];
+  const parsed = raw ? Number(raw) : NaN;
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function getTodayKey(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function getClientIp(req: NextRequest): string {
+  const forwarded = req.headers.get("x-forwarded-for");
+  if (forwarded) return forwarded.split(",")[0].trim();
+  return "local";
+}
+
+function makeCacheKey(body: AdviceRequest): string {
+  return createHash("sha1").update(JSON.stringify(body)).digest("hex");
+}
+
+function checkRateLimit(ip: string): boolean {
+  const maxPerMinute = envNumber("AI_REQUESTS_PER_MINUTE", 20);
+  const now = Date.now();
+  const oneMinuteAgo = now - 60_000;
+
+  const current = requestWindowByIp.get(ip) ?? [];
+  const fresh = current.filter((t) => t > oneMinuteAgo);
+  fresh.push(now);
+  requestWindowByIp.set(ip, fresh);
+
+  return fresh.length <= maxPerMinute;
+}
+
+function estimateCostUsd(prompt: string): number {
+  const approxInputTokens = Math.ceil(prompt.length / 4);
+  const maxOutputTokens = envNumber("AI_MAX_TOKENS", 320);
+  const estimatedTotal = approxInputTokens + maxOutputTokens;
+  const per1k = envNumber("AI_ESTIMATED_COST_PER_1K_TOKENS_USD", 0.002);
+  return (estimatedTotal / 1000) * per1k;
+}
+
+function buildFallback(body: AdviceRequest): AdviceResponse {
+  const primary = body.issues[0] ?? "grooming";
+  return {
+    summary:
+      body.issues.length > 1
+        ? `You currently have ${body.issues.length} priority concerns. Start with the highest-impact routine first, then layer secondary treatments after 7-10 days to reduce irritation.`
+        : `Your top focus is ${primary}. A consistent 14-day routine with gentle cleansing, targeted treatment, and protection is the fastest path to visible improvement.`,
+    actions: [
+      "Follow one AM and one PM routine daily for 14 days",
+      "Track progress photos every 7 days in similar lighting",
+      "Pause harsh combinations if irritation appears",
+      "Re-scan after one week to adjust products",
+    ],
+    source: "fallback",
+  };
+}
+
+function normalizeActions(actions: unknown): string[] {
+  if (!Array.isArray(actions)) return [];
+  return actions.filter((a): a is string => typeof a === "string").slice(0, 4);
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = (await req.json()) as AdviceRequest;
+
+    if (!Array.isArray(body.issues) || body.issues.length === 0) {
+      return NextResponse.json({ error: "issues are required" }, { status: 400 });
+    }
+
+    const ip = getClientIp(req);
+    if (!checkRateLimit(ip)) {
+      const fallback = buildFallback(body);
+      return NextResponse.json(
+        {
+          ...fallback,
+          meta: { cached: false },
+        },
+        { status: 200 }
+      );
+    }
+
+    const cacheKey = makeCacheKey(body);
+    const cached = responseCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      return NextResponse.json({ ...cached.value, meta: { ...(cached.value.meta ?? {}), cached: true } });
+    }
+
+    const model = process.env.AI_MODEL || "gpt-4o-mini";
+    const apiKey = process.env.AI_API_KEY;
+    const baseUrl = process.env.AI_BASE_URL || "https://api.openai.com/v1";
+    const maxTokens = envNumber("AI_MAX_TOKENS", 320);
+
+    const dailyBudget = envNumber("AI_DAILY_BUDGET_USD", 0.5);
+    const today = getTodayKey();
+
+    const prompt = `You are a premium personal grooming expert.\n
+User issues: ${body.issues.join(", ")}\n
+Questionnaire answers: ${JSON.stringify(body.answers ?? {})}\n
+Language locale: ${body.locale || "en"}\n
+Return strict JSON only: {"summary":"...","actions":["...","...","...","..."]}.\n
+Rules:\n
+- summary max 70 words\n
+- actions exactly 4 concise action lines\n
+- no medical diagnosis claims\n
+- actionable and practical.`;
+
+    const estimatedCost = estimateCostUsd(prompt);
+    const spent = usageByDay.get(today) ?? 0;
+
+    if (!apiKey || spent + estimatedCost > dailyBudget) {
+      const fallback = buildFallback(body);
+      const remaining = Math.max(0, dailyBudget - spent);
+      const response: AdviceResponse = {
+        ...fallback,
+        meta: { cached: false, remainingBudgetUsd: Number(remaining.toFixed(4)) },
+      };
+      return NextResponse.json(response);
+    }
+
+    const upstream = await fetch(`${baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        temperature: 0.4,
+        max_tokens: maxTokens,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a trusted men’s grooming coach focused on practical routines, consistency, and safe guidance.",
+          },
+          { role: "user", content: prompt },
+        ],
+      }),
+      cache: "no-store",
+    });
+
+    if (!upstream.ok) {
+      const fallback = buildFallback(body);
+      return NextResponse.json(fallback);
+    }
+
+    const data = await upstream.json();
+    const content = data?.choices?.[0]?.message?.content;
+
+    if (!content || typeof content !== "string") {
+      const fallback = buildFallback(body);
+      return NextResponse.json(fallback);
+    }
+
+    let parsed: { summary?: string; actions?: unknown } = {};
+    try {
+      parsed = JSON.parse(content);
+    } catch {
+      parsed = { summary: content };
+    }
+
+    const actions = normalizeActions(parsed.actions);
+    const response: AdviceResponse = {
+      summary:
+        parsed.summary?.trim() ||
+        "Your personalized guidance is ready. Stay consistent and follow your high-priority actions daily.",
+      actions:
+        actions.length > 0
+          ? actions
+          : [
+              "Follow your AM and PM routine consistently",
+              "Hydrate and protect skin with SPF daily",
+              "Review triggers and reduce irritants",
+              "Re-assess after 7 days",
+            ],
+      source: "ai",
+      meta: {
+        cached: false,
+        remainingBudgetUsd: Number(Math.max(0, dailyBudget - (spent + estimatedCost)).toFixed(4)),
+      },
+    };
+
+    usageByDay.set(today, spent + estimatedCost);
+
+    const ttlSec = envNumber("AI_CACHE_TTL_SEC", 1800);
+    responseCache.set(cacheKey, {
+      expiresAt: Date.now() + ttlSec * 1000,
+      value: response,
+    });
+
+    return NextResponse.json(response);
+  } catch {
+    return NextResponse.json(
+      {
+        summary: "We could not fetch AI guidance right now. Your core report is still available.",
+        actions: [
+          "Follow your current routine for 7 days",
+          "Avoid adding multiple new actives at once",
+          "Use SPF daily",
+          "Retry AI guidance in a few minutes",
+        ],
+        source: "fallback",
+      },
+      { status: 200 }
+    );
+  }
+}

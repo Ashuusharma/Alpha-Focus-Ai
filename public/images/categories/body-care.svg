@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" role="img" aria-label="Body care">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#081421"/>
+      <stop offset="100%" stop-color="#102a45"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="700" fill="url(#bg)"/>
+  <circle cx="980" cy="130" r="180" fill="#38bdf8" opacity="0.16"/>
+  <rect x="120" y="150" width="380" height="400" rx="34" fill="#07101a" opacity="0.82"/>
+  <path d="M305 248c43 0 78 35 78 78v22h-36v-20c0-23-19-42-42-42s-42 19-42 42v20h-36v-22c0-43 35-78 78-78zm-62 142h124v112h-124z" fill="#7dd3fc"/>
+  <text x="560" y="320" fill="#f8fafc" font-size="72" font-family="Inter,Segoe UI,Arial" font-weight="700">Body Care</text>
+  <text x="560" y="380" fill="#cbd5e1" font-size="30" font-family="Inter,Segoe UI,Arial">Cleanse • Hydrate • Protect</text>
+</svg>

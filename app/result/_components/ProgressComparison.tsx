@@ -40,7 +40,7 @@ export default function ProgressComparison({
 
   if (!latest) {
     return (
-      <div className="bg-white rounded-2xl p-6 border border-gray-200 text-center">
+      <div className="bg-white rounded-2xl p-6 shadow text-center">
         <p className="text-gray-600">
           📊 Complete another scan to see progress tracking
         </p>
@@ -50,7 +50,7 @@ export default function ProgressComparison({
 
   if (!showComparison || !previous || !progress) {
     return (
-      <div className="bg-gradient-to-br from-blue-50 to-slate-50 rounded-2xl p-6 border border-blue-300">
+      <div className="bg-gradient-to-br from-blue-50 to-slate-50 rounded-2xl p-6 shadow">
         <h3 className="text-lg font-bold text-gray-900 mb-4">
           📊 Your Progress
         </h3>
@@ -58,7 +58,7 @@ export default function ProgressComparison({
           <p className="text-gray-600 mb-4">
             First scan recorded! Complete another scan in 1-2 weeks to compare.
           </p>
-        <div className="inline-block px-4 py-2 bg-blue-100 text-blue-800 rounded-lg font-medium">
+          <div className="inline-block px-4 py-2 bg-blue-100 text-blue-800 rounded-lg font-medium">
             Scan Date: {new Date(latest.timestamp).toLocaleDateString()}
           </div>
         </div>
@@ -69,14 +69,14 @@ export default function ProgressComparison({
   return (
     <div className="space-y-6">
       {/* Summary */}
-      <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-200">
+      <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 shadow">
         <h3 className="text-lg font-bold text-gray-900 mb-4">
           📈 Your Progress Summary
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Overall Improvement */}
-          <div className="bg-white rounded-lg p-4 border border-green-100">
+          <div className="bg-white rounded-lg p-4 shadow-sm">
             <div className="flex items-center justify-between mb-2">
               <span className="text-green-800 font-semibold">
                 Overall Improvement
@@ -85,11 +85,14 @@ export default function ProgressComparison({
                 +{progress.overallImprovement}%
               </span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="w-full h-3 rounded-full bg-green-100 shadow-inner overflow-hidden relative">
               <div
-                className="bg-gradient-to-r from-green-400 to-green-600 h-2 rounded-full"
+                className="h-full absolute left-0 top-0 bg-gradient-to-r from-green-400 via-accent to-green-600 animate-pulse-slow transition-all duration-700 rounded-full shadow-lg"
                 style={{ width: `${Math.min(progress.overallImprovement, 100)}%` }}
               />
+              <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-xs font-semibold text-green-800 drop-shadow-sm">
+                {progress.overallImprovement}%
+              </span>
             </div>
             <p className="text-xs text-gray-600 mt-2">
               Since {new Date(previous.timestamp).toLocaleDateString()}
@@ -97,7 +100,7 @@ export default function ProgressComparison({
           </div>
 
           {/* Days Since Previous */}
-          <div className="bg-white rounded-lg p-4 border border-blue-100">
+          <div className="bg-white rounded-lg p-4 shadow-sm">
             <div className="flex items-center justify-between mb-2">
               <span className="text-blue-800 font-semibold">
                 Time Between Scans

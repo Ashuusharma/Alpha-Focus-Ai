@@ -9,10 +9,10 @@ export default function AIIssuesDisplay({ issues }: AIIssuesDisplayProps) {
     if (source === "both") {
       return (
         <div className="flex gap-1">
-          <span className="inline-block px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full">
+          <span className="inline-block px-2 py-1 text-xs font-semibold bg-green-500/20 text-green-300 rounded-full border border-green-500/20">
             📸 Photo
           </span>
-          <span className="inline-block px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">
+          <span className="inline-block px-2 py-1 text-xs font-semibold bg-blue-500/20 text-blue-300 rounded-full border border-blue-500/20">
             📝 Answers
           </span>
         </div>
@@ -20,10 +20,10 @@ export default function AIIssuesDisplay({ issues }: AIIssuesDisplayProps) {
     }
     return (
       <span
-        className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${
+        className={`inline-block px-2 py-1 text-xs font-semibold rounded-full border ${
           source === "photo"
-            ? "bg-green-100 text-green-800"
-            : "bg-blue-100 text-blue-800"
+            ? "bg-green-500/20 text-green-300 border-green-500/20"
+            : "bg-blue-500/20 text-blue-300 border-blue-500/20"
         }`}
       >
         {source === "photo" ? "📸 Photo" : "📝 Answers"}
@@ -34,13 +34,13 @@ export default function AIIssuesDisplay({ issues }: AIIssuesDisplayProps) {
   const getImpactColor = (impact: string) => {
     switch (impact) {
       case "minor":
-        return "bg-yellow-50 border-yellow-200";
+        return "bg-yellow-500/10 border-yellow-500/20";
       case "moderate":
-        return "bg-orange-50 border-orange-200";
+        return "bg-orange-500/10 border-orange-500/20";
       case "significant":
-        return "bg-red-50 border-red-200";
+        return "bg-red-500/10 border-red-500/20";
       default:
-        return "bg-gray-50 border-gray-200";
+        return "bg-white/5 border-white/10";
     }
   };
 
@@ -67,10 +67,10 @@ export default function AIIssuesDisplay({ issues }: AIIssuesDisplayProps) {
           {/* Header */}
           <div className="flex items-start justify-between mb-3 gap-3">
             <div>
-              <h4 className="text-lg font-bold text-gray-900">
+              <h4 className="text-lg font-bold text-white">
                 {issue.name}
               </h4>
-              <p className="text-sm text-gray-600 mt-1">{issue.description}</p>
+              <p className="text-sm text-gray-300 mt-1">{issue.description}</p>
             </div>
             <div className="text-right">
               {getSourceBadge(issue.source)}
@@ -78,10 +78,10 @@ export default function AIIssuesDisplay({ issues }: AIIssuesDisplayProps) {
                 <span
                   className={`inline-block px-2 py-1 rounded font-semibold ${
                     issue.impact === "significant"
-                      ? "bg-red-100 text-red-800"
+                      ? "bg-red-500/20 text-red-300 border border-red-500/20"
                       : issue.impact === "moderate"
-                        ? "bg-orange-100 text-orange-800"
-                        : "bg-yellow-100 text-yellow-800"
+                        ? "bg-orange-500/20 text-orange-300 border border-orange-500/20"
+                        : "bg-yellow-500/20 text-yellow-300 border border-yellow-500/20"
                   }`}
                 >
                   {getImpactLabel(issue.impact)}
@@ -93,10 +93,10 @@ export default function AIIssuesDisplay({ issues }: AIIssuesDisplayProps) {
           {/* Confidence */}
           <div className="mb-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-gray-700">
+              <span className="text-xs font-semibold text-gray-400">
                 Confidence
               </span>
-              <span className="text-sm font-bold text-gray-900">
+              <span className="text-sm font-bold text-white">
                 {issue.combinedConfidence}%
               </span>
             </div>

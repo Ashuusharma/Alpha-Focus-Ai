@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Container from "@/app/result/_components/Container";
+import { ArrowLeft, BookOpen, Atom, Target, Calendar, CheckCircle2, FlaskConical, Clock, ShieldCheck, Sparkles } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function LearningCenterPage() {
   const router = useRouter();
@@ -12,158 +14,156 @@ export default function LearningCenterPage() {
     {
       id: "ingredients",
       title: "Key Ingredients",
-      icon: "🧪",
-      description: "Learn about the ingredients in your routine",
+      icon: FlaskConical,
+      color: "text-[var(--lux-accent)]",
+      bg: "bg-[#00f2ff]/10",
+      border: "border-[#00f2ff]/50",
+      description: "Learn about the active ingredients analyzing and treating your condition",
       items: [
-        { name: "Retinol", benefit: "Reduces fine lines and improves skin texture", icon: "✨" },
-        { name: "Hyaluronic Acid", benefit: "Deep hydration and moisture retention", icon: "💧" },
-        { name: "Niacinamide", benefit: "Strengthens skin barrier and reduces pores", icon: "🛡️" },
-        { name: "Vitamin C", benefit: "Brightens and protects from free radicals", icon: "☀️" },
+        { name: "Retinol", benefit: "Reduces fine lines and improves skin texture", icon: Sparkles },
+        { name: "Hyaluronic Acid", benefit: "Deep hydration and moisture retention", icon: Atom },
+        { name: "Niacinamide", benefit: "Strengthens skin barrier and reduces pores", icon: ShieldCheck },
+        { name: "Vitamin C", benefit: "Brightens and protects from free radicals", icon: CheckCircle2 },
       ],
     },
     {
       id: "techniques",
       title: "Best Practices",
-      icon: "🎯",
-      description: "Grooming techniques and tips",
+      icon: Target,
+      color: "text-blue-400",
+      bg: "bg-blue-500/10",
+      border: "border-blue-500/50",
+      description: "Proven grooming techniques and consistent routines",
       items: [
-        { name: "Proper Application", benefit: "Apply products in correct order for maximum efficacy", icon: "📋" },
-        { name: "Consistency", benefit: "Stick to your routine for best results", icon: "⏰" },
-        { name: "Sun Protection", benefit: "Always use SPF to protect your skin", icon: "🧴" },
-        { name: "Hydration", benefit: "Drink water and use hydrating products", icon: "💦" },
+        { name: "Proper Application", benefit: "Apply products in correct order for maximum efficacy", icon: CheckCircle2 },
+        { name: "Consistency", benefit: "Stick to your routine for best results", icon: Clock },
+        { name: "Sun Protection", benefit: "Always use SPF to protect your skin", icon: ShieldCheck },
+        { name: "Hydration", benefit: "Drink water and use hydrating products", icon: Atom },
       ],
     },
     {
       id: "timeline",
       title: "Results Timeline",
-      icon: "📅",
-      description: "When to expect visible improvements",
+      icon: Calendar,
+      color: "text-slate-300",
+      bg: "bg-slate-500/10",
+      border: "border-slate-500/50",
+      description: "Realistic recovery expectations and milestones",
       items: [
-        { name: "Week 1-2", benefit: "Skin feels smoother and more hydrated", icon: "✅" },
-        { name: "Week 3-4", benefit: "Noticeable improvement in texture and tone", icon: "✨" },
-        { name: "Month 2-3", benefit: "Significant reduction in problem areas", icon: "🎉" },
-        { name: "Month 3+", benefit: "Sustained improvement and maintained health", icon: "🏆" },
+        { name: "Week 1-2", benefit: "Skin feels smoother and more hydrated", icon: CheckCircle2 },
+        { name: "Week 3-4", benefit: "Noticeable improvement in texture and tone", icon: Sparkles },
+        { name: "Month 2-3", benefit: "Significant reduction in problem areas", icon: Target },
+        { name: "Month 3+", benefit: "Sustained improvement and maintained health", icon: ShieldCheck },
       ],
     },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white py-8">
+    <div className="min-h-screen bg-[#060b14] py-12 relative overflow-hidden text-white">
+      {/* Background Ambience */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#00f2ff]/5 rounded-full blur-[120px] mix-blend-screen" />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-600/5 rounded-full blur-[120px] mix-blend-screen" />
+      </div>
+      
       <Container>
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-5xl mx-auto relative z-10">
           {/* HEADER */}
-          <div className="mb-8">
+          <div className="mb-12">
             <button
               onClick={() => router.back()}
-              className="flex items-center space-x-2 text-blue-700 hover:text-blue-800 font-medium mb-4"
+              className="flex items-center space-x-2 text-slate-400 hover:text-white transition group mb-6"
             >
-              <span>←</span>
+              <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
               <span>Back</span>
             </button>
-            <h1 className="text-4xl font-bold text-slate-900 flex items-center space-x-3 mb-2">
-              <span>📚</span>
-              <span>Learning Center</span>
+            <h1 className="text-4xl font-bold flex items-center gap-4 mb-2">
+              <span className="p-3 bg-[#00f2ff]/10 rounded-xl border border-[#00f2ff]/20">
+                <BookOpen className="w-8 h-8 text-[var(--lux-accent)]" />
+              </span>
+              <span className="lux-text-gradient">
+                Learning Center
+              </span>
             </h1>
-            <p className="text-slate-600">Master the knowledge behind your grooming routine</p>
+            <p className="text-slate-400 ml-16 max-w-xl">
+              Master the knowledge behind your grooming routine with our expert-curated guides.
+            </p>
+            <div className="ml-16 mt-5 flex flex-wrap gap-2">
+              <button onClick={() => router.push("/assessment")} className="px-4 py-2 rounded-xl border border-white/20 bg-white/[0.04] text-sm font-semibold hover:bg-white/[0.08] transition-colors">Answer Questions</button>
+              <button onClick={() => router.push("/image-analyzer")} className="px-4 py-2 rounded-xl border border-white/20 bg-white/[0.04] text-sm font-semibold hover:bg-white/[0.08] transition-colors">Analyze Photo</button>
+              <button onClick={() => router.push("/result")} className="px-4 py-2 rounded-xl bg-blue-600 text-sm font-semibold hover:bg-blue-500 transition-colors">Open Report</button>
+            </div>
           </div>
 
           {/* CATEGORIES GRID */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setSelectedCategory(selectedCategory === cat.id ? null : cat.id)}
-                className={`text-left rounded-2xl p-6 border-2 transition transform hover:shadow-lg ${
-                  selectedCategory === cat.id
-                    ? "border-indigo-500 bg-indigo-50"
-                    : "border-gray-200 bg-white hover:border-indigo-200"
-                }`}
-              >
-                <div className="text-4xl mb-3">{cat.icon}</div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">{cat.title}</h3>
-                <p className="text-sm text-gray-600">{cat.description}</p>
-              </button>
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            {categories.map((cat) => {
+              const Icon = cat.icon;
+              const isSelected = selectedCategory === cat.id;
+              
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(isSelected ? null : cat.id)}
+                  className={`relative overflow-hidden text-left rounded-2xl p-6 transition-all duration-300 border group ${
+                    isSelected
+                      ? `lux-card border-[var(--lux-accent)] shadow-[0_0_30px_rgba(0,242,255,0.1)] scale-[1.02]`
+                      : "lux-card border-white/5 hover:border-[#00f2ff]/30 hover:bg-[#0c1626]"
+                  }`}
+                >
+                  <div className={`text-4xl mb-4 p-4 rounded-xl inline-block transition-colors duration-300 ${isSelected ? cat.bg : 'bg-white/5'}`}>
+                    <Icon className={`w-8 h-8 ${isSelected ? cat.color : 'text-slate-400 group-hover:text-white'}`} />
+                  </div>
+                  <h3 className={`text-xl font-bold mb-2 transition-colors ${isSelected ? 'text-white' : 'text-slate-200'}`}>{cat.title}</h3>
+                  <p className="text-sm text-slate-400 leading-relaxed group-hover:text-slate-300 transition-colors">{cat.description}</p>
+                  
+                  {isSelected && (
+                    <div className="absolute inset-0 bg-gradient-to-br from-transparent to-cyan-500/10 pointer-events-none" />
+                  )}
+                </button>
+              );
+            })}
           </div>
 
           {/* SELECTED CATEGORY CONTENT */}
-          {selectedCategory && (
-            <div className="bg-white rounded-2xl p-8 border border-blue-200 shadow-sm">
-              {categories.map(
-                (cat) =>
-                  cat.id === selectedCategory && (
-                    <div key={cat.id}>
-                      <h2 className="text-3xl font-bold text-gray-900 mb-6 flex items-center space-x-3">
-                        <span>{cat.icon}</span>
-                        <span>{cat.title}</span>
-                      </h2>
+          <AnimatePresence mode="wait">
+            {selectedCategory && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="lux-card p-8 border border-white/10 relative overflow-hidden"
+              >
+                {categories.map(
+                  (cat) =>
+                    cat.id === selectedCategory && (
+                      <div key={cat.id}>
+                        <div className="flex items-center gap-4 mb-8">
+                          <cat.icon className={`w-8 h-8 ${cat.color}`} />
+                          <h2 className="text-3xl font-bold text-white">
+                            {cat.title}
+                          </h2>
+                        </div>
 
-                      <div className="space-y-4">
-                        {cat.items.map((item, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-start space-x-4 p-4 bg-gray-50 rounded-xl hover:bg-indigo-50 transition"
-                          >
-                            <div className="text-3xl flex-shrink-0">{item.icon}</div>
-                            <div className="flex-1">
-                              <h4 className="font-semibold text-gray-900 mb-1">{item.name}</h4>
-                              <p className="text-sm text-gray-600">{item.benefit}</p>
-                            </div>
-                          </div>
-                        ))}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {cat.items.map((item, idx) => (
+                                <div key={idx} className="bg-[#0c1626]/50 rounded-xl p-6 border border-white/5 hover:border-white/10 transition flex items-start gap-4">
+                                    <div className={`p-3 rounded-lg ${cat.bg}`}>
+                                        <item.icon className={`w-6 h-6 ${cat.color}`} />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-lg font-bold text-white mb-1">{item.name}</h4>
+                                        <p className="text-sm text-slate-400 leading-relaxed">{item.benefit}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                       </div>
-
-                      <button
-                        onClick={() => setSelectedCategory(null)}
-                        className="w-full mt-8 px-6 py-3 bg-gray-200 text-gray-900 font-semibold rounded-lg hover:bg-gray-300 transition"
-                      >
-                        Close
-                      </button>
-                    </div>
-                  )
-              )}
-            </div>
-          )}
-
-          {/* FAQ SECTION */}
-          <div className="mt-8 bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center space-x-2">
-              <span>❓</span>
-              <span>Frequently Asked Questions</span>
-            </h2>
-
-            <div className="space-y-4">
-              {[
-                {
-                  q: "How long does it take to see results?",
-                  a: "Most people see visible improvements within 2-4 weeks of consistent use. Significant results typically appear within 2-3 months.",
-                },
-                {
-                  q: "Can I use multiple products together?",
-                  a: "Yes, but follow the recommended order: cleanser, toner, treatment, moisturizer, and SPF. Avoid mixing active ingredients unless advised.",
-                },
-                {
-                  q: "What if my skin reacts badly?",
-                  a: "Stop using the product immediately and consult with a dermatologist. Start with patch testing new products.",
-                },
-                {
-                  q: "Do I need different routines for seasons?",
-                  a: "Yes, adjust your routine based on humidity and temperature. Use heavier moisturizers in winter and lighter ones in summer.",
-                },
-              ].map((faq, idx) => (
-                <details
-                  key={idx}
-                  className="border border-gray-200 rounded-lg p-4 cursor-pointer group"
-                >
-                  <summary className="font-semibold text-slate-900 flex items-center space-x-2 group-open:text-blue-700">
-                    <span>+</span>
-                    <span>{faq.q}</span>
-                  </summary>
-                  <p className="text-slate-600 mt-3 ml-6">{faq.a}</p>
-                </details>
-              ))}
-            </div>
-          </div>
+                    )
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </Container>
     </div>

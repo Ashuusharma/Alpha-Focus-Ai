@@ -37,22 +37,22 @@ export default function IngredientsDisplay({
   const items = ingredients || ingredientMap[productName] || [];
 
   return (
-    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-      <h5 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+    <div className="bg-black/30 border border-white/10 rounded-xl p-4 backdrop-blur-sm">
+      <h5 className="font-semibold text-white mb-3 flex items-center gap-2 text-sm uppercase tracking-wide opacity-80">
         🧪 Key Ingredients
       </h5>
 
       <div className="space-y-2">
         {items.map((ingredient, idx) => (
-          <div key={idx} className="flex gap-3 text-sm">
-            <span className="text-blue-600 font-bold">✓</span>
-            <span className="text-blue-800">{ingredient}</span>
+          <div key={idx} className="flex gap-3 text-xs sm:text-sm">
+            <span className="text-primary font-bold">✓</span>
+            <span className="text-gray-300">{ingredient}</span>
           </div>
         ))}
       </div>
 
-      <div className="mt-3 pt-3 border-t border-blue-200">
-        <p className="text-xs text-blue-700">
+      <div className="mt-3 pt-3 border-t border-white/10">
+        <p className="text-xs text-secondary/80">
           💡 These ingredients work together to target your specific concern and
           accelerate healing.
         </p>

@@ -29,10 +29,10 @@ export default function CategoryTabs({
             <span
               className={`text-sm font-medium transition ${
                 isActive
-                  ? "text-black"
+                  ? "text-white"
                   : isCompleted
-                  ? "text-green-600"
-                  : "text-gray-500"
+                  ? "text-green-400"
+                  : "text-gray-400 hover:text-gray-300"
               }`}
             >
               {cat.label}
@@ -40,12 +40,12 @@ export default function CategoryTabs({
 
             {/* GREEN DOT FOR COMPLETED */}
             {isCompleted && (
-              <span className="w-1.5 h-1.5 rounded-full bg-green-600" />
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400 shadow-[0_0_5px_rgba(74,222,128,0.5)]" />
             )}
 
             {/* ACTIVE UNDERLINE */}
             {isActive && (
-              <span className="absolute left-0 -bottom-[2px] h-[2px] w-full bg-black rounded-full" />
+              <span className="absolute left-0 -bottom-[2px] h-[2px] w-full bg-primary rounded-full shadow-[0_0_10px_rgba(59,130,246,0.8)]" />
             )}
           </button>
         );

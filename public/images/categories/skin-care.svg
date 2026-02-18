@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" role="img" aria-label="Skin care">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#08191a"/>
+      <stop offset="100%" stop-color="#0f2b25"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="700" fill="url(#bg)"/>
+  <circle cx="920" cy="150" r="190" fill="#34d399" opacity="0.16"/>
+  <circle cx="160" cy="560" r="170" fill="#14b8a6" opacity="0.12"/>
+  <rect x="120" y="150" width="380" height="400" rx="36" fill="#061012" opacity="0.8"/>
+  <path d="M305 240c53 0 96 43 96 96 0 37-20 69-49 85l-15 70h-64l-14-70c-29-16-49-48-49-85 0-53 43-96 95-96zm0 36c-33 0-59 27-59 60s26 59 59 59 60-26 60-59-27-60-60-60z" fill="#5eead4"/>
+  <text x="560" y="320" fill="#f8fafc" font-size="72" font-family="Inter,Segoe UI,Arial" font-weight="700">Skin Care</text>
+  <text x="560" y="380" fill="#cbd5e1" font-size="30" font-family="Inter,Segoe UI,Arial">Barrier • Texture • Glow</text>
+</svg>

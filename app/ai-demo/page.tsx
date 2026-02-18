@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { analyzeImage, AnalysisResult } from "@/lib/analyzeImage";
 import { analyzeWithAI, CombinedAnalysis } from "@/lib/aiAnalysisEngine";
 import Container from "@/app/result/_components/Container";
+import { motion, AnimatePresence } from "framer-motion";
+import { Brain, ScanFace, FileText, CheckCircle2, ArrowRight, Activity, Sparkles, Server, Lock } from "lucide-react";
 
 export default function AITestPage() {
   const router = useRouter();
@@ -28,7 +30,6 @@ export default function AITestPage() {
     setLoading(true);
 
     // Step 1: Simulate photo analysis
-    console.log("Step 1: Analyzing photo...");
     const photo = await analyzeImage("", "skin");
     setPhotoAnalysis(photo);
     setDemoStep(1);
@@ -37,7 +38,6 @@ export default function AITestPage() {
     await new Promise((r) => setTimeout(r, 1000));
 
     // Step 2: Combine with questionnaire
-    console.log("Step 2: Combining analysis with questionnaire...");
     const combined = analyzeWithAI(photo, sampleAnswers);
     setCombinedAnalysis(combined);
     setDemoStep(2);
@@ -48,222 +48,191 @@ export default function AITestPage() {
   const goToFullResult = () => {
     const params = new URLSearchParams();
     params.append("answers", JSON.stringify(sampleAnswers));
-    if (photoAnalysis) {
-      params.append("photo", JSON.stringify(photoAnalysis));
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("resultAnswers", JSON.stringify(sampleAnswers));
+      if (photoAnalysis) {
+        sessionStorage.setItem("photoAnalysis", JSON.stringify(photoAnalysis));
+      } else {
+        sessionStorage.removeItem("photoAnalysis");
+      }
     }
     router.push(`/result?${params.toString()}`);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 py-10">
+    <div className="min-h-screen bg-[var(--lux-bg-primary)] py-12 relative overflow-hidden text-[var(--lux-text-primary)]">
+      {/* Tech Background */}
+      <div className="fixed inset-0 pointer-events-none">
+         <div className="absolute top-[20%] right-[10%] w-[500px] h-[500px] bg-[var(--lux-accent)]/5 blur-[120px] rounded-full opacity-30 animate-pulse" />
+         <div className="absolute bottom-[10%] left-[10%] w-[400px] h-[400px] bg-[#0066ff]/5 blur-[120px] rounded-full opacity-30" />
+      </div>
+
       <Container>
-        <div className="bg-white rounded-3xl shadow-xl p-8 max-w-4xl mx-auto">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-700 to-slate-800 bg-clip-text text-transparent mb-2">
-            🧠 AI Analysis Engine Demo
-          </h1>
-          <p className="text-gray-600 mb-8">
-            See how the AI combines photo analysis with questionnaire answers for intelligent recommendations
-          </p>
-
-          {/* Demo Steps */}
-          <div className="space-y-8">
-            {/* Step 0: Start */}
-            {demoStep === 0 && (
-              <div className="text-center py-12">
-                <div className="text-6xl mb-4">📸</div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                  Demo the AI Analysis Engine
-                </h2>
-                <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
-                  This demo shows how the system analyzes a photo, combines it with questionnaire
-                  answers, and generates intelligent recommendations with confidence scores.
-                </p>
-                <button
-                  onClick={runDemo}
-                  disabled={loading}
-                  className="bg-gradient-to-r from-blue-700 to-slate-800 text-white px-8 py-4 rounded-xl font-bold hover:shadow-lg transition disabled:opacity-50"
-                >
-                  {loading ? "Running..." : "Start Demo"}
-                </button>
-              </div>
-            )}
-
-            {/* Step 1: Photo Analysis */}
-            {demoStep >= 1 && photoAnalysis && (
-              <div className="border-2 border-green-300 rounded-2xl p-6 bg-green-50">
-                <h3 className="text-xl font-bold text-green-900 mb-4">
-                  ✅ Step 1: Photo Analysis Complete
-                </h3>
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div className="bg-white p-4 rounded-lg">
-                    <p className="text-sm text-gray-600">Type</p>
-                    <p className="font-bold text-gray-900 capitalize">
-                      {photoAnalysis.type} Analysis
-                    </p>
-                  </div>
-                  <div className="bg-white p-4 rounded-lg">
-                    <p className="text-sm text-gray-600">Confidence</p>
-                    <p className="font-bold text-gray-900">
-                      {photoAnalysis.confidence}%
-                    </p>
-                  </div>
-                  <div className="bg-white p-4 rounded-lg">
-                    <p className="text-sm text-gray-600">Severity</p>
-                    <p className="font-bold text-gray-900 capitalize">
-                      {photoAnalysis.severity}
-                    </p>
-                  </div>
-                  <div className="bg-white p-4 rounded-lg">
-                    <p className="text-sm text-gray-600">Issues Found</p>
-                    <p className="font-bold text-gray-900">
-                      {photoAnalysis.detectedIssues.length}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="bg-white p-4 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-2">Detected Issues:</p>
-                  <ul className="space-y-2">
-                    {photoAnalysis.detectedIssues.map((issue, i) => (
-                      <li
-                        key={i}
-                        className="flex items-center justify-between text-gray-700"
-                      >
-                        <span>{issue.name}</span>
-                        <span className="text-sm font-bold text-blue-600">
-                          {issue.confidence}% confident
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            )}
-
-            {/* Step 2: Combined Analysis */}
-            {demoStep >= 2 && combinedAnalysis && (
-              <div className="border-2 border-purple-300 rounded-2xl p-6 bg-purple-50">
-                <h3 className="text-xl font-bold text-purple-900 mb-4">
-                  ✅ Step 2: AI Analysis Complete
-                </h3>
-
-                {/* Overall Confidence */}
-                <div className="bg-white p-4 rounded-lg mb-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="font-semibold text-gray-900">Overall Confidence</p>
-                    <p className="text-2xl font-bold text-purple-600">
-                      {combinedAnalysis.confidence}%
-                    </p>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-3">
-                    <div
-                      className="bg-gradient-to-r from-blue-700 to-slate-800 h-3 rounded-full"
-                      style={{ width: `${combinedAnalysis.confidence}%` }}
-                    />
-                  </div>
-                </div>
-
-                {/* Enriched Issues */}
-                <div className="bg-white p-4 rounded-lg mb-4">
-                  <p className="font-semibold text-gray-900 mb-3">
-                    🔍 Enriched Issues ({combinedAnalysis.detectedIssues.length})
-                  </p>
-                  <div className="space-y-3">
-                    {combinedAnalysis.detectedIssues.slice(0, 3).map((issue, i) => (
-                      <div
-                        key={i}
-                        className="border border-gray-200 rounded-lg p-3"
-                      >
-                        <div className="flex items-start justify-between mb-2">
-                          <div>
-                            <p className="font-bold text-gray-900">
-                              {issue.name}
-                            </p>
-                            <p className="text-xs text-gray-600">
-                              {issue.source === "both"
-                                ? "📸 Photo + 📝 Questionnaire"
-                                : issue.source === "photo"
-                                  ? "📸 Photo Analysis"
-                                  : "📝 Questionnaire"}
-                            </p>
-                          </div>
-                          <span className="text-sm font-bold text-purple-600">
-                            {issue.combinedConfidence}%
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-purple-600 h-2 rounded-full"
-                            style={{ width: `${issue.combinedConfidence}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Insights */}
-                <div className="bg-white p-4 rounded-lg mb-6">
-                  <p className="font-semibold text-gray-900 mb-3">
-                    💡 AI Insights ({combinedAnalysis.insights.length})
-                  </p>
-                  <div className="space-y-2">
-                    {combinedAnalysis.insights.map((insight, i) => (
-                      <div
-                        key={i}
-                        className="text-sm bg-blue-50 p-2 rounded border border-blue-200"
-                      >
-                        <p className="font-semibold text-blue-900">
-                          {insight.title}
-                        </p>
-                        <p className="text-xs text-blue-800">
-                          {insight.description}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Next Step */}
-                <button
-                  onClick={goToFullResult}
-                  className="w-full bg-gradient-to-r from-blue-700 to-slate-800 text-white px-8 py-4 rounded-xl font-bold hover:shadow-lg transition"
-                >
-                  View Full Recommendations & Products →
-                </button>
-              </div>
-            )}
+        <div className="max-w-5xl mx-auto relative z-10">
+          <div className="text-center mb-16">
+            <motion.div 
+               initial={{ scale: 0.9, opacity: 0 }}
+               animate={{ scale: 1, opacity: 1 }}
+               className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-[var(--lux-accent)]/10 border border-[var(--lux-accent)]/20 text-[var(--lux-accent)] mb-6"
+            >
+               <Brain className="w-5 h-5" />
+               <span className="text-sm font-bold tracking-wider uppercase">Architecture v2.0</span>
+            </motion.div>
+            <h1 className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-cyan-100 to-[var(--lux-text-secondary)] mb-6">
+              AI Analysis Engine
+            </h1>
+            <p className="text-[var(--lux-text-muted)] text-lg max-w-2xl mx-auto">
+              Visualizing how our multi-modal AI combines computer vision with clinical heuristics to generate personalized recovery plans.
+            </p>
           </div>
 
-          {/* Info Box */}
-          <div className="mt-8 bg-blue-50 border border-blue-200 rounded-2xl p-6">
-            <h3 className="font-bold text-slate-900 mb-3">How It Works:</h3>
-            <ol className="space-y-2 text-slate-800 text-sm">
-              <li>
-                <strong>1. Photo Analysis:</strong> AI analyzes uploaded photo and
-                detects issues with confidence scores
-              </li>
-              <li>
-                <strong>2. Questionnaire Parsing:</strong> System extracts issues
-                from user answers
-              </li>
-              <li>
-                <strong>3. Smart Merging:</strong> Issues confirmed by both sources
-                get boosted confidence
-              </li>
-              <li>
-                <strong>4. Enriched Results:</strong> Each issue shows source
-                (photo/questionnaire/both) and combined confidence
-              </li>
-              <li>
-                <strong>5. AI Insights:</strong> System generates validation,
-                warnings, and opportunities
-              </li>
-              <li>
-                <strong>6. Product Matching:</strong> Recommendations are scored
-                based on merged issue data
-              </li>
-            </ol>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+             {/* LEFT COLUMN: Steps Visualization */}
+             <div className="lg:col-span-1 space-y-4">
+               {[
+                 { id: 0, title: "Input Processing", icon: ScanFace, desc: "Image normalization & survey data" },
+                 { id: 1, title: "Computer Vision", icon: Sparkles, desc: "Feature extraction & classification" },
+                 { id: 2, title: "Heuristic Engine", icon: Brain, desc: "Rule-based synthesis & planing" }
+               ].map((step, i) => (
+                 <div 
+                   key={i}
+                   className={`p-6 rounded-2xl border transition-all duration-500 ${
+                     demoStep >= i 
+                       ? "bg-[var(--lux-accent)]/10 border-[var(--lux-accent)]/50 shadow-[0_0_20px_var(--lux-accent)]" 
+                       : "lux-card opacity-50"
+                   }`}
+                 >
+                   <div className="flex items-center gap-4">
+                     <div className={`p-3 rounded-xl ${demoStep >= i ? "bg-[var(--lux-accent)] text-black" : "bg-[var(--lux-bg-secondary)] text-[var(--lux-text-muted)]"}`}>
+                       <step.icon className="w-6 h-6" />
+                     </div>
+                     <div>
+                       <h3 className={`font-bold ${demoStep >= i ? "text-[var(--lux-text-primary)]" : "text-[var(--lux-text-muted)]"}`}>{step.title}</h3>
+                       <p className="text-xs text-[var(--lux-text-muted)] mt-1">{step.desc}</p>
+                     </div>
+                     {demoStep > i && <CheckCircle2 className="w-5 h-5 text-emerald-400 ml-auto" />}
+                     {demoStep === i && loading && <Activity className="w-5 h-5 text-[var(--lux-accent)] ml-auto animate-pulse" />}
+                   </div>
+                 </div>
+               ))}
+               
+               {demoStep === 0 && !loading && (
+                 <button
+                    onClick={runDemo}
+                    className="w-full py-4 text-black rounded-xl font-bold transition shadow-[0_0_20px_var(--lux-accent)] hover:shadow-[0_0_30px_var(--lux-accent)] flex items-center justify-center gap-2 mt-8 bg-[var(--lux-accent)]"
+                 >
+                    <Activity className="w-5 h-5" />
+                    Start Simulation
+                 </button>
+               )}
+             </div>
+
+             {/* RIGHT COLUMN: Terminal Output */}
+             <div className="lg:col-span-2">
+               <div className="bg-[#060b14] border border-[var(--lux-glass-border)] rounded-2xl overflow-hidden shadow-2xl h-[600px] flex flex-col relative">
+                 {/* Terminal Header */}
+                 <div className="bg-[var(--lux-bg-secondary)] px-6 py-4 flex items-center justify-between border-b border-[var(--lux-glass-border)]">
+                   <div className="flex gap-2">
+                     <div className="w-3 h-3 rounded-full bg-red-500/50" />
+                     <div className="w-3 h-3 rounded-full bg-yellow-500/50" />
+                     <div className="w-3 h-3 rounded-full bg-green-500/50" />
+                   </div>
+                   <div className="text-xs font-mono text-[var(--lux-text-muted)] flex items-center gap-2">
+                     <Lock className="w-3 h-3" />
+                     SECURE CONNECTION
+                   </div>
+                 </div>
+                 
+                 {/* Terminal Body */}
+                 <div className="p-8 flex-1 overflow-y-auto font-mono text-sm space-y-6 scrollbar-thin scrollbar-thumb-[var(--lux-bg-elevated)]">
+                   {demoStep === 0 && (
+                     <div className="text-[var(--lux-text-muted)]">
+                       <span className="text-emerald-400">root@ai-engine:~$</span> waiting for input stream...<br/>
+                       <span className="text-blue-400/50">Ready to initialize analysis sequence.</span>
+                     </div>
+                   )}
+
+                   {/* Step 1 Output */}
+                   <AnimatePresence>
+                   {demoStep >= 1 && photoAnalysis && (
+                     <motion.div 
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="space-y-4"
+                     >
+                       <div className="text-[var(--lux-accent)] border-l-2 border-[var(--lux-accent)]/50 pl-4 py-1">
+                         <span className="text-[var(--lux-text-primary)] font-bold opacity-100">[MODULE_CV]</span> Image Processing Complete
+                       </div>
+                       
+                       <div className="bg-[var(--lux-bg-secondary)] rounded-lg p-4 grid grid-cols-2 gap-4">
+                         <div>
+                            <span className="text-[var(--lux-text-muted)] block text-xs uppercase mb-1">Detected Type</span>
+                            <span className="text-emerald-400">{photoAnalysis.type}</span>
+                         </div>
+                         <div>
+                            <span className="text-[var(--lux-text-muted)] block text-xs uppercase mb-1">Confidence</span>
+                            <span className="text-[var(--lux-accent)]">{photoAnalysis.confidence}%</span>
+                         </div>
+                         <div>
+                            <span className="text-[var(--lux-text-muted)] block text-xs uppercase mb-1">Severity</span>
+                            <span className="text-yellow-400">{photoAnalysis.severity}</span>
+                         </div>
+                         <div className="col-span-2">
+                            <span className="text-[var(--lux-text-muted)] block text-xs uppercase mb-1">Issues Identified</span>
+                            <div className="flex gap-2 flex-wrap">
+                                {photoAnalysis.detectedIssues.map((issue, idx) => (
+                                    <span key={idx} className="px-2 py-1 bg-[var(--lux-bg-elevated)] rounded text-xs text-[var(--lux-text-primary)]">{issue.name}</span>
+                                ))}
+                            </div>
+                         </div>
+                       </div>
+                     </motion.div>
+                   )}
+                   </AnimatePresence>
+                   
+                   {/* Step 2 Output */}
+                   <AnimatePresence>
+                   {demoStep >= 2 && combinedAnalysis && (
+                     <motion.div 
+                        initial={{ opacity: 0, x: -10 }} 
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.5 }}
+                        className="space-y-4 pt-4 border-t border-[var(--lux-glass-border)]"
+                     >
+                       <div className="text-purple-400 border-l-2 border-purple-500/50 pl-4 py-1">
+                         <span className="text-[var(--lux-text-primary)] font-bold opacity-100">[MODULE_SYNTHESIS]</span> Recommendations Generated
+                       </div>
+
+                       <div className="bg-gradient-to-br from-[var(--lux-accent)]/10 to-purple-500/10 rounded-lg p-6 border border-[var(--lux-glass-border)]">
+                          <h4 className="text-[var(--lux-text-primary)] font-bold mb-4 flex items-center gap-2">
+                             <Sparkles className="w-4 h-4 text-yellow-400" />
+                             Optimization Complete
+                          </h4>
+                          <div className="space-y-2">
+                             {combinedAnalysis.recommendations.map((rec, idx) => (
+                                <div key={idx} className="flex gap-3 text-[var(--lux-text-muted)] text-xs">
+                                   <span className="text-[var(--lux-accent)]">→</span>
+                                   {rec.title}
+                                </div>
+                             ))}
+                          </div>
+                       </div>
+
+                       <div className="pt-4">
+                          <button 
+                             onClick={goToFullResult}
+                             className="group flex items-center gap-2 text-black bg-[var(--lux-accent)] hover:bg-[var(--lux-accent)]/80 px-6 py-3 rounded-lg font-bold transition-all w-full justify-center shadow-[0_0_20px_var(--lux-accent)]"
+                          >
+                             View Full Report
+                             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                          </button>
+                       </div>
+                     </motion.div>
+                   )}
+                   </AnimatePresence>
+                 </div>
+               </div>
+             </div>
           </div>
         </div>
       </Container>

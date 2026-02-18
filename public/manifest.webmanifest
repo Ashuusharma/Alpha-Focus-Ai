@@ -1,0 +1,21 @@
+{
+  "name": "Alpha Focus Grooming",
+  "short_name": "Alpha Focus",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#060b14",
+  "theme_color": "#00f2ff",
+  "description": "AI-powered grooming assistant with photo analysis, routines, and habit coaching.",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

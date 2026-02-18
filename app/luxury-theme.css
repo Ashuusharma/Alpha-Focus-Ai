@@ -1,0 +1,109 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap');
+
+:root {
+  /* --- ALPHA FOCUS MEDICAL PREMIUM PALETTE --- */
+  --lux-bg-main: #0B1220;
+  --lux-bg-secondary: #111827;
+  --lux-bg-card: rgba(15, 26, 43, 0.64);
+  --lux-bg-elevated: #0F1A2B;
+  
+  /* Accents */
+  --lux-accent: #3B82F6;
+  --lux-accent-secondary: #1E40AF;
+  --lux-accent-glow: rgba(59, 130, 246, 0.26);
+  
+  /* Text */
+  --lux-text-primary: #F8FAFC;
+  --lux-text-secondary: #94A3B8;
+  --lux-text-muted: #64748B;
+  
+  /* Glass Effects */
+  --lux-glass-border: 1px solid rgba(255, 255, 255, 0.08);
+  --lux-glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35);
+  --lux-backdrop-blur: 24px;
+}
+
+body {
+  background-color: var(--lux-bg-main);
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.12) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(30, 64, 175, 0.1) 0%, transparent 40%);
+  color: var(--lux-text-primary);
+  font-family: 'Manrope', sans-serif;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* --- UTILITIES --- */
+.lux-container {
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.lux-text-gradient {
+  background: linear-gradient(135deg, #fff 0%, var(--lux-accent) 60%, var(--lux-accent-secondary) 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.lux-card {
+  background: var(--lux-bg-card);
+  backdrop-filter: blur(var(--lux-backdrop-blur));
+  -webkit-backdrop-filter: blur(var(--lux-backdrop-blur));
+  border: var(--lux-glass-border);
+  box-shadow: var(--lux-glass-shadow);
+  border-radius: 1.25rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.lux-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(59, 130, 246, 0.28);
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.45);
+}
+
+.lux-btn-primary {
+  background: linear-gradient(90deg, #1E3A8A, #2563EB);
+  color: #F8FAFC;
+  font-weight: 600;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  transition: all 0.2s;
+  box-shadow: 0 4px 15px var(--lux-accent-glow);
+}
+
+.lux-btn-primary:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+/* Background Blobs */
+.lux-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.4;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.lux-blob-1 {
+  width: 500px;
+  height: 500px;
+  background: var(--lux-accent);
+  top: -10%;
+  left: -10%;
+  opacity: 0.15;
+}
+
+.lux-blob-2 {
+  width: 600px;
+  height: 600px;
+  background: var(--lux-accent-secondary);
+  bottom: -10%;
+  right: -10%;
+  opacity: 0.08;
+}

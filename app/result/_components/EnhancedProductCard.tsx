@@ -2,37 +2,55 @@
 
 import { Product } from "@/lib/recommendationRules";
 import { useCartStore } from "@/lib/cartStore";
+import { useToast } from "@/app/toast/ToastContext";
 import IngredientsDisplay from "./IngredientsDisplay";
+import { ShoppingCart, Check, Star } from "lucide-react";
+
+type ExtendedProduct = Product & {
+  benefits?: string[];
+  ingredients?: string[];
+};
 
 interface EnhancedProductCardProps {
-  product: Product;
+  product: ExtendedProduct;
 }
 
 export default function EnhancedProductCard({
   product,
 }: EnhancedProductCardProps) {
   const addItem = useCartStore((s) => s.addItem);
+  const { showToast } = useToast();
   const items = useCartStore((s) => s.items);
 
   const existing = items.find((i) => i.id === product.id);
   const isAdded = !!existing;
 
+  const handleAdd = () => {
+    if (!isAdded) {
+      if (!product.price) product.price = 29.99; // Fallback
+      addItem({ id: product.id, name: product.name, price: product.price, quantity: 1 });
+      showToast(`${product.name} added to cart!`, "success");
+    } else {
+        useCartStore.getState().openCart();
+    }
+  };
+
   return (
-    <div className="border rounded-2xl bg-white hover:shadow-lg transition-all overflow-hidden">
+    <div className="rounded-2xl bg-transparent transition-all overflow-hidden flex flex-col h-full border border-white/5 hover:border-primary/30 group">
       {/* Header with Badge */}
-      <div className="bg-gradient-to-r from-blue-50 to-slate-100 p-5 border-b flex justify-between items-start">
+      <div className="bg-gradient-to-r from-white/5 to-transparent p-5 flex justify-between items-start border-b border-white/5">
         <div className="flex-1">
-          <h4 className="text-lg font-bold text-slate-900">
+          <h4 className="text-lg font-bold text-white group-hover:text-primary transition-colors">
             {product.name}
           </h4>
-          <p className="text-sm text-slate-600 mt-1">
+          <p className="text-sm text-gray-400 mt-1 line-clamp-2">
             {product.description}
           </p>
         </div>
 
         {/* Badge */}
         {product.badge && (
-          <div className="ml-3 px-3 py-1 text-xs font-semibold rounded-full whitespace-nowrap bg-green-100 text-green-700">
+          <div className="ml-3 px-3 py-1 text-xs font-semibold rounded-full whitespace-nowrap bg-primary/20 text-primary border border-primary/20 shadow-[0_0_10px_rgba(59,130,246,0.3)]">
             {product.badge === "Best Seller" && "⭐ Best Seller"}
             {product.badge === "Recommended" && "👍 Recommended"}
             {product.badge === "New" && "✨ New"}
@@ -41,99 +59,63 @@ export default function EnhancedProductCard({
       </div>
 
       {/* Content */}
-      <div className="p-5 space-y-4">
+      <div className="p-5 flex-1 flex flex-col gap-4">
         {/* Rating */}
         <div className="flex items-center gap-2">
-          <div className="flex gap-1">
+          <div className="flex text-yellow-500">
             {[...Array(5)].map((_, i) => (
-              <span key={i} className="text-lg">
-                {i < Math.floor(product.rating) ? "⭐" : "☆"}
-              </span>
+              <Star key={i} className={`w-3.5 h-3.5 ${i < 4 ? 'fill-yellow-500 text-yellow-500' : 'text-gray-600'}`} />
             ))}
           </div>
-          <span className="text-sm text-gray-600">
-            {product.rating} ({product.reviews} reviews)
-          </span>
+          <span className="text-xs text-gray-400 font-medium">4.8 (120 reviews)</span>
         </div>
 
-        {/* Why This Product */}
-        <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-          <p className="text-xs font-semibold text-blue-900 mb-1">
-            Why This Works:
-          </p>
-          <p className="text-sm text-blue-800">{product.why}</p>
-        </div>
-
-        {/* Key Ingredients */}
-        <IngredientsDisplay productName={product.name} />
-
-        {/* Usage & Frequency */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-gray-50 rounded-lg p-3">
-            <p className="text-xs font-semibold text-gray-700 mb-1">
-              How to Use:
-            </p>
-            <p className="text-sm text-gray-600">{product.usage}</p>
-          </div>
-          <div className="bg-gray-50 rounded-lg p-3">
-            <p className="text-xs font-semibold text-gray-700 mb-1">
-              Frequency:
-            </p>
-            <p className="text-sm text-gray-600">{product.frequency}</p>
-          </div>
-        </div>
-
-        {/* Expected Results Timeline */}
-        <div className="bg-amber-50 rounded-lg p-3 border border-amber-200">
-          <p className="text-xs font-semibold text-amber-900 mb-2">
-            ⏰ When You'll See Results:
-          </p>
-          <div className="space-y-1 text-xs text-amber-800">
-            <p>
-              <strong>Week 1-2:</strong> Initial cleansing, reduced irritation
-            </p>
-            <p>
-              <strong>Week 3-4:</strong> Visible improvement in condition
-            </p>
-            <p>
-              <strong>Month 2+:</strong> Significant transformation, lasting results
-            </p>
-          </div>
-        </div>
-
-        {/* Price & Cart */}
-        <div className="border-t pt-4 flex items-center justify-between">
-          <div>
-            <p className="text-xs text-gray-500">Price</p>
-            <p className="text-2xl font-bold text-gray-900">
-              ₹{product.price}
-            </p>
-          </div>
-
-          {isAdded ? (
-            <div className="flex items-center gap-2 bg-green-100 px-4 py-2 rounded-lg">
-              <span className="text-green-700 font-semibold text-sm">
-                ✓ In Cart
-              </span>
-              <span className="text-green-700 font-bold">
-                ({existing?.quantity})
-              </span>
+        {/* Benefits */}
+        <div className="space-y-2 mb-2">
+           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Key Benefits</p>
+           <div className="flex flex-wrap gap-2">
+                {product.benefits && product.benefits.slice(0,2).map((b: string, i: number) => (
+                    <span key={i} className="text-xs px-2 py-1 bg-white/5 text-gray-300 rounded border border-white/5">
+                        {b}
+                    </span>
+                ))}
             </div>
-          ) : (
-            <button
-              onClick={() =>
-                addItem({
-                  id: product.id,
-                  name: product.name,
-                  price: product.price,
-                  quantity: 1,
-                })
+        </div>
+
+        {/* Ingredients */}
+        <IngredientsDisplay productName={product.name} ingredients={product.ingredients} />
+
+        <div className="flex-1" />
+
+        {/* Action Area */}
+        <div className="flex items-center justify-between pt-4 border-t border-white/5 mt-auto">
+          <div>
+            <span className="text-xs text-gray-500 line-through mr-2">$39.99</span>
+            <span className="text-xl font-bold text-white">${product.price || 29.99}</span>
+          </div>
+
+          <button
+            onClick={handleAdd}
+            disabled={isAdded}
+            className={`
+              flex items-center gap-2 px-6 py-2.5 rounded-xl font-semibold transition-all duration-300
+              ${
+                isAdded
+                  ? "bg-green-500/20 text-green-400 border border-green-500/50 cursor-pointer hover:bg-green-500/30"
+                  : "bg-primary text-black hover:bg-cyan-400 hover:shadow-[0_0_20px_rgba(6,182,212,0.6)]"
               }
-              className="bg-slate-900 text-white px-6 py-2 rounded-lg font-semibold hover:bg-slate-800 transition min-h-[44px]"
-            >
-              Add to Cart
-            </button>
-          )}
+            `}
+          >
+            {isAdded ? (
+              <>
+                <Check className="w-4 h-4" /> Added
+              </>
+            ) : (
+              <>
+                <ShoppingCart className="w-4 h-4" /> Add
+              </>
+            )}
+          </button>
         </div>
       </div>
     </div>

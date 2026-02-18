@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { getActiveUserName, getScopedLocalItem, setScopedLocalItem } from "@/lib/userScopedStorage";
 
 export interface UserData {
   userId: string;
@@ -44,6 +45,19 @@ const STORAGE_KEYS = {
   ACTIVITY: "oneman_activity_log",
   PROGRESS: "oneman_progress",
 };
+
+function readScopedJson<T>(key: string, fallback: T): T {
+  try {
+    const raw = getScopedLocalItem(key, getActiveUserName(), true);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeScopedJson<T>(key: string, value: T, mirrorLegacy = false): void {
+  setScopedLocalItem(key, JSON.stringify(value), getActiveUserName(), mirrorLegacy);
+}
 
 export function useUserData() {
   const [user, setUser] = useState<UserData | null>(null);
@@ -100,8 +114,7 @@ export function useAssessments() {
   useEffect(() => {
     const loadAssessments = () => {
       try {
-        const stored = localStorage.getItem(STORAGE_KEYS.ASSESSMENTS);
-        setAssessments(stored ? JSON.parse(stored) : []);
+        setAssessments(readScopedJson<AssessmentData[]>(STORAGE_KEYS.ASSESSMENTS, []));
       } catch (error) {
         console.error("Failed to load assessments:", error);
       } finally {
@@ -115,7 +128,7 @@ export function useAssessments() {
   const saveAssessment = useCallback((assessment: AssessmentData) => {
     setAssessments((prev) => {
       const updated = [...prev, assessment];
-      localStorage.setItem(STORAGE_KEYS.ASSESSMENTS, JSON.stringify(updated));
+      writeScopedJson(STORAGE_KEYS.ASSESSMENTS, updated);
       return updated;
     });
   }, []);
@@ -123,7 +136,7 @@ export function useAssessments() {
   const updateAssessment = useCallback((id: string, updates: Partial<AssessmentData>) => {
     setAssessments((prev) => {
       const updated = prev.map((a) => (a.id === id ? { ...a, ...updates } : a));
-      localStorage.setItem(STORAGE_KEYS.ASSESSMENTS, JSON.stringify(updated));
+      writeScopedJson(STORAGE_KEYS.ASSESSMENTS, updated);
       return updated;
     });
   }, []);
@@ -138,8 +151,7 @@ export function useScans() {
   useEffect(() => {
     const loadScans = () => {
       try {
-        const stored = localStorage.getItem(STORAGE_KEYS.SCANS);
-        setScans(stored ? JSON.parse(stored) : []);
+        setScans(readScopedJson<ScanData[]>(STORAGE_KEYS.SCANS, []));
       } catch (error) {
         console.error("Failed to load scans:", error);
       } finally {
@@ -153,7 +165,7 @@ export function useScans() {
   const saveScan = useCallback((scan: ScanData) => {
     setScans((prev) => {
       const updated = [scan, ...prev];
-      localStorage.setItem(STORAGE_KEYS.SCANS, JSON.stringify(updated));
+      writeScopedJson(STORAGE_KEYS.SCANS, updated);
       logActivity(`Saved ${scan.type} analysis`, "📸");
       return updated;
     });
@@ -162,7 +174,7 @@ export function useScans() {
   const deleteScan = useCallback((id: string) => {
     setScans((prev) => {
       const updated = prev.filter((s) => s.id !== id);
-      localStorage.setItem(STORAGE_KEYS.SCANS, JSON.stringify(updated));
+      writeScopedJson(STORAGE_KEYS.SCANS, updated);
       return updated;
     });
   }, []);
@@ -177,8 +189,7 @@ export function useActivityLog() {
   useEffect(() => {
     const loadActivities = () => {
       try {
-        const stored = localStorage.getItem(STORAGE_KEYS.ACTIVITY);
-        setActivities(stored ? JSON.parse(stored) : []);
+        setActivities(readScopedJson<ActivityLog[]>(STORAGE_KEYS.ACTIVITY, []));
       } catch (error) {
         console.error("Failed to load activity log:", error);
       } finally {
@@ -200,7 +211,7 @@ export function useActivityLog() {
 
     setActivities((prev) => {
       const updated = [activity, ...prev];
-      localStorage.setItem(STORAGE_KEYS.ACTIVITY, JSON.stringify(updated));
+      writeScopedJson(STORAGE_KEYS.ACTIVITY, updated);
       return updated;
     });
   }, []);
@@ -210,9 +221,7 @@ export function useActivityLog() {
 
 export function logActivity(action: string, icon: string, details?: string) {
   try {
-    const activities: ActivityLog[] = JSON.parse(
-      localStorage.getItem(STORAGE_KEYS.ACTIVITY) || "[]"
-    );
+    const activities = readScopedJson<ActivityLog[]>(STORAGE_KEYS.ACTIVITY, []);
 
     const activity: ActivityLog = {
       id: `activity_${Date.now()}`,
@@ -223,7 +232,7 @@ export function logActivity(action: string, icon: string, details?: string) {
     };
 
     activities.unshift(activity);
-    localStorage.setItem(STORAGE_KEYS.ACTIVITY, JSON.stringify(activities));
+    writeScopedJson(STORAGE_KEYS.ACTIVITY, activities);
   } catch (error) {
     console.error("Failed to log activity:", error);
   }
@@ -231,9 +240,7 @@ export function logActivity(action: string, icon: string, details?: string) {
 
 export function getProgressData() {
   try {
-    const assessments: AssessmentData[] = JSON.parse(
-      localStorage.getItem(STORAGE_KEYS.ASSESSMENTS) || "[]"
-    );
+    const assessments = readScopedJson<AssessmentData[]>(STORAGE_KEYS.ASSESSMENTS, []);
 
     const totalAnswers = assessments.reduce((sum, a) => sum + Object.keys(a.answers).length, 0);
     const avgProgress = assessments.length > 0 
@@ -259,9 +266,7 @@ export function getProgressData() {
 
 export function getComparisonData() {
   try {
-    const assessments: AssessmentData[] = JSON.parse(
-      localStorage.getItem(STORAGE_KEYS.ASSESSMENTS) || "[]"
-    );
+    const assessments = readScopedJson<AssessmentData[]>(STORAGE_KEYS.ASSESSMENTS, []);
 
     if (assessments.length < 2) {
       return {

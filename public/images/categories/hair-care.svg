@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" role="img" aria-label="Hair care">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#10131c"/>
+      <stop offset="100%" stop-color="#2a1f0d"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="700" fill="url(#bg)"/>
+  <circle cx="960" cy="120" r="180" fill="#f59e0b" opacity="0.15"/>
+  <circle cx="210" cy="520" r="200" fill="#f97316" opacity="0.12"/>
+  <rect x="120" y="140" width="380" height="420" rx="34" fill="#0b0f17" opacity="0.8"/>
+  <path d="M260 230c48-34 102-20 134 23 15 20 22 42 22 68v110h-36V324c0-20-6-37-18-51-20-24-54-32-82-20-30 14-46 40-46 74v104h-36V320c0-39 15-71 44-90z" fill="#fbbf24"/>
+  <text x="560" y="320" fill="#f8fafc" font-size="72" font-family="Inter,Segoe UI,Arial" font-weight="700">Hair Care</text>
+  <text x="560" y="380" fill="#cbd5e1" font-size="30" font-family="Inter,Segoe UI,Arial">Strength • Scalp • Growth</text>
+</svg>

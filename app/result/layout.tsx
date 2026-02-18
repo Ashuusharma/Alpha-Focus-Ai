@@ -1,6 +1,6 @@
 "use client";
 
-import CartBadge from "./_components/CartBadge";
+// import CartBadge from "./_components/CartBadge";
 
 export default function ResultLayout({
   children,
@@ -10,7 +10,7 @@ export default function ResultLayout({
   return (
     <>
       {children}
-      <CartBadge />
+      {/* CartBadge removed, only header cart remains */}
     </>
   );
 }

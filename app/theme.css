@@ -2,45 +2,45 @@
 
 :root {
   /* Primary Colors */
-  --color-primary: #1a3a52; /* Dark Teal Blue - replaces Black */
-  --color-primary-light: #567b9d;
-  --color-accent: #567b9d; /* Slate Blue - replaces Gold */
-  --color-accent-light: #a6c5e0;
+  --color-primary: #0B1220;
+  --color-primary-light: #111827;
+  --color-accent: #1E40AF;
+  --color-accent-light: #3B82F6;
 
   /* Semantic Colors */
-  --color-success: #2ecc71; /* Healthy Green - maintained */
-  --color-success-light: #d5f4e6;
-  --color-warning: #e67e22; /* Orange - maintained */
-  --color-warning-light: #fdeae1;
-  --color-error: #e74c3c; /* Red - maintained */
-  --color-error-light: #fadbd8;
-  --color-info: #567b9d; /* Updated to Slate Blue */
-  --color-info-light: #a6c5e0;
+  --color-success: #16A34A;
+  --color-success-light: #DCFCE7;
+  --color-warning: #F59E0B;
+  --color-warning-light: #FEF3C7;
+  --color-error: #DC2626;
+  --color-error-light: #FEE2E2;
+  --color-info: #3B82F6;
+  --color-info-light: #DBEAFE;
 
   /* Backgrounds */
-  --color-bg-primary: #ffffff;
-  --color-bg-secondary: #f0f4f8; /* Light blue-gray */
-  --color-bg-tertiary: #e8ecf1;
+  --color-bg-primary: #0B1220;
+  --color-bg-secondary: #111827;
+  --color-bg-tertiary: #0F1A2B;
 
   /* Text */
-  --color-text-primary: #1a3a52;
-  --color-text-secondary: #567b9d;
-  --color-text-tertiary: #bcc4d1;
-  --color-text-inverse: #ffffff;
+  --color-text-primary: #F8FAFC;
+  --color-text-secondary: #94A3B8;
+  --color-text-tertiary: #64748B;
+  --color-text-inverse: #0B1220;
 
   /* Borders */
-  --color-border: #d4dce6;
-  --color-border-light: #e8ecf1;
+  --color-border: rgba(255,255,255,0.12);
+  --color-border-light: rgba(255,255,255,0.08);
 }
 
 /* Dark Mode Support */
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-bg-primary: #0f0f0f;
-    --color-bg-secondary: #1a1a1a;
-    --color-bg-tertiary: #252525;
-    --color-text-primary: #f5f5f5;
-    --color-text-secondary: #d0d0d0;
-    --color-border: #333333;
+    --color-bg-primary: #0B1220;
+    --color-bg-secondary: #111827;
+    --color-bg-tertiary: #0F1A2B;
+    --color-text-primary: #F8FAFC;
+    --color-text-secondary: #94A3B8;
+    --color-border: rgba(255,255,255,0.12);
   }
 }

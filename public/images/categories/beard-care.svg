@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" role="img" aria-label="Beard care">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#17100a"/>
+      <stop offset="100%" stop-color="#3a1f0d"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="700" fill="url(#bg)"/>
+  <circle cx="980" cy="150" r="180" fill="#fb923c" opacity="0.17"/>
+  <rect x="120" y="150" width="380" height="400" rx="34" fill="#120a06" opacity="0.8"/>
+  <path d="M305 248c51 0 92 42 92 92v18c0 59-41 108-92 121-51-13-92-62-92-121v-18c0-50 41-92 92-92zm0 36c-31 0-56 25-56 56v16c0 41 25 75 56 86 31-11 56-45 56-86v-16c0-31-25-56-56-56z" fill="#fdba74"/>
+  <text x="560" y="320" fill="#f8fafc" font-size="72" font-family="Inter,Segoe UI,Arial" font-weight="700">Beard Care</text>
+  <text x="560" y="380" fill="#cbd5e1" font-size="30" font-family="Inter,Segoe UI,Arial">Density • Softness • Shape</text>
+</svg>

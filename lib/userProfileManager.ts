@@ -12,6 +12,10 @@ export interface UserProfile {
   createdAt: number;
   lastLogin: number;
   bio?: string;
+  level: number;
+  xp: number;
+  achievements: string[];
+  streakCount: number;
 }
 
 export interface ScanRecord {
@@ -53,7 +57,22 @@ export function getCurrentUser(): UserProfile {
 
   const stored = localStorage.getItem("oneman_user_profile");
   if (stored) {
-    return JSON.parse(stored);
+    const parsed = JSON.parse(stored) as Partial<UserProfile>;
+    const hydrated: UserProfile = {
+      id: parsed.id || generateId(),
+      name: parsed.name || "Guest User",
+      email: parsed.email || "",
+      avatar: parsed.avatar,
+      createdAt: parsed.createdAt || Date.now(),
+      lastLogin: parsed.lastLogin || Date.now(),
+      bio: parsed.bio,
+      level: Number.isFinite(parsed.level) ? Number(parsed.level) : 1,
+      xp: Number.isFinite(parsed.xp) ? Number(parsed.xp) : 0,
+      achievements: Array.isArray(parsed.achievements) ? parsed.achievements : [],
+      streakCount: Number.isFinite(parsed.streakCount) ? Number(parsed.streakCount) : 0,
+    };
+    localStorage.setItem("oneman_user_profile", JSON.stringify(hydrated));
+    return hydrated;
   }
 
   const user = createNewUser();
@@ -71,6 +90,10 @@ function createNewUser(): UserProfile {
     email: "",
     createdAt: Date.now(),
     lastLogin: Date.now(),
+    level: 1,
+    xp: 0,
+    achievements: [],
+    streakCount: 0,
   };
 }
 
