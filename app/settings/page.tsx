@@ -17,8 +17,8 @@ import {
 } from "@/lib/ingredientBlacklistStore";
 import { usePhotoGalleryStore } from "@/lib/photoGalleryStore";
 import { useWishlistStore } from "@/lib/wishlistStore";
-import { useRewardsStore } from "@/lib/rewardsStore";
-import { languages } from "@/lib/languageContext";
+import { useRewardsStore, type DiscountTier } from "../../lib/rewardsStore";
+import { languages, type LanguageOption } from "../../lib/languageContext";
 import { AuthContext } from "@/contexts/AuthProvider";
 import { readUserState, writeUserState } from "@/lib/dbUserState";
 import { useContext } from "react";
@@ -297,7 +297,7 @@ export default function SettingsPage() {
                       <div>
                         <h3 className="font-bold text-[#1F3D2B] mb-3">Select Language</h3>
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                          {languages.map((lang) => (
+                          {languages.map((lang: LanguageOption) => (
                             <button
                               key={lang.code}
                               onClick={() => handleChange("language", lang.code)}
@@ -607,7 +607,7 @@ export default function SettingsPage() {
                         </div>
                       ) : (
                         <div className="grid sm:grid-cols-3 gap-3">
-                          {tiers.map((tier) => (
+                          {tiers.map((tier: DiscountTier) => (
                             <button
                               key={tier.id}
                               onClick={() => handleRedeem(tier.id)}

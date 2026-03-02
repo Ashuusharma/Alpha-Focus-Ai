@@ -20,7 +20,7 @@ import {
   calculateStreak,
   clearChallengeProgress,
 } from "@/lib/challengeEngine";
-import { useRewardsStore } from "@/lib/rewardsStore";
+import { useRewardsStore } from "../../lib/rewardsStore";
 
 export default function ChallengesPage() {
   const router = useRouter();

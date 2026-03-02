@@ -7,7 +7,7 @@ import ProductComparison from "./result/_components/ProductComparison";
 import { ToastProvider } from "./toast/ToastContext";
 import ToastContainer from "./toast/ToastContainer";
 import { ThemeProvider } from "@/lib/themeContext";
-import { LanguageProvider as LegacyLangProvider } from "@/lib/languageContext";
+import { LanguageProvider as LegacyLangProvider } from "../lib/languageContext";
 import I18nProvider from "./_components/I18nProvider"; 
 import RouteTransition from "./_components/RouteTransition";
 import MainNavbar from "@/components/layout/MainNavbar";
