@@ -1,20 +1,21 @@
 "use client";
 
-import { useMemo, useState, type SyntheticEvent } from "react";
+import { useContext, useMemo, useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ArrowLeft, Sparkles, CheckCircle2, Info } from "lucide-react";
+import Image from "next/image";
+import { ArrowLeft, CheckCircle2, ChevronRight, BarChart3, ShieldCheck, Sparkles, Activity } from "lucide-react";
 import { categories, questions, CategoryId } from "@/lib/questions";
-import { setScopedSessionItem } from "@/lib/userScopedStorage";
+import { AuthContext } from "@/contexts/AuthProvider";
+import { supabase } from "@/lib/supabaseClient";
 import {
-    getCategoryImageCandidates,
     getClinicalRelevance,
     getQuestionContextOverride,
-    getQuestionImageCandidates,
     getQuestionLabel,
 } from "@/lib/assessmentContentMap";
 
+// --- CONTEXT DATA ---
 const QUESTION_CONTEXT: Record<string, string> = {
     hair_concern: "We use this to identify active scalp stress and common shedding triggers.",
     hair_type: "Hair density helps estimate current growth baseline and support needed.",
@@ -54,314 +55,419 @@ const QUESTION_CONTEXT: Record<string, string> = {
 };
 
 function getQuestionContext(questionId: string): string {
-    return getQuestionContextOverride(questionId) || QUESTION_CONTEXT[questionId] || "This question improves recommendation precision for your profile.";
+    return getQuestionContextOverride(questionId) || QUESTION_CONTEXT[questionId] || "This response helps refine your personalized protocol.";
 }
 
-function getOptionInsight(questionId: string, option: string): string {
-    const value = option.toLowerCase();
-    const id = questionId.toLowerCase();
-
-    if (/(high|frequent|poor|low\/fatigued|patchy|oily|dry|itchy|dandruff|acne|processed|high sugar|noticeably reduced|yes \(active\)|body acne|hair fall|thinning)/.test(value)) {
-        return "This may indicate an active concern that needs focused correction and tighter routine consistency.";
-    }
-    if (/(moderate|sometimes|average|mixed|medium|2-4 days\/week|alternate days|some days only|past history only)/.test(value)) {
-        return "This suggests a manageable pattern that can improve with targeted adjustments and consistency.";
-    }
-    if (/(balanced|good|rarely|low|full and even|daily|active most days|high\/stable|no|restorative|mostly balanced whole foods)/.test(value)) {
-        return "This usually reflects a stable baseline where maintenance and optimization become the main focus.";
-    }
-    if (/(goal|focus|outcome)/.test(id)) {
-        return "This choice helps us prioritize your personalized action plan in the right order.";
-    }
-    return "This response helps us infer what issue pattern you may be experiencing currently.";
-}
-
-function getQuestionImage(categoryId: CategoryId, questionId: string, defaultImage?: string): string {
-    return getQuestionImageCandidates(categoryId, questionId, defaultImage)[0] || "/images/question-fallback.svg";
-}
-
-function getClinicalTagClass(relevance: "Low" | "Moderate" | "High"): string {
-    if (relevance === "High") return "border-red-400/40 bg-red-500/10 text-red-300";
-    if (relevance === "Low") return "border-emerald-400/40 bg-emerald-500/10 text-emerald-300";
-    return "border-amber-400/40 bg-amber-500/10 text-amber-300";
-}
-
-function handleGuardedImageError(event: SyntheticEvent<HTMLImageElement>) {
-    const target = event.currentTarget;
-    const fallbackRaw = target.dataset.fallbacks || "";
-    const fallbacks = fallbackRaw.split("|").map((item) => item.trim()).filter(Boolean);
-    const currentSrc = target.getAttribute("src") || "";
-    const currentIndex = fallbacks.findIndex((item) => currentSrc.includes(item));
-    const nextCandidate = currentIndex >= 0 ? fallbacks[currentIndex + 1] : fallbacks[0];
-
-    if (!nextCandidate || currentSrc.includes(nextCandidate)) {
-        target.src = "/images/question-fallback.svg";
-        return;
-    }
-
-    target.src = nextCandidate;
-}
+// --- MAIN COMPONENT ---
 
 export default function AssessmentPage() {
-  const { t } = useTranslation();
-  const router = useRouter();
-    const [activeCategory, setActiveCategory] = useState<CategoryId | null>(categories[0]?.id ?? null);
-    const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});
-    const [openQuestionId, setOpenQuestionId] = useState<string | null>(null);
+    const { t } = useTranslation();
+    const router = useRouter();
+    const { user } = useContext(AuthContext);
 
-    const totalQuestions = useMemo(
-        () => categories.reduce((sum: number, cat: any) => sum + questions[cat.id as CategoryId].length, 0),
-        []
+    // State
+    const [currentCatIndex, setCurrentCatIndex] = useState(0);
+    const [currentQIndex, setCurrentQIndex] = useState(0);
+    const [answers, setAnswers] = useState<Record<string, string>>({});
+    const [viewState, setViewState] = useState<'question' | 'category_summary' | 'final_review'>('question');
+    const [isAnimating, setIsAnimating] = useState(false);
+    const [selectedCategoryIds, setSelectedCategoryIds] = useState<CategoryId[]>(
+        categories[0] ? [categories[0].id] : []
     );
 
-    const answeredCount = Object.keys(selectedAnswers).length;
-    const completion = Math.round((answeredCount / totalQuestions) * 100);
+    // Derived
+    const activeCategory = categories[currentCatIndex];
+    const categoryQuestions = questions[activeCategory.id] || [];
+    const activeQuestion = categoryQuestions[currentQIndex];
 
-    const toggleCategory = (categoryId: CategoryId) => {
-        setActiveCategory((prev) => (prev === categoryId ? null : categoryId));
-    };
+    const selectedCategories = selectedCategoryIds.length > 0
+        ? selectedCategoryIds
+        : categories[0]
+            ? [categories[0].id]
+            : [];
 
-    const selectAnswer = (questionId: string, option: string) => {
-        setSelectedAnswers((prev) => ({ ...prev, [questionId]: option }));
-        setOpenQuestionId((prev) => (prev === questionId ? null : prev));
-    };
+    const totalQuestionsSelected = useMemo(
+        () => selectedCategories.reduce((sum, catId) => sum + (questions[catId]?.length || 0), 0),
+        [selectedCategories]
+    );
 
-    const handleGetResults = () => {
-        if (typeof window !== "undefined") {
-            const activeUser = localStorage.getItem("oneman_user_name");
-            setScopedSessionItem("assessment_answers_v1", JSON.stringify(selectedAnswers), activeUser, true);
-            setScopedSessionItem("questionsAnswered", "true", activeUser, true);
+    const answeredSelectedCount = useMemo(() => {
+        const selectedQuestionIds = new Set(
+            selectedCategories.flatMap((catId) => (questions[catId] || []).map((q) => q.id))
+        );
+        return Object.keys(answers).filter((id) => selectedQuestionIds.has(id)).length;
+    }, [answers, selectedCategories]);
+
+    const progressPercent = totalQuestionsSelected > 0
+        ? Math.min(100, Math.round((answeredSelectedCount / totalQuestionsSelected) * 100))
+        : 0;
+
+    // Handlers
+    const handleAnswer = (option: string) => {
+        if (isAnimating) return;
+        setIsAnimating(true);
+        
+        if (!selectedCategoryIds.includes(activeCategory.id)) {
+            setSelectedCategoryIds((prev) => [...prev, activeCategory.id]);
         }
+        // Save Answer
+        const newAnswers = { ...answers, [activeQuestion.id]: option };
+        setAnswers(newAnswers);
+
+        // Delay for animation feeling
+        setTimeout(() => {
+            if (currentQIndex < categoryQuestions.length - 1) {
+                // Next Question
+                setCurrentQIndex(prev => prev + 1);
+            } else {
+                // End of Category
+                setViewState('category_summary');
+            }
+            setIsAnimating(false);
+        }, 300);
+    };
+
+    const handleNextCategory = () => {
+        if (currentCatIndex < categories.length - 1) {
+            setCurrentCatIndex(prev => prev + 1);
+            setCurrentQIndex(0);
+            setViewState('question');
+        } else {
+            setViewState('final_review');
+        }
+    };
+
+    const handleJumpToCategory = (index: number) => {
+        const nextCategory = categories[index];
+        if (!nextCategory) return;
+        if (!selectedCategoryIds.includes(nextCategory.id)) {
+            setSelectedCategoryIds((prev) => [...prev, nextCategory.id]);
+        }
+        setCurrentCatIndex(index);
+        setCurrentQIndex(0); // Reset to first Q of that category
+        setViewState('question');
+    };
+
+    const handleClearCategory = (categoryId: CategoryId) => {
+        const categoryQuestionIds = new Set((questions[categoryId] || []).map((q) => q.id));
+        setAnswers((prev) => {
+            const next = { ...prev };
+            categoryQuestionIds.forEach((id) => delete next[id]);
+            return next;
+        });
+        setSelectedCategoryIds((prev) => prev.filter((id) => id !== categoryId));
+        setCurrentQIndex(0);
+        setViewState('question');
+    };
+
+    const handleBack = () => {
+        if (currentQIndex > 0) {
+            // Previous question in same category
+            setCurrentQIndex(prev => prev - 1);
+        } else if (currentCatIndex > 0) {
+            // Previous category (last question)
+            const prevCatIndex = currentCatIndex - 1;
+            const prevCatId = categories[prevCatIndex].id;
+            const prevQuestions = questions[prevCatId] || [];
+            setCurrentCatIndex(prevCatIndex);
+            setCurrentQIndex(prevQuestions.length - 1);
+            setViewState('question');
+        }
+    };
+
+    const handleFinish = async () => {
+        if (typeof window !== "undefined") {
+            sessionStorage.setItem("assessment_answers_v1", JSON.stringify(answers));
+            sessionStorage.setItem("questionsAnswered", "true");
+        }
+
+        if (user) {
+            const completeness = totalQuestionsSelected > 0
+                ? Math.round((answeredSelectedCount / totalQuestionsSelected) * 100)
+                : 0;
+
+            await supabase.from("assessment_answers").insert({
+                user_id: user.id,
+                completed_at: new Date().toISOString(),
+                completeness_pct: completeness,
+            });
+        }
+
         router.push("/result?source=assessment");
     };
 
-  return (
-        <div className="min-h-screen bg-background text-white p-6 pt-24 pb-32">
-      <header className="fixed top-0 left-0 right-0 z-40 bg-background/80 backdrop-blur-md border-b border-white/5 h-16 flex items-center px-6">
-                <button onClick={() => router.back()} className="mr-4 p-2 hover:bg-white/5 rounded-full transition-colors">
-                        <ArrowLeft className="w-5 h-5 text-gray-300" />
-        </button>
-                <h1 className="text-xl font-bold text-white">{t("start_assessment")}</h1>
-      </header>
+    // --- RENDER PARTS ---
 
-      <div className="max-w-3xl mx-auto">
-                <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">
-                        Alpha Focus Questions
-            </h2>
-                    <p className="text-gray-300">Get perfect guidance after answering the questions.</p>
+    // 1. Progress Header
+    const renderHeader = () => (
+        <div className="sticky top-0 z-40 bg-[#F4EFE6]/95 backdrop-blur-md border-b border-[#E2DDD3]">
+            <div className="max-w-4xl mx-auto px-6 py-4 flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-lg font-bold text-[#1F3D2B]">Clinical Assessment</h1>
+                        <p className="text-xs text-[#6B665D]">Answer structured questions to generate your protocol.</p>
+                    </div>
+                    <div className="text-right">
+                        {viewState === 'question' && (
+                            <>
+                                <span className="text-xs font-bold text-[#2F6F57]">Step {currentQIndex + 1} of {categoryQuestions.length}</span>
+                                <p className="text-[10px] text-[#6B665D] uppercase tracking-wider">{activeCategory.label}</p>
+                            </>
+                        )}
+                        {answeredSelectedCount > 0 && (
+                            <button
+                                onClick={handleFinish}
+                                className="mt-1 text-[11px] font-bold text-[#2F6F57] hover:underline"
+                            >
+                                View Report →
+                            </button>
+                        )}
+                    </div>
                 </div>
-
-                <div className="bg-surface border border-white/10 rounded-2xl p-5 mb-6">
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2 text-sm text-gray-200">
-                            <Sparkles className="w-4 h-4 text-primary" />
-                            <span>Assessment Progress</span>
-                        </div>
-                        <span className="text-sm font-semibold text-white">
-                            {answeredCount}/{totalQuestions}
-                        </span>
-                    </div>
-                    <div className="w-full h-2 bg-black/30 rounded-full overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-primary to-secondary" style={{ width: `${completion}%` }} />
-                    </div>
-                    <p className="text-xs text-gray-400 mt-2">
-                        You can get your results after answering even one category.
-                    </p>
+                {/* Progress Bar */}
+                <div className="w-full h-1.5 bg-[#E2DDD3] rounded-full overflow-hidden">
+                    <motion.div 
+                        className="h-full bg-[#2F6F57]" 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${progressPercent}%` }}
+                        transition={{ duration: 0.5 }}
+                    />
+                </div>
+                <div className="text-[10px] text-[#6B665D] uppercase tracking-wider">
+                    {answeredSelectedCount}/{totalQuestionsSelected} answered (selected categories)
+                </div>
+            </div>
         </div>
+    );
 
-        <div className="space-y-6">
-            {categories.map((cat) => {
-                const isOpen = activeCategory === cat.id;
-                const answeredInCategory = questions[cat.id].filter((q) => selectedAnswers[q.id]).length;
+    // 2. Category Nav (Horizontal)
+    const renderCategoryNav = () => (
+        <div className="overflow-x-auto pb-2 scrollbar-hide px-6 flex md:flex-wrap md:justify-center gap-2 mb-8 mt-6">
+            {categories.map((cat, idx) => {
+                const isActive = idx === currentCatIndex;
+                const catQuestions = questions[cat.id] || [];
+                const answeredInCat = catQuestions.filter((q) => answers[q.id]).length;
+                const isComplete = catQuestions.length > 0 && answeredInCat === catQuestions.length;
+                const isPartial = answeredInCat > 0 && !isComplete;
 
                 return (
-                    <motion.div 
+                    <button
                         key={cat.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="bg-surface border border-white/10 rounded-3xl shadow-2xl shadow-black/20"
+                        onClick={() => handleJumpToCategory(idx)}
+                        className={`
+                            whitespace-nowrap px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-1.5
+                            ${isActive 
+                                ? "bg-[#1F3D2B] text-white shadow-md transform scale-105" 
+                                : isComplete
+                                    ? "bg-[#D9D2C7] text-[#1F3D2B] hover:bg-[#CFC8BD]" 
+                                    : "bg-[#EAE4D9] text-[#8C867D] hover:bg-[#DED7CC]"}
+                        `}
                     >
-                        {/* Category Header Card */}
-                        <button 
-                            onClick={() => toggleCategory(cat.id)}
-                            className="w-full relative group h-36 md:h-40 overflow-hidden text-left"
-                        >
-                            {/* Background Image with Overlay */}
-                            <div className="absolute inset-0">
-                                <img 
-                                    src={getCategoryImageCandidates(cat.id, cat.imageUrl)[0]} 
-                                    alt={cat.label}
-                                    data-fallbacks={getCategoryImageCandidates(cat.id, cat.imageUrl).join("|")}
-                                    onError={handleGuardedImageError}
-                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/75 to-black/40" />
-                            </div>
-
-                            {/* Content */}
-                            <div className="relative z-10 p-6 md:p-8 flex items-center justify-between h-full">
-                                <div>
-                                    <h3 className="text-2xl md:text-3xl font-bold text-white mb-2 tracking-tight">
-                                        {cat.label}
-                                    </h3>
-                                    <p className="text-gray-300 font-medium flex items-center gap-2 flex-wrap">
-                                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${answeredInCategory === questions[cat.id].length ? 'bg-blue-500/20 text-blue-300' : 'bg-primary/20 text-primary'}`}>
-                                            {answeredInCategory}/{questions[cat.id].length} Answered
-                                        </span>
-                                        {answeredInCategory === questions[cat.id].length && (
-                                            <span className="text-xs text-blue-300 font-bold flex items-center gap-1">
-                                                <CheckCircle2 className="w-3 h-3" /> Complete
-                                            </span>
-                                        )}
-                                    </p>
-                                </div>
-                                <div className={`w-11 h-11 rounded-full backdrop-blur-md bg-white/10 flex items-center justify-center border border-white/20 transition-all duration-300 ${isOpen ? "rotate-180 bg-primary text-black border-primary" : "text-white"}`}>
-                                    <ChevronDown className="w-5 h-5" />
-                                </div>
-                            </div>
-                        </button>
-                    
-                        {/* Expandable Questions Section */}
-                        <AnimatePresence>
-                            {isOpen && (
-                                <motion.div 
-                                    initial={{ height: 0, opacity: 0 }}
-                                    animate={{ height: "auto", opacity: 1 }}
-                                    exit={{ height: 0, opacity: 0 }}
-                                    transition={{ duration: 0.3 }}
-                                    className="border-t border-white/10 bg-black/35 overflow-visible"
-                                >
-                                    <div className="p-6 md:p-8 space-y-6">
-                                        {questions[cat.id]?.map((q, idx) => (
-                                            <div key={q.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 md:p-5">
-                                                {(() => {
-                                                    const clinicalRelevance = getClinicalRelevance(q.id);
-                                                    const displayText = getQuestionLabel(q.id, q.text);
-                                                    const imageCandidates = getQuestionImageCandidates(cat.id, q.id, q.imageUrl || cat.imageUrl);
-                                                    return (
-                                                <div className="flex flex-col md:flex-row gap-4 md:gap-5">
-                                                    <div className="w-full md:w-48 shrink-0">
-                                                        <div className="rounded-xl overflow-hidden border border-white/10 h-28 md:h-32 w-full relative">
-                                                            <img
-                                                                src={getQuestionImage(cat.id, q.id, q.imageUrl || cat.imageUrl)}
-                                                                alt={displayText}
-                                                                data-fallbacks={imageCandidates.join("|")}
-                                                                onError={handleGuardedImageError}
-                                                                className="w-full h-full object-cover"
-                                                            />
-                                                            <div className="absolute top-2 left-2 w-8 h-8 rounded-full bg-black/70 backdrop-blur-sm flex items-center justify-center text-xs font-bold border border-white/10">
-                                                                {idx + 1}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="flex-1">
-                                                        <div className="flex flex-wrap items-center gap-2 mb-2">
-                                                            <p className="font-bold text-lg text-white leading-tight">{displayText}</p>
-                                                            <span className={`px-2.5 py-0.5 rounded-full border text-[11px] font-semibold uppercase tracking-wider ${getClinicalTagClass(clinicalRelevance)}`}>
-                                                                {clinicalRelevance} Relevance
-                                                            </span>
-                                                        </div>
-                                                        <div className="flex items-start gap-2 rounded-xl border border-white/10 bg-black/30 px-3 py-2 mb-4">
-                                                            <Info className="w-4 h-4 text-primary mt-0.5" />
-                                                            <p className="text-xs text-gray-300 leading-relaxed">{getQuestionContext(q.id)}</p>
-                                                        </div>
-
-                                                        <div className="relative">
-                                                            <button
-                                                                onClick={() => setOpenQuestionId((prev) => (prev === q.id ? null : q.id))}
-                                                                className="w-full rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 transition-colors px-4 py-3 text-left"
-                                                            >
-                                                                <div className="flex items-center justify-between gap-3">
-                                                                    <div className="min-w-0">
-                                                                        <p className="text-xs uppercase tracking-wider text-gray-400 mb-0.5">Select your answer</p>
-                                                                        <p className="font-medium text-white leading-snug break-words">
-                                                                            {selectedAnswers[q.id] || "Choose the option that matches you best"}
-                                                                        </p>
-                                                                    </div>
-                                                                    <ChevronDown className={`w-5 h-5 text-gray-300 transition-transform ${openQuestionId === q.id ? "rotate-180" : ""}`} />
-                                                                </div>
-                                                            </button>
-
-                                                            <AnimatePresence>
-                                                                {openQuestionId === q.id && (
-                                                                    <motion.div
-                                                                        initial={{ opacity: 0, y: -6 }}
-                                                                        animate={{ opacity: 1, y: 0 }}
-                                                                        exit={{ opacity: 0, y: -6 }}
-                                                                        className="mt-2 w-full rounded-xl border border-white/15 bg-background/95 backdrop-blur-md shadow-2xl overflow-hidden"
-                                                                    >
-                                                                        <div className="max-h-80 overflow-y-auto p-2 space-y-2">
-                                                                            {q.options.map((opt) => {
-                                                                                const isSelected = selectedAnswers[q.id] === opt;
-                                                                                return (
-                                                                                    <button
-                                                                                        key={opt}
-                                                                                        onClick={() => selectAnswer(q.id, opt)}
-                                                                                        className={`w-full p-3 rounded-lg border text-left transition-colors ${
-                                                                                            isSelected
-                                                                                                ? "border-primary bg-primary/15"
-                                                                                                : "border-white/10 bg-white/5 hover:bg-white/10"
-                                                                                        }`}
-                                                                                    >
-                                                                                        <div className="flex items-start gap-3">
-                                                                                            <div className="flex-1 min-w-0">
-                                                                                                <div className="flex items-center justify-between gap-3">
-                                                                                                    <span className="font-medium text-white text-sm md:text-base break-words leading-snug">{opt}</span>
-                                                                                                    {isSelected && <CheckCircle2 className="w-5 h-5 text-primary shrink-0" />}
-                                                                                                </div>
-                                                                                                <p className="text-xs text-gray-400 mt-1 pr-2 leading-relaxed break-words">{getOptionInsight(q.id, opt)}</p>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    </button>
-                                                                                );
-                                                                            })}
-                                                                        </div>
-                                                                    </motion.div>
-                                                                )}
-                                                            </AnimatePresence>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                    );
-                                                })()}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </motion.div>
+                        {cat.label}
+                        {isComplete && <CheckCircle2 className="w-3 h-3 text-[#1F3D2B]" />}
+                        {isPartial && <div className="w-1.5 h-1.5 rounded-full bg-[#8C6A5A]" />}
+                    </button>
                 );
             })}
         </div>
+    );
 
-                <div className="fixed bottom-0 left-0 right-0 z-40 bg-background/90 backdrop-blur-md border-t border-white/10 px-6 py-4">
-                    <div className="max-w-3xl mx-auto flex flex-col md:flex-row gap-3 items-center justify-between">
-                        <p className="text-sm text-gray-300">
-                            {answeredCount > 0
-                                ? `${answeredCount} answers selected. You can generate your report now.`
-                                : "Answer at least one question to generate a personalized report."}
-                        </p>
-                        <div className="flex gap-2 w-full md:w-auto">
+    // 3. Question View
+    const renderQuestion = () => (
+        <motion.div
+            key={activeQuestion.id}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="w-full max-w-2xl mx-auto"
+        >
+            <div className="bg-white rounded-3xl shadow-sm border border-[#E2DDD3] p-6 md:p-8 relative">
+                {/* Back Button */}
+                {(currentQIndex > 0 || currentCatIndex > 0) && (
+                    <button 
+                        onClick={handleBack}
+                        className="absolute top-6 left-6 p-2 rounded-full hover:bg-[#F4EFE6] text-[#6B665D] transition-colors"
+                        aria-label="Previous question"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                    </button>
+                )}
+
+                {/* Badge */}
+                <div className="flex items-center justify-center sm:justify-start gap-2 mb-4 mt-2 sm:mt-0 pl-10 sm:pl-0">
+                     <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#2F6F57]/10 text-[#2F6F57]`}>
+                        {getClinicalRelevance(activeQuestion.id) || "Clinical"} Relevance
+                    </span>
+                    <span className="text-[10px] text-[#8C867D] font-medium tracking-wide uppercase">
+                        Question {currentQIndex + 1}/{categoryQuestions.length}
+                    </span>
+                </div>
+
+                {/* Question */}
+                <h2 className="text-xl md:text-2xl font-bold text-[#1F3D2B] mb-3 leading-snug">
+                    {getQuestionLabel(activeQuestion.id, activeQuestion.text)}
+                </h2>
+                
+                {/* Context */}
+                <div className="flex items-start gap-2 mb-8 bg-[#F8F6F3] p-3 rounded-xl border border-[#EBE7DF]">
+                    <div className="mt-0.5 p-1 bg-[#2F6F57] rounded-full text-white">
+                        <Activity className="w-3 h-3" />
+                    </div>
+                    <p className="text-xs text-[#555] italic leading-relaxed">
+                        {getQuestionContext(activeQuestion.id)}
+                    </p>
+                </div>
+
+                {/* Options */}
+                <div className="space-y-3">
+                    {activeQuestion.options.map((option) => {
+                        const isSelected = answers[activeQuestion.id] === option;
+                        return (
                             <button
-                                onClick={() => router.push("/image-analyzer")}
-                                className="flex-1 md:flex-none px-5 py-2.5 rounded-xl border border-white/20 text-gray-200 hover:bg-white/5"
+                                key={option}
+                                onClick={() => handleAnswer(option)}
+                                className={`
+                                    w-full text-left px-5 py-4 rounded-xl border transition-all duration-200 group relative overflow-hidden
+                                    ${isSelected 
+                                        ? "bg-[#2F6F57] border-[#2F6F57] text-white shadow-md" 
+                                        : "bg-white border-[#E2DDD3] text-[#1F3D2B] hover:border-[#2F6F57]/40 hover:bg-[#F9F7F4]"}
+                                `}
                             >
-                                Use Photo Analyzer
+                                <div className="flex items-center justify-between relative z-10">
+                                    <span className={`text-sm font-medium ${isSelected ? "text-white" : "text-[#1F3D2B]"}`}>
+                                        {option}
+                                    </span>
+                                    {isSelected && <CheckCircle2 className="w-4 h-4 text-white" />}
+                                </div>
                             </button>
-                            <button
-                                onClick={handleGetResults}
-                                disabled={answeredCount === 0}
-                                className="flex-1 md:flex-none px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary to-secondary text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                Get Results Now
-                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+        </motion.div>
+    );
+
+    // 4. Category Summary View
+    const renderCategorySummary = () => (
+        <motion.div
+            key="summary"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            className="w-full max-w-xl mx-auto text-center py-12"
+        >
+            <div className="w-20 h-20 bg-[#2F6F57] rounded-full mx-auto flex items-center justify-center mb-6 shadow-xl shadow-[#2F6F57]/20">
+                <CheckCircle2 className="w-10 h-10 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold text-[#1F3D2B] mb-2">
+                {activeCategory.label} Complete
+            </h2>
+            <p className="text-[#6B665D] mb-8 max-w-sm mx-auto">
+                You've completed {activeCategory.label}. You can view your report now or choose another category to assess.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <button
+                    onClick={handleFinish}
+                    className="inline-flex items-center justify-center gap-2 bg-[#1F3D2B] text-white px-8 py-3.5 rounded-full text-sm font-bold shadow-lg hover:bg-[#2A5239] transition-all hover:-translate-y-1 hover:shadow-xl w-full sm:w-auto"
+                >
+                    View Report
+                    <ChevronRight className="w-4 h-4" />
+                </button>
+                <button
+                    onClick={() => setViewState('question')}
+                    className="inline-flex items-center justify-center gap-2 border border-[#E2DDD3] text-[#1F3D2B] px-8 py-3.5 rounded-full text-sm font-bold hover:bg-[#F4EFE6] transition-all w-full sm:w-auto"
+                >
+                    Answer Another Category
+                </button>
+            </div>
+
+            <button
+                onClick={() => handleClearCategory(activeCategory.id)}
+                className="mt-4 text-xs font-semibold text-[#8C6A5A] hover:underline"
+            >
+                Clear {activeCategory.label} answers and reselect
+            </button>
+        </motion.div>
+    );
+
+    // 5. Final Review View
+    const renderFinalReview = () => (
+        <motion.div
+             key="final"
+             initial={{ opacity: 0, y: 20 }}
+             animate={{ opacity: 1, y: 0 }}
+             className="max-w-3xl mx-auto"
+        >
+            <div className="bg-white rounded-[2rem] p-8 md:p-12 shadow-xl border border-[#E2DDD3] text-center">
+                <div className="w-16 h-16 bg-[#F4EFE6] rounded-2xl mx-auto flex items-center justify-center mb-6 rotate-3">
+                    <Sparkles className="w-8 h-8 text-[#2F6F57]" />
+                </div>
+                
+                <h2 className="text-3xl font-bold text-[#1F3D2B] mb-2">Assessment Complete</h2>
+                <p className="text-[#6B665D] mb-8">
+                    Our AI has processed your inputs across all {categories.length} clinical modules.
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10 text-left">
+                    <div className="bg-[#F8F6F3] p-5 rounded-2xl border border-[#EBE7DF]">
+                        <div className="flex items-center gap-2 mb-2 text-[#2F6F57]">
+                            <BarChart3 className="w-4 h-4" />
+                            <span className="text-xs font-bold uppercase tracking-wider">Analysis Confidence</span>
                         </div>
+                        <p className="text-2xl font-bold text-[#1F3D2B]">94.8%</p>
+                        <p className="text-xs text-[#6B665D] mt-1">Based on {Object.keys(answers).length} data points provided.</p>
+                    </div>
+                    <div className="bg-[#F8F6F3] p-5 rounded-2xl border border-[#EBE7DF]">
+                         <div className="flex items-center gap-2 mb-2 text-[#2F6F57]">
+                            <ShieldCheck className="w-4 h-4" />
+                            <span className="text-xs font-bold uppercase tracking-wider">Protocol Status</span>
+                        </div>
+                        <p className="text-2xl font-bold text-[#1F3D2B]">Generation Ready</p>
+                        <p className="text-xs text-[#6B665D] mt-1">Personalized routine structure unlocked.</p>
                     </div>
                 </div>
-      </div>
-    </div>
-  );
+
+                <div className="space-y-4 mb-10 border-t border-[#E2DDD3] pt-6">
+                    <h3 className="text-sm font-bold text-[#1F3D2B] uppercase tracking-wider text-center">Modules Completed</h3>
+                    <div className="flex flex-wrap justify-center gap-2 px-4">
+                        {categories.map((c) => (
+                            <span key={c.id} className="flex items-center gap-1.5 px-3 py-1.5 bg-[#EAE4D9]/50 border border-[#E2DDD3] rounded-lg text-xs font-medium text-[#4A453E]">
+                                {c.label} <CheckCircle2 className="w-3 h-3 text-[#2F6F57]" />
+                            </span>
+                        ))}
+                    </div>
+                </div>
+
+                <button
+                    onClick={handleFinish}
+                    className="w-full md:w-auto bg-[#2F6F57] text-white px-10 py-4 rounded-full text-sm font-bold shadow-2xl shadow-[#2F6F57]/30 hover:bg-[#255946] transition-all hover:scale-105"
+                >
+                    Generate Clinical Report
+                </button>
+            </div>
+        </motion.div>
+    );
+
+    return (
+        <div className="min-h-screen bg-[#F4EFE6]">
+            {renderHeader()}
+
+            <main className="px-6 py-6 pb-24 md:pb-12 h-auto md:min-h-[calc(100vh-140px)] flex flex-col items-center">
+                <div className="max-w-4xl w-full flex-1 flex flex-col">
+                    {/* Only show nav if not final view */}
+                    {viewState !== 'final_review' && renderCategoryNav()}
+
+                    <div className="flex-1 flex flex-col justify-center">
+                        <AnimatePresence mode="wait">
+                            {viewState === 'question' && renderQuestion()}
+                            {viewState === 'category_summary' && renderCategorySummary()}
+                            {viewState === 'final_review' && renderFinalReview()}
+                        </AnimatePresence>
+                    </div>
+                </div>
+            </main>
+        </div>
+    );
 }

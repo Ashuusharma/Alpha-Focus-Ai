@@ -1,159 +1,517 @@
 "use client";
 
-import { getUserProfile } from "@/lib/userProfile";
-import { useRewardsStore } from "@/lib/rewardsStore";
+import { useContext, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { Calendar, ArrowRight, User, Trophy, Flame, Medal } from "lucide-react";
+import { Calendar, Camera, FileText, Flame, MapPin, Medal, ShieldCheck, Sparkles, User, Activity, TrendingUp } from "lucide-react";
+import MedicalCard from "@/components/ui/MedicalCard";
+import StatusBadge from "@/components/ui/StatusBadge";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { AuthContext } from "@/contexts/AuthProvider";
+import { supabase } from "@/lib/supabaseClient";
+import { useUserStore } from "@/stores/useUserStore";
 
-type PlanRecommendation = {
+function formatDate(value?: string) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+type ProfileTab = "overview" | "scan-history" | "reports" | "challenges" | "rewards" | "settings" | "trends";
+
+type AssessmentRow = {
   id: string;
-  title: string;
+  completed_at: string;
+  completeness_pct?: number | null;
+};
+
+type ScanRow = {
+  id: string;
+  scan_date: string;
+};
+
+type RoutineRow = {
+  id: string;
+  log_date: string;
+  am_done?: boolean;
+  pm_done?: boolean;
 };
 
 export default function ProfilePage() {
   const router = useRouter();
-  const profile = getUserProfile();
-  const level = useRewardsStore((s) => s.level);
-  const levelTitle = useRewardsStore((s) => s.levelTitle);
-  const xp = useRewardsStore((s) => s.xp);
-  const streakCount = useRewardsStore((s) => s.streakCount);
-  const achievements = useRewardsStore((s) => s.achievements);
+  const { user, profile } = useContext(AuthContext);
+  const storeProfile = useUserStore((state) => state.profile);
+  const storeAlphaSummary = useUserStore((state) => state.alphaSummary);
+  const setStoreAlphaSummary = useUserStore((state) => state.setAlphaSummary);
+  const [assessments, setAssessments] = useState<AssessmentRow[]>([]);
+  const [scans, setScans] = useState<ScanRow[]>([]);
+  const [routineLogs, setRoutineLogs] = useState<RoutineRow[]>([]);
+  const [alphaSummary, setAlphaSummary] = useState<{
+    currentBalance: number;
+    lifetimeEarned: number;
+    tierLevel: string;
+  }>({
+    currentBalance: 0,
+    lifetimeEarned: 0,
+    tierLevel: "Bronze",
+  });
 
-  if (!profile || profile.plans.length === 0) {
-    return (
-      <div className="min-h-screen bg-[#060b14] flex flex-col items-center justify-center text-white p-4 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,242,255,0.1),transparent_70%)]" />
-        <div className="w-24 h-24 bg-[#0c1626] rounded-full flex items-center justify-center mb-6 ring-1 ring-white/10 backdrop-blur-xl relative z-10">
-          <User className="w-10 h-10 text-slate-500" />
-        </div>
-        <h2 className="text-2xl font-bold mb-2 relative z-10">No Saved Plans</h2>
-        <p className="text-slate-400 relative z-10">Your analysis history will appear here.</p>
-        <button 
-          onClick={() => router.push('/')}
-          className="mt-8 px-8 py-4 bg-gradient-to-r from-[#00f2ff] to-[#0066cc] text-[#060b14] rounded-xl font-bold hover:shadow-[0_0_20px_rgba(0,242,255,0.4)] transition relative z-10"
-        >
-          Start New Analysis
-        </button>
-      </div>
+  const [activeTab, setActiveTab] = useState<ProfileTab>("overview");
+
+  useEffect(() => {
+    const loadData = async () => {
+      if (!user) return;
+
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+
+      const [assessmentRes, scanRes, routineRes] = await Promise.all([
+        supabase
+          .from("assessment_answers")
+          .select("id,completed_at,completeness_pct")
+          .eq("user_id", user.id)
+          .order("completed_at", { ascending: false })
+          .limit(30),
+        supabase
+          .from("photo_scans")
+          .select("id,scan_date")
+          .eq("user_id", user.id)
+          .order("scan_date", { ascending: false })
+          .limit(30),
+        supabase
+          .from("routine_logs")
+          .select("id,log_date,am_done,pm_done")
+          .eq("user_id", user.id)
+          .order("log_date", { ascending: false })
+          .limit(30),
+      ]);
+
+      setAssessments((assessmentRes.data || []) as AssessmentRow[]);
+      setScans((scanRes.data || []) as ScanRow[]);
+      setRoutineLogs((routineRes.data || []) as RoutineRow[]);
+
+      if (token) {
+        const summaryRes = await fetch("/api/alpha-sikka/summary", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          cache: "no-store",
+        });
+
+        const payload = await summaryRes.json();
+        if (summaryRes.ok && payload?.ok) {
+          const nextSummary = {
+            currentBalance: Number(payload.summary?.currentBalance || 0),
+            lifetimeEarned: Number(payload.summary?.lifetimeEarned || 0),
+            tierLevel: String(payload.summary?.tierLevel || "Bronze"),
+          };
+          setAlphaSummary(nextSummary);
+          setStoreAlphaSummary(nextSummary);
+        }
+      } else if (storeAlphaSummary) {
+        setAlphaSummary({
+          currentBalance: Number(storeAlphaSummary.currentBalance || 0),
+          lifetimeEarned: Number(storeAlphaSummary.lifetimeEarned || 0),
+          tierLevel: String(storeAlphaSummary.tierLevel || "Bronze"),
+        });
+      }
+    };
+
+    loadData();
+  }, [user, setStoreAlphaSummary, storeAlphaSummary]);
+
+  const displayName =
+    profile?.full_name?.trim() ||
+    storeProfile?.full_name?.trim() ||
+    (user?.user_metadata?.full_name as string | undefined)?.trim() ||
+    user?.email?.split("@")[0] ||
+    "User";
+  const tierLabel = alphaSummary.tierLevel;
+  const lifetimeEarned = alphaSummary.lifetimeEarned;
+  const joinedDate = user?.created_at;
+
+  const trendData = useMemo(() => {
+    return assessments.slice(-10).map((a, i) => ({
+      date: formatDate(a.completed_at),
+      score: Number(a.completeness_pct ?? 60 + i * 2),
+      consistency: Math.min(100, Number(a.completeness_pct ?? 60) + 10),
+    }));
+  }, [assessments]);
+
+  const locationLabel = Intl.DateTimeFormat().resolvedOptions().timeZone || "Location not set";
+
+  const totalScans = scans.length;
+  const reportsGenerated = assessments.length;
+  const averageScore = useMemo(() => {
+    const values = assessments
+      .map((item) => Number(item.completeness_pct ?? 0))
+      .filter((value) => Number.isFinite(value) && value > 0);
+    if (values.length === 0) return 0;
+    return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
+  }, [assessments]);
+
+  const streakCount = useMemo(() => {
+    if (!routineLogs.length) return 0;
+    let streak = 0;
+    for (const row of routineLogs) {
+      if (row.am_done || row.pm_done) streak += 1;
+      else break;
+    }
+    return streak;
+  }, [routineLogs]);
+
+  const timelineItems = [
+    ...assessments.map((item) => ({
+      id: `assessment_${item.id}`,
+      date: item.completed_at,
+      title: "Assessment completed",
+      note: `Completeness ${Math.round(Number(item.completeness_pct || 0))}%`,
+      href: "/result",
+      icon: FileText,
+    })),
+    ...scans.map((scan) => ({
+      id: `scan_${scan.id}`,
+      date: scan.scan_date,
+      title: "Scan uploaded",
+      note: "Visual analysis record synced",
+      href: "/saved-scans",
+      icon: Camera,
+    })),
+    ...routineLogs.slice(0, 20).map((row) => ({
+      id: `routine_${row.id}`,
+      date: row.log_date,
+      title: "Routine updated",
+      note: `AM: ${row.am_done ? "Done" : "Missed"} · PM: ${row.pm_done ? "Done" : "Missed"}`,
+      href: "/dashboard",
+      icon: Sparkles,
+    })),
+  ]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 30);
+
+  const exportData = () => {
+    if (typeof window === "undefined") return;
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      user: {
+        id: user?.id,
+        email: user?.email,
+        name: displayName,
+      },
+      rewards: {
+        currentBalance: alphaSummary.currentBalance,
+        lifetimeEarned,
+        tier: tierLabel,
+        streakCount,
+      },
+      scans,
+      assessments,
+      activities: routineLogs,
+    };
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `alpha-focus-profile-${Date.now()}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const clearProfileData = () => {
+    if (typeof window === "undefined") return;
+    const approved = window.confirm("Clear local profile data on this device? This cannot be undone.");
+    if (!approved) return;
+
+    ["oneman_user_profile", "oneman_user_data", "oneman_assessments", "oneman_scans", "oneman_activity_log"].forEach((key) =>
+      localStorage.removeItem(key)
     );
-  }
+    router.push("/");
+  };
 
   return (
-    <div className="min-h-screen bg-[#060b14] py-20 px-4 flex justify-center text-white relative">
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#00f2ff]/5 rounded-full blur-[120px] mix-blend-screen" />
-        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-600/5 rounded-full blur-[120px] mix-blend-screen" />
-      </div>
-      
-      <div className="w-full max-w-3xl relative z-10">
-        <div className="flex items-center gap-4 mb-12">
-          <div className="p-3 bg-[#00f2ff]/10 rounded-xl border border-[#00f2ff]/20">
-            <User className="w-8 h-8 text-[var(--lux-accent)]" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold lux-text-gradient">
-              Your Saved AI Plans
-            </h1>
-            <p className="text-slate-400">Access your personalized routines and history</p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <button onClick={() => router.push("/assessment")} className="px-4 py-2 rounded-xl border border-white/20 bg-white/[0.04] text-sm font-semibold hover:bg-white/[0.08] transition-colors">Answer Questions</button>
-              <button onClick={() => router.push("/image-analyzer")} className="px-4 py-2 rounded-xl border border-white/20 bg-white/[0.04] text-sm font-semibold hover:bg-white/[0.08] transition-colors">Analyze Photo</button>
-              <button onClick={() => router.push("/result")} className="px-4 py-2 rounded-xl bg-blue-600 text-sm font-semibold hover:bg-blue-500 transition-colors">Open Report</button>
+    <div className="min-h-screen bg-gradient-to-b from-[#F4EFE6] via-[#EFE8DD] to-[#E5E0D4] px-4 py-20 text-[#1F3D2B]">
+      <div className="mx-auto w-full max-w-6xl space-y-8">
+        <MedicalCard className="p-6 md:p-8">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-[auto,1fr] md:items-center">
+            <div className="flex h-24 w-24 items-center justify-center rounded-full border border-white/40 bg-white/40 shadow-sm">
+              <User className="h-10 w-10 text-[#6B665D]" />
             </div>
-          </div>
-        </div>
-
-        <div className="mb-8 grid md:grid-cols-3 gap-4">
-          <div className="lux-card border-white/10 p-5">
-            <div className="flex items-center gap-2 text-slate-400 text-xs uppercase tracking-wider mb-2">
-              <Trophy className="w-4 h-4 text-[var(--lux-accent)]" />
-              Rank
-            </div>
-            <p className="text-lg font-bold text-white">Level {level} – {levelTitle}</p>
-            <p className="text-xs text-slate-400 mt-1">Total XP: {xp}</p>
-          </div>
-          <div className="lux-card border-white/10 p-5">
-            <div className="flex items-center gap-2 text-slate-400 text-xs uppercase tracking-wider mb-2">
-              <Flame className="w-4 h-4 text-[var(--lux-accent)]" />
-              Streak
-            </div>
-            <p className="text-lg font-bold text-white">{streakCount} days</p>
-            <p className="text-xs text-slate-400 mt-1">Consistency momentum</p>
-          </div>
-          <div className="lux-card border-white/10 p-5">
-            <div className="flex items-center gap-2 text-slate-400 text-xs uppercase tracking-wider mb-2">
-              <Medal className="w-4 h-4 text-[var(--lux-accent)]" />
-              Achievements
-            </div>
-            <p className="text-lg font-bold text-white">{achievements.length}</p>
-            <p className="text-xs text-slate-400 mt-1">Total unlocked milestones</p>
-          </div>
-        </div>
-
-        <div className="mb-8 lux-card border-white/10 p-5">
-          <h2 className="text-lg font-bold text-white mb-4">All Achievements</h2>
-          {achievements.length > 0 ? (
-            <div className="grid sm:grid-cols-2 gap-3">
-              {achievements
-                .slice()
-                .reverse()
-                .map((achievement) => (
-                  <div key={achievement} className="px-4 py-3 rounded-xl bg-[#00f2ff]/10 border border-[#00f2ff]/20 text-sm text-[var(--lux-accent)]">
-                    {achievement}
-                  </div>
-                ))}
-            </div>
-          ) : (
-            <p className="text-sm text-slate-400">No achievements unlocked yet. Complete scans and maintain streaks to unlock milestones.</p>
-          )}
-        </div>
-
-        <div className="space-y-6">
-          {profile.plans.map((plan, idx: number) => {
-            const recommendations = Array.isArray(plan.recommendations)
-              ? (plan.recommendations as PlanRecommendation[])
-              : [];
-
-            return (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.1 }}
-              key={plan.id}
-              className="group lux-card border-white/10 p-6 hover:bg-[#0c1626] transition-all duration-300 hover:border-[var(--lux-accent)] hover:shadow-[0_0_30px_rgba(0,242,255,0.1)] cursor-pointer"
-              onClick={() => router.push(`/result?answers=${encodeURIComponent(JSON.stringify(plan.answers))}`)}
-            >
-              <div className="flex flex-col sm:flex-row gap-6 justify-between items-start sm:items-center">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 text-slate-400 text-sm mb-3">
-                    <Calendar className="w-4 h-4" />
-                    <span>{new Date(plan.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
-                  </div>
-                  
-                  <div className="flex gap-2 mb-4 flex-wrap">
-                    {recommendations.slice(0, 3).map((recommendation) => (
-                      <span key={recommendation.id} className="px-3 py-1 bg-[#00f2ff]/10 border border-[#00f2ff]/20 rounded-full text-xs text-[var(--lux-accent)]">
-                        {recommendation.title}
-                      </span>
-                    ))}
-                    {recommendations.length > 3 && (
-                      <span className="px-3 py-1 bg-[#0c1626] border border-white/10 rounded-full text-xs text-slate-400">
-                        +{recommendations.length - 3} more
-                      </span>
-                    )}
-                  </div>
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <h1 className="text-3xl font-semibold">{displayName}</h1>
+                <StatusBadge variant="info">Tier {tierLabel}</StatusBadge>
+              </div>
+              <p className="text-sm text-text-secondary">Lifetime earned: {lifetimeEarned} A$</p>
+              <div className="grid grid-cols-1 gap-3 text-sm text-[#6B665D] sm:grid-cols-3">
+                <div className="flex items-center gap-2 rounded-xl border border-white/40 bg-white/40 shadow-sm px-3 py-2">
+                  <MapPin className="h-4 w-4 text-[#2F6F57]" />
+                  <span>{locationLabel}</span>
                 </div>
-
-                <div className="flex items-center gap-2 text-[var(--lux-accent)] font-bold group-hover:translate-x-2 transition-transform duration-300">
-                  <span>View Plan</span>
-                  <ArrowRight className="w-5 h-5" />
+                <div className="flex items-center gap-2 rounded-xl border border-white/40 bg-white/40 shadow-sm px-3 py-2">
+                  <Calendar className="h-4 w-4 text-[#2F6F57]" />
+                  <span>Member since {formatDate(joinedDate)}</span>
+                </div>
+                <div className="flex items-center gap-2 rounded-xl border border-white/40 bg-white/40 shadow-sm px-3 py-2">
+                  <Medal className="h-4 w-4 text-[#2F6F57]" />
+                  <span>{tierLabel} tier active</span>
                 </div>
               </div>
-            </motion.div>
-          );
-          })}
-        </div>
+            </div>
+          </div>
+        </MedicalCard>
+
+        <section className="rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-2 shadow-sm">
+          <div className="flex flex-wrap gap-2">
+            {[
+              ["overview", "Overview"],
+              ["scan-history", "Scan History"],
+              ["reports", "Reports"],
+              ["trends", "Trend Analysis"],
+              ["challenges", "Challenges"],
+              ["rewards", "Rewards"],
+              ["settings", "Settings"],
+            ].map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setActiveTab(key as ProfileTab)}
+                className={`rounded-xl px-4 py-2 text-sm font-medium transition ${activeTab === key ? "bg-[#2F6F57] text-white shadow-md" : "bg-white/40 text-[#6B665D] hover:bg-white/80 hover:text-[#1F3D2B]"}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {activeTab === "overview" && (
+          <section className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <MedicalCard className="p-5">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-[#6B665D]">Total scans</p>
+                <Camera className="h-4 w-4 text-[#2F6F57]" />
+              </div>
+              <p className="metric-number mt-3 text-4xl text-[#1F3D2B]">{totalScans}</p>
+            </MedicalCard>
+            <MedicalCard className="p-5">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-[#6B665D]">Average score</p>
+                <Sparkles className="h-4 w-4 text-[#2F6F57]" />
+              </div>
+              <p className="metric-number mt-3 text-4xl text-[#1F3D2B]">{averageScore}%</p>
+            </MedicalCard>
+            <MedicalCard className="p-5">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-[#6B665D]">Reports generated</p>
+                <FileText className="h-4 w-4 text-[#2F6F57]" />
+              </div>
+              <p className="metric-number mt-3 text-4xl text-[#1F3D2B]">{reportsGenerated}</p>
+            </MedicalCard>
+            <MedicalCard className="p-5">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-[#6B665D]">Streak</p>
+                <Flame className="h-4 w-4 text-[#C27803]" />
+              </div>
+              <p className="metric-number mt-3 text-4xl text-[#1F3D2B]">{streakCount}d</p>
+            </MedicalCard>
+          </section>
+        )}
+
+        {activeTab === "scan-history" && (
+          <section>
+            <h2 className="mb-4 text-xl font-semibold text-[#1F3D2B]">Scan History</h2>
+            <MedicalCard className="p-0">
+              <div className="max-h-[420px] space-y-0 overflow-y-auto">
+                {timelineItems.length === 0 ? (
+                  <div className="p-6 text-sm text-[#6B665D]">No timeline entries yet. Complete an analysis to start your record.</div>
+                ) : (
+                  timelineItems.map((item) => {
+                    const Icon = item.icon;
+                    const canNavigate = item.href.length > 0;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        disabled={!canNavigate}
+                        onClick={() => canNavigate && router.push(item.href)}
+                        className={`w-full border-b border-white/40 p-5 text-left transition-colors ${canNavigate ? "hover:bg-white/40" : "cursor-default"}`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="mt-0.5 rounded-full border border-white/40 bg-white/40 p-2 text-[#2F6F57]">
+                            <Icon className="h-4 w-4" />
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-xs uppercase tracking-wide text-[#8C877D]">{formatDate(item.date)}</p>
+                            <p className="text-sm font-medium text-[#1F3D2B]">{item.title}</p>
+                            <p className="text-sm text-[#6B665D] line-clamp-2">{item.note}</p>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </MedicalCard>
+          </section>
+        )}
+
+        {activeTab === "reports" && (
+          <section>
+            <h2 className="mb-4 text-xl font-semibold text-[#1F3D2B]">Reports</h2>
+            <MedicalCard className="p-5">
+              <p className="text-sm text-[#6B665D]">Total reports generated</p>
+              <p className="metric-number mt-2 text-4xl text-[#1F3D2B]">{reportsGenerated}</p>
+              <button onClick={() => router.push("/result")} className="mt-4 rounded-xl bg-medical-gradient px-4 py-2 text-sm font-semibold text-[#F4F1EB]">
+                Open Latest Medical Report
+              </button>
+            </MedicalCard>
+          </section>
+        )}
+
+        {activeTab === "trends" && (
+          <section>
+            <h2 className="mb-4 text-xl font-semibold text-[#1F3D2B]">Progress & Retention</h2>
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <MedicalCard className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="font-semibold text-[#1F3D2B]">Alpha Score Progression</h3>
+                  <div className="flex items-center gap-2 text-sm text-[#2F6F57]">
+                    <TrendingUp className="h-4 w-4" />
+                    <span>+12% Last 30 Days</span>
+                  </div>
+                </div>
+                <div className="h-64 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={trendData.length > 0 ? trendData : [{ date: "Week 1", score: 60, consistency: 50 }, { date: "Week 2", score: 65, consistency: 60 }, { date: "Week 3", score: 72, consistency: 70 }, { date: "Week 4", score: 78, consistency: 85 }]}>
+                      <CartesianGrid stroke="#E2DDD4" strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "#6B665D", fontSize: 10 }} dy={10} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fill: "#6B665D", fontSize: 10 }} domain={[0, 100]} />
+                      <Tooltip 
+                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                      />
+                      <Line type="monotone" dataKey="score" stroke="#2F6F57" strokeWidth={3} dot={{ r: 4, fill: "#2F6F57" }} activeDot={{ r: 6 }} name="Alpha Score" />
+                      <Line type="monotone" dataKey="consistency" stroke="#C9A227" strokeWidth={2} dot={false} strokeDasharray="5 5" name="Consistency" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </MedicalCard>
+
+              <MedicalCard className="p-6">
+                <h3 className="font-semibold text-[#1F3D2B] mb-4">Routine Comparison</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-[#F4EFE6] rounded-xl border border-[#E2DDD4]">
+                    <div>
+                      <p className="text-xs text-[#6B665D] uppercase tracking-wider">Current Protocol</p>
+                      <p className="font-bold text-[#1F3D2B]">Optimized for Barrier Repair</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-[#6B665D]">Adherence</p>
+                      <p className="font-bold text-[#2F6F57]">92%</p>
+                    </div>
+                  </div>
+                  
+                  <div className="relative pl-4 border-l-2 border-[#E2DDD4]">
+                    <div className="mb-4">
+                      <p className="text-xs text-[#6B665D] mb-1">Last Week</p>
+                      <div className="flex items-center gap-2">
+                         <div className="flex-1 h-2 bg-[#E2DDD4] rounded-full overflow-hidden">
+                           <div className="h-full bg-[#2F6F57]" style={{ width: "85%" }}></div>
+                         </div>
+                         <span className="text-xs font-semibold text-[#1F3D2B]">85%</span>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs text-[#6B665D] mb-1">Last Month</p>
+                      <div className="flex items-center gap-2">
+                         <div className="flex-1 h-2 bg-[#E2DDD4] rounded-full overflow-hidden">
+                           <div className="h-full bg-[#8C6A5A]" style={{ width: "64%" }}></div>
+                         </div>
+                         <span className="text-xs font-semibold text-[#1F3D2B]">64%</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-[#6B665D] italic mt-4">
+                    "Consistent adherence correlates with a 40% faster visible improvement in skin texture."
+                  </p>
+                </div>
+              </MedicalCard>
+            </div>
+          </section>
+        )}
+
+        {activeTab === "challenges" && (
+          <section>
+            <h2 className="mb-4 text-xl font-semibold text-[#1F3D2B]">Challenges</h2>
+            <MedicalCard className="p-5">
+              <p className="text-sm text-[#6B665D]">Keep your daily adherence to maintain your streak and improve recovery consistency.</p>
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                <div className="rounded-xl border border-white/40 bg-white/40 p-4 shadow-sm">
+                  <p className="text-xs text-[#8C877D]">Current streak</p>
+                  <p className="metric-number text-2xl text-[#1F3D2B]">{streakCount} days</p>
+                </div>
+                <div className="rounded-xl border border-white/40 bg-white/40 p-4 shadow-sm">
+                  <p className="text-xs text-[#8C877D]">Current tier</p>
+                  <p className="text-base font-semibold text-[#1F3D2B]">{tierLabel}</p>
+                </div>
+              </div>
+            </MedicalCard>
+          </section>
+        )}
+
+        {activeTab === "rewards" && (
+          <section>
+            <h2 className="mb-4 text-xl font-semibold text-[#1F3D2B]">Alpha Sikka</h2>
+            <MedicalCard className="p-5">
+              <p className="text-sm text-[#6B665D]">Current Balance</p>
+              <p className="metric-number mt-2 text-4xl text-[#1F3D2B]">{alphaSummary.currentBalance} A$</p>
+              <p className="mt-2 text-sm text-[#6B665D]">Lifetime Earned: {lifetimeEarned} A$ · Tier: {tierLabel}</p>
+            </MedicalCard>
+          </section>
+        )}
+
+        {activeTab === "settings" && (
+          <section>
+            <h2 className="mb-4 text-xl font-semibold text-[#1F3D2B]">Data Privacy Controls</h2>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <MedicalCard className="p-5">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="h-5 w-5 text-[#2F6F57]" />
+                  <h3 className="font-semibold text-[#1F3D2B]">Privacy Actions</h3>
+                </div>
+                <p className="mt-2 text-sm text-[#6B665D]">Manage consent, permissions, and policy details.</p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button onClick={() => router.push("/data-settings")} className="rounded-xl border border-white/40 bg-white/40 shadow-sm px-4 py-2 text-sm text-[#1F3D2B] hover:bg-white/60">
+                    Data Settings
+                  </button>
+                  <button onClick={() => router.push("/privacy-policy")} className="rounded-xl border border-white/40 bg-white/40 shadow-sm px-4 py-2 text-sm text-[#1F3D2B] hover:bg-white/60">
+                    Privacy Policy
+                  </button>
+                </div>
+              </MedicalCard>
+
+              <MedicalCard className="p-5">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="h-5 w-5 text-[#C27803]" />
+                  <h3 className="font-semibold text-[#1F3D2B]">Local Data Control</h3>
+                </div>
+                <p className="mt-2 text-sm text-[#6B665D]">Export your local data or clear profile history from this device.</p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button onClick={exportData} className="rounded-xl border border-white/40 bg-white/40 shadow-sm px-4 py-2 text-sm text-[#1F3D2B] hover:bg-white/60">
+                    Export Data
+                  </button>
+                  <button onClick={clearProfileData} className="rounded-xl border border-clinical-danger/50 bg-clinical-danger/10 px-4 py-2 text-sm text-clinical-danger hover:bg-clinical-danger/20">
+                    Clear Local Data
+                  </button>
+                </div>
+              </MedicalCard>
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );

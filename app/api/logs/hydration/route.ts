@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { appendCollection, readCollection, writeCollection } from "@/lib/server/jsonDb";
 import { HydrationLogRecord, UserRecord } from "@/lib/server/types";
+import { getRequestAuth } from "@/lib/auth/requestAuth";
+import { isRateLimited } from "@/lib/server/rateLimit";
+import { hydrationLogSchema } from "@/lib/server/validators";
+import { writeAuditLog } from "@/lib/server/auditLog";
 
 export const runtime = "nodejs";
 
@@ -13,10 +17,27 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as Partial<HydrationLogRecord>;
+    const auth = await getRequestAuth(request);
+    if (!auth) {
+      return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+    }
+
+    if (isRateLimited(`logs:hydration:${auth.userId}`, 60, 60_000)) {
+      await writeAuditLog({ action: "logs.hydration.write", userId: auth.userId, ok: false, route: "/api/logs/hydration", detail: "rate_limited" });
+      return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
+    }
+
+    const raw = (await request.json()) as Partial<HydrationLogRecord>;
+    const parsed = hydrationLogSchema.safeParse(raw);
+    if (!parsed.success) {
+      await writeAuditLog({ action: "logs.hydration.write", userId: auth.userId, ok: false, route: "/api/logs/hydration", detail: "validation_failed" });
+      return NextResponse.json({ ok: false, error: "invalid_payload" }, { status: 400 });
+    }
+
+    const body = parsed.data;
     const log: HydrationLogRecord = {
       id: body.id || `hydration_${Date.now()}`,
-      userId: body.userId || "guest",
+      userId: auth.userId,
       date: body.date || new Date().toISOString().slice(0, 10),
       intakeMl: Number(body.intakeMl || 0),
       targetMl: Number(body.targetMl || 3000),
@@ -33,6 +54,7 @@ export async function POST(request: NextRequest) {
       await writeCollection("users", users);
     }
 
+    await writeAuditLog({ action: "logs.hydration.write", userId: auth.userId, ok: true, route: "/api/logs/hydration" });
     return NextResponse.json({ ok: true, log });
   } catch (error) {
     return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "hydration_log_failed" }, { status: 500 });

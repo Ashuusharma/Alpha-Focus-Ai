@@ -1,8 +1,27 @@
 "use client";
+import { useState } from "react";
 import { useToast } from "./ToastContext";
 
 export default function ToastContainer() {
   const { toasts, removeToast } = useToast();
+  const [dismissingIds, setDismissingIds] = useState<Set<string>>(new Set());
+
+  const dismissToast = (id: string) => {
+    setDismissingIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+
+    window.setTimeout(() => {
+      removeToast(id);
+      setDismissingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }, 220);
+  };
 
   return (
     <div className="fixed top-6 right-6 z-[9999] flex flex-col gap-3">
@@ -10,15 +29,25 @@ export default function ToastContainer() {
         <div
           key={toast.id}
           className={`px-4 py-3 rounded-lg shadow-lg text-white font-semibold animate-fadeInUp transition-all duration-300
+            ${dismissingIds.has(toast.id) ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"}
             ${toast.type === "success" ? "bg-green-600" : ""}
             ${toast.type === "error" ? "bg-red-600" : ""}
             ${toast.type === "info" ? "bg-blue-600" : ""}
           `}
-          onClick={() => removeToast(toast.id)}
           role="alert"
           tabIndex={0}
         >
-          {toast.message}
+          <div className="flex items-start gap-3">
+            <p className="flex-1">{toast.message}</p>
+            <button
+              type="button"
+              className="text-xs font-bold uppercase tracking-wide text-white/90 hover:text-white"
+              onClick={() => dismissToast(toast.id)}
+              aria-label="Dismiss notification"
+            >
+              Dismiss
+            </button>
+          </div>
         </div>
       ))}
     </div>

@@ -36,22 +36,21 @@ export async function getWeatherSnapshot(lat: number, lon: number): Promise<Weat
   const cached = readCache(cacheKey);
   if (cached) return cached;
 
-  const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=relative_humidity_2m,uv_index,temperature_2m&current_weather=true`;
-  const airUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=us_aqi`;
-
-  const [weatherRes, airRes] = await Promise.all([fetch(weatherUrl), fetch(airUrl)]);
-
-  if (!weatherRes.ok || !airRes.ok) {
+  const response = await fetch(`/api/context/intelligence?lat=${lat}&lon=${lon}`, { cache: "no-store" });
+  if (!response.ok) {
     throw new Error("Weather service unavailable");
   }
 
-  const weatherJson = await weatherRes.json();
-  const airJson = await airRes.json();
+  const data = await response.json();
+  const contextPayload = data?.payload;
+  if (!contextPayload) {
+    throw new Error("Weather payload missing");
+  }
 
-  const humidity = Number(weatherJson.hourly?.relative_humidity_2m?.[0] ?? 0);
-  const uvIndex = Number(weatherJson.hourly?.uv_index?.[0] ?? 0);
-  const temperatureC = Number(weatherJson.current_weather?.temperature ?? weatherJson.hourly?.temperature_2m?.[0] ?? 0);
-  const aqi = Number(airJson.hourly?.us_aqi?.[0] ?? 0);
+  const humidity = Number(contextPayload.climate?.humidity ?? 0);
+  const uvIndex = Number(contextPayload.climate?.uv ?? 0);
+  const temperatureC = Number(contextPayload.climate?.temperatureC ?? 0);
+  const aqi = Number(contextPayload.climate?.aqi ?? 0);
 
   const payload: WeatherSnapshot = {
     humidity,

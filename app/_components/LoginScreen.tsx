@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { User, Sparkles } from "lucide-react";
+import { writeUserSession } from "@/lib/session/userSession";
 
 interface LoginScreenProps {
   onLogin: (name: string) => void;
@@ -14,7 +15,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
   const [loading, setLoading] = useState(false);
   const [consent, setConsent] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
       setError("Please enter your name");
@@ -25,14 +26,25 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
       return;
     }
     setLoading(true);
-    // Simulate loading/auth
-    setTimeout(() => {
-      localStorage.setItem("oneman_user_name", name);
-      localStorage.setItem("oneman_last_login", new Date().toISOString());
-      localStorage.setItem("oneman_tracking_consent", "true");
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, consent }),
+      });
+
+      if (!response.ok) {
+        setError("Unable to login. Please try again.");
+        return;
+      }
+
+      writeUserSession(name, consent);
       onLogin(name);
+    } catch {
+      setError("Unable to login. Please try again.");
+    } finally {
       setLoading(false);
-    }, 1500);
+    }
   };
 
   return (

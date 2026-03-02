@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Container from "@/app/result/_components/Container";
 import { ArrowLeft, Calendar, Image as ImageIcon, ScanFace } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 
 type Hotspot = {
   x: number;
@@ -32,8 +33,6 @@ type HistoryEntry = {
   };
 };
 
-const STORAGE_KEY = "oneman_scan_history";
-
 function normSpot(spot: Hotspot): { left: number; top: number } {
   const left = spot.x <= 1 ? spot.x * 100 : spot.x;
   const top = spot.y <= 1 ? spot.y * 100 : spot.y;
@@ -59,24 +58,47 @@ export default function SavedScansPage() {
   useEffect(() => {
     setMounted(true);
 
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      const parsed = raw ? (JSON.parse(raw) as HistoryEntry[]) : [];
+    const load = async () => {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const sessionUser = sessionData.session?.user;
 
-      const sorted = [...parsed].sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-
-      setHistory(sorted);
-
-      if (sorted.length > 0) {
-        setExpandedScanId(sorted[0].id);
-        setCompareLeftId(sorted[0].id);
-        setCompareRightId(sorted[1]?.id || sorted[0].id);
+      if (!sessionUser) {
+        setHistory([]);
+        return;
       }
-    } catch {
-      setHistory([]);
-    }
+
+      const { data } = await supabase
+        .from("photo_scans")
+        .select("id,scan_date,image_url")
+        .eq("user_id", sessionUser.id)
+        .order("scan_date", { ascending: false })
+        .limit(100);
+
+      const mapped: HistoryEntry[] = (data || []).map((row: { id: string; scan_date: string; image_url?: string | null }) => ({
+        id: row.id,
+        createdAt: row.scan_date,
+        analyzerType: "scan",
+        selectedCategories: [],
+        originalImages: row.image_url ? [row.image_url] : [],
+        annotatedImageUrl: row.image_url || undefined,
+        hotspots: [],
+        issues: [],
+        finalResult: {
+          confidence: 0,
+          severity: "moderate",
+        },
+      }));
+
+      setHistory(mapped);
+
+      if (mapped.length > 0) {
+        setExpandedScanId(mapped[0].id);
+        setCompareLeftId(mapped[0].id);
+        setCompareRightId(mapped[1]?.id || mapped[0].id);
+      }
+    };
+
+    load();
   }, []);
 
   const compareLeft = useMemo(
@@ -99,50 +121,50 @@ export default function SavedScansPage() {
   if (!mounted) return null;
 
   return (
-    <div className="min-h-screen bg-background text-white py-10">
+    <div className="min-h-screen bg-gradient-to-b from-[#F4EFE6] via-[#EFE8DD] to-[#E5E0D4] text-[#1F3D2B] py-10">
       <Container>
         <div className="max-w-5xl mx-auto space-y-8">
           <div>
             <button
               onClick={() => router.back()}
-              className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-5"
+              className="flex items-center gap-2 text-[#6B665D] hover:text-[#1F3D2B] transition-colors mb-5"
             >
               <ArrowLeft className="w-5 h-5" />
               <span>Back</span>
             </button>
 
             <h1 className="text-3xl font-bold flex items-center gap-3 mb-2">
-              <ScanFace className="w-8 h-8 text-primary" />
+              <ScanFace className="w-8 h-8 text-[#1F3D2B]" />
               Scan Timeline & Comparison
             </h1>
-            <p className="text-gray-300">
+            <p className="text-[#6B665D]">
               Track each scan with original photos, Galaxy hotspots, and compare progress over time.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              <button onClick={() => router.push("/assessment")} className="px-4 py-2 rounded-xl border border-white/20 bg-white/[0.04] text-sm font-semibold hover:bg-white/[0.08] transition-colors">Answer Questions</button>
-              <button onClick={() => router.push("/image-analyzer")} className="px-4 py-2 rounded-xl border border-white/20 bg-white/[0.04] text-sm font-semibold hover:bg-white/[0.08] transition-colors">New Scan</button>
-              <button onClick={() => router.push("/result")} className="px-4 py-2 rounded-xl bg-blue-600 text-sm font-semibold hover:bg-blue-500 transition-colors">Open Report</button>
+              <button onClick={() => router.push("/assessment")} className="px-4 py-2 rounded-xl border border-[#1F3D2B]/10 bg-white/60 text-[#1F3D2B] text-sm font-semibold hover:bg-white/80 shadow-sm transition-colors">Answer Questions</button>
+              <button onClick={() => router.push("/image-analyzer")} className="px-4 py-2 rounded-xl border border-[#1F3D2B]/10 bg-white/60 text-[#1F3D2B] text-sm font-semibold hover:bg-white/80 shadow-sm transition-colors">New Scan</button>
+              <button onClick={() => router.push("/result")} className="px-4 py-2 rounded-xl bg-[#1F3D2B] text-white text-sm font-semibold hover:bg-[#2A5239] shadow-sm transition-colors">Open Report</button>
             </div>
           </div>
 
           {history.length === 0 ? (
-            <div className="bg-surface border border-white/10 rounded-2xl p-10 text-center">
-              <ImageIcon className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+            <div className="bg-white/60 backdrop-blur-sm border border-white/40 rounded-xl p-10 text-center shadow-sm">
+              <ImageIcon className="w-12 h-12 text-[#6B665D] mx-auto mb-4" />
               <h2 className="text-xl font-semibold mb-2">No scan history yet</h2>
-              <p className="text-gray-400 mb-6">Complete your first photo analysis to create timeline entries.</p>
+              <p className="text-[#6B665D] mb-6">Complete your first photo analysis to create timeline entries.</p>
               <button
                 onClick={() => router.push("/image-analyzer")}
-                className="px-6 py-3 rounded-xl bg-gradient-to-r from-primary to-secondary text-white font-semibold"
+                className="px-6 py-3 rounded-xl bg-[#1F3D2B] text-white font-semibold hover:bg-[#2A5239] shadow-sm transition-colors"
               >
                 Start New Scan
               </button>
             </div>
           ) : (
             <>
-              <section className="bg-surface border border-white/10 rounded-2xl p-5 md:p-6">
+              <section className="bg-white/60 backdrop-blur-sm border border-white/40 rounded-xl p-5 md:p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-bold">Your Scan Timeline</h2>
-                  <span className="text-sm text-gray-400">{history.length} scans</span>
+                  <span className="text-sm text-[#6B665D]">{history.length} scans</span>
                 </div>
 
                 <div className="space-y-3">
@@ -151,49 +173,55 @@ export default function SavedScansPage() {
                     const confidence = scan.finalResult?.confidence ?? 0;
 
                     return (
-                      <div key={scan.id} className="rounded-xl border border-white/10 bg-black/20 overflow-hidden">
+                      <div key={scan.id} className="rounded-xl border border-white/40 bg-[#EFE8DD]/50 overflow-hidden">
                         <button
                           onClick={() => setExpandedScanId(expanded ? null : scan.id)}
-                          className="w-full p-4 flex items-center justify-between text-left hover:bg-white/5 transition-colors"
+                          className="w-full p-4 flex items-center justify-between text-left hover:bg-white/40 transition-colors"
                         >
                           <div>
-                            <p className="font-semibold text-white">Scan #{history.length - idx}</p>
-                            <p className="text-xs text-gray-400 flex items-center gap-1 mt-1">
+                            <p className="font-semibold text-[#1F3D2B]">Scan #{history.length - idx}</p>
+                            <p className="text-xs text-[#6B665D] flex items-center gap-1 mt-1">
                               <Calendar className="w-3 h-3" />
                               {formatDate(scan.createdAt)}
                             </p>
                           </div>
 
                           <div className="text-right">
-                            <p className="text-sm text-gray-200 capitalize">{scan.analyzerType}</p>
-                            <p className="text-xs text-primary font-semibold">Confidence: {confidence}%</p>
+                            <p className="text-sm text-[#6B665D] capitalize">{scan.analyzerType}</p>
+                            <p className="text-xs text-[#1F3D2B] font-semibold">Confidence: {confidence}%</p>
                           </div>
                         </button>
 
                         {expanded && (
-                          <div className="border-t border-white/10 p-4 space-y-4 bg-black/10">
+                          <div className="border-t border-white/40 p-4 space-y-4 bg-white/40">
                             <div>
-                              <p className="text-xs text-gray-400 mb-2">Captured Photos</p>
+                              <p className="text-xs text-[#6B665D] mb-2">Captured Photos</p>
                               <div className="grid grid-cols-3 gap-2">
                                 {scan.originalImages.slice(0, 3).map((image, i) => (
                                   <img
                                     key={`${scan.id}-img-${i}`}
                                     src={image}
                                     alt={`scan-${i + 1}`}
-                                    className="rounded-lg border border-white/10 w-full h-24 object-cover"
+                                    className="rounded-lg border border-white/40 w-full h-24 object-cover"
                                   />
                                 ))}
                               </div>
                             </div>
 
                             <div>
-                              <p className="text-xs text-gray-400 mb-2">Galaxy Annotated Image</p>
-                              <div className="relative rounded-xl border border-white/10 overflow-hidden">
-                                <img
-                                  src={scan.annotatedImageUrl || scan.originalImages[0]}
-                                  alt="annotated"
-                                  className="w-full h-56 object-cover"
-                                />
+                              <p className="text-xs text-[#6B665D] mb-2">Galaxy Annotated Image</p>
+                              <div className="relative rounded-xl border border-white/40 overflow-hidden">
+                                {scan.annotatedImageUrl || scan.originalImages[0] ? (
+                                  <img
+                                    src={scan.annotatedImageUrl || scan.originalImages[0]}
+                                    alt="annotated"
+                                    className="w-full h-56 object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-56 bg-white/60 flex items-center justify-center text-xs text-[#6B665D]">
+                                    No image available
+                                  </div>
+                                )}
                                 {scan.hotspots?.map((spot, i) => {
                                   const { left, top } = normSpot(spot);
                                   return (
@@ -219,7 +247,7 @@ export default function SavedScansPage() {
                                 {scan.selectedCategories.map((cat, i) => (
                                   <span
                                     key={`${scan.id}-cat-${i}`}
-                                    className="px-2 py-1 rounded-md border border-white/15 bg-white/5 text-xs text-gray-200"
+                                    className="px-2 py-1 rounded-md border border-white/40 bg-white/60 text-xs text-[#6B665D]"
                                   >
                                     {cat}
                                   </span>
@@ -235,15 +263,15 @@ export default function SavedScansPage() {
               </section>
 
               {history.length >= 2 && (
-                <section className="bg-surface border border-white/10 rounded-2xl p-5 md:p-6">
+                <section className="bg-white/60 backdrop-blur-sm border border-white/40 rounded-xl p-5 md:p-6 shadow-sm">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-bold">Before / After Hotspot Comparison</h2>
                     {confidenceDelta !== null && (
                       <span
                         className={`text-xs px-3 py-1 rounded-full border ${
                           confidenceDelta <= 0
-                            ? "border-emerald-400/40 text-emerald-300 bg-emerald-500/10"
-                            : "border-amber-400/40 text-amber-300 bg-amber-500/10"
+                            ? "border-emerald-400/40 text-emerald-700 bg-emerald-500/10"
+                            : "border-amber-400/40 text-amber-700 bg-amber-500/10"
                         }`}
                       >
                         Confidence Δ: {confidenceDelta > 0 ? `+${confidenceDelta}` : confidenceDelta}
@@ -255,7 +283,7 @@ export default function SavedScansPage() {
                     <select
                       value={compareLeftId}
                       onChange={(e) => setCompareLeftId(e.target.value)}
-                      className="bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm"
+                      className="bg-white/60 border border-white/40 rounded-lg px-3 py-2 text-sm text-[#1F3D2B] outline-none focus:border-[#1F3D2B]/30"
                     >
                       {history.map((scan) => (
                         <option key={`left-${scan.id}`} value={scan.id}>
@@ -267,7 +295,7 @@ export default function SavedScansPage() {
                     <select
                       value={compareRightId}
                       onChange={(e) => setCompareRightId(e.target.value)}
-                      className="bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm"
+                      className="bg-white/60 border border-white/40 rounded-lg px-3 py-2 text-sm text-[#1F3D2B] outline-none focus:border-[#1F3D2B]/30"
                     >
                       {history.map((scan) => (
                         <option key={`right-${scan.id}`} value={scan.id}>
@@ -282,9 +310,9 @@ export default function SavedScansPage() {
                       if (!scan) return null;
 
                       return (
-                        <div key={scan.id} className="rounded-xl border border-white/10 overflow-hidden bg-black/20">
-                          <div className="px-3 py-2 border-b border-white/10 text-xs text-gray-300 flex items-center justify-between">
-                            <span>{idx === 0 ? "Before" : "After"}</span>
+                        <div key={scan.id} className="rounded-xl border border-white/40 overflow-hidden bg-[#EFE8DD]/50">
+                          <div className="px-3 py-2 border-b border-white/40 text-xs text-[#6B665D] flex items-center justify-between">
+                            <span className="font-medium">{idx === 0 ? "Before" : "After"}</span>
                             <span>{formatDate(scan.createdAt)}</span>
                           </div>
 
@@ -309,9 +337,9 @@ export default function SavedScansPage() {
                             })}
                           </div>
 
-                          <div className="p-3 text-xs text-gray-300 border-t border-white/10">
+                          <div className="p-3 text-xs text-[#6B665D] border-t border-white/40">
                             <p>
-                              Issues: <span className="text-white">{scan.issues?.length || 0}</span> · Confidence: <span className="text-white">{scan.finalResult?.confidence ?? 0}%</span>
+                              Issues: <span className="text-[#1F3D2B] font-medium">{scan.issues?.length || 0}</span> · Confidence: <span className="text-[#1F3D2B] font-medium">{scan.finalResult?.confidence ?? 0}%</span>
                             </p>
                           </div>
                         </div>

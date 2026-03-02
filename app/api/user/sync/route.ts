@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readCollection, writeCollection } from "@/lib/server/jsonDb";
 import { UserRecord } from "@/lib/server/types";
+import { getRequestAuth } from "@/lib/auth/requestAuth";
+import { userSyncSchema } from "@/lib/server/validators";
+import { writeAuditLog } from "@/lib/server/auditLog";
 
 export const runtime = "nodejs";
 
@@ -37,8 +40,21 @@ function toUserRecord(payload: Record<string, unknown>): UserRecord {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as Record<string, unknown>;
-    const nextRecord = toUserRecord(body);
+    const auth = await getRequestAuth(request);
+    if (!auth) {
+      return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+    }
+
+    const raw = (await request.json()) as Record<string, unknown>;
+    const parsed = userSyncSchema.safeParse(raw);
+    if (!parsed.success) {
+      await writeAuditLog({ action: "user.sync", userId: auth.userId, ok: false, route: "/api/user/sync", detail: "validation_failed" });
+      return NextResponse.json({ ok: false, error: "invalid_payload" }, { status: 400 });
+    }
+
+    const nextRecord = toUserRecord(parsed.data as unknown as Record<string, unknown>);
+    nextRecord.id = auth.userId;
+    nextRecord.name = auth.name;
 
     const users = await readCollection<UserRecord>("users");
     const existingIndex = users.findIndex((item) => item.id === nextRecord.id);
@@ -60,6 +76,7 @@ export async function POST(request: NextRequest) {
 
     await writeCollection("users", users);
 
+    await writeAuditLog({ action: "user.sync", userId: auth.userId, ok: true, route: "/api/user/sync" });
     return NextResponse.json({ ok: true, userId: nextRecord.id });
   } catch (error) {
     return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "sync_failed" }, { status: 500 });

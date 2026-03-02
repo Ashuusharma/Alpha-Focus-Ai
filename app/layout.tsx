@@ -1,25 +1,44 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
-import { Manrope } from "next/font/google";
+import { Inter, Playfair_Display } from "next/font/google";
 
 import CartDrawer from "./result/_components/CartDrawer";
-import UserMenu from "./result/_components/UserMenu";
 import ProductComparison from "./result/_components/ProductComparison";
 import { ToastProvider } from "./toast/ToastContext";
 import ToastContainer from "./toast/ToastContainer";
 import { ThemeProvider } from "@/lib/themeContext";
 import { LanguageProvider as LegacyLangProvider } from "@/lib/languageContext";
 import I18nProvider from "./_components/I18nProvider"; 
-const manrope = Manrope({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
+import RouteTransition from "./_components/RouteTransition";
+import MainNavbar from "@/components/layout/MainNavbar";
+import AuthProvider from "@/contexts/AuthProvider";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import CoreUserHydrator from "@/components/providers/CoreUserHydrator";
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-playfair"
+});
 
 export const metadata: Metadata = {
   title: "Alpha Focus",
   description: "Alpha Focus — Premium grooming intelligence platform",
   manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+    ],
+    shortcut: [
+      { url: "/favicon.ico" },
+    ],
+    apple: [
+      { url: "/favicon.ico" },
+    ],
+  },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#00f2ff",
+  themeColor: "#2F6F57",
 };
 
 export default function RootLayout({
@@ -45,9 +64,11 @@ export default function RootLayout({
               } catch (e) {}
 
               try {
-                if ('serviceWorker' in navigator) {
-                  window.addEventListener('load', function () {
-                    navigator.serviceWorker.register('/service-worker.js');
+                if ('serviceWorker' in navigator && location.hostname === 'localhost') {
+                  navigator.serviceWorker.getRegistrations().then(function (registrations) {
+                    registrations.forEach(function (registration) {
+                      registration.unregister();
+                    });
                   });
                 }
               } catch (e) {}
@@ -56,34 +77,33 @@ export default function RootLayout({
         />
       </head>
 
-      <body className={manrope.className}>
+      <body className={`${inter.variable} ${playfair.variable}`}>
         <I18nProvider>
-         <ThemeProvider>
-          <LegacyLangProvider>
-            <ToastProvider>
-              {
-                /* 
-                  GLOBAL USER MENU 
-                  Needs hydration boundary or client component wrapper if not already
-                */
-              }
-              <UserMenu /> 
+          <AuthProvider>
+            <CoreUserHydrator />
+            <ThemeProvider>
+              <LegacyLangProvider>
+                <ToastProvider>
+                  <MainNavbar />
 
               {/* MAIN CONTENT */}
-              <div className="pt-0 pb-24 md:pb-0">
-                {children}
-              </div>
+                  <main className="pt-0 pb-24 md:pb-0">
+                    <ProtectedRoute>
+                      <RouteTransition>{children}</RouteTransition>
+                    </ProtectedRoute>
+                  </main>
 
               {/* GLOBAL CART — ALWAYS MOUNTED */}
-              <CartDrawer />
+                  <CartDrawer />
               
               {/* GLOBAL PRODUCT COMPARISON */}
-              <ProductComparison />
+                  <ProductComparison />
               
-              <ToastContainer />
-            </ToastProvider>
-          </LegacyLangProvider>
-         </ThemeProvider>
+                  <ToastContainer />
+                </ToastProvider>
+              </LegacyLangProvider>
+            </ThemeProvider>
+          </AuthProvider>
         </I18nProvider>
       </body>
     </html>

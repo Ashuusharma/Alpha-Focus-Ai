@@ -27,26 +27,25 @@ export default function TestPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0B0F19] py-20 flex items-center relative overflow-hidden">
-      <div className="fixed inset-0 bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.15),transparent_70%)] pointer-events-none" />
+    <div className="min-h-screen bg-gradient-to-b from-[#F4EFE6] via-[#EFE8DD] to-[#E5E0D4] py-20 flex items-center relative overflow-hidden">
       
       <Container>
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-10 max-w-lg mx-auto text-center relative shadow-2xl overflow-hidden">
-          <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 opacity-50" />
+        <div className="bg-white/60 backdrop-blur-xl border border-white/40 rounded-3xl p-10 max-w-lg mx-auto text-center relative shadow-xl overflow-hidden">
+          <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-[#2F6F57] via-[#A9CBB7] to-[#2F6F57] opacity-50" />
           
-          <div className="w-20 h-20 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.2)]">
-            <FlaskConical className="w-10 h-10 text-blue-400" />
+          <div className="w-20 h-20 bg-[#2F6F57]/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-[#2F6F57]/20 shadow-[0_0_20px_rgba(47,111,87,0.15)]">
+            <FlaskConical className="w-10 h-10 text-[#2F6F57]" />
           </div>
 
-          <h1 className="text-3xl font-bold mb-4 text-white">Test Result Page</h1>
-          <p className="text-white/60 mb-8 leading-relaxed">
+          <h1 className="text-3xl font-bold mb-4 text-[#1F3D2B]">Test Result Page</h1>
+          <p className="text-[#6B665D] mb-8 leading-relaxed">
             Click below to verify the results UI with pre-defined sample answers for Hair & Skin Care analysis.
           </p>
 
           <div className="space-y-4">
             <button
               onClick={handleTestResult}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-xl font-bold hover:shadow-[0_0_20px_rgba(37,99,235,0.4)] transition flex items-center justify-center gap-2 group"
+              className="w-full bg-[#2F6F57] text-white py-4 rounded-xl font-bold hover:shadow-[0_0_20px_rgba(47,111,87,0.3)] transition-all flex items-center justify-center gap-2 group hover:bg-[#1F4D3B]"
             >
               <span>View Sample Results</span>
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />

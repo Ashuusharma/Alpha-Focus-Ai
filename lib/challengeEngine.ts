@@ -354,6 +354,15 @@ export function saveChallengeProgress(progress: ChallengeProgress): void {
   }
 }
 
+export function clearChallengeProgress(challengeId: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(`${STORAGE_KEY}_${challengeId}`);
+  } catch {
+    console.error("Failed to clear challenge progress");
+  }
+}
+
 export function getActiveChallengeId(): string | null {
   if (typeof window === "undefined") return null;
   try {

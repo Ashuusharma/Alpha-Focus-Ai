@@ -1,14 +1,84 @@
 "use client";
 
 import { useRef, useState, useCallback, useEffect } from "react";
-import { Camera, Upload, X, Check, Image as ImageIcon, RotateCcw, Trash2, ChevronRight, AlertCircle } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import NextImage from "next/image";
+import { Camera, Upload, X, Check, RotateCcw, ChevronRight, AlertCircle } from "lucide-react";
+import { motion } from "framer-motion";
 import { AnalyzerType, PhotoAngle, getPhotoAngles } from "@/lib/analyzeImage";
 
 interface MultiAngleUploadProps {
   analyzerType: AnalyzerType;
   onAllCaptured: (images: string[]) => void;
   disabled?: boolean;
+}
+
+type QualityWarning = "lighting" | "blur" | "framing";
+
+async function analyzeImageQuality(imageData: string): Promise<QualityWarning[]> {
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = image.width;
+      canvas.height = image.height;
+      const context = canvas.getContext("2d");
+
+      if (!context) {
+        resolve([]);
+        return;
+      }
+
+      context.drawImage(image, 0, 0);
+      const { data, width, height } = context.getImageData(0, 0, canvas.width, canvas.height);
+
+      let luminanceSum = 0;
+      for (let index = 0; index < data.length; index += 4) {
+        const red = data[index];
+        const green = data[index + 1];
+        const blue = data[index + 2];
+        luminanceSum += red * 0.299 + green * 0.587 + blue * 0.114;
+      }
+
+      const pixelCount = width * height;
+      const avgLuminance = luminanceSum / Math.max(1, pixelCount);
+
+      let gradientSum = 0;
+      let gradientSquaredSum = 0;
+      let sampleCount = 0;
+
+      for (let y = 1; y < height - 1; y += 4) {
+        for (let x = 1; x < width - 1; x += 4) {
+          const index = (y * width + x) * 4;
+          const rightIndex = (y * width + (x + 1)) * 4;
+          const downIndex = ((y + 1) * width + x) * 4;
+
+          const lum = data[index] * 0.299 + data[index + 1] * 0.587 + data[index + 2] * 0.114;
+          const lumRight = data[rightIndex] * 0.299 + data[rightIndex + 1] * 0.587 + data[rightIndex + 2] * 0.114;
+          const lumDown = data[downIndex] * 0.299 + data[downIndex + 1] * 0.587 + data[downIndex + 2] * 0.114;
+
+          const gradient = Math.abs(lumRight - lum) + Math.abs(lumDown - lum);
+          gradientSum += gradient;
+          gradientSquaredSum += gradient * gradient;
+          sampleCount += 1;
+        }
+      }
+
+      const gradientMean = gradientSum / Math.max(1, sampleCount);
+      const gradientVariance = gradientSquaredSum / Math.max(1, sampleCount) - gradientMean * gradientMean;
+
+      const warnings: QualityWarning[] = [];
+      if (avgLuminance < 65 || avgLuminance > 210) warnings.push("lighting");
+      if (gradientVariance < 180) warnings.push("blur");
+
+      const aspectRatio = width / Math.max(1, height);
+      if (aspectRatio < 0.6 || aspectRatio > 1.8 || width < 360 || height < 360) warnings.push("framing");
+
+      resolve(warnings);
+    };
+
+    image.onerror = () => resolve([]);
+    image.src = imageData;
+  });
 }
 
 export default function MultiAngleUpload({
@@ -20,6 +90,7 @@ export default function MultiAngleUpload({
   const [activeAngleIdx, setActiveAngleIdx] = useState<number>(0);
   const [cameraActive, setCameraActive] = useState(false);
   const [allDone, setAllDone] = useState(false);
+  const [qualityWarnings, setQualityWarnings] = useState<Record<string, QualityWarning[]>>({});
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -91,11 +162,19 @@ export default function MultiAngleUpload({
 
   // Save photo to the active angle
   const saveAnglePhoto = (imageData: string) => {
+    const activeAngle = angles[activeAngleIdx];
     setAngles((prev) => {
       const updated = [...prev];
       updated[activeAngleIdx] = { ...updated[activeAngleIdx], imageData };
       return updated;
     });
+
+    if (activeAngle) {
+      void analyzeImageQuality(imageData).then((warnings) => {
+        setQualityWarnings((prev) => ({ ...prev, [activeAngle.id]: warnings }));
+      });
+    }
+
     // Auto-advance to next uncaptured angle
     const nextEmpty = angles.findIndex((a, i) => i > activeAngleIdx && !a.imageData);
     if (nextEmpty !== -1) {
@@ -114,6 +193,14 @@ export default function MultiAngleUpload({
       updated[idx] = { ...updated[idx], imageData: null };
       return updated;
     });
+    const angleId = angles[idx]?.id;
+    if (angleId) {
+      setQualityWarnings((prev) => {
+        const next = { ...prev };
+        delete next[angleId];
+        return next;
+      });
+    }
     setActiveAngleIdx(idx);
     setAllDone(false);
   };
@@ -129,9 +216,11 @@ export default function MultiAngleUpload({
   const currentAngle = angles[activeAngleIdx];
   const minPhotosRequired = 1;
   const canSubmit = capturedCount >= minPhotosRequired;
+  const currentWarnings = currentAngle ? qualityWarnings[currentAngle.id] || [] : [];
+  const hasAnyWarnings = angles.some((angle) => (qualityWarnings[angle.id] || []).length > 0);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       {/* ANGLE PROGRESS BAR */}
       <div className="flex items-center gap-2 mb-2">
         {angles.map((angle, idx) => (
@@ -140,15 +229,15 @@ export default function MultiAngleUpload({
               onClick={() => { setActiveAngleIdx(idx); stopCamera(); }}
               className={`flex-1 h-2 rounded-full transition-all duration-300 cursor-pointer ${
                 angle.imageData 
-                  ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" 
+                    ? "bg-[#2F6F57] shadow-[0_0_8px_rgba(47,111,87,0.35)]" 
                   : idx === activeAngleIdx 
-                    ? "bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.5)]" 
-                    : "bg-white/10"
+                    ? "bg-[#A9CBB7] animate-pulse shadow-[0_0_8px_rgba(169,203,183,0.6)]" 
+                    : "bg-[#E2DDD4]"
               }`}
             />
           </div>
         ))}
-        <span className="text-xs text-white/50 ml-2 whitespace-nowrap">{capturedCount}/{totalAngles}</span>
+        <span className="text-xs text-[#6E9F87] ml-2 whitespace-nowrap">{capturedCount}/{totalAngles}</span>
       </div>
 
       {/* PINNED THUMBNAILS */}
@@ -162,15 +251,22 @@ export default function MultiAngleUpload({
             onClick={() => { setActiveAngleIdx(idx); stopCamera(); }}
             className={`relative flex-shrink-0 w-24 h-24 rounded-xl border-2 cursor-pointer overflow-hidden transition-all duration-300 ${
               idx === activeAngleIdx 
-                ? "border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.3)] ring-2 ring-blue-500/30" 
+                ? "border-[#2F6F57] shadow-[0_0_15px_rgba(47,111,87,0.2)] ring-2 ring-[#A9CBB7]" 
                 : angle.imageData 
-                  ? "border-emerald-500/50" 
-                  : "border-white/10 border-dashed"
+                  ? "border-[#A9CBB7]" 
+                  : "border-[#D9D2C7] border-dashed bg-white"
             }`}
           >
             {angle.imageData ? (
               <>
-                <img src={angle.imageData} alt={angle.label} className="w-full h-full object-cover" />
+                <NextImage
+                  src={angle.imageData}
+                  alt={angle.label}
+                  fill
+                  sizes="96px"
+                  unoptimized
+                  className="object-cover"
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
                 <div className="absolute bottom-1 left-1 right-1">
                   <p className="text-[9px] text-white font-bold truncate">{angle.label}</p>
@@ -181,14 +277,19 @@ export default function MultiAngleUpload({
                 >
                   <X className="w-3 h-3 text-white" />
                 </button>
-                <div className="absolute top-1 left-1 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center">
+                <div className="absolute top-1 left-1 w-5 h-5 bg-[#2F6F57] rounded-full flex items-center justify-center">
                   <Check className="w-3 h-3 text-white" />
                 </div>
+                {(qualityWarnings[angle.id] || []).length > 0 && (
+                  <div className="absolute bottom-1 right-1 w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center" title="Quality check suggests retake for better results">
+                    <AlertCircle className="w-3 h-3 text-white" />
+                  </div>
+                )}
               </>
             ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center bg-white/5">
-                <Camera className="w-5 h-5 text-white/30 mb-1" />
-                <p className="text-[8px] text-white/30 text-center px-1 leading-tight">{angle.label}</p>
+              <div className="w-full h-full flex flex-col items-center justify-center bg-[#F7F4EE]">
+                <Camera className="w-5 h-5 text-[#6E9F87] mb-1" />
+                <p className="text-[8px] text-[#6E9F87] text-center px-1 leading-tight">{angle.label}</p>
               </div>
             )}
           </motion.div>
@@ -201,17 +302,17 @@ export default function MultiAngleUpload({
           key={`instruction-${activeAngleIdx}`}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-6"
+          className="bg-[#F7F4EE] border border-[#D9D2C7] rounded-2xl p-7"
         >
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
-              <Camera className="w-6 h-6 text-blue-400" />
+            <div className="w-12 h-12 bg-[#E8EFEA] rounded-xl flex items-center justify-center flex-shrink-0 border border-[#C8DACF]">
+              <Camera className="w-6 h-6 text-[#2F6F57]" />
             </div>
             <div>
-              <h4 className="text-lg font-bold text-white mb-1">
+              <h4 className="text-xl font-bold text-[#1E4D3A] mb-1">
                 Photo {activeAngleIdx + 1}: {currentAngle.label}
               </h4>
-              <p className="text-sm text-blue-200/70 leading-relaxed">
+              <p className="text-sm text-[#2F6F57] leading-relaxed">
                 {currentAngle.instruction}
               </p>
             </div>
@@ -221,7 +322,7 @@ export default function MultiAngleUpload({
             <button
               onClick={startCamera}
               disabled={disabled}
-              className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white py-3.5 px-5 rounded-xl font-bold transition-all shadow-lg hover:shadow-blue-500/25 disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-2 bg-medical-gradient text-white py-4 px-5 rounded-xl font-bold transition-all shadow-[0_10px_20px_rgba(47,111,87,0.2)] disabled:opacity-50"
             >
               <Camera className="w-5 h-5" />
               Open Camera
@@ -229,7 +330,7 @@ export default function MultiAngleUpload({
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={disabled}
-              className="flex-1 flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white py-3.5 px-5 rounded-xl font-bold transition-all border border-white/10 disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-2 bg-white hover:bg-[#F7F4EE] text-[#2F6F57] py-4 px-5 rounded-xl font-bold transition-all border border-[#D9D2C7] disabled:opacity-50"
             >
               <Upload className="w-5 h-5" />
               Upload Photo
@@ -251,9 +352,9 @@ export default function MultiAngleUpload({
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="rounded-2xl overflow-hidden bg-black/50 border border-white/10 relative"
+          className="rounded-2xl overflow-hidden bg-black/40 border border-[#D9D2C7] relative"
         >
-          <video ref={videoRef} autoPlay playsInline muted className="w-full h-80 object-cover" />
+          <video ref={videoRef} autoPlay playsInline muted className="w-full h-[440px] object-cover" />
 
           {/* Face Guide Overlay */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -266,14 +367,14 @@ export default function MultiAngleUpload({
 
           {/* Angle Label */}
           <div className="absolute top-4 left-4 bg-black/60 backdrop-blur px-3 py-1.5 rounded-lg">
-            <p className="text-sm text-blue-300 font-bold">📸 {currentAngle?.label}</p>
+            <p className="text-sm text-[#E8EFEA] font-bold">📸 {currentAngle?.label}</p>
           </div>
 
           {/* Camera Controls */}
           <div className="absolute bottom-0 left-0 right-0 p-5 bg-gradient-to-t from-black/90 to-transparent flex gap-4 justify-center">
             <button
               onClick={capturePhoto}
-              className="flex items-center gap-2 bg-white text-black px-8 py-3 rounded-full font-bold hover:bg-blue-50 transition shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+              className="flex items-center gap-2 bg-white text-black px-8 py-3 rounded-full font-bold hover:bg-[#F7F4EE] transition shadow-[0_0_20px_rgba(255,255,255,0.3)]"
             >
               <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse" />
               Capture
@@ -295,11 +396,20 @@ export default function MultiAngleUpload({
           key={`preview-${activeAngleIdx}`}
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="relative rounded-2xl overflow-hidden border border-emerald-500/20"
+          className="relative rounded-2xl overflow-hidden border border-[#C8DACF]"
         >
-          <img src={currentAngle.imageData} alt={currentAngle.label} className="w-full h-64 object-cover" />
+          <div className="relative h-80 w-full">
+            <NextImage
+              src={currentAngle.imageData}
+              alt={currentAngle.label}
+              fill
+              sizes="(max-width: 768px) 100vw, 800px"
+              unoptimized
+              className="object-cover"
+            />
+          </div>
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-          <div className="absolute bottom-4 left-4 flex items-center gap-2 text-emerald-400 font-bold bg-black/60 backdrop-blur px-3 py-1.5 rounded-full border border-emerald-500/30 text-sm">
+          <div className="absolute bottom-4 left-4 flex items-center gap-2 text-[#E8EFEA] font-bold bg-black/60 backdrop-blur px-3 py-1.5 rounded-full border border-[#A9CBB7] text-sm">
             <Check className="w-4 h-4" />
             {currentAngle.label} ✓
           </div>
@@ -310,6 +420,17 @@ export default function MultiAngleUpload({
             <RotateCcw className="w-4 h-4" />
             Retake
           </button>
+
+          {currentWarnings.length > 0 && (
+            <div className="absolute left-4 right-4 top-4 rounded-xl border border-amber-300/50 bg-amber-100/90 px-3 py-2 text-xs text-amber-900">
+              <p className="font-semibold">Quality check suggests a retake for better accuracy.</p>
+              <p className="mt-1">
+                {currentWarnings.includes("lighting") ? "• Improve lighting. " : ""}
+                {currentWarnings.includes("blur") ? "• Hold camera steady to reduce blur. " : ""}
+                {currentWarnings.includes("framing") ? "• Keep face centered and clearly visible." : ""}
+              </p>
+            </div>
+          )}
         </motion.div>
       )}
 
@@ -323,7 +444,7 @@ export default function MultiAngleUpload({
               if (nextEmpty !== -1) setActiveAngleIdx(nextEmpty);
               else setAllDone(true);
             }}
-            className="flex-1 text-white/50 hover:text-white py-3 rounded-xl border border-white/10 hover:border-white/20 transition text-sm font-medium"
+            className="flex-1 text-[#6E9F87] hover:text-[#1E4D3A] py-3 rounded-xl border border-[#D9D2C7] hover:border-[#C8DACF] transition text-sm font-medium"
           >
             Skip this angle
           </button>
@@ -335,7 +456,7 @@ export default function MultiAngleUpload({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             onClick={handleSubmitAll}
-            className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3.5 rounded-xl font-bold hover:shadow-[0_0_25px_rgba(59,130,246,0.4)] transition-all flex items-center justify-center gap-2 group relative overflow-hidden"
+            className="flex-1 bg-medical-gradient text-white py-3.5 rounded-xl font-bold hover:shadow-[0_0_25px_rgba(47,111,87,0.3)] transition-all flex items-center justify-center gap-2 group relative overflow-hidden"
           >
             <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-500 skew-y-12" />
             <span className="relative flex items-center gap-2">
@@ -348,9 +469,16 @@ export default function MultiAngleUpload({
 
       {/* Minimum photos notice */}
       {capturedCount === 0 && (
-        <div className="flex items-center gap-2 text-white/30 text-xs justify-center">
+        <div className="flex items-center gap-2 text-[#6E9F87] text-xs justify-center">
           <AlertCircle className="w-3.5 h-3.5" />
           <span>Capture at least {minPhotosRequired} photo to proceed. All {totalAngles} angles recommended for best results.</span>
+        </div>
+      )}
+
+      {hasAnyWarnings && capturedCount > 0 && (
+        <div className="flex items-center gap-2 text-amber-700 text-xs justify-center bg-amber-100/70 rounded-xl border border-amber-300/60 px-3 py-2">
+          <AlertCircle className="w-3.5 h-3.5" />
+          <span>Some photos may reduce confidence. Retake flagged angles for stronger analysis quality.</span>
         </div>
       )}
     </div>

@@ -30,6 +30,25 @@ async function reverseGeocode(latitude: number, longitude: number): Promise<stri
   }
 }
 
+async function getApproxCityFromIp(): Promise<{ latitude: number; longitude: number; city: string } | null> {
+  try {
+    const res = await fetch("https://ipwho.is/", { cache: "no-store" });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data || data.success === false) return null;
+    const latitude = Number(data.latitude);
+    const longitude = Number(data.longitude);
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+    return {
+      latitude,
+      longitude,
+      city: String(data.city || "Local Area"),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function useLocation(autoRequest = false) {
   const [location, setLocation] = useState<LocationState>(initialState);
 
@@ -60,6 +79,17 @@ export function useLocation(autoRequest = false) {
   }, []);
 
   useEffect(() => {
+    void (async () => {
+      const approx = await getApproxCityFromIp();
+      if (!approx) return;
+      setLocation((prev) => ({
+        ...prev,
+        latitude: prev.latitude ?? approx.latitude,
+        longitude: prev.longitude ?? approx.longitude,
+        city: prev.city ?? approx.city,
+      }));
+    })();
+
     if (!autoRequest) return;
     requestLocation();
   }, [autoRequest, requestLocation]);

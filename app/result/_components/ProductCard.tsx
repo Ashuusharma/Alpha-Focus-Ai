@@ -1,12 +1,25 @@
 "use client";
 
+import { useMemo } from "react";
 import { useCartStore } from "@/lib/cartStore";
+import { getActiveUserName } from "@/lib/userScopedStorage";
 
-export default function ProductCard({ product }: any) {
+type ProductCardData = {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+};
+
+export default function ProductCard({ product }: { product: ProductCardData }) {
   const addItem = useCartStore((s) => s.addItem);
   const items = useCartStore((s) => s.items);
+  const activeUserId = (getActiveUserName() || "guest").trim() || "guest";
 
-  const existing = items.find((i) => i.id === product.id);
+  const existing = useMemo(
+    () => items.find((i) => i.id === product.id && (((i.userId || "guest").trim() || "guest") === activeUserId)),
+    [activeUserId, items, product.id]
+  );
 
   return (
     <div

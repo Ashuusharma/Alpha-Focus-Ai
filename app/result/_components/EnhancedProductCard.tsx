@@ -1,10 +1,12 @@
 "use client";
 
+import { useMemo } from "react";
 import { Product } from "@/lib/recommendationRules";
 import { useCartStore } from "@/lib/cartStore";
 import { useToast } from "@/app/toast/ToastContext";
 import IngredientsDisplay from "./IngredientsDisplay";
 import { ShoppingCart, Check, Star } from "lucide-react";
+import { getActiveUserName } from "@/lib/userScopedStorage";
 
 type ExtendedProduct = Product & {
   benefits?: string[];
@@ -21,8 +23,14 @@ export default function EnhancedProductCard({
   const addItem = useCartStore((s) => s.addItem);
   const { showToast } = useToast();
   const items = useCartStore((s) => s.items);
+  const activeUserId = (getActiveUserName() || "guest").trim() || "guest";
 
-  const existing = items.find((i) => i.id === product.id);
+  const userItems = useMemo(
+    () => items.filter((i) => (((i.userId || "guest").trim() || "guest") === activeUserId)),
+    [activeUserId, items]
+  );
+
+  const existing = userItems.find((i) => i.id === product.id);
   const isAdded = !!existing;
 
   const handleAdd = () => {

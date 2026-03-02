@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ShieldCheck } from "lucide-react";
+import { ArrowLeft, MapPin, RefreshCcw, ShieldCheck } from "lucide-react";
+import { useLocation } from "@/app/hooks/useLocation";
 
 type PermissionState = {
   location: boolean;
@@ -15,6 +16,7 @@ const STORAGE_KEY = "oneman_data_permissions_v1";
 
 export default function DataSettingsPage() {
   const router = useRouter();
+  const { displayLabel, status: locationStatus, refreshLocation } = useLocation();
   const [permissions, setPermissions] = useState<PermissionState>({
     location: false,
     sleepTracking: true,
@@ -53,6 +55,13 @@ export default function DataSettingsPage() {
     keys.forEach((key) => localStorage.removeItem(key));
   };
 
+  const locationText =
+    locationStatus === "loading"
+      ? "Detecting location..."
+      : !displayLabel || displayLabel === "Local Area" || displayLabel === "Location not enabled"
+        ? "Enable location"
+        : displayLabel;
+
   return (
     <div className="min-h-screen bg-[#030917] text-white px-4 py-8">
       <div className="max-w-3xl mx-auto">
@@ -79,6 +88,22 @@ export default function DataSettingsPage() {
               </button>
             </div>
           ))}
+        </div>
+
+        <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-4">
+          <div className="flex items-center gap-2 text-sm text-gray-200">
+            <MapPin className="w-4 h-4 text-emerald-300" />
+            <span className="truncate" title={locationText}>{locationText}</span>
+            <button
+              type="button"
+              onClick={refreshLocation}
+              className="ml-auto p-1.5 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
+              title="Refresh location"
+              aria-label="Refresh location"
+            >
+              <RefreshCcw className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         <button onClick={deleteAllData} className="mt-6 px-4 py-2 rounded-xl bg-red-500/20 text-red-300 border border-red-500/30 hover:bg-red-500/30 text-sm font-semibold">

@@ -1,0 +1,226 @@
+import { NextRequest, NextResponse } from "next/server";
+import { isRateLimited } from "@/lib/server/rateLimit";
+import { writeAuditLog } from "@/lib/server/auditLog";
+import { alphaSikkaEarnSchema } from "@/lib/server/validators";
+import { getSupabaseRequestUser } from "@/lib/server/supabaseRequestAuth";
+import {
+  ALPHA_SIKKA_RULES,
+  buildReferenceKey,
+  computeAwardAmount,
+  deriveTier,
+  type AlphaSikkaAction,
+} from "@/lib/server/alphaSikkaServer";
+
+export const runtime = "nodejs";
+
+type TxRow = {
+  id: string;
+  amount: number;
+  created_at: string;
+  category: string;
+};
+
+type SummaryRow = {
+  current_balance: number;
+  lifetime_earned: number;
+  lifetime_spent: number;
+};
+
+function getSupabaseConfig() {
+  const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!baseUrl || !serviceKey) return null;
+  return {
+    baseUrl: baseUrl.replace(/\/$/, ""),
+    serviceKey,
+  };
+}
+
+function buildAuthHeaders(serviceKey: string) {
+  return {
+    apikey: serviceKey,
+    Authorization: `Bearer ${serviceKey}`,
+    "Content-Type": "application/json",
+    Prefer: "return=representation",
+  };
+}
+
+async function fetchDisciplineTodayTotal(baseUrl: string, serviceKey: string, userId: string) {
+  const dayKey = new Date().toISOString().slice(0, 10);
+  const start = `${dayKey}T00:00:00.000Z`;
+  const end = `${dayKey}T23:59:59.999Z`;
+  const url = new URL(`${baseUrl}/rest/v1/alpha_sikka_transactions`);
+  url.searchParams.set("select", "amount");
+  url.searchParams.set("user_id", `eq.${userId}`);
+  url.searchParams.set("category", "eq.discipline");
+  url.searchParams.set("created_at", `gte.${start}`);
+  url.searchParams.append("created_at", `lte.${end}`);
+
+  const response = await fetch(url.toString(), {
+    method: "GET",
+    headers: buildAuthHeaders(serviceKey),
+    cache: "no-store",
+  });
+
+  if (!response.ok) return 0;
+  const rows = (await response.json()) as Array<{ amount: number }>;
+  return rows.reduce((sum, row) => sum + Number(row.amount || 0), 0);
+}
+
+async function fetchSummary(baseUrl: string, serviceKey: string, userId: string) {
+  const url = new URL(`${baseUrl}/rest/v1/alpha_sikka_summary`);
+  url.searchParams.set("select", "current_balance,lifetime_earned,lifetime_spent");
+  url.searchParams.set("user_id", `eq.${userId}`);
+  url.searchParams.set("limit", "1");
+
+  const response = await fetch(url.toString(), {
+    method: "GET",
+    headers: buildAuthHeaders(serviceKey),
+    cache: "no-store",
+  });
+
+  if (!response.ok) return null;
+  const rows = (await response.json()) as SummaryRow[];
+  return rows[0] || null;
+}
+
+async function fetchRecent(baseUrl: string, serviceKey: string, userId: string) {
+  const url = new URL(`${baseUrl}/rest/v1/alpha_sikka_transactions`);
+  url.searchParams.set("select", "id,amount,created_at,category");
+  url.searchParams.set("user_id", `eq.${userId}`);
+  url.searchParams.set("order", "created_at.desc");
+  url.searchParams.set("limit", "10");
+
+  const response = await fetch(url.toString(), {
+    method: "GET",
+    headers: buildAuthHeaders(serviceKey),
+    cache: "no-store",
+  });
+
+  if (!response.ok) return [] as TxRow[];
+  return (await response.json()) as TxRow[];
+}
+
+async function callProcessTransactionRpc(input: {
+  baseUrl: string;
+  serviceKey: string;
+  userId: string;
+  amount: number;
+  category: string;
+  description: string;
+  referenceId?: string;
+  metadata?: Record<string, unknown>;
+}) {
+  const response = await fetch(`${input.baseUrl}/rest/v1/rpc/process_alpha_sikka_transaction`, {
+    method: "POST",
+    headers: buildAuthHeaders(input.serviceKey),
+    body: JSON.stringify({
+      p_user_id: input.userId,
+      p_amount: input.amount,
+      p_type: "earn",
+      p_category: input.category,
+      p_description: input.description,
+      p_reference_id: input.referenceId || null,
+      p_metadata: input.metadata || {},
+    }),
+    cache: "no-store",
+  });
+
+  return response;
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const authUser = await getSupabaseRequestUser(request);
+    if (!authUser) {
+      return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+    }
+
+    if (isRateLimited(`alpha-sikka:earn:${authUser.id}`, 40, 60_000)) {
+      await writeAuditLog({ action: "alpha_sikka.earn", userId: authUser.id, ok: false, route: "/api/alpha-sikka/earn", detail: "rate_limited" });
+      return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
+    }
+
+    const config = getSupabaseConfig();
+    if (!config) {
+      return NextResponse.json({ ok: false, error: "supabase_not_configured" }, { status: 500 });
+    }
+
+    const raw = await request.json();
+    const parsed = alphaSikkaEarnSchema.safeParse(raw);
+    if (!parsed.success) {
+      await writeAuditLog({ action: "alpha_sikka.earn", userId: authUser.id, ok: false, route: "/api/alpha-sikka/earn", detail: "validation_failed" });
+      return NextResponse.json({ ok: false, error: "invalid_payload" }, { status: 400 });
+    }
+
+    const body = parsed.data;
+    const action = body.action as AlphaSikkaAction;
+    const rule = ALPHA_SIKKA_RULES[action];
+
+    const supabaseUserId = authUser.id;
+
+    const referenceId = buildReferenceKey(action, rule.frequency, body.referenceId);
+    if (rule.frequency === "event" && !referenceId) {
+      return NextResponse.json({ ok: false, error: "reference_required" }, { status: 400 });
+    }
+
+    let amount = computeAwardAmount(action, body.metadata);
+
+    if (rule.category === "discipline") {
+      const earnedToday = await fetchDisciplineTodayTotal(config.baseUrl, config.serviceKey, supabaseUserId);
+      amount = Math.max(0, Math.min(amount, 20 - earnedToday));
+      if (amount <= 0) {
+        return NextResponse.json({ ok: false, error: "daily_discipline_cap_reached", dailyCap: 20 }, { status: 200 });
+      }
+    }
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return NextResponse.json({ ok: false, error: "invalid_award_amount" }, { status: 400 });
+    }
+
+    const insertResponse = await callProcessTransactionRpc({
+      baseUrl: config.baseUrl,
+      serviceKey: config.serviceKey,
+      userId: supabaseUserId,
+      amount,
+      category: rule.category,
+      description: rule.description,
+      referenceId: referenceId || undefined,
+      metadata: body.metadata,
+    });
+
+    if (!insertResponse.ok) {
+      const message = await insertResponse.text();
+      const isDuplicate = message.includes("duplicate") || message.includes("unique");
+      if (isDuplicate) {
+        return NextResponse.json({ ok: false, error: "already_awarded" }, { status: 200 });
+      }
+
+      await writeAuditLog({ action: "alpha_sikka.earn", userId: authUser.id, ok: false, route: "/api/alpha-sikka/earn", detail: "insert_failed" });
+      return NextResponse.json({ ok: false, error: "insert_failed", detail: message }, { status: 500 });
+    }
+
+    const summary = await fetchSummary(config.baseUrl, config.serviceKey, supabaseUserId);
+    const recent = await fetchRecent(config.baseUrl, config.serviceKey, supabaseUserId);
+
+    const lifetimeEarned = Number(summary?.lifetime_earned || 0);
+    const tier = deriveTier(lifetimeEarned);
+
+    await writeAuditLog({ action: "alpha_sikka.earn", userId: authUser.id, ok: true, route: "/api/alpha-sikka/earn" });
+    return NextResponse.json({
+      ok: true,
+      awarded: amount,
+      category: rule.category,
+      summary: {
+        currentBalance: Number(summary?.current_balance || 0),
+        lifetimeEarned,
+        lifetimeSpent: Number(summary?.lifetime_spent || 0),
+        tier,
+      },
+      recent,
+      toast: `+${amount} A$ earned`,
+    });
+  } catch (error) {
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "alpha_sikka_earn_failed" }, { status: 500 });
+  }
+}

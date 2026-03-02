@@ -99,13 +99,13 @@ export default function AnalyzerSelector({
 
   return (
     <div className="w-full">
-      <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
-        <span className="w-1 h-6 bg-[var(--lux-accent)] rounded-full shadow-[0_0_10px_var(--lux-accent)]" />
+      <h3 className="text-2xl font-bold text-[#1E4D3A] mb-2 flex items-center gap-2">
+        <span className="w-1 h-7 bg-[#2F6F57] rounded-full" />
         Choose Analysis Type
       </h3>
-      <p className="text-slate-400 text-sm mb-8 ml-4">Select what you want to analyze — our AI will guide you through the right photo angles</p>
+      <p className="text-[#2F6F57] text-sm mb-8 ml-4">Select the concern you want to evaluate. You will then capture guided photo angles.</p>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {options.map((option, idx) => {
           const isSelected = selected === option.type;
           const Icon = option.icon;
@@ -124,22 +124,22 @@ export default function AnalyzerSelector({
               transition={{ delay: idx * 0.05 }}
               whileHover={{ scale: 1.04, y: -4 }}
               whileTap={{ scale: 0.96 }}
-              className={`relative group p-5 rounded-2xl border transition-all duration-300 text-left ${
+              className={`relative group p-6 rounded-2xl border transition-all duration-300 text-left min-h-[190px] ${
                 isSelected
-                  ? "lux-card border-[var(--lux-accent)] shadow-[0_0_25px_rgba(0,242,255,0.25)] bg-[#0c1626]"
-                  : "lux-card border-white/5 hover:bg-[#0c1626] hover:border-white/20"
+                  ? "bg-white/80 backdrop-blur-md border-[#2F6F57] shadow-md"
+                  : "bg-white/40 backdrop-blur-md border-white/40 hover:bg-white/60 hover:border-[#2F6F57]/40"
               } disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               {/* Tag Badge */}
               {option.tag && (
-                <div className="absolute -top-2 -right-2 bg-gradient-to-r from-[#00f2ff] to-[#0066cc] text-[#060b14] text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg">
+                <div className="absolute -top-2 -right-2 bg-[#F4EED7] text-[#8C6A5A] text-[10px] font-bold px-2 py-0.5 rounded-full border border-[#E0CE97]">
                   {option.tag}
                 </div>
               )}
 
               {/* Selection Indicator */}
               {isSelected && (
-                <div className="absolute top-3 right-3 w-3 h-3 bg-[var(--lux-accent)] rounded-full shadow-[0_0_10px_var(--lux-accent)] animate-pulse" />
+                <div className="absolute top-3 right-3 w-3 h-3 bg-[#2F6F57] rounded-full animate-pulse" />
               )}
 
               {/* Icon Container */}
@@ -147,12 +147,12 @@ export default function AnalyzerSelector({
                 className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 transition-all duration-300 ${
                   isSelected
                     ? "bg-gradient-to-br " + option.color + " shadow-lg"
-                    : "lux-bg-elevated group-hover:bg-white/10"
+                    : "bg-white/40 group-hover:bg-white/80"
                 }`}
               >
                 <Icon
                   className={`w-6 h-6 ${
-                    isSelected ? "text-white" : "text-slate-400 group-hover:text-white"
+                    isSelected ? "text-white" : "text-[#6E9F87] group-hover:text-[#2F6F57]"
                   }`}
                 />
               </div>
@@ -160,19 +160,19 @@ export default function AnalyzerSelector({
               {/* Text Content */}
               <h4
                 className={`text-sm font-bold mb-1 transition-colors leading-tight ${
-                  isSelected ? "text-white" : "text-slate-300"
+                  isSelected ? "text-[#1F3D2B]" : "text-[#1F3D2B]"
                 }`}
               >
                 {option.label}
               </h4>
-              <p className="text-[11px] text-slate-500 leading-relaxed group-hover:text-slate-400 transition-colors line-clamp-2">
+              <p className="text-xs text-[#2F6F57] leading-relaxed transition-colors line-clamp-3">
                 {option.description}
               </p>
 
               {/* Hover Glow Effect */}
               <div
                 className={`absolute inset-0 rounded-2xl transition-opacity duration-500 pointer-events-none bg-gradient-to-br ${option.color} ${
-                  isSelected ? "opacity-10" : "opacity-0 group-hover:opacity-5"
+                  isSelected ? "opacity-10" : "opacity-0 group-hover:opacity-[0.06]"
                 }`}
               />
             </motion.button>

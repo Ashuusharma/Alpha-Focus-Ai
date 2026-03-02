@@ -1,46 +1,46 @@
-/* Premium Grooming Brand Color System - Blue & Gray Palette */
+/* Premium Wellness Brand Color System - Sage & Cream Palette */
 
 :root {
   /* Primary Colors */
-  --color-primary: #0B1220;
-  --color-primary-light: #111827;
-  --color-accent: #1E40AF;
-  --color-accent-light: #3B82F6;
+  --color-primary: #1E4D3A;
+  --color-primary-light: #2F6F57;
+  --color-accent: #6E9F87;
+  --color-accent-light: #A9CBB7;
 
   /* Semantic Colors */
   --color-success: #16A34A;
   --color-success-light: #DCFCE7;
-  --color-warning: #F59E0B;
-  --color-warning-light: #FEF3C7;
-  --color-error: #DC2626;
-  --color-error-light: #FEE2E2;
-  --color-info: #3B82F6;
-  --color-info-light: #DBEAFE;
+  --color-warning: #C9A227;
+  --color-warning-light: #F4EED7;
+  --color-error: #8C6A5A;
+  --color-error-light: #F1E6E1;
+  --color-info: #2F6F57;
+  --color-info-light: #E8EFEA;
 
   /* Backgrounds */
-  --color-bg-primary: #0B1220;
-  --color-bg-secondary: #111827;
-  --color-bg-tertiary: #0F1A2B;
+  --color-bg-primary: #F4F1EB;
+  --color-bg-secondary: #E8E3DA;
+  --color-bg-tertiary: #FFFFFF;
 
   /* Text */
-  --color-text-primary: #F8FAFC;
-  --color-text-secondary: #94A3B8;
-  --color-text-tertiary: #64748B;
-  --color-text-inverse: #0B1220;
+  --color-text-primary: #1E4D3A;
+  --color-text-secondary: #2F6F57;
+  --color-text-tertiary: #6E9F87;
+  --color-text-inverse: #F4F1EB;
 
   /* Borders */
-  --color-border: rgba(255,255,255,0.12);
-  --color-border-light: rgba(255,255,255,0.08);
+  --color-border: rgba(30,77,58,0.14);
+  --color-border-light: rgba(30,77,58,0.08);
 }
 
 /* Dark Mode Support */
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-bg-primary: #0B1220;
-    --color-bg-secondary: #111827;
-    --color-bg-tertiary: #0F1A2B;
-    --color-text-primary: #F8FAFC;
-    --color-text-secondary: #94A3B8;
-    --color-border: rgba(255,255,255,0.12);
+    --color-bg-primary: #F4F1EB;
+    --color-bg-secondary: #E8E3DA;
+    --color-bg-tertiary: #FFFFFF;
+    --color-text-primary: #1E4D3A;
+    --color-text-secondary: #2F6F57;
+    --color-border: rgba(30,77,58,0.14);
   }
 }

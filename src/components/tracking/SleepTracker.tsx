@@ -1,31 +1,30 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { postSleepLog } from "@/src/services/lifestyleApi";
-import { getActiveUserName } from "@/lib/userScopedStorage";
-
-const STORAGE_KEY = "oneman_sleep_logs_v1";
+import { useContext, useMemo, useState } from "react";
+import { AuthContext } from "@/contexts/AuthProvider";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function SleepTracker() {
+  const { user } = useContext(AuthContext);
   const [hours, setHours] = useState(7);
   const [quality, setQuality] = useState(3);
+  const [bedtime, setBedtime] = useState("23:00");
   const [savedAt, setSavedAt] = useState<string | null>(null);
 
   const todayKey = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
   const saveLog = async () => {
-    if (typeof window === "undefined") return;
-    const raw = localStorage.getItem(STORAGE_KEY);
-    const parsed = raw ? (JSON.parse(raw) as Record<string, { hours: number; quality: number }>) : {};
-    parsed[todayKey] = { hours, quality };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+    if (!user) return;
 
-    await postSleepLog({
-      userId: getActiveUserName() || "guest",
-      date: todayKey,
-      hours,
-      quality,
-    });
+    await supabase.from("routine_logs").upsert(
+      {
+        user_id: user.id,
+        log_date: todayKey,
+        sleep_hours: hours,
+        stress_level: Math.max(1, 6 - quality),
+      },
+      { onConflict: "user_id,log_date" }
+    );
 
     setSavedAt(new Date().toLocaleTimeString());
   };
@@ -35,6 +34,8 @@ export default function SleepTracker() {
       <h3 className="text-lg font-semibold mb-4">Sleep Tracker</h3>
       <label className="text-sm text-gray-300">Hours Slept</label>
       <input type="number" min={0} max={14} value={hours} onChange={(event) => setHours(Number(event.target.value))} className="mt-1 mb-3 w-full rounded-xl bg-[#0c1626] border border-white/10 px-3 py-2" />
+      <label className="text-sm text-gray-300">Bedtime</label>
+      <input type="time" value={bedtime} onChange={(event) => setBedtime(event.target.value)} className="mt-1 mb-3 w-full rounded-xl bg-[#0c1626] border border-white/10 px-3 py-2" />
       <label className="text-sm text-gray-300">Sleep Quality (1–5)</label>
       <input type="range" min={1} max={5} value={quality} onChange={(event) => setQuality(Number(event.target.value))} className="w-full mt-2" />
       <p className="text-sm text-blue-200 mt-1">Selected quality: {quality}/5</p>

@@ -1,69 +1,60 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import WeeklyReport from "@/src/components/reports/WeeklyReport";
 import { buildWeeklySummary } from "@/src/utils/weeklyReportEngine";
-import { postWeeklyReport } from "@/src/services/lifestyleApi";
-import { getActiveUserName } from "@/lib/userScopedStorage";
+import { AuthContext } from "@/contexts/AuthProvider";
+import { supabase } from "@/lib/supabaseClient";
 
-function getNumberSeries(storageKey: string): number[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(storageKey);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as Record<string, unknown>;
-    return Object.values(parsed)
-      .map((entry) => {
-        if (typeof entry === "number") return entry;
-        if (typeof entry === "object" && entry && "hours" in entry) return Number((entry as { hours: number }).hours);
-        if (typeof entry === "object" && entry && "intake" in entry) return Number((entry as { intake: number }).intake);
-        return 0;
-      })
-      .filter((value) => Number.isFinite(value));
-  } catch {
-    return [];
-  }
-}
-
-function getMoodSeries(): Array<"calm" | "neutral" | "stressed"> {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem("oneman_mood_logs_v1");
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as Record<string, "calm" | "neutral" | "stressed">;
-    return Object.values(parsed);
-  } catch {
-    return [];
-  }
-}
+type RoutineLog = {
+  hydration_ml?: number | null;
+  sleep_hours?: number | null;
+  stress_level?: number | null;
+  am_done?: boolean;
+  pm_done?: boolean;
+};
 
 export default function WeeklyReportPage() {
   const router = useRouter();
-
-  const summary = useMemo(() => {
-    const sleepHours = getNumberSeries("oneman_sleep_logs_v1");
-    const hydrationMl = getNumberSeries("oneman_hydration_logs_v1");
-    const moods = getMoodSeries();
-    const routineCompliance = [65, 72, 78, 80, 84, 88, 90];
-    const scoreTrend = [62, 66, 68, 71, 73, 76, 78];
-
-    return buildWeeklySummary({ sleepHours, hydrationMl, moods, routineCompliance, scoreTrend });
-  }, []);
+  const { user } = useContext(AuthContext);
+  const [logs, setLogs] = useState<RoutineLog[]>([]);
 
   useEffect(() => {
-    void postWeeklyReport({
-      userId: getActiveUserName() || "guest",
-      strengths: summary.strengths,
-      risks: summary.risks,
-      suggestedFocus: summary.suggestedFocus,
-      avgSleep: summary.avgSleep,
-      avgHydration: summary.avgHydration,
-      compliance: summary.compliance,
-      scoreDelta: summary.scoreDelta,
+    const loadLogs = async () => {
+      if (!user) {
+        setLogs([]);
+        return;
+      }
+
+      const { data } = await supabase
+        .from("routine_logs")
+        .select("hydration_ml,sleep_hours,stress_level,am_done,pm_done")
+        .eq("user_id", user.id)
+        .order("log_date", { ascending: false })
+        .limit(14);
+
+      setLogs((data || []) as RoutineLog[]);
+    };
+
+    loadLogs();
+  }, [user]);
+
+  const summary = useMemo(() => {
+    const sleepHours = logs.map((row) => Number(row.sleep_hours || 0)).filter((v) => v > 0);
+    const hydrationMl = logs.map((row) => Number(row.hydration_ml || 0)).filter((v) => v > 0);
+    const moods = logs.map((row) => {
+      const stress = Number(row.stress_level || 0);
+      if (stress >= 7) return "stressed" as const;
+      if (stress >= 4) return "neutral" as const;
+      return "calm" as const;
     });
-  }, [summary]);
+    const routineCompliance = logs.map((row) => (Number(Boolean(row.am_done)) + Number(Boolean(row.pm_done))) * 50);
+    const scoreTrend = logs.map((row) => Math.max(0, 100 - Number(row.stress_level || 5) * 8)).reverse();
+
+    return buildWeeklySummary({ sleepHours, hydrationMl, moods, routineCompliance, scoreTrend });
+  }, [logs]);
 
   return (
     <div className="min-h-screen bg-[#030917] text-white px-4 py-8">

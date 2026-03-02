@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { galaxyAnalyzeSchema } from "@/lib/server/validators";
+import { isRateLimited } from "@/lib/server/rateLimit";
+import { writeAuditLog } from "@/lib/server/auditLog";
 
 type InputPayload = {
   images: string[];
@@ -39,32 +42,40 @@ function clamp(n: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, n));
 }
 
-function parseHotspots(raw: any): GalaxyHotspot[] {
-  const source = raw?.hotspots || raw?.spots || raw?.markers || [];
+function asRecord(value: unknown): Record<string, unknown> {
+  return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
+}
+
+function parseHotspots(raw: unknown): GalaxyHotspot[] {
+  const parsed = asRecord(raw);
+  const source = parsed.hotspots || parsed.spots || parsed.markers || [];
   if (!Array.isArray(source)) return [];
 
   return source
-    .map((item: any): GalaxyHotspot => {
-      const x = toNumber(item?.x ?? item?.left ?? item?.cx, 50);
-      const y = toNumber(item?.y ?? item?.top ?? item?.cy, 50);
+    .map((item): GalaxyHotspot => {
+      const entry = asRecord(item);
+      const x = toNumber(entry.x ?? entry.left ?? entry.cx, 50);
+      const y = toNumber(entry.y ?? entry.top ?? entry.cy, 50);
       return {
         x: clamp(x, 0, 100),
         y: clamp(y, 0, 100),
-        label: String(item?.label || item?.name || "Affected area"),
-        severity: item?.severity || item?.level,
+        label: String(entry.label || entry.name || "Affected area"),
+        severity: (entry.severity || entry.level) as GalaxyHotspot["severity"],
       };
     })
     .filter((spot) => Number.isFinite(spot.x) && Number.isFinite(spot.y));
 }
 
-function parseIssues(raw: any): GalaxyIssue[] {
-  const list = raw?.issues || raw?.detectedIssues || raw?.findings || [];
+function parseIssues(raw: unknown): GalaxyIssue[] {
+  const parsed = asRecord(raw);
+  const list = parsed.issues || parsed.detectedIssues || parsed.findings || [];
   if (!Array.isArray(list)) return [];
 
   return list
-    .map((issue: any): GalaxyIssue => {
-      const confidence = clamp(toNumber(issue?.confidence ?? issue?.score, 75), 0, 100);
-      const level = String(issue?.impact || issue?.severity || "moderate").toLowerCase();
+    .map((issue): GalaxyIssue => {
+      const entry = asRecord(issue);
+      const confidence = clamp(toNumber(entry.confidence ?? entry.score, 75), 0, 100);
+      const level = String(entry.impact || entry.severity || "moderate").toLowerCase();
       const impact: GalaxyIssue["impact"] =
         level.includes("high") || level.includes("significant")
           ? "significant"
@@ -73,11 +84,11 @@ function parseIssues(raw: any): GalaxyIssue[] {
             : "moderate";
 
       return {
-        name: String(issue?.name || issue?.title || "Detected Concern"),
+        name: String(entry.name || entry.title || "Detected Concern"),
         confidence,
         impact,
-        description: String(issue?.description || issue?.details || "Detected by Galaxy AI image analysis."),
-        affectedArea: String(issue?.affectedArea || issue?.area || "Target region"),
+        description: String(entry.description || entry.details || "Detected by Galaxy AI image analysis."),
+        affectedArea: String(entry.affectedArea || entry.area || "Target region"),
       };
     })
     .filter((issue) => issue.name.length > 0);
@@ -107,7 +118,20 @@ function defaultHotspotsForCategories(categories: string[]): GalaxyHotspot[] {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as InputPayload;
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+    if (isRateLimited(`galaxy:analyze:${ip}`, 20, 60_000)) {
+      await writeAuditLog({ action: "galaxy.analyze", userId: ip, ok: false, route: "/api/galaxy/analyze", detail: "rate_limited" });
+      return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+    }
+
+    const raw = (await request.json()) as InputPayload;
+    const validated = galaxyAnalyzeSchema.safeParse(raw);
+    if (!validated.success) {
+      await writeAuditLog({ action: "galaxy.analyze", userId: ip, ok: false, route: "/api/galaxy/analyze", detail: "validation_failed" });
+      return NextResponse.json({ error: "invalid_payload" }, { status: 400 });
+    }
+
+    const body = validated.data as InputPayload;
 
     if (!Array.isArray(body.images) || body.images.length === 0) {
       return NextResponse.json({ error: "No images provided" }, { status: 400 });
@@ -117,6 +141,7 @@ export async function POST(request: NextRequest) {
     const apiUrl = process.env.GALAXY_API_URL || "https://api.galaxy.ai/photo-analyzer";
 
     if (!apiKey) {
+      await writeAuditLog({ action: "galaxy.analyze", userId: ip, ok: true, route: "/api/galaxy/analyze", detail: "fallback_no_key" });
       return NextResponse.json({
         provider: "galaxy-ai",
         issues: [],
@@ -180,6 +205,8 @@ export async function POST(request: NextRequest) {
         ? Math.round(issues.reduce((sum, issue) => sum + issue.confidence, 0) / issues.length)
         : 75;
 
+    await writeAuditLog({ action: "galaxy.analyze", userId: ip, ok: true, route: "/api/galaxy/analyze", detail: "analyze_success" });
+
     return NextResponse.json({
       provider: "galaxy-ai",
       issues,
@@ -189,6 +216,7 @@ export async function POST(request: NextRequest) {
       rawCount: successful.length,
     });
   } catch (error) {
+    await writeAuditLog({ action: "galaxy.analyze", userId: "anonymous", ok: false, route: "/api/galaxy/analyze", detail: "internal_error" });
     return NextResponse.json(
       {
         error: "Galaxy analyze failed",

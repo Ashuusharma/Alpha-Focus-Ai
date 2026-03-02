@@ -60,11 +60,11 @@ export default function AITestPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--lux-bg-primary)] py-12 relative overflow-hidden text-[var(--lux-text-primary)]">
+    <div className="min-h-screen bg-gradient-to-b from-[#F4EFE6] via-[#EFE8DD] to-[#E5E0D4] py-12 relative overflow-hidden text-[#1F3D2B]">
       {/* Tech Background */}
       <div className="fixed inset-0 pointer-events-none">
-         <div className="absolute top-[20%] right-[10%] w-[500px] h-[500px] bg-[var(--lux-accent)]/5 blur-[120px] rounded-full opacity-30 animate-pulse" />
-         <div className="absolute bottom-[10%] left-[10%] w-[400px] h-[400px] bg-[#0066ff]/5 blur-[120px] rounded-full opacity-30" />
+         <div className="absolute top-[20%] right-[10%] w-[500px] h-[500px] bg-[#2F6F57]/5 blur-[120px] rounded-full opacity-30 animate-pulse" />
+         <div className="absolute bottom-[10%] left-[10%] w-[400px] h-[400px] bg-[#A9CBB7]/10 blur-[120px] rounded-full opacity-30" />
       </div>
 
       <Container>
@@ -73,15 +73,15 @@ export default function AITestPage() {
             <motion.div 
                initial={{ scale: 0.9, opacity: 0 }}
                animate={{ scale: 1, opacity: 1 }}
-               className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-[var(--lux-accent)]/10 border border-[var(--lux-accent)]/20 text-[var(--lux-accent)] mb-6"
+               className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-white/40 border border-white/60 backdrop-blur-md text-[#2F6F57] mb-6 shadow-sm"
             >
                <Brain className="w-5 h-5" />
                <span className="text-sm font-bold tracking-wider uppercase">Architecture v2.0</span>
             </motion.div>
-            <h1 className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-cyan-100 to-[var(--lux-text-secondary)] mb-6">
+            <h1 className="text-5xl font-bold text-[#1F3D2B] mb-6 tracking-tight">
               AI Analysis Engine
             </h1>
-            <p className="text-[var(--lux-text-muted)] text-lg max-w-2xl mx-auto">
+            <p className="text-[#6B665D] text-lg max-w-2xl mx-auto">
               Visualizing how our multi-modal AI combines computer vision with clinical heuristics to generate personalized recovery plans.
             </p>
           </div>
@@ -98,20 +98,20 @@ export default function AITestPage() {
                    key={i}
                    className={`p-6 rounded-2xl border transition-all duration-500 ${
                      demoStep >= i 
-                       ? "bg-[var(--lux-accent)]/10 border-[var(--lux-accent)]/50 shadow-[0_0_20px_var(--lux-accent)]" 
-                       : "lux-card opacity-50"
+                       ? "bg-white/80 border-[#2F6F57] shadow-lg ring-1 ring-[#2F6F57]/20" 
+                       : "bg-white/40 border-white/40 opacity-50"
                    }`}
                  >
                    <div className="flex items-center gap-4">
-                     <div className={`p-3 rounded-xl ${demoStep >= i ? "bg-[var(--lux-accent)] text-black" : "bg-[var(--lux-bg-secondary)] text-[var(--lux-text-muted)]"}`}>
+                     <div className={`p-3 rounded-xl transition-colors ${demoStep >= i ? "bg-[#2F6F57] text-white" : "bg-white/50 text-[#6B665D]"}`}>
                        <step.icon className="w-6 h-6" />
                      </div>
                      <div>
-                       <h3 className={`font-bold ${demoStep >= i ? "text-[var(--lux-text-primary)]" : "text-[var(--lux-text-muted)]"}`}>{step.title}</h3>
-                       <p className="text-xs text-[var(--lux-text-muted)] mt-1">{step.desc}</p>
+                       <h3 className={`font-bold ${demoStep >= i ? "text-[#1F3D2B]" : "text-[#6B665D]"}`}>{step.title}</h3>
+                       <p className="text-xs text-[#6B665D] mt-1">{step.desc}</p>
                      </div>
-                     {demoStep > i && <CheckCircle2 className="w-5 h-5 text-emerald-400 ml-auto" />}
-                     {demoStep === i && loading && <Activity className="w-5 h-5 text-[var(--lux-accent)] ml-auto animate-pulse" />}
+                     {demoStep > i && <CheckCircle2 className="w-5 h-5 text-[#2F6F57] ml-auto" />}
+                     {demoStep === i && loading && <Activity className="w-5 h-5 text-[#2F6F57] ml-auto animate-pulse" />}
                    </div>
                  </div>
                ))}
@@ -119,7 +119,7 @@ export default function AITestPage() {
                {demoStep === 0 && !loading && (
                  <button
                     onClick={runDemo}
-                    className="w-full py-4 text-black rounded-xl font-bold transition shadow-[0_0_20px_var(--lux-accent)] hover:shadow-[0_0_30px_var(--lux-accent)] flex items-center justify-center gap-2 mt-8 bg-[var(--lux-accent)]"
+                    className="w-full py-4 text-white rounded-xl font-bold transition-all shadow-lg hover:shadow-xl hover:bg-[#1F4D3B] flex items-center justify-center gap-2 mt-8 bg-[#2F6F57]"
                  >
                     <Activity className="w-5 h-5" />
                     Start Simulation
@@ -129,25 +129,25 @@ export default function AITestPage() {
 
              {/* RIGHT COLUMN: Terminal Output */}
              <div className="lg:col-span-2">
-               <div className="bg-[#060b14] border border-[var(--lux-glass-border)] rounded-2xl overflow-hidden shadow-2xl h-[600px] flex flex-col relative">
+               <div className="bg-[#121212] border border-[#2F6F57]/20 rounded-2xl overflow-hidden shadow-2xl h-[600px] flex flex-col relative text-gray-300">
                  {/* Terminal Header */}
-                 <div className="bg-[var(--lux-bg-secondary)] px-6 py-4 flex items-center justify-between border-b border-[var(--lux-glass-border)]">
+                 <div className="bg-[#1A1A1A] px-6 py-4 flex items-center justify-between border-b border-white/10">
                    <div className="flex gap-2">
                      <div className="w-3 h-3 rounded-full bg-red-500/50" />
                      <div className="w-3 h-3 rounded-full bg-yellow-500/50" />
                      <div className="w-3 h-3 rounded-full bg-green-500/50" />
                    </div>
-                   <div className="text-xs font-mono text-[var(--lux-text-muted)] flex items-center gap-2">
+                   <div className="text-xs font-mono text-gray-500 flex items-center gap-2">
                      <Lock className="w-3 h-3" />
                      SECURE CONNECTION
                    </div>
                  </div>
                  
                  {/* Terminal Body */}
-                 <div className="p-8 flex-1 overflow-y-auto font-mono text-sm space-y-6 scrollbar-thin scrollbar-thumb-[var(--lux-bg-elevated)]">
+                 <div className="p-8 flex-1 overflow-y-auto font-mono text-sm space-y-6 scrollbar-thin scrollbar-thumb-gray-800">
                    {demoStep === 0 && (
-                     <div className="text-[var(--lux-text-muted)]">
-                       <span className="text-emerald-400">root@ai-engine:~$</span> waiting for input stream...<br/>
+                     <div className="text-gray-500">
+                       <span className="text-[#2F6F57]">root@ai-engine:~$</span> waiting for input stream...<br/>
                        <span className="text-blue-400/50">Ready to initialize analysis sequence.</span>
                      </div>
                    )}

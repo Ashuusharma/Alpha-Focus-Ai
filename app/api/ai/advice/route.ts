@@ -1,5 +1,7 @@
 import { createHash } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
+import { aiAdviceSchema } from "@/lib/server/validators";
+import { writeAuditLog } from "@/lib/server/auditLog";
 
 type AdviceRequest = {
   issues: string[];
@@ -91,7 +93,14 @@ function normalizeActions(actions: unknown): string[] {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as AdviceRequest;
+    const raw = (await req.json()) as AdviceRequest;
+    const validated = aiAdviceSchema.safeParse(raw);
+    if (!validated.success) {
+      await writeAuditLog({ action: "ai.advice", userId: "anonymous", ok: false, route: "/api/ai/advice", detail: "validation_failed" });
+      return NextResponse.json({ error: "invalid_payload" }, { status: 400 });
+    }
+
+    const body = validated.data as AdviceRequest;
 
     if (!Array.isArray(body.issues) || body.issues.length === 0) {
       return NextResponse.json({ error: "issues are required" }, { status: 400 });
@@ -100,6 +109,7 @@ export async function POST(req: NextRequest) {
     const ip = getClientIp(req);
     if (!checkRateLimit(ip)) {
       const fallback = buildFallback(body);
+      await writeAuditLog({ action: "ai.advice", userId: ip, ok: false, route: "/api/ai/advice", detail: "rate_limited_fallback" });
       return NextResponse.json(
         {
           ...fallback,
@@ -112,6 +122,7 @@ export async function POST(req: NextRequest) {
     const cacheKey = makeCacheKey(body);
     const cached = responseCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) {
+      await writeAuditLog({ action: "ai.advice", userId: ip, ok: true, route: "/api/ai/advice", detail: "cache_hit" });
       return NextResponse.json({ ...cached.value, meta: { ...(cached.value.meta ?? {}), cached: true } });
     }
 
@@ -144,6 +155,7 @@ Rules:\n
         ...fallback,
         meta: { cached: false, remainingBudgetUsd: Number(remaining.toFixed(4)) },
       };
+      await writeAuditLog({ action: "ai.advice", userId: ip, ok: true, route: "/api/ai/advice", detail: "budget_fallback" });
       return NextResponse.json(response);
     }
 
@@ -172,6 +184,7 @@ Rules:\n
 
     if (!upstream.ok) {
       const fallback = buildFallback(body);
+      await writeAuditLog({ action: "ai.advice", userId: ip, ok: false, route: "/api/ai/advice", detail: "upstream_error" });
       return NextResponse.json(fallback);
     }
 
@@ -219,8 +232,10 @@ Rules:\n
       value: response,
     });
 
+    await writeAuditLog({ action: "ai.advice", userId: ip, ok: true, route: "/api/ai/advice", detail: "ai_success" });
     return NextResponse.json(response);
   } catch {
+    await writeAuditLog({ action: "ai.advice", userId: "anonymous", ok: false, route: "/api/ai/advice", detail: "internal_error" });
     return NextResponse.json(
       {
         summary: "We could not fetch AI guidance right now. Your core report is still available.",

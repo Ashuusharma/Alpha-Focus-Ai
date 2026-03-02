@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, ChevronLeft, ScanLine, Sparkles } from "lucide-react";
 
 import { analyzeImage, AnalyzerType, AnalysisResult, DetectedIssue } from "@/lib/analyzeImage";
-import { getActiveUserName, getScopedSessionItem } from "@/lib/userScopedStorage";
-import { postScanHistory } from "@/src/services/lifestyleApi";
+import { AuthContext } from "@/contexts/AuthProvider";
+import { supabase } from "@/lib/supabaseClient";
 import MultiAngleUpload from "./_components/ImageUpload";
 import AnalyzerSelector from "./_components/AnalyzerSelector";
 
@@ -96,6 +96,7 @@ function persistScanLocally(payload: {
 
 export default function ImageAnalyzerPage() {
   const router = useRouter();
+  const { user } = useContext(AuthContext);
 
   const [step, setStep] = useState<"select" | "upload" | "analyzing" | "done">("select");
   const [selectedType, setSelectedType] = useState<AnalyzerType | null>(null);
@@ -114,10 +115,10 @@ export default function ImageAnalyzerPage() {
     setAnalysisProgress(8);
     setAnalysisStatus("Preparing secure request...");
 
-        const savedAnswersRaw =
-          typeof window !== "undefined"
-            ? getScopedSessionItem("assessment_answers_v1", getActiveUserName(), true)
-            : null;
+    const savedAnswersRaw =
+      typeof window !== "undefined"
+        ? sessionStorage.getItem("assessment_answers_v1")
+        : null;
     const answers = savedAnswersRaw ? (JSON.parse(savedAnswersRaw) as Record<string, string>) : {};
 
     const answerCategories = extractOpenedCategoriesFromAnswers(answers);
@@ -190,16 +191,18 @@ export default function ImageAnalyzerPage() {
           issues: galaxyIssues,
           finalResult,
         });
+      }
 
+      if (user) {
         const hairAnalyzers: AnalyzerType[] = ["hair", "scalp", "beard"];
         const isHairFlow = hairAnalyzers.includes(selectedType);
-        void postScanHistory({
-          userId: getActiveUserName() || "guest",
-          scanDate: new Date().toISOString(),
-          skinScore: isHairFlow ? 0 : finalResult.confidence,
-          hairScore: isHairFlow ? finalResult.confidence : 0,
-          imageUrls: [galaxyData?.annotatedImageUrl || images[0], ...images],
-          analyzerType: selectedType,
+        await supabase.from("photo_scans").insert({
+          user_id: user.id,
+          scan_date: new Date().toISOString(),
+          image_url: galaxyData?.annotatedImageUrl || images[0],
+          density_score: isHairFlow ? finalResult.confidence : null,
+          inflammation_score: !isHairFlow ? Math.max(0, 100 - finalResult.confidence) : null,
+          oil_balance_score: !isHairFlow ? finalResult.confidence : null,
         });
       }
 
@@ -220,27 +223,27 @@ export default function ImageAnalyzerPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-white selection:bg-primary/30">
-      <header className="fixed top-0 left-0 right-0 z-40 bg-background/80 backdrop-blur-md border-b border-white/5">
-        <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
+    <div className="min-h-screen bg-gradient-to-b from-[#F4EFE6] via-[#EFE8DD] to-[#E5E0D4] text-[#1F3D2B] selection:bg-[#1F3D2B]/20">
+      <header className="fixed top-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-md border-b border-[#1F3D2B]/10 shadow-sm">
+        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <button
             onClick={() => router.push("/")}
-            className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+            className="flex items-center gap-2 text-[#6B665D] hover:text-[#1F3D2B] transition-colors"
           >
             <ChevronLeft className="w-5 h-5" />
             <span>Back</span>
           </button>
-          <span className="font-semibold bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 to-blue-400">Alpha Focus Analyzer</span>
+          <span className="font-semibold text-[#1F3D2B]">Alpha Focus Analyzer</span>
           <button
             onClick={() => router.push("/assessment")}
-            className="text-xs px-3 py-1.5 rounded-lg border border-white/15 text-gray-200 hover:bg-white/10 transition-colors"
+            className="text-xs px-3 py-1.5 rounded-lg border border-[#1F3D2B]/10 text-[#1F3D2B] bg-white/60 hover:bg-white/80 transition-colors shadow-sm"
           >
             Questions
           </button>
         </div>
       </header>
 
-      <main className="pt-24 pb-20 px-4 max-w-3xl mx-auto min-h-screen flex flex-col justify-center">
+      <main className="pt-24 pb-20 px-4 max-w-6xl mx-auto min-h-screen flex flex-col justify-center">
         <AnimatePresence mode="wait">
           {step === "select" && (
             <motion.div
@@ -251,14 +254,14 @@ export default function ImageAnalyzerPage() {
               className="space-y-8"
             >
               <div className="text-center space-y-4">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-secondary mx-auto flex items-center justify-center shadow-lg shadow-primary/20">
+                <div className="w-20 h-20 rounded-2xl bg-[#1F3D2B] mx-auto flex items-center justify-center shadow-[0_10px_24px_rgba(47,111,87,0.2)]">
                   <ScanLine className="w-8 h-8 text-white" />
                 </div>
-                <h1 className="text-3xl font-bold">What would you like to analyze?</h1>
-                <p className="text-gray-400">Select an area for our AI to examine.</p>
+                <h1 className="text-4xl font-bold text-[#1F3D2B]">What would you like to analyze?</h1>
+                <p className="text-[#6B665D]">Select an area for our AI clinical engine to evaluate.</p>
               </div>
 
-              <div className="bg-surface rounded-3xl border border-white/5 p-6 md:p-8">
+              <div className="bg-white/60 backdrop-blur-sm rounded-3xl border border-white/40 p-8 md:p-10 shadow-sm">
                 <AnalyzerSelector selected={selectedType} onSelect={handleTypeSelect} />
               </div>
             </motion.div>
@@ -275,17 +278,17 @@ export default function ImageAnalyzerPage() {
               <div className="flex items-center gap-4 mb-4">
                 <button
                   onClick={() => setStep("select")}
-                  className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
+                  className="w-10 h-10 rounded-full bg-white/60 border border-white/40 hover:bg-white/80 flex items-center justify-center transition-colors shadow-sm"
                 >
-                  <ChevronLeft className="w-5 h-5" />
+                  <ChevronLeft className="w-5 h-5 text-[#1F3D2B]" />
                 </button>
                 <div>
-                  <h2 className="text-xl font-bold">Upload Photos</h2>
-                  <p className="text-sm text-gray-400">Capture 3 angles for best Galaxy AI hotspot accuracy</p>
+                  <h2 className="text-2xl font-bold text-[#1F3D2B]">Upload Photos</h2>
+                  <p className="text-sm text-[#6B665D]">Capture 3 angles for stronger hotspot confidence and report quality</p>
                 </div>
               </div>
 
-              <div className="bg-surface rounded-3xl border border-white/5 p-6 md:p-8">
+              <div className="bg-white/60 backdrop-blur-sm rounded-3xl border border-white/40 p-8 md:p-10 shadow-sm">
                 <MultiAngleUpload analyzerType={selectedType || "skin"} onAllCaptured={handleAllCaptured} />
               </div>
             </motion.div>
@@ -300,12 +303,12 @@ export default function ImageAnalyzerPage() {
               className="flex flex-col items-center justify-center text-center space-y-6 py-20"
             >
               <div className="relative">
-                <div className="w-24 h-24 rounded-full border-4 border-white/10 border-t-primary animate-spin" />
+                <div className="w-24 h-24 rounded-full border-4 border-[#D9D2C7] border-t-[#2F6F57] animate-spin" />
                 <div className="absolute inset-0 flex items-center justify-center">
                   {step === "done" ? (
-                    <Check className="w-8 h-8 text-emerald-400" />
+                    <Check className="w-8 h-8 text-[#2F6F57]" />
                   ) : (
-                    <Sparkles className="w-8 h-8 text-primary animate-pulse" />
+                    <Sparkles className="w-8 h-8 text-[#2F6F57] animate-pulse" />
                   )}
                 </div>
               </div>
@@ -314,17 +317,17 @@ export default function ImageAnalyzerPage() {
                 <h2 className="text-2xl font-bold mb-2">
                   {step === "done" ? "Analysis Complete" : "Analyzing Images..."}
                 </h2>
-                <p className="text-gray-400">{analysisStatus}</p>
+                <p className="text-[#2F6F57]">{analysisStatus}</p>
               </div>
 
               <div className="w-full max-w-md">
-                <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+                <div className="h-2 w-full bg-[#E2DDD4] rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-300"
+                    className="h-full bg-medical-gradient transition-all duration-300"
                     style={{ width: `${analysisProgress}%` }}
                   />
                 </div>
-                <p className="text-xs text-gray-400 mt-2">{analysisProgress}%</p>
+                <p className="text-xs text-[#6E9F87] mt-2">{analysisProgress}%</p>
               </div>
             </motion.div>
           )}

@@ -18,6 +18,7 @@ import {
   getActiveChallengeId,
   setActiveChallengeId,
   calculateStreak,
+  clearChallengeProgress,
 } from "@/lib/challengeEngine";
 import { useRewardsStore } from "@/lib/rewardsStore";
 
@@ -66,9 +67,25 @@ export default function ChallengesPage() {
       setActiveChallengeId(challenge.id);
       setActiveId(challenge.id);
       setProgress(newProgress);
+      setActiveWeek(0);
     },
     []
   );
+
+  const setChallengeActive = useCallback((challengeId: string) => {
+    setActiveChallengeId(challengeId);
+    setActiveId(challengeId);
+  }, []);
+
+  const pauseActiveChallenge = useCallback(() => {
+    setActiveChallengeId(null);
+    setActiveId(null);
+  }, []);
+
+  const restartChallenge = useCallback((challenge: Challenge) => {
+    clearChallengeProgress(challenge.id);
+    startChallenge(challenge);
+  }, [startChallenge]);
 
   const toggleDay = useCallback(
     (day: number, xp: number) => {
@@ -113,20 +130,20 @@ export default function ChallengesPage() {
 
   if (view === "list") {
     return (
-      <div className="min-h-screen bg-[var(--lux-bg-primary)] text-[var(--lux-text-primary)] relative overflow-hidden">
+      <div className="min-h-screen bg-gradient-to-b from-[#F4EFE6] via-[#EFE8DD] to-[#E5E0D4] text-[#1F3D2B] relative overflow-hidden">
         {/* Background Ambience */}
         <div className="fixed inset-0 pointer-events-none">
-          <div className="absolute top-[10%] left-[20%] w-[600px] h-[600px] bg-[var(--lux-accent)]/5 blur-[120px] rounded-full opacity-30" />
-          <div className="absolute bottom-[10%] right-[10%] w-[500px] h-[500px] bg-[#0066ff]/5 blur-[120px] rounded-full opacity-30" />
+          <div className="absolute top-[10%] left-[20%] w-[600px] h-[600px] bg-[#1F3D2B]/5 blur-[120px] rounded-full opacity-30" />
+          <div className="absolute bottom-[10%] right-[10%] w-[500px] h-[500px] bg-[#A9CBB7]/20 blur-[120px] rounded-full opacity-30" />
         </div>
 
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 relative z-10">
           {/* Back */}
           <button
             onClick={() => router.back()}
-            className="group flex items-center space-x-2 text-[var(--lux-text-muted)] hover:text-[var(--lux-text-primary)] transition-colors mb-8"
+            className="group flex items-center space-x-2 text-[#6B665D] hover:text-[#1F3D2B] transition-colors mb-8"
           >
-            <div className="p-1 rounded-lg bg-[var(--lux-bg-elevated)] border border-[var(--lux-glass-border)] group-hover:border-[var(--lux-accent)]/50 transition-colors">
+            <div className="p-1 rounded-lg bg-white/60 border border-white/40 group-hover:border-[#1F3D2B]/50 transition-colors shadow-sm">
               <ChevronLeft className="w-4 h-4" />
             </div>
             <span className="text-sm font-medium">Back</span>
@@ -134,19 +151,19 @@ export default function ChallengesPage() {
 
           {/* Header */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
-            <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-[var(--lux-bg-elevated)] border border-[var(--lux-glass-border)] mb-6 shadow-lg shadow-[var(--lux-accent)]/10">
-              <Trophy className="w-8 h-8 text-[var(--lux-accent)]" />
+            <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-white/60 border border-white/40 mb-6 shadow-sm">
+              <Trophy className="w-8 h-8 text-[#1F3D2B]" />
             </div>
-            <h1 className="text-4xl sm:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-[var(--lux-text-secondary)] mb-4">
+            <h1 className="text-4xl sm:text-5xl font-bold text-[#1F3D2B] mb-4">
               Grooming Challenges
             </h1>
-            <p className="text-lg text-[var(--lux-text-muted)] max-w-2xl mx-auto">
+            <p className="text-lg text-[#6B665D] max-w-2xl mx-auto">
               Transform yourself with daily tasks. Build discipline. Track your streak. Become the best version of yourself.
             </p>
             <div className="mt-5 flex flex-wrap justify-center gap-2">
-              <button onClick={() => router.push("/assessment")} className="px-4 py-2 rounded-xl border border-white/20 bg-white/[0.04] text-sm font-semibold hover:bg-white/[0.08] transition-colors">Answer Questions</button>
-              <button onClick={() => router.push("/image-analyzer")} className="px-4 py-2 rounded-xl border border-white/20 bg-white/[0.04] text-sm font-semibold hover:bg-white/[0.08] transition-colors">Analyze Photo</button>
-              <button onClick={() => router.push("/result")} className="px-4 py-2 rounded-xl bg-blue-600 text-sm font-semibold hover:bg-blue-500 transition-colors">Open Report</button>
+              <button onClick={() => router.push("/assessment")} className="px-4 py-2 rounded-xl border border-[#1F3D2B]/10 bg-white/60 text-[#1F3D2B] text-sm font-semibold hover:bg-white/80 transition-colors shadow-sm">Answer Questions</button>
+              <button onClick={() => router.push("/image-analyzer")} className="px-4 py-2 rounded-xl border border-[#1F3D2B]/10 bg-white/60 text-[#1F3D2B] text-sm font-semibold hover:bg-white/80 transition-colors shadow-sm">Analyze Photo</button>
+              <button onClick={() => router.push("/result")} className="px-4 py-2 rounded-xl bg-[#1F3D2B] text-white text-sm font-semibold hover:bg-[#2A5239] transition-colors shadow-sm">Open Report</button>
             </div>
           </motion.div>
 
@@ -155,7 +172,7 @@ export default function ChallengesPage() {
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="mb-10 p-6 rounded-2xl bg-gradient-to-r from-[var(--lux-accent)]/10 to-[#0066ff]/10 border border-[var(--lux-accent)]/20 text-white cursor-pointer hover:border-[var(--lux-accent)]/40 transition-all shadow-[0_0_30px_-10px_rgba(0,242,255,0.1)]"
+              className="mb-10 p-6 rounded-2xl bg-white/60 backdrop-blur-md border border-white/40 text-[#1F3D2B] cursor-pointer hover:border-[#1F3D2B]/40 transition-all shadow-sm"
               onClick={() => {
                 const c = challenges.find((ch) => ch.id === activeChallengeId);
                 if (c) openChallenge(c);
@@ -163,33 +180,34 @@ export default function ChallengesPage() {
             >
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-[var(--lux-accent)]/10 flex items-center justify-center text-2xl border border-[var(--lux-accent)]/20">
+                  <div className="w-12 h-12 rounded-xl bg-[#1F3D2B]/10 flex items-center justify-center text-2xl border border-[#1F3D2B]/20">
                     {challenges.find((ch) => ch.id === activeChallengeId)?.icon || "🔥"}
                   </div>
                   <div>
-                    <p className="text-xs text-[var(--lux-accent)] uppercase tracking-wider font-bold">Active Challenge</p>
-                    <p className="text-lg font-bold text-[var(--lux-text-primary)]">
+                    <p className="text-xs text-[#1F3D2B] uppercase tracking-wider font-bold">Active Challenge</p>
+                    <p className="text-lg font-bold text-[#1F3D2B]">
                       {challenges.find((ch) => ch.id === activeChallengeId)?.title}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-6">
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-orange-400 flex items-center gap-1">
+                    <p className="text-2xl font-bold text-orange-500 flex items-center gap-1">
                       <Flame className="w-5 h-5" />
                       {progress.streak}
                     </p>
-                    <p className="text-xs text-[var(--lux-text-muted)]">Streak</p>
+                    <p className="text-xs text-[#6B665D]">Streak</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-yellow-400">{progress.totalXP}</p>
-                    <p className="text-xs text-[var(--lux-text-muted)]">XP</p>
+                    <p className="text-2xl font-bold text-yellow-500">{progress.totalXP}</p>
+                    <p className="text-xs text-[#6B665D]">A$</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-[var(--lux-accent)]">{progress.completedDays.length}</p>
-                    <p className="text-xs text-[var(--lux-text-muted)]">Days Done</p>
+                    <p className="text-2xl font-bold text-[#1F3D2B]">{progress.completedDays.length}</p>
+                    <p className="text-xs text-[#6B665D]">Days Done</p>
                   </div>
-                  <ArrowRight className="w-5 h-5 text-[var(--lux-accent)]" />
+                  <ArrowRight className="w-5 h-5 text-[#1F3D2B]" />
+                  <button onClick={() => router.push("/result")} className="px-4 py-2 rounded-xl bg-[#1F3D2B] text-sm font-semibold text-white transition-colors shadow-sm">Open Report</button>
                 </div>
               </div>
             </motion.div>
@@ -212,8 +230,8 @@ export default function ChallengesPage() {
                   transition={{ delay: idx * 0.15 }}
                   className={`group relative overflow-hidden rounded-3xl border transition-all duration-300 cursor-pointer hover:scale-[1.01] ${
                     isActive
-                      ? "border-[var(--lux-accent)]/30 bg-[var(--lux-accent)]/5"
-                      : "lux-card hover:border-[var(--lux-accent)]/30"
+                      ? "border-[#1F3D2B]/30 bg-[#1F3D2B]/5"
+                      : "bg-white/40 border-white/40 hover:border-[#1F3D2B]/30 shadow-sm"
                   }`}
                   onClick={() => openChallenge(challenge)}
                 >
@@ -222,32 +240,32 @@ export default function ChallengesPage() {
                   
                   <div className="p-8">
                     <div className="flex items-start gap-6">
-                      <div className={`w-16 h-16 rounded-2xl bg-[var(--lux-bg-elevated)] border border-[var(--lux-glass-border)] flex items-center justify-center text-3xl shadow-lg flex-shrink-0 relative overflow-hidden`}>
+                      <div className={`w-16 h-16 rounded-2xl bg-white/60 border border-white/40 flex items-center justify-center text-3xl shadow-sm flex-shrink-0 relative overflow-hidden`}>
                         <div className={`absolute inset-0 bg-gradient-to-br ${challenge.color} opacity-20`} />
                         <span className="relative z-10">{challenge.icon}</span>
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-1">
-                          <h2 className="text-2xl font-bold text-[var(--lux-text-primary)]">{challenge.title}</h2>
+                          <h2 className="text-2xl font-bold text-[#1F3D2B]">{challenge.title}</h2>
                           {isActive && (
-                            <span className="px-2 py-0.5 rounded-full bg-[var(--lux-accent)]/20 text-[var(--lux-accent)] text-xs font-bold uppercase">
+                            <span className="px-2 py-0.5 rounded-full bg-[#1F3D2B]/20 text-[#1F3D2B] text-xs font-bold uppercase">
                               Active
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-[var(--lux-text-muted)] mb-3">{challenge.subtitle}</p>
-                        <p className="text-[var(--lux-text-secondary)] text-sm leading-relaxed mb-4">
+                        <p className="text-sm text-[#6B665D] mb-3">{challenge.subtitle}</p>
+                        <p className="text-[#2F6F57] text-sm leading-relaxed mb-4">
                           {challenge.description}
                         </p>
 
                         {/* Stats row */}
-                        <div className="flex items-center gap-6 text-sm text-[var(--lux-text-muted)] mb-4">
+                        <div className="flex items-center gap-6 text-sm text-[#6B665D] mb-4">
                           <span className="flex items-center gap-1.5">
                             <Calendar className="w-4 h-4" /> {challenge.totalDays} days
                           </span>
                           <span className="flex items-center gap-1.5">
-                            <Zap className="w-4 h-4 text-yellow-400" />{" "}
-                            {challenge.weeks.reduce((acc, w) => acc + w.tasks.reduce((a, t) => a + t.xpReward, 0) + (w.bonusTask?.xpReward || 0), 0)} XP total
+                            <Zap className="w-4 h-4 text-yellow-500" />{" "}
+                            {challenge.weeks.reduce((acc, w) => acc + w.tasks.reduce((a, t) => a + t.xpReward, 0) + (w.bonusTask?.xpReward || 0), 0)} A$ total
                           </span>
                           <span className="flex items-center gap-1.5">
                             <Target className="w-4 h-4" /> {challenge.weeks.length} weeks
@@ -257,7 +275,7 @@ export default function ChallengesPage() {
                         {/* Benefits */}
                         <div className="flex flex-wrap gap-2">
                           {challenge.benefits.map((b, i) => (
-                            <span key={i} className="px-3 py-1 rounded-full bg-[var(--lux-bg-secondary)] border border-[var(--lux-glass-border)] text-xs text-[var(--lux-text-secondary)]">
+                            <span key={i} className="px-3 py-1 rounded-full bg-white/40 border border-white/40 text-xs text-[#2F6F57]">
                               {b}
                             </span>
                           ))}
@@ -266,11 +284,11 @@ export default function ChallengesPage() {
                         {/* Progress bar if started */}
                         {savedProgress && (
                           <div className="mt-4">
-                            <div className="flex justify-between text-xs text-[var(--lux-text-muted)] mb-1">
+                            <div className="flex justify-between text-xs text-[#6B665D] mb-1">
                               <span>Progress</span>
                               <span>{pct}%</span>
                             </div>
-                            <div className="h-2 bg-[var(--lux-bg-secondary)] rounded-full overflow-hidden">
+                            <div className="h-2 bg-white/40 rounded-full overflow-hidden border border-white/20">
                               <div
                                 className={`h-full rounded-full bg-gradient-to-r ${challenge.color}`}
                                 style={{ width: `${pct}%` }}
@@ -298,20 +316,20 @@ export default function ChallengesPage() {
   const currentWeek = selectedChallenge.weeks[activeWeek];
 
   return (
-    <div className="min-h-screen bg-[var(--lux-bg-primary)] text-[var(--lux-text-primary)] relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-[#F4EFE6] via-[#EFE8DD] to-[#E5E0D4] text-[#1F3D2B] relative overflow-hidden">
       {/* Background */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-[10%] right-[10%] w-[600px] h-[600px] bg-[var(--lux-accent)]/5 blur-[120px] rounded-full opacity-30" />
-        <div className="absolute bottom-[20%] left-[5%] w-[400px] h-[400px] bg-[#0066ff]/5 blur-[120px] rounded-full opacity-30" />
+        <div className="absolute top-[10%] right-[10%] w-[600px] h-[600px] bg-[#2F6F57]/5 blur-[120px] rounded-full opacity-30" />
+        <div className="absolute bottom-[20%] left-[5%] w-[400px] h-[400px] bg-[#A9CBB7]/20 blur-[120px] rounded-full opacity-30" />
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 relative z-10">
         {/* Back */}
         <button
           onClick={() => setView("list")}
-          className="group flex items-center space-x-2 text-[var(--lux-text-muted)] hover:text-[var(--lux-text-primary)] transition-colors mb-8"
+          className="group flex items-center space-x-2 text-[#6B665D] hover:text-[#1F3D2B] transition-colors mb-8"
         >
-          <div className="p-1 rounded-lg bg-[var(--lux-bg-elevated)] border border-[var(--lux-glass-border)] group-hover:border-[var(--lux-accent)]/50 transition-colors">
+          <div className="p-1 rounded-lg bg-white/60 backdrop-blur-md border border-white/40 group-hover:border-[#2F6F57]/50 transition-colors">
             <ChevronLeft className="w-4 h-4" />
           </div>
           <span className="text-sm font-medium">All Challenges</span>
@@ -320,17 +338,17 @@ export default function ChallengesPage() {
         {/* Challenge Header */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-10">
           <div className="flex items-start gap-6 mb-6">
-            <div className={`w-20 h-20 rounded-2xl bg-[var(--lux-bg-elevated)] border border-[var(--lux-glass-border)] flex items-center justify-center text-4xl shadow-lg flex-shrink-0 relative overflow-hidden`}>
+            <div className={`w-20 h-20 rounded-2xl bg-white/60 backdrop-blur-md border border-white/40 flex items-center justify-center text-4xl shadow-sm flex-shrink-0 relative overflow-hidden`}>
               <div className={`absolute inset-0 bg-gradient-to-br ${selectedChallenge.color} opacity-20`} />
               <span className="relative z-10">{selectedChallenge.icon}</span>
             </div>
             <div>
-              <h1 className="text-3xl sm:text-4xl font-bold text-[var(--lux-text-primary)] mb-2">{selectedChallenge.title}</h1>
-              <p className="text-[var(--lux-text-muted)]">{selectedChallenge.description}</p>
+              <h1 className="text-3xl sm:text-4xl font-bold text-[#1F3D2B] mb-2">{selectedChallenge.title}</h1>
+              <p className="text-[#6B665D]">{selectedChallenge.description}</p>
               <div className="mt-4 flex flex-wrap gap-2">
-                <button onClick={() => router.push("/assessment")} className="px-4 py-2 rounded-xl border border-white/20 bg-white/[0.04] text-sm font-semibold hover:bg-white/[0.08] transition-colors">Answer Questions</button>
-                <button onClick={() => router.push("/image-analyzer")} className="px-4 py-2 rounded-xl border border-white/20 bg-white/[0.04] text-sm font-semibold hover:bg-white/[0.08] transition-colors">Analyze Photo</button>
-                <button onClick={() => router.push("/result")} className="px-4 py-2 rounded-xl bg-blue-600 text-sm font-semibold hover:bg-blue-500 transition-colors">Open Report</button>
+                <button onClick={() => router.push("/assessment")} className="px-4 py-2 rounded-xl border border-[#D9D2C7] bg-[#F7F4EE] text-sm font-semibold text-[#1F3D2B] hover:bg-[#E8EFEA] transition-colors">Answer Questions</button>
+                <button onClick={() => router.push("/image-analyzer")} className="px-4 py-2 rounded-xl border border-[#D9D2C7] bg-[#F7F4EE] text-sm font-semibold text-[#1F3D2B] hover:bg-[#E8EFEA] transition-colors">Analyze Photo</button>
+                <button onClick={() => router.push("/result")} className="px-4 py-2 rounded-xl bg-medical-gradient text-sm font-semibold text-[#F4F1EB] transition-colors">Open Report</button>
               </div>
             </div>
           </div>
@@ -339,17 +357,17 @@ export default function ChallengesPage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[
               { label: "Streak", value: progress?.streak || 0, icon: Flame, color: "text-orange-400", suffix: " days" },
-              { label: "XP Earned", value: progress?.totalXP || 0, icon: Zap, color: "text-yellow-400", suffix: "" },
-              { label: "Completed", value: progress?.completedDays.length || 0, icon: CheckCircle2, color: "text-[var(--lux-accent)]", suffix: `/${selectedChallenge.totalDays}` },
+              { label: "A$ Earned", value: progress?.totalXP || 0, icon: Zap, color: "text-yellow-400", suffix: "" },
+              { label: "Completed", value: progress?.completedDays.length || 0, icon: CheckCircle2, color: "text-[#2F6F57]", suffix: `/${selectedChallenge.totalDays}` },
               { label: "Longest Streak", value: progress?.longestStreak || 0, icon: TrendingUp, color: "text-purple-400", suffix: " days" },
             ].map((s) => (
-              <div key={s.label} className="lux-card p-4 border border-[var(--lux-glass-border)] text-center">
+              <div key={s.label} className="bg-white/60 backdrop-blur-md rounded-2xl p-4 border border-white/40 shadow-sm text-center">
                 <s.icon className={`w-5 h-5 mx-auto mb-2 ${s.color}`} />
-                <p className="text-2xl font-bold text-[var(--lux-text-primary)]">
+                <p className="text-2xl font-bold text-[#1F3D2B]">
                   {s.value}
-                  <span className="text-sm text-[var(--lux-text-muted)] font-normal">{s.suffix}</span>
+                  <span className="text-sm text-[#6B665D] font-normal">{s.suffix}</span>
                 </p>
-                <p className="text-xs text-[var(--lux-text-muted)] mt-1">{s.label}</p>
+                <p className="text-xs text-[#6B665D] mt-1">{s.label}</p>
               </div>
             ))}
           </div>
@@ -358,10 +376,10 @@ export default function ChallengesPage() {
           {progress && (
             <div className="mt-6">
               <div className="flex justify-between text-sm mb-2">
-                <span className="text-[var(--lux-text-muted)]">Overall Progress</span>
-                <span className="text-[var(--lux-text-primary)] font-bold">{completionPercent}%</span>
+                <span className="text-[#6B665D]">Overall Progress</span>
+                <span className="text-[#1F3D2B] font-bold">{completionPercent}%</span>
               </div>
-              <div className="h-3 bg-[var(--lux-bg-secondary)] rounded-full overflow-hidden">
+              <div className="h-3 bg-[#E5E0D4] rounded-full overflow-hidden">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${completionPercent}%` }}
@@ -374,19 +392,53 @@ export default function ChallengesPage() {
 
           {/* Start / Continue Buttons */}
           {!isActive ? (
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => startChallenge(selectedChallenge)}
-              className={`mt-6 w-full py-4 rounded-xl font-bold text-lg text-white bg-gradient-to-r ${selectedChallenge.color} hover:shadow-[0_0_30px_-10px_var(--lux-accent)] transition-all flex items-center justify-center gap-3`}
-            >
-              <Flame className="w-5 h-5" />
-              Start This Challenge
-            </motion.button>
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => {
+                  if (progress) {
+                    setChallengeActive(selectedChallenge.id);
+                  } else {
+                    startChallenge(selectedChallenge);
+                  }
+                }}
+                className={`w-full py-4 rounded-xl font-bold text-lg text-white bg-gradient-to-r ${selectedChallenge.color} hover:shadow-[0_0_30px_-10px_var(--lux-accent)] transition-all flex items-center justify-center gap-3`}
+              >
+                <Flame className="w-5 h-5" />
+                {progress ? "Set as Active" : "Start This Challenge"}
+              </motion.button>
+              {progress && (
+                <button
+                  onClick={() => restartChallenge(selectedChallenge)}
+                  className="w-full py-4 rounded-xl font-semibold border border-[#D9D2C7] bg-[#F7F4EE] text-[#2F6F57] hover:bg-[#E8EFEA] transition-colors"
+                >
+                  Restart Challenge
+                </button>
+              )}
+            </div>
           ) : (
-            <div className="mt-6 flex items-center gap-3 text-[var(--lux-accent)] text-sm font-medium">
-              <CheckCircle2 className="w-5 h-5" />
-              Challenge Active — Keep going! Mark tasks complete below.
+            <div className="mt-6 rounded-xl border border-[#C8DACF] bg-[#E8EFEA] p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="flex items-center gap-3 text-[#2F6F57] text-sm font-medium">
+                  <CheckCircle2 className="w-5 h-5" />
+                  Challenge Active — Keep going! Mark tasks complete below.
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={pauseActiveChallenge}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-[#D9D2C7] bg-white text-[#8C6A5A] hover:bg-[#F7F4EE]"
+                  >
+                    Cancel Active
+                  </button>
+                  <button
+                    onClick={() => restartChallenge(selectedChallenge)}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-medical-gradient text-[#F4F1EB]"
+                  >
+                    Restart
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </motion.div>
@@ -402,10 +454,10 @@ export default function ChallengesPage() {
                     onClick={() => setActiveWeek(idx)}
                     className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-all border ${
                       activeWeek === idx
-                        ? "bg-[var(--lux-bg-secondary)] border-[var(--lux-accent)]/50 text-[var(--lux-text-primary)]"
+                        ? "bg-white border-[#2F6F57]/50 text-[#1F3D2B] shadow-sm"
                         : weekComplete
-                          ? "bg-[var(--lux-accent)]/10 border-[var(--lux-accent)]/20 text-[var(--lux-accent)]"
-                          : "bg-[var(--lux-bg-elevated)] border-[var(--lux-glass-border)] text-[var(--lux-text-muted)] hover:text-[var(--lux-text-primary)]"
+                          ? "bg-[#2F6F57]/10 border-[#2F6F57]/20 text-[#2F6F57]"
+                          : "bg-white/60 backdrop-blur-md border-white/40 text-[#6B665D] hover:text-[#1F3D2B]"
                     }`}
                   >
                     <span className="flex items-center gap-1.5">
@@ -428,14 +480,14 @@ export default function ChallengesPage() {
               exit={{ opacity: 0, x: -20 }}
             >
               {/* Week Header */}
-              <div className="lux-card p-6 border border-[var(--lux-glass-border)] mb-6">
+              <div className="bg-white/60 backdrop-blur-md border border-white/40 p-6 rounded-2xl shadow-sm mb-6">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className={`w-10 h-10 rounded-xl bg-[var(--lux-bg-secondary)] border border-[var(--lux-glass-border)] flex items-center justify-center`}>
-                    <span className="font-bold text-sm text-[var(--lux-text-primary)]">W{currentWeek.week}</span>
+                  <div className={`w-10 h-10 rounded-xl bg-[#E5E0D4] border border-white/40 flex items-center justify-center`}>
+                    <span className="font-bold text-sm text-[#1F3D2B]">W{currentWeek.week}</span>
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-[var(--lux-text-primary)]">{currentWeek.theme}</h2>
-                    <p className="text-sm text-[var(--lux-text-muted)]">{currentWeek.description}</p>
+                    <h2 className="text-xl font-bold text-[#1F3D2B]">{currentWeek.theme}</h2>
+                    <p className="text-sm text-[#6B665D]">{currentWeek.description}</p>
                   </div>
                 </div>
               </div>
@@ -454,10 +506,10 @@ export default function ChallengesPage() {
                       transition={{ delay: (task.day % 7) * 0.05 }}
                       className={`group relative rounded-2xl border overflow-hidden transition-all duration-300 ${
                         done
-                          ? "bg-[var(--lux-accent)]/10 border-[var(--lux-accent)]/20"
+                          ? "bg-[#2F6F57]/10 border-[#2F6F57]/20"
                           : isLocked
-                            ? "bg-[var(--lux-bg-elevated)] border-[var(--lux-glass-border)] opacity-60"
-                            : "bg-[var(--lux-bg-elevated)] border-[var(--lux-glass-border)] hover:border-[var(--lux-accent)]/50"
+                            ? "bg-white/40 backdrop-blur-sm border-white/30 opacity-60"
+                            : "bg-white/60 backdrop-blur-md border-white/40 hover:border-[#2F6F57]/50"
                       }`}
                     >
                       <div className="p-5 flex items-start gap-4">
@@ -470,35 +522,35 @@ export default function ChallengesPage() {
                           }`}
                         >
                           {isLocked ? (
-                            <Lock className="w-6 h-6 text-[var(--lux-text-muted)]" />
+                            <Lock className="w-6 h-6 text-[#6B665D]" />
                           ) : done ? (
-                            <CheckCircle2 className="w-6 h-6 text-[var(--lux-accent)]" />
+                            <CheckCircle2 className="w-6 h-6 text-[#2F6F57]" />
                           ) : (
-                            <Circle className="w-6 h-6 text-[var(--lux-text-muted)] hover:text-[var(--lux-text-primary)]" />
+                            <Circle className="w-6 h-6 text-[#6B665D] hover:text-[#1F3D2B]" />
                           )}
                         </button>
 
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-3 flex-wrap mb-1">
-                            <span className="text-xs font-bold text-[var(--lux-text-muted)] uppercase">Day {task.day}</span>
+                            <span className="text-xs font-bold text-[#6B665D] uppercase">Day {task.day}</span>
                             <span className="text-lg">{getCategoryIcon(task.category)}</span>
                             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                               task.difficulty === "easy"
-                                ? "bg-[var(--lux-accent)]/10 text-[var(--lux-accent)]"
+                                ? "bg-[#2F6F57]/10 text-[#2F6F57]"
                                 : task.difficulty === "medium"
-                                  ? "bg-yellow-500/10 text-yellow-400"
-                                  : "bg-red-500/10 text-red-400"
+                                  ? "bg-yellow-500/10 text-yellow-600"
+                                  : "bg-red-500/10 text-red-600"
                             }`}>
                               {task.difficulty}
                             </span>
-                            <span className="flex items-center gap-1 text-xs text-yellow-400 font-medium">
-                              <Zap className="w-3 h-3" /> +{task.xpReward} XP
+                            <span className="flex items-center gap-1 text-xs text-yellow-600 font-medium">
+                              <Zap className="w-3 h-3" /> +{task.xpReward} A$
                             </span>
                           </div>
-                          <h3 className={`text-lg font-semibold mb-1 ${done ? "text-[var(--lux-accent)]/80 line-through" : "text-[var(--lux-text-primary)]"}`}>
+                          <h3 className={`text-lg font-semibold mb-1 ${done ? "text-[#2F6F57]/80 line-through" : "text-[#1F3D2B]"}`}>
                             {task.title}
                           </h3>
-                          <p className="text-sm text-[var(--lux-text-muted)] leading-relaxed">
+                          <p className="text-sm text-[#6B665D] leading-relaxed">
                             {task.description}
                           </p>
                         </div>
@@ -535,17 +587,17 @@ export default function ChallengesPage() {
                       </button>
                       <div>
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 text-xs font-bold uppercase">
+                          <span className="px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-700 text-xs font-bold uppercase">
                             ⭐ Bonus Task
                           </span>
-                          <span className="flex items-center gap-1 text-xs text-yellow-400 font-medium">
-                            <Zap className="w-3 h-3" /> +{currentWeek.bonusTask.xpReward} XP
+                          <span className="flex items-center gap-1 text-xs text-yellow-700 font-medium">
+                            <Zap className="w-3 h-3" /> +{currentWeek.bonusTask.xpReward} A$
                           </span>
                         </div>
-                        <h3 className="text-lg font-semibold text-[var(--lux-text-primary)] mb-1">
+                        <h3 className="text-lg font-semibold text-[#1F3D2B] mb-1">
                           {currentWeek.bonusTask.title}
                         </h3>
-                        <p className="text-sm text-[var(--lux-text-muted)]">{currentWeek.bonusTask.description}</p>
+                        <p className="text-sm text-[#6B665D]">{currentWeek.bonusTask.description}</p>
                       </div>
                     </div>
                   </motion.div>
@@ -557,14 +609,14 @@ export default function ChallengesPage() {
                 <button
                   disabled={activeWeek === 0}
                   onClick={() => setActiveWeek((prev) => prev - 1)}
-                  className="flex items-center gap-2 text-sm text-[var(--lux-text-muted)] hover:text-[var(--lux-text-primary)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center gap-2 text-sm text-[#6B665D] hover:text-[#1F3D2B] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 >
                   <ChevronLeft className="w-4 h-4" /> Previous Week
                 </button>
                 <button
                   disabled={activeWeek >= selectedChallenge.weeks.length - 1}
                   onClick={() => setActiveWeek((prev) => prev + 1)}
-                  className="flex items-center gap-2 text-sm text-[var(--lux-text-muted)] hover:text-[var(--lux-text-primary)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center gap-2 text-sm text-[#6B665D] hover:text-[#1F3D2B] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 >
                   Next Week <ChevronRight className="w-4 h-4" />
                 </button>

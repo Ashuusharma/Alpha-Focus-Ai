@@ -1,12 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { postHydrationLog } from "@/src/services/lifestyleApi";
-import { getActiveUserName } from "@/lib/userScopedStorage";
-
-const STORAGE_KEY = "oneman_hydration_logs_v1";
+import { useContext, useMemo, useState } from "react";
+import { AuthContext } from "@/contexts/AuthProvider";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function HydrationTracker() {
+  const { user } = useContext(AuthContext);
   const [intake, setIntake] = useState(0);
   const [target, setTarget] = useState(3000);
   const [savedAt, setSavedAt] = useState<string | null>(null);
@@ -15,18 +14,16 @@ export default function HydrationTracker() {
   const todayKey = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
   const saveLog = async () => {
-    if (typeof window === "undefined") return;
-    const raw = localStorage.getItem(STORAGE_KEY);
-    const parsed = raw ? (JSON.parse(raw) as Record<string, { intake: number; target: number }>) : {};
-    parsed[todayKey] = { intake, target };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+    if (!user) return;
 
-    await postHydrationLog({
-      userId: getActiveUserName() || "guest",
-      date: todayKey,
-      intakeMl: intake,
-      targetMl: target,
-    });
+    await supabase.from("routine_logs").upsert(
+      {
+        user_id: user.id,
+        log_date: todayKey,
+        hydration_ml: intake,
+      },
+      { onConflict: "user_id,log_date" }
+    );
 
     setSavedAt(new Date().toLocaleTimeString());
   };

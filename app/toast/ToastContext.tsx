@@ -7,11 +7,12 @@ export interface Toast {
   id: string;
   message: string;
   type: ToastType;
+  durationMs?: number;
 }
 
 interface ToastContextProps {
   toasts: Toast[];
-  showToast: (message: string, type?: ToastType) => void;
+  showToast: (message: string, type?: ToastType, durationMs?: number) => void;
   removeToast: (id: string) => void;
 }
 
@@ -20,10 +21,10 @@ const ToastContext = createContext<ToastContextProps | undefined>(undefined);
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  function showToast(message: string, type: ToastType = "info") {
+  function showToast(message: string, type: ToastType = "info", durationMs = 5000) {
     const id = Math.random().toString(36).substr(2, 9);
-    setToasts((prev) => [...prev, { id, message, type }]);
-    setTimeout(() => removeToast(id), 3000);
+    setToasts((prev) => [...prev, { id, message, type, durationMs }]);
+    setTimeout(() => removeToast(id), durationMs);
   }
 
   function removeToast(id: string) {

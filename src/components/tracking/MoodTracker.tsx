@@ -1,30 +1,30 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { postMoodLog } from "@/src/services/lifestyleApi";
-import { getActiveUserName } from "@/lib/userScopedStorage";
-
-const STORAGE_KEY = "oneman_mood_logs_v1";
+import { useContext, useMemo, useState } from "react";
+import { AuthContext } from "@/contexts/AuthProvider";
+import { supabase } from "@/lib/supabaseClient";
 
 type Mood = "calm" | "neutral" | "stressed";
 
 export default function MoodTracker() {
+  const { user } = useContext(AuthContext);
   const [mood, setMood] = useState<Mood>("neutral");
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const todayKey = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
   const saveLog = async () => {
-    if (typeof window === "undefined") return;
-    const raw = localStorage.getItem(STORAGE_KEY);
-    const parsed = raw ? (JSON.parse(raw) as Record<string, Mood>) : {};
-    parsed[todayKey] = mood;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+    if (!user) return;
 
-    await postMoodLog({
-      userId: getActiveUserName() || "guest",
-      date: todayKey,
-      mood,
-    });
+    const stressLevel = mood === "calm" ? 2 : mood === "neutral" ? 5 : 8;
+
+    await supabase.from("routine_logs").upsert(
+      {
+        user_id: user.id,
+        log_date: todayKey,
+        stress_level: stressLevel,
+      },
+      { onConflict: "user_id,log_date" }
+    );
 
     setSavedAt(new Date().toLocaleTimeString());
   };

@@ -30,6 +30,7 @@ export type SleepLogRecord = {
   date: string;
   hours: number;
   quality: number;
+  bedtime?: string;
   createdAt: string;
 };
 
