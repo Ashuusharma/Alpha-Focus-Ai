@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 
 export interface SavedPhoto {
   id: string;
@@ -19,9 +18,7 @@ interface PhotoGalleryState {
   clearAll: () => void;
 }
 
-export const usePhotoGalleryStore = create<PhotoGalleryState>()(
-  persist(
-    (set, get) => ({
+export const usePhotoGalleryStore = create<PhotoGalleryState>()((set, get) => ({
       photos: [],
       
       addPhoto: (photo) => {
@@ -51,9 +48,5 @@ export const usePhotoGalleryStore = create<PhotoGalleryState>()(
       clearAll: () => {
         set({ photos: [] });
       },
-    }),
-    {
-      name: "oneman-photo-gallery",
-    }
-  )
+    })
 );

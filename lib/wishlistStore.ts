@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 
 export interface WishlistItem {
   id: string;
@@ -20,9 +19,7 @@ interface WishlistState {
   clearAll: () => void;
 }
 
-export const useWishlistStore = create<WishlistState>()(
-  persist(
-    (set, get) => ({
+export const useWishlistStore = create<WishlistState>()((set, get) => ({
       items: [],
       
       addItem: (item) => {
@@ -47,9 +44,5 @@ export const useWishlistStore = create<WishlistState>()(
       clearAll: () => {
         set({ items: [] });
       },
-    }),
-    {
-      name: "oneman-wishlist",
-    }
-  )
+    })
 );

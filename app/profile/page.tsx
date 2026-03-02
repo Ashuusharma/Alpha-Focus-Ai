@@ -7,8 +7,8 @@ import MedicalCard from "@/components/ui/MedicalCard";
 import StatusBadge from "@/components/ui/StatusBadge";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { AuthContext } from "@/contexts/AuthProvider";
-import { supabase } from "@/lib/supabaseClient";
 import { useUserStore } from "@/stores/useUserStore";
+import { hydrateUserData } from "@/lib/hydrateUserData";
 
 function formatDate(value?: string) {
   if (!value) return "—";
@@ -45,101 +45,34 @@ export default function ProfilePage() {
   const router = useRouter();
   const { user, profile } = useContext(AuthContext);
   const storeProfile = useUserStore((state) => state.profile);
-  const storeAlphaSummary = useUserStore((state) => state.alphaSummary);
-  const setStoreAlphaSummary = useUserStore((state) => state.setAlphaSummary);
-  const [assessments, setAssessments] = useState<AssessmentRow[]>([]);
-  const [scans, setScans] = useState<ScanRow[]>([]);
-  const [routineLogs, setRoutineLogs] = useState<RoutineRow[]>([]);
-  const [alphaSummary, setAlphaSummary] = useState<{
-    currentBalance: number;
-    lifetimeEarned: number;
-    tierLevel: string;
-  }>({
-    currentBalance: 0,
-    lifetimeEarned: 0,
-    tierLevel: "Bronze",
-  });
+  const alphaSummary = useUserStore((state) => (state.alphaSummary as Record<string, unknown> | null));
+  const assessments = useUserStore((state) => state.assessments as AssessmentRow[]);
+  const scans = useUserStore((state) => state.scans as ScanRow[]);
+  const routineLogs = useUserStore((state) => state.routines as RoutineRow[]);
 
   const [activeTab, setActiveTab] = useState<ProfileTab>("overview");
 
   useEffect(() => {
-    const loadData = async () => {
-      if (!user) return;
-
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-
-      const [assessmentRes, scanRes, routineRes] = await Promise.all([
-        supabase
-          .from("assessment_answers")
-          .select("id,completed_at,completeness_pct")
-          .eq("user_id", user.id)
-          .order("completed_at", { ascending: false })
-          .limit(30),
-        supabase
-          .from("photo_scans")
-          .select("id,scan_date")
-          .eq("user_id", user.id)
-          .order("scan_date", { ascending: false })
-          .limit(30),
-        supabase
-          .from("routine_logs")
-          .select("id,log_date,am_done,pm_done")
-          .eq("user_id", user.id)
-          .order("log_date", { ascending: false })
-          .limit(30),
-      ]);
-
-      setAssessments((assessmentRes.data || []) as AssessmentRow[]);
-      setScans((scanRes.data || []) as ScanRow[]);
-      setRoutineLogs((routineRes.data || []) as RoutineRow[]);
-
-      if (token) {
-        const summaryRes = await fetch("/api/alpha-sikka/summary", {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          cache: "no-store",
-        });
-
-        const payload = await summaryRes.json();
-        if (summaryRes.ok && payload?.ok) {
-          const nextSummary = {
-            currentBalance: Number(payload.summary?.currentBalance || 0),
-            lifetimeEarned: Number(payload.summary?.lifetimeEarned || 0),
-            tierLevel: String(payload.summary?.tierLevel || "Bronze"),
-          };
-          setAlphaSummary(nextSummary);
-          setStoreAlphaSummary(nextSummary);
-        }
-      } else if (storeAlphaSummary) {
-        setAlphaSummary({
-          currentBalance: Number(storeAlphaSummary.currentBalance || 0),
-          lifetimeEarned: Number(storeAlphaSummary.lifetimeEarned || 0),
-          tierLevel: String(storeAlphaSummary.tierLevel || "Bronze"),
-        });
-      }
-    };
-
-    loadData();
-  }, [user, setStoreAlphaSummary, storeAlphaSummary]);
+    if (!user) return;
+    void hydrateUserData(user.id);
+  }, [user?.id]);
 
   const displayName =
     profile?.full_name?.trim() ||
-    storeProfile?.full_name?.trim() ||
+    (storeProfile as { full_name?: string } | null)?.full_name?.trim() ||
     (user?.user_metadata?.full_name as string | undefined)?.trim() ||
     user?.email?.split("@")[0] ||
     "User";
-  const tierLabel = alphaSummary.tierLevel;
-  const lifetimeEarned = alphaSummary.lifetimeEarned;
+  const tierLabel = String(alphaSummary?.tier_level ?? "Bronze");
+  const lifetimeEarned = Number(alphaSummary?.lifetime_earned ?? 0);
+  const currentBalance = Number(alphaSummary?.current_balance ?? 0);
   const joinedDate = user?.created_at;
 
   const trendData = useMemo(() => {
     return assessments.slice(-10).map((a, i) => ({
       date: formatDate(a.completed_at),
-      score: Number(a.completeness_pct ?? 60 + i * 2),
-      consistency: Math.min(100, Number(a.completeness_pct ?? 60) + 10),
+      score: Number(a.completeness_pct ?? 0),
+      consistency: Number(a.completeness_pct ?? 0),
     }));
   }, [assessments]);
 
@@ -204,7 +137,7 @@ export default function ProfilePage() {
         name: displayName,
       },
       rewards: {
-        currentBalance: alphaSummary.currentBalance,
+        currentBalance,
         lifetimeEarned,
         tier: tierLabel,
         streakCount,
@@ -224,14 +157,7 @@ export default function ProfilePage() {
   };
 
   const clearProfileData = () => {
-    if (typeof window === "undefined") return;
-    const approved = window.confirm("Clear local profile data on this device? This cannot be undone.");
-    if (!approved) return;
-
-    ["oneman_user_profile", "oneman_user_data", "oneman_assessments", "oneman_scans", "oneman_activity_log"].forEach((key) =>
-      localStorage.removeItem(key)
-    );
-    router.push("/");
+    router.push("/data-settings");
   };
 
   return (
@@ -468,7 +394,7 @@ export default function ProfilePage() {
             <h2 className="mb-4 text-xl font-semibold text-[#1F3D2B]">Alpha Sikka</h2>
             <MedicalCard className="p-5">
               <p className="text-sm text-[#6B665D]">Current Balance</p>
-              <p className="metric-number mt-2 text-4xl text-[#1F3D2B]">{alphaSummary.currentBalance} A$</p>
+              <p className="metric-number mt-2 text-4xl text-[#1F3D2B]">{currentBalance} A$</p>
               <p className="mt-2 text-sm text-[#6B665D]">Lifetime Earned: {lifetimeEarned} A$ · Tier: {tierLabel}</p>
             </MedicalCard>
           </section>
@@ -497,15 +423,15 @@ export default function ProfilePage() {
               <MedicalCard className="p-5">
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="h-5 w-5 text-[#C27803]" />
-                  <h3 className="font-semibold text-[#1F3D2B]">Local Data Control</h3>
+                  <h3 className="font-semibold text-[#1F3D2B]">Cloud Data Control</h3>
                 </div>
-                <p className="mt-2 text-sm text-[#6B665D]">Export your local data or clear profile history from this device.</p>
+                <p className="mt-2 text-sm text-[#6B665D]">Export your account snapshot or manage stored records in Supabase-backed settings.</p>
                 <div className="mt-4 flex flex-wrap gap-2">
                   <button onClick={exportData} className="rounded-xl border border-white/40 bg-white/40 shadow-sm px-4 py-2 text-sm text-[#1F3D2B] hover:bg-white/60">
                     Export Data
                   </button>
                   <button onClick={clearProfileData} className="rounded-xl border border-clinical-danger/50 bg-clinical-danger/10 px-4 py-2 text-sm text-clinical-danger hover:bg-clinical-danger/20">
-                    Clear Local Data
+                    Manage Data
                   </button>
                 </div>
               </MedicalCard>

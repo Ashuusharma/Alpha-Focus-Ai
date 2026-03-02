@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 
 export interface BlacklistedIngredient {
   id: string;
@@ -34,9 +33,7 @@ interface IngredientBlacklistState {
   clearAll: () => void;
 }
 
-export const useIngredientBlacklistStore = create<IngredientBlacklistState>()(
-  persist(
-    (set, get) => ({
+export const useIngredientBlacklistStore = create<IngredientBlacklistState>()((set, get) => ({
       blacklist: [],
       
       addIngredient: (ingredient) => {
@@ -83,9 +80,5 @@ export const useIngredientBlacklistStore = create<IngredientBlacklistState>()(
       clearAll: () => {
         set({ blacklist: [] });
       },
-    }),
-    {
-      name: "oneman-ingredient-blacklist",
-    }
-  )
+    })
 );

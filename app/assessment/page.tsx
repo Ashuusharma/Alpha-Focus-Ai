@@ -9,6 +9,7 @@ import { ArrowLeft, CheckCircle2, ChevronRight, BarChart3, ShieldCheck, Sparkles
 import { categories, questions, CategoryId } from "@/lib/questions";
 import { AuthContext } from "@/contexts/AuthProvider";
 import { supabase } from "@/lib/supabaseClient";
+import { hydrateUserData } from "@/lib/hydrateUserData";
 import {
     getClinicalRelevance,
     getQuestionContextOverride,
@@ -176,11 +177,6 @@ export default function AssessmentPage() {
     };
 
     const handleFinish = async () => {
-        if (typeof window !== "undefined") {
-            sessionStorage.setItem("assessment_answers_v1", JSON.stringify(answers));
-            sessionStorage.setItem("questionsAnswered", "true");
-        }
-
         if (user) {
             const completeness = totalQuestionsSelected > 0
                 ? Math.round((answeredSelectedCount / totalQuestionsSelected) * 100)
@@ -191,6 +187,8 @@ export default function AssessmentPage() {
                 completed_at: new Date().toISOString(),
                 completeness_pct: completeness,
             });
+
+            await hydrateUserData(user.id);
         }
 
         router.push("/result?source=assessment");

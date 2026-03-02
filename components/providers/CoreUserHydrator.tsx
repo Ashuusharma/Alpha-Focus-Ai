@@ -2,23 +2,58 @@
 
 import { useContext, useEffect } from "react";
 import { AuthContext } from "@/contexts/AuthProvider";
-import { hydrateCoreUserData } from "@/lib/hydrateCoreUserData";
+import { hydrateUserData } from "@/lib/hydrateUserData";
 import { useUserStore } from "@/stores/useUserStore";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function CoreUserHydrator() {
   const { user } = useContext(AuthContext);
-  const hydratedUserId = useUserStore((state) => state.hydratedUserId);
-  const resetUserState = useUserStore((state) => state.resetUserState);
+  const reset = useUserStore((state) => state.reset);
 
   useEffect(() => {
     if (!user) {
-      resetUserState();
+      reset();
       return;
     }
 
-    if (hydratedUserId === user.id) return;
-    void hydrateCoreUserData(user.id);
-  }, [user, hydratedUserId, resetUserState]);
+    void hydrateUserData(user.id);
+  }, [user?.id, reset]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`user-updates-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "alpha_sikka_transactions",
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          void hydrateUserData(user.id);
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "routine_logs",
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          void hydrateUserData(user.id);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
 
   return null;
 }

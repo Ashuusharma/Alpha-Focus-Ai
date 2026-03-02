@@ -232,110 +232,87 @@ async function fetchShopifyOrders(customerTag: string): Promise<ShopifyOrder[]> 
 }
 
 function buildFallbackPayload(userId: string, displayName: string): DashboardPayload {
-  const now = new Date();
-  const points = Array.from({ length: 30 }).map((_, index) => {
-    const date = new Date(now);
-    date.setDate(now.getDate() - (29 - index));
-    const alpha = 58 + Math.round(index * 0.75);
-    const consistency = 52 + Math.round(index * 0.65);
-    const recovery = 54 + Math.round(index * 0.7);
-    return {
-      date: toISODate(date.toISOString()),
-      alphaScore: Math.min(alpha, 86),
-      consistency: Math.min(consistency, 90),
-      recovery: Math.min(recovery, 88),
-    };
-  });
-
   return {
     profile: {
       userId,
       displayName,
       greeting: `Good Morning, ${displayName}`,
-      streakDays: 11,
-      consistencyPct: 78,
-      improvementMessage: "Your hydration improved 8% this week.",
+      streakDays: 0,
+      consistencyPct: 0,
+      improvementMessage: "No trend data yet. Complete your first scan and routine log.",
     },
     metrics: [
-      { key: "alphaScore", label: "Alpha Score", value: 74, delta: 4, trend: "up", confidence: 92 },
-      { key: "severityIndex", label: "Severity Index", value: 38, delta: -5, trend: "down", confidence: 88 },
-      { key: "confidence", label: "Confidence", value: 81, delta: 3, trend: "up", confidence: 90 },
-      { key: "recoveryProbability", label: "Recovery Probability", value: 76, delta: 2, trend: "up", confidence: 86 },
-      { key: "adherenceScore", label: "Adherence Score", value: 79, delta: 6, trend: "up", confidence: 89 },
-      { key: "dataCompleteness", label: "Data Completeness", value: 84, delta: 1, trend: "up", confidence: 94 },
+      { key: "alphaScore", label: "Alpha Score", value: 0, delta: 0, trend: "flat", confidence: 0 },
+      { key: "severityIndex", label: "Severity Index", value: 0, delta: 0, trend: "flat", confidence: 0 },
+      { key: "confidence", label: "Confidence", value: 0, delta: 0, trend: "flat", confidence: 0 },
+      { key: "recoveryProbability", label: "Recovery Probability", value: 0, delta: 0, trend: "flat", confidence: 0 },
+      { key: "adherenceScore", label: "Adherence Score", value: 0, delta: 0, trend: "flat", confidence: 0 },
+      { key: "dataCompleteness", label: "Data Completeness", value: 0, delta: 0, trend: "flat", confidence: 0 },
     ],
     trends: {
-      points,
-      biggestImprovementDriver: "PM routine compliance and stable hydration",
-      biggestRiskFactor: "Late sleep on 3 of last 7 days",
-      projected30DayScore: 82,
-      trajectory: "Improving",
-      improvementVelocity: 0.93,
+      points: [],
+      biggestImprovementDriver: "No data yet",
+      biggestRiskFactor: "No data yet",
+      projected30DayScore: 0,
+      trajectory: "Flat",
+      improvementVelocity: 0,
     },
     primaryConcern: {
-      issue: "Barrier inflammation around T-zone",
-      severity: "Moderate",
-      rootDrivers: ["Inconsistent PM closure", "High outdoor UV", "Below-target hydration"],
-      estimatedWindow: "4-6 weeks with consistent PM repair",
-      riskIfIgnored: "Progress plateau with higher relapse probability.",
+      issue: "Run first scan",
+      severity: "Unknown",
+      rootDrivers: [],
+      estimatedWindow: "Not available",
+      riskIfIgnored: "Not available",
     },
     routineStatus: {
-      amDone: true,
+      amDone: false,
       pmDone: false,
       hydrationDone: false,
-      sleepDone: true,
-      todayPriorityAction: "Complete PM routine before 10 PM to improve barrier repair.",
-      adherenceImpact: "Strong adherence adds +5 to projected 30-day score.",
+      sleepDone: false,
+      todayPriorityAction: "Start routine",
+      adherenceImpact: "No adherence data yet.",
     },
     productIntelligence: {
-      activeRegimen: [
-        { productName: "Niacinamide Repair Serum", matchPct: 94, purpose: "Reduce inflammation", usageStatus: "active" },
-        { productName: "Ceramide Barrier Cream", matchPct: 91, purpose: "Barrier restoration", usageStatus: "active" },
-      ],
-      purchaseHistory: [
-        { orderId: "ORD-2191", productName: "Ceramide Barrier Cream", lastPurchaseDate: toISODate(now.toISOString()), remainingSupplyDays: 18 },
-      ],
+      activeRegimen: [],
+      purchaseHistory: [],
     },
     scanComparison: {
       latestPhotoUrl: null,
       previousPhotoUrl: null,
-      densityImprovementPct: 7,
-      inflammationImprovementPct: 10,
-      oilBalanceImprovementPct: 6,
+      densityImprovementPct: 0,
+      inflammationImprovementPct: 0,
+      oilBalanceImprovementPct: 0,
       hasScans: false,
     },
     rewardsSummary: {
-      currentBalance: 460,
-      lifetimeEarned: 760,
-      tierLevel: "Gold",
-      nextTierProgressPct: 11,
-      nextTierLabel: "Platinum",
+      currentBalance: 0,
+      lifetimeEarned: 0,
+      tierLevel: "Bronze",
+      nextTierProgressPct: 0,
+      nextTierLabel: "Silver",
       nextUnlock: "Premium Regimen Coupon",
-      estimatedDaysToNextTier: 12,
-      availableDiscount: "10%",
+      estimatedDaysToNextTier: 0,
+      availableDiscount: "0%",
     },
     environmentImpact: {
-      uvIndex: 6,
-      pollution: 58,
-      humidity: 39,
-      sleep: 7.2,
-      stress: 6,
-      hydration: 1900,
-      combinedRiskScore: 61,
-      explanation: "UV and pollution are elevating oxidative stress; hydration and PM closure mitigate recovery drag.",
+      uvIndex: 0,
+      pollution: 0,
+      humidity: 0,
+      sleep: 0,
+      stress: 0,
+      hydration: 0,
+      combinedRiskScore: 0,
+      explanation: "No environment data yet.",
     },
     roadmap: {
-      currentPhase: "Repair",
+      currentPhase: "Stabilize",
       phases: [
-        { name: "Stabilize", complete: true },
+        { name: "Stabilize", complete: false },
         { name: "Repair", complete: false },
         { name: "Optimize", complete: false },
       ],
     },
-    alerts: [
-      { id: "a1", level: "warning", message: "PM routine missed yesterday." },
-      { id: "a2", level: "warning", message: "Hydration is below your target today." },
-    ],
+    alerts: [],
     dataSources: [
       "Assessment",
       "Photo AI",

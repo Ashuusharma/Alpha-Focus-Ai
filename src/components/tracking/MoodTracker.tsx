@@ -3,6 +3,7 @@
 import { useContext, useMemo, useState } from "react";
 import { AuthContext } from "@/contexts/AuthProvider";
 import { supabase } from "@/lib/supabaseClient";
+import { hydrateUserData } from "@/lib/hydrateUserData";
 
 type Mood = "calm" | "neutral" | "stressed";
 
@@ -25,6 +26,8 @@ export default function MoodTracker() {
       },
       { onConflict: "user_id,log_date" }
     );
+
+    await hydrateUserData(user.id);
 
     setSavedAt(new Date().toLocaleTimeString());
   };

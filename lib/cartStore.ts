@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import { getActiveUserName } from "@/lib/userScopedStorage";
 
 /* ================= TYPES ================= */
@@ -80,9 +79,7 @@ function createHistoryEntry(
 
 /* ================= STORE ================= */
 
-export const useCartStore = create<CartState>()(
-  persist(
-    (set, get) => ({
+export const useCartStore = create<CartState>()((set, get) => ({
       items: [],
       history: [],
       isOpen: false,
@@ -220,10 +217,5 @@ export const useCartStore = create<CartState>()(
         get()
           .getUserItems(userId)
           .reduce((sum, item) => sum + item.price * item.quantity, 0),
-    }),
-    {
-      name: "oneman_cart_store_v2",
-      partialize: (state) => ({ items: state.items, history: state.history }),
-    }
-  )
+    })
 );

@@ -292,87 +292,18 @@ export function logActivity(action: string, icon: string, details?: string) {
 }
 
 export function getProgressData() {
-  try {
-    if (typeof window === "undefined") {
-      return {
-        totalAssessments: 0,
-        totalAnsweredQuestions: 0,
-        averageProgress: 0,
-        assessments: [],
-      };
-    }
-
-    const raw = localStorage.getItem("oneman_assessments");
-    const assessments = raw ? (JSON.parse(raw) as AssessmentData[]) : [];
-
-    const totalAnswers = assessments.reduce((sum, a) => sum + Object.keys(a.answers).length, 0);
-    const avgProgress = assessments.length > 0 
-      ? assessments.reduce((sum, a) => sum + a.progress, 0) / assessments.length 
-      : 0;
-
-    return {
-      totalAssessments: assessments.length,
-      totalAnsweredQuestions: totalAnswers,
-      averageProgress: Math.round(avgProgress),
-      assessments,
-    };
-  } catch (error) {
-    console.error("Failed to get progress data:", error);
-    return {
-      totalAssessments: 0,
-      totalAnsweredQuestions: 0,
-      averageProgress: 0,
-      assessments: [],
-    };
-  }
+  return {
+    totalAssessments: 0,
+    totalAnsweredQuestions: 0,
+    averageProgress: 0,
+    assessments: [],
+  };
 }
 
 export function getComparisonData() {
-  try {
-    if (typeof window === "undefined") {
-      return {
-        current: null,
-        previous: null,
-        comparison: [],
-      };
-    }
-
-    const raw = localStorage.getItem("oneman_assessments");
-    const assessments = raw ? (JSON.parse(raw) as AssessmentData[]) : [];
-
-    if (assessments.length < 2) {
-      return {
-        current: null,
-        previous: null,
-        comparison: [],
-      };
-    }
-
-    const sorted = [...assessments].sort(
-      (a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
-    );
-
-    const current = sorted[0];
-    const previous = sorted[1];
-
-    return {
-      current,
-      previous,
-      comparison: [
-        {
-          metric: "Overall Progress",
-          jan: current.progress,
-          dec: previous.progress,
-          change: `${current.progress - previous.progress > 0 ? "+" : ""}${current.progress - previous.progress}%`,
-        },
-      ],
-    };
-  } catch (error) {
-    console.error("Failed to get comparison data:", error);
-    return {
-      current: null,
-      previous: null,
-      comparison: [],
-    };
-  }
+  return {
+    current: null,
+    previous: null,
+    comparison: [],
+  };
 }

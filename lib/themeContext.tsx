@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { getCurrentUserId, readUserState, writeUserState } from "@/lib/dbUserState";
 
 type Theme = "dark" | "light";
 
@@ -17,19 +18,29 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-    // Load saved theme from localStorage
-    const savedTheme = localStorage.getItem("oneman-theme") as Theme | null;
-    if (savedTheme) {
-      setThemeState(savedTheme);
-      document.documentElement.setAttribute("data-theme", savedTheme);
-    }
+    const loadTheme = async () => {
+      setMounted(true);
+      const userId = await getCurrentUserId();
+      if (!userId) return;
+      const savedTheme = await readUserState<Theme>(userId, "oneman-theme");
+      if (savedTheme === "dark" || savedTheme === "light") {
+        setThemeState(savedTheme);
+        document.documentElement.setAttribute("data-theme", savedTheme);
+      }
+    };
+
+    void loadTheme();
   }, []);
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
-    localStorage.setItem("oneman-theme", newTheme);
     document.documentElement.setAttribute("data-theme", newTheme);
+
+    void (async () => {
+      const userId = await getCurrentUserId();
+      if (!userId) return;
+      await writeUserState(userId, "oneman-theme", newTheme);
+    })();
   };
 
   const toggleTheme = () => {

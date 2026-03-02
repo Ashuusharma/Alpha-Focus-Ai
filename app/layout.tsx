@@ -58,7 +58,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               try {
-                const theme = localStorage.getItem('oneman-theme') || 'dark';
+                const theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
                 document.documentElement.setAttribute('data-theme', theme);
                 if (theme === 'dark') document.documentElement.classList.add('dark');
               } catch (e) {}

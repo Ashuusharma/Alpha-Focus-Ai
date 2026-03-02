@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, ChevronLeft, ScanLine, Sparkles } from "lucide-react";
 
-import { analyzeImage, AnalyzerType, AnalysisResult, DetectedIssue } from "@/lib/analyzeImage";
+import { AnalyzerType, AnalysisResult, DetectedIssue } from "@/lib/analyzeImage";
 import { AuthContext } from "@/contexts/AuthProvider";
 import { supabase } from "@/lib/supabaseClient";
+import { hydrateUserData } from "@/lib/hydrateUserData";
 import MultiAngleUpload from "./_components/ImageUpload";
 import AnalyzerSelector from "./_components/AnalyzerSelector";
 
@@ -69,31 +70,6 @@ function deriveSeverity(issues: DetectedIssue[]): AnalysisResult["severity"] {
   return "moderate";
 }
 
-function persistScanLocally(payload: {
-  analyzerType: string;
-  selectedCategories: string[];
-  originalImages: string[];
-  annotatedImageUrl?: string;
-  hotspots: GalaxyHotspot[];
-  issues: GalaxyIssue[];
-  finalResult: AnalysisResult;
-}) {
-  if (typeof window === "undefined") return;
-
-  const key = "oneman_scan_history";
-  const existingRaw = localStorage.getItem(key);
-  const existing = existingRaw ? JSON.parse(existingRaw) : [];
-
-  const entry = {
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    createdAt: new Date().toISOString(),
-    ...payload,
-  };
-
-  const updated = [entry, ...existing].slice(0, 50);
-  localStorage.setItem(key, JSON.stringify(updated));
-}
-
 export default function ImageAnalyzerPage() {
   const router = useRouter();
   const { user } = useContext(AuthContext);
@@ -115,11 +91,7 @@ export default function ImageAnalyzerPage() {
     setAnalysisProgress(8);
     setAnalysisStatus("Preparing secure request...");
 
-    const savedAnswersRaw =
-      typeof window !== "undefined"
-        ? sessionStorage.getItem("assessment_answers_v1")
-        : null;
-    const answers = savedAnswersRaw ? (JSON.parse(savedAnswersRaw) as Record<string, string>) : {};
+    const answers: Record<string, string> = {};
 
     const answerCategories = extractOpenedCategoriesFromAnswers(answers);
     const selectedCategories = Array.from(new Set([selectedType, ...answerCategories]));
@@ -129,11 +101,8 @@ export default function ImageAnalyzerPage() {
     }, 350);
 
     try {
-      setAnalysisStatus("Running baseline analysis...");
-      const fallbackResultPromise = analyzeImage(images, selectedType);
-
       setAnalysisStatus("Sending photos to Galaxy AI for hotspot detection...");
-      const galaxyResponsePromise = fetch("/api/galaxy/analyze", {
+      const galaxyRaw = await fetch("/api/galaxy/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -144,24 +113,24 @@ export default function ImageAnalyzerPage() {
         }),
       });
 
-      const [fallbackResult, galaxyRaw] = await Promise.all([fallbackResultPromise, galaxyResponsePromise]);
-
-      let galaxyData: GalaxyAnalyzeResponse | null = null;
-      if (galaxyRaw.ok) {
-        galaxyData = (await galaxyRaw.json()) as GalaxyAnalyzeResponse;
+      if (!galaxyRaw.ok) {
+        throw new Error("Galaxy analysis failed");
       }
 
+      const galaxyData = (await galaxyRaw.json()) as GalaxyAnalyzeResponse;
+
       const galaxyIssues = galaxyData?.issues || [];
-      const mergedIssues =
-        galaxyIssues.length > 0
-          ? mapGalaxyIssuesToDetectedIssues(galaxyIssues)
-          : fallbackResult.detectedIssues;
+      const mergedIssues = mapGalaxyIssuesToDetectedIssues(galaxyIssues);
 
       const finalResult: AnalysisResult = {
-        ...fallbackResult,
-        confidence: galaxyData?.confidence ?? fallbackResult.confidence,
+        type: selectedType,
+        confidence: galaxyData?.confidence ?? 0,
         detectedIssues: mergedIssues,
         severity: deriveSeverity(mergedIssues),
+        recommendations: [],
+        tips: [],
+        products: [],
+        weeklyRoutines: [],
         capturedPhotos: images,
       };
 
@@ -169,7 +138,6 @@ export default function ImageAnalyzerPage() {
         sessionStorage.setItem("capturedPhotos", JSON.stringify(images));
         sessionStorage.setItem("photoAnalysis", JSON.stringify(finalResult));
         sessionStorage.setItem("analyzerType", selectedType);
-        sessionStorage.setItem("questionsAnswered", "true");
         sessionStorage.setItem(
           "galaxyAnalysis",
           JSON.stringify({
@@ -181,16 +149,6 @@ export default function ImageAnalyzerPage() {
             issues: galaxyIssues,
           })
         );
-
-        persistScanLocally({
-          analyzerType: selectedType,
-          selectedCategories,
-          originalImages: images,
-          annotatedImageUrl: galaxyData?.annotatedImageUrl || images[0],
-          hotspots: galaxyData?.hotspots || [],
-          issues: galaxyIssues,
-          finalResult,
-        });
       }
 
       if (user) {
@@ -204,6 +162,8 @@ export default function ImageAnalyzerPage() {
           inflammation_score: !isHairFlow ? Math.max(0, 100 - finalResult.confidence) : null,
           oil_balance_score: !isHairFlow ? finalResult.confidence : null,
         });
+
+        await hydrateUserData(user.id);
       }
 
       setAnalysisStatus("Analysis complete. Redirecting to report...");

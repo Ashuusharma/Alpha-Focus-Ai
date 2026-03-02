@@ -20,6 +20,7 @@ import { calculateDisciplineScore, getTierProgress } from "@/lib/rewardTierServi
 import { supabase } from "@/lib/supabaseClient";
 import { AuthContext } from "@/contexts/AuthProvider";
 import { useUserStore } from "@/stores/useUserStore";
+import { hydrateUserData } from "@/lib/hydrateUserData";
 
 const DAILY_CAP = 20;
 
@@ -66,13 +67,13 @@ const EARN_ACTIONS: EarnAction[] = [
     code: "improve_alpha_5",
     label: "Reassessment: +5% Alpha Score",
     helper: "+10 A$ once per reassessment",
-    metadata: { percent: 5, reassessmentId: "rea_demo_5" },
+    metadata: { percent: 5 },
   },
   {
     code: "severity_drop_one_level",
     label: "Reassessment: Severity drop",
     helper: "+20 A$ once per reassessment",
-    metadata: { dropped: true, reassessmentId: "rea_demo_severity" },
+    metadata: { dropped: true },
   },
   { code: "challenge_weekly_milestone", label: "Challenge weekly milestone", helper: "+20 A$" },
   { code: "challenge_30_complete", label: "30-Day Glow Up completed", helper: "+120 A$" },
@@ -168,7 +169,7 @@ function buildSnapshotFromApi(payload: {
 
 export default function AlphaCreditsPage() {
   const { user } = useContext(AuthContext);
-  const setStoreAlphaSummary = useUserStore((state) => state.setAlphaSummary);
+  const setUserData = useUserStore((state) => state.setUserData);
   const [snapshot, setSnapshot] = useState<LedgerSnapshot>(EMPTY_SNAPSHOT);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -204,12 +205,12 @@ export default function AlphaCreditsPage() {
       }
 
       setSnapshot(buildSnapshotFromApi(data));
-      setStoreAlphaSummary(data.summary || null);
+      setUserData({ alphaSummary: data.summary || null });
       setLoading(false);
     };
 
     loadSummary();
-  }, [user, setStoreAlphaSummary]);
+  }, [user?.id, setUserData]);
 
   const refreshSummary = async () => {
     const accessToken = await getAccessToken();
@@ -233,7 +234,7 @@ export default function AlphaCreditsPage() {
     }
 
     setSnapshot(buildSnapshotFromApi(data));
-    setStoreAlphaSummary(data.summary || null);
+    setUserData({ alphaSummary: data.summary || null });
   };
 
   const rewardCatalog = useMemo(() => getRewardCatalog(), []);
@@ -315,6 +316,9 @@ export default function AlphaCreditsPage() {
     const result = await response.json();
     setMessage(result?.ok ? `+${result.awarded} A$ added` : result?.error || "No credits added");
     await refreshSummary();
+    if (result?.ok && user) {
+      await hydrateUserData(user.id);
+    }
   };
 
   const handleRedeem = async (discountPercent: number, cost: number) => {
@@ -341,6 +345,9 @@ export default function AlphaCreditsPage() {
     const result = await response.json();
     setMessage(result?.ok ? `Redeemed ${discountPercent}% reward` : result?.error || "Unable to redeem");
     await refreshSummary();
+    if (result?.ok && user) {
+      await hydrateUserData(user.id);
+    }
   };
 
   const dailyEarned = DAILY_CAP - snapshot.dailyCapRemaining;

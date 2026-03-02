@@ -19,6 +19,9 @@ import { usePhotoGalleryStore } from "@/lib/photoGalleryStore";
 import { useWishlistStore } from "@/lib/wishlistStore";
 import { useRewardsStore } from "@/lib/rewardsStore";
 import { languages } from "@/lib/languageContext";
+import { AuthContext } from "@/contexts/AuthProvider";
+import { readUserState, writeUserState } from "@/lib/dbUserState";
+import { useContext } from "react";
 
 interface UserPreferences {
   notifications: boolean;
@@ -33,6 +36,7 @@ interface UserPreferences {
 
 export default function SettingsPage() {
   const router = useRouter();
+  const { user } = useContext(AuthContext);
   const [mounted, setMounted] = useState(false);
   const [settings, setSettings] = useState<UserPreferences>({
     notifications: true,
@@ -63,29 +67,27 @@ export default function SettingsPage() {
 
   useEffect(() => {
     setMounted(true);
-    // Load preferences from localStorage
-    const stored = localStorage.getItem("oneman_preferences");
-    if (stored) {
-      try {
-        setSettings(JSON.parse(stored));
-      } catch (e) {
-        console.error("Failed to parse preferences", e);
-      }
-    }
   }, []);
+
+  useEffect(() => {
+    const loadPreferences = async () => {
+      if (!user) return;
+      const saved = await readUserState<UserPreferences>(user.id, "oneman_preferences");
+      if (saved) {
+        setSettings(saved);
+      }
+    };
+
+    if (mounted) {
+      void loadPreferences();
+    }
+  }, [mounted, user?.id]);
 
   // Apply theme
   useEffect(() => {
     if (!mounted) return;
     document.documentElement.setAttribute("data-theme", settings.theme);
-    localStorage.setItem("oneman-theme", settings.theme);
   }, [settings.theme, mounted]);
-
-  // Apply language
-  useEffect(() => {
-    if (!mounted) return;
-    localStorage.setItem("oneman-language", settings.language);
-  }, [settings.language, mounted]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -106,8 +108,12 @@ export default function SettingsPage() {
     }));
   };
 
-  const handleSave = () => {
-    localStorage.setItem("oneman_preferences", JSON.stringify(settings));
+  const handleSave = async () => {
+    if (user) {
+      await writeUserState(user.id, "oneman_preferences", settings);
+      await writeUserState(user.id, "oneman-theme", settings.theme);
+      await writeUserState(user.id, "oneman-language", settings.language);
+    }
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
