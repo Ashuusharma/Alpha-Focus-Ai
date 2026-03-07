@@ -10,6 +10,7 @@ import { calculateProgressMetricsForCategory } from "@/lib/calculateProgressMetr
 import { productRecommendationLogic } from "@/lib/productRecommendationLogic";
 import { getProgressTimeline, type ProgressTimeline } from "@/lib/progressTimeline";
 import { generateDailyProtocolTasks, getCurrentProtocolPhase, getProtocolTemplate, type ProtocolTask } from "@/lib/protocolTemplates";
+import { resolveClinicalChildCategoryFromAny } from "@/lib/categorySync";
 
 type SubscriptionPlan = "basic" | "plus" | "pro";
 
@@ -118,7 +119,8 @@ export default function ResultPage() {
       }
 
       const queryCategory = params?.get("category");
-      let category = queryCategory;
+      const sessionCategory = typeof window !== "undefined" ? sessionStorage.getItem("analysisCategory") : null;
+      let category = resolveClinicalChildCategoryFromAny(queryCategory, sessionCategory as CategoryId | null);
 
       if (!category) {
         const { data: activeAnalysis } = await supabase
@@ -126,7 +128,7 @@ export default function ResultPage() {
           .select("selected_category")
           .eq("user_id", user.id)
           .maybeSingle();
-        category = activeAnalysis?.selected_category || null;
+        category = resolveClinicalChildCategoryFromAny(activeAnalysis?.selected_category || null, sessionCategory as CategoryId | null);
       }
 
       if (!category) {

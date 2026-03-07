@@ -10,6 +10,7 @@ import { hydrateUserData } from "@/lib/hydrateUserData";
 import { recalculateClinicalScores } from "@/lib/recalculateClinicalScores";
 import { categories, CategoryId, questions } from "@/lib/questions";
 import { getClinicalRelevance } from "@/lib/assessmentContentMap";
+import { getParentCategoryFromChild, resolveClinicalChildCategoryFromAny } from "@/lib/categorySync";
 
 const HOUR_24_MS = 24 * 60 * 60 * 1000;
 
@@ -61,6 +62,29 @@ function hasRecentSessionScanForCategory(categoryId: CategoryId) {
   return Date.now() - ts <= HOUR_24_MS;
 }
 
+function getRecentSessionCategory(): CategoryId | null {
+  if (typeof window === "undefined") return null;
+
+  const analysisCategory = sessionStorage.getItem("analysisCategory") as CategoryId | null;
+  const analysisAt = sessionStorage.getItem("analysisAt");
+  const photoAnalysisRaw = sessionStorage.getItem("photoAnalysis");
+
+  if (!analysisCategory || !analysisAt || !photoAnalysisRaw) return null;
+  if (!questions[analysisCategory]) return null;
+
+  const ts = new Date(analysisAt).getTime();
+  if (!Number.isFinite(ts)) return null;
+  if (Date.now() - ts > HOUR_24_MS) return null;
+
+  return analysisCategory;
+}
+
+function getRecentSessionParentCategory() {
+  if (typeof window === "undefined") return null;
+  const value = sessionStorage.getItem("analysisParentCategory");
+  return value || null;
+}
+
 export default function AssessmentPage() {
   const router = useRouter();
   const params = useSearchParams();
@@ -97,15 +121,22 @@ export default function AssessmentPage() {
         return;
       }
 
-      const categoryFromQuery = params?.get("category") as CategoryId | null;
+      const categoryFromQuery = params?.get("category");
 
       const { data: activeAnalysis } = await supabase
         .from("user_active_analysis")
-        .select("selected_category,selected_at")
+        .select("selected_category,parent_category,selected_at")
         .eq("user_id", user.id)
         .maybeSingle();
 
-      const selectedCategory = (categoryFromQuery || activeAnalysis?.selected_category || null) as CategoryId | null;
+      const sessionCategory = getRecentSessionCategory();
+      const selectedCategory = resolveClinicalChildCategoryFromAny(
+        categoryFromQuery || activeAnalysis?.selected_category || null,
+        sessionCategory || null
+      );
+      const parentCategory = selectedCategory
+        ? getParentCategoryFromChild(selectedCategory)
+        : (getRecentSessionParentCategory() || activeAnalysis?.parent_category || null);
 
       if (!selectedCategory || !questions[selectedCategory]) {
         setBlockedMessage("Start from analyzer and select a valid category first.");
@@ -151,6 +182,7 @@ export default function AssessmentPage() {
           {
             user_id: user.id,
             selected_category: selectedCategory,
+            parent_category: parentCategory,
             selected_at: new Date().toISOString(),
           },
           { onConflict: "user_id" }
@@ -209,6 +241,7 @@ export default function AssessmentPage() {
       await supabase.from("assessment_answers").insert({
         user_id: user.id,
         category: activeCategory,
+        parent_category: getParentCategoryFromChild(activeCategory),
         completed_at: new Date().toISOString(),
         completeness_pct: completenessPct,
         answers,

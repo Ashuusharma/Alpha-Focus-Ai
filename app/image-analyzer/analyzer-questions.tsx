@@ -18,7 +18,8 @@ export default function AnalyzerQuestionsRoute() {
 
     const selectedCategoriesRaw = sessionStorage.getItem("selectedCategories");
     const selectedCategories = selectedCategoriesRaw ? (JSON.parse(selectedCategoriesRaw) as string[]) : [];
-    const firstCategory = selectedCategories[0];
+    const sessionCategory = sessionStorage.getItem("analysisCategory");
+    const firstCategory = sessionCategory || selectedCategories[0];
 
     if (firstCategory) {
       router.push(`/assessment?category=${firstCategory}`);

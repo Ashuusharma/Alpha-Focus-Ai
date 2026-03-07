@@ -4,11 +4,16 @@
 -- Ensure required timestamp/date columns exist before index creation
 alter table if exists public.photo_scans
   add column if not exists scan_date timestamptz default now(),
-  add column if not exists analyzer_category text;
+  add column if not exists analyzer_category text,
+  add column if not exists parent_category text;
 
 alter table if exists public.assessment_answers
   add column if not exists completed_at timestamptz default now(),
-  add column if not exists category text;
+  add column if not exists category text,
+  add column if not exists parent_category text;
+
+alter table if exists public.user_active_analysis
+  add column if not exists parent_category text;
 
 alter table if exists public.routine_logs
   add column if not exists log_date date default current_date,
@@ -43,8 +48,17 @@ create index if not exists idx_progress_user_updated
 create index if not exists idx_photo_scans_user_category_date
   on public.photo_scans(user_id, analyzer_category, scan_date desc);
 
+create index if not exists idx_photo_scans_user_parent_category_date
+  on public.photo_scans(user_id, parent_category, scan_date desc);
+
 create index if not exists idx_assessment_answers_user_category_date
   on public.assessment_answers(user_id, category, completed_at desc);
+
+create index if not exists idx_assessment_answers_user_parent_category_date
+  on public.assessment_answers(user_id, parent_category, completed_at desc);
+
+create index if not exists idx_user_active_analysis_parent
+  on public.user_active_analysis(parent_category, selected_at desc);
 
 create unique index if not exists uq_routine_logs_user_date
   on public.routine_logs(user_id, log_date);
@@ -59,7 +73,10 @@ where schemaname = 'public'
   and indexname in (
     'idx_progress_user_updated',
     'idx_photo_scans_user_category_date',
+    'idx_photo_scans_user_parent_category_date',
     'idx_assessment_answers_user_category_date',
+    'idx_assessment_answers_user_parent_category_date',
+    'idx_user_active_analysis_parent',
     'uq_routine_logs_user_date',
     'idx_product_reco_user_category'
   )

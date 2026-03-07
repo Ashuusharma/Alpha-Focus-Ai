@@ -11,6 +11,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { hydrateUserData } from "@/lib/hydrateUserData";
 import { recalculateClinicalScores } from "@/lib/recalculateClinicalScores";
 import { getCategoryFromAnalyzer, buildCategoryPhotoMetrics } from "@/lib/clinicalFlow";
+import { getParentCategoryFromChild } from "@/lib/categorySync";
 import MultiAngleUpload from "./_components/ImageUpload";
 import AnalyzerSelector from "./_components/AnalyzerSelector";
 
@@ -137,12 +138,28 @@ export default function ImageAnalyzerPage() {
   const [analysisStatus, setAnalysisStatus] = useState("Preparing photos...");
   const [diagnosticMode, setDiagnosticMode] = useState<"db_persisted" | "session_only" | null>(null);
 
+  const handleQuestionsNavigation = () => {
+    const selectedCategory = selectedType ? getCategoryFromAnalyzer(selectedType) : null;
+    const sessionCategory = typeof window !== "undefined"
+      ? sessionStorage.getItem("analysisCategory")
+      : null;
+    const category = selectedCategory || sessionCategory;
+
+    if (category) {
+      router.push(`/assessment?category=${category}`);
+      return;
+    }
+
+    router.push("/assessment");
+  };
+
   const handleTypeSelect = (type: AnalyzerType) => {
     setSelectedType(type);
     setStep("upload");
 
     const category = getCategoryFromAnalyzer(type);
     if (user && category) {
+      const parentCategory = getParentCategoryFromChild(category);
       (async () => {
         try {
           await supabase
@@ -151,6 +168,7 @@ export default function ImageAnalyzerPage() {
               {
                 user_id: user.id,
                 selected_category: category,
+                parent_category: parentCategory,
                 selected_at: new Date().toISOString(),
               },
               { onConflict: "user_id" }
@@ -174,6 +192,7 @@ export default function ImageAnalyzerPage() {
     if (!selectedCategory) {
       throw new Error("Unsupported analyzer category for clinical protocol flow.");
     }
+    const parentCategory = getParentCategoryFromChild(selectedCategory);
 
     const progressTimer = setInterval(() => {
       setAnalysisProgress((prev) => (prev < 88 ? prev + 4 : prev));
@@ -228,6 +247,8 @@ export default function ImageAnalyzerPage() {
         sessionStorage.setItem("photoAnalysis", JSON.stringify(finalResult));
         sessionStorage.setItem("analyzerType", selectedType);
         sessionStorage.setItem("analysisCategory", selectedCategory);
+        sessionStorage.setItem("analysisParentCategory", parentCategory);
+        sessionStorage.setItem("selectedCategories", JSON.stringify([selectedCategory]));
         sessionStorage.setItem("analysisAt", new Date().toISOString());
         sessionStorage.setItem(
           "galaxyAnalysis",
@@ -250,6 +271,7 @@ export default function ImageAnalyzerPage() {
           scan_date: new Date().toISOString(),
           image_url: galaxyData?.annotatedImageUrl || images[0],
           analyzer_category: selectedCategory,
+          parent_category: parentCategory,
           image_valid: imageValid,
           photo_metrics: photoMetrics,
           density_score: isHairFlow ? finalResult.confidence : null,
@@ -266,6 +288,7 @@ export default function ImageAnalyzerPage() {
             {
               user_id: user.id,
               selected_category: selectedCategory,
+              parent_category: parentCategory,
               selected_at: new Date().toISOString(),
             },
             { onConflict: "user_id" }
@@ -312,7 +335,7 @@ export default function ImageAnalyzerPage() {
           </button>
           <span className="font-semibold text-[#1F3D2B]">Alpha Focus Analyzer</span>
           <button
-            onClick={() => router.push("/assessment")}
+            onClick={handleQuestionsNavigation}
             className="text-xs px-3 py-1.5 rounded-lg border border-[#1F3D2B]/10 text-[#1F3D2B] bg-white/60 hover:bg-white/80 transition-colors shadow-sm"
           >
             Questions
