@@ -24,6 +24,7 @@ export type CreditActionCode =
   | "first_assessment_completed"
   | "first_scan_uploaded"
   | "weekly_reassessment"
+  | "referral_completed"
   | "product_review_submitted"
   | "purchase_cashback";
 
@@ -106,10 +107,10 @@ const WEEKLY_CAP = 9999;
 const TRANSACTION_LIMIT = 120;
 
 const ACTION_RULES: Record<CreditActionCode, CreditActionRule> = {
-  daily_login: { code: "daily_login", label: "Daily login", amount: 2, frequency: "daily", category: "discipline" },
-  log_am_routine: { code: "log_am_routine", label: "AM routine completed", amount: 3, frequency: "daily", category: "discipline" },
-  log_pm_routine: { code: "log_pm_routine", label: "PM routine completed", amount: 3, frequency: "daily", category: "discipline" },
-  hydration_goal: { code: "hydration_goal", label: "Hydration goal met", amount: 2, frequency: "daily", category: "discipline" },
+  daily_login: { code: "daily_login", label: "Daily login", amount: 1, frequency: "daily", category: "discipline" },
+  log_am_routine: { code: "log_am_routine", label: "AM routine completed", amount: 2, frequency: "daily", category: "discipline" },
+  log_pm_routine: { code: "log_pm_routine", label: "PM routine completed", amount: 2, frequency: "daily", category: "discipline" },
+  hydration_goal: { code: "hydration_goal", label: "Hydration goal met", amount: 3, frequency: "daily", category: "discipline" },
   sleep_goal: { code: "sleep_goal", label: "Sleep goal met", amount: 2, frequency: "daily", category: "discipline" },
   full_day_completed: { code: "full_day_completed", label: "Full day completed", amount: 5, frequency: "daily", category: "discipline" },
 
@@ -141,8 +142,8 @@ const ACTION_RULES: Record<CreditActionCode, CreditActionRule> = {
   },
   severity_drop_one_level: {
     code: "severity_drop_one_level",
-    label: "Severity dropped by one level",
-    amount: 20,
+    label: "Severity dropped by 10 points",
+    amount: 25,
     frequency: "event",
     category: "improvement",
     validator: (metadata) => {
@@ -166,20 +167,21 @@ const ACTION_RULES: Record<CreditActionCode, CreditActionRule> = {
     },
   },
 
-  challenge_30_complete: { code: "challenge_30_complete", label: "30-Day Glow Up completed", amount: 120, frequency: "once", category: "challenge" },
+  challenge_30_complete: { code: "challenge_30_complete", label: "30-Day consistency completed", amount: 50, frequency: "once", category: "challenge" },
   challenge_60_complete: { code: "challenge_60_complete", label: "60-Day Transformation completed", amount: 250, frequency: "once", category: "challenge" },
   challenge_90_complete: { code: "challenge_90_complete", label: "90-Day Mastery completed", amount: 400, frequency: "once", category: "challenge" },
   challenge_weekly_milestone: { code: "challenge_weekly_milestone", label: "Challenge weekly milestone", amount: 20, frequency: "weekly", category: "challenge" },
 
-  streak_7: { code: "streak_7", label: "7-day streak milestone", amount: 25, frequency: "once", category: "milestone" },
+  streak_7: { code: "streak_7", label: "7-day streak milestone", amount: 15, frequency: "once", category: "milestone" },
   streak_14: { code: "streak_14", label: "14-day streak milestone", amount: 50, frequency: "once", category: "milestone" },
-  streak_30: { code: "streak_30", label: "30-day streak milestone", amount: 120, frequency: "once", category: "milestone" },
+  streak_30: { code: "streak_30", label: "30-day streak milestone", amount: 75, frequency: "once", category: "milestone" },
   streak_60: { code: "streak_60", label: "60-day streak milestone", amount: 250, frequency: "once", category: "milestone" },
   streak_90: { code: "streak_90", label: "90-day streak milestone", amount: 400, frequency: "once", category: "milestone" },
 
   first_assessment_completed: { code: "first_assessment_completed", label: "First assessment completed", amount: 15, frequency: "once", category: "engagement" },
-  first_scan_uploaded: { code: "first_scan_uploaded", label: "First scan uploaded", amount: 20, frequency: "once", category: "engagement" },
+  first_scan_uploaded: { code: "first_scan_uploaded", label: "First scan uploaded", amount: 5, frequency: "once", category: "engagement" },
   weekly_reassessment: { code: "weekly_reassessment", label: "Weekly reassessment completed", amount: 10, frequency: "weekly", category: "engagement" },
+  referral_completed: { code: "referral_completed", label: "Referral completed", amount: 10, frequency: "event", category: "engagement" },
   product_review_submitted: { code: "product_review_submitted", label: "Product review submitted", amount: 5, frequency: "event", category: "engagement" },
   purchase_cashback: {
     code: "purchase_cashback",

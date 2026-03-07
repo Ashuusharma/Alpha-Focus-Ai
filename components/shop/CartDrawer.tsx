@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useCartStore } from "@/lib/cartStore";
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { formatINR } from "@/lib/currency";
 
 export default function CartDrawer() {
   const { isOpen, closeCart, items, removeItem, updateQty } = useCartStore();
@@ -33,7 +34,7 @@ export default function CartDrawer() {
   }, [isOpen]);
 
   const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const shipping = subtotal > 50 ? 0 : 5.99;
+  const shipping = subtotal >= 1000 ? 0 : 99;
   const total = subtotal + shipping;
 
   if (!isOpen) return null;
@@ -122,7 +123,7 @@ export default function CartDrawer() {
                            <Plus className="h-3 w-3" />
                          </button>
                        </div>
-                       <span className="font-bold text-[#1F3D2B]">${(item.price * item.quantity).toFixed(2)}</span>
+                       <span className="font-bold text-[#1F3D2B]">{formatINR(item.price * item.quantity)}</span>
                     </div>
                   </div>
                 </div>
@@ -136,15 +137,15 @@ export default function CartDrawer() {
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-sm text-[#6B665D]">
                   <span>Subtotal</span>
-                  <span>${subtotal.toFixed(2)}</span>
+                  <span>{formatINR(subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-sm text-[#6B665D]">
                   <span>Shipping</span>
-                  <span>{shipping === 0 ? "Free" : `$${shipping.toFixed(2)}`}</span>
+                  <span>{shipping === 0 ? "Free" : formatINR(shipping)}</span>
                 </div>
                 <div className="flex justify-between text-base font-bold text-[#1F3D2B] pt-3 border-t border-[#E2DDD4]">
                   <span>Total</span>
-                  <span>${total.toFixed(2)}</span>
+                  <span>{formatINR(total)}</span>
                 </div>
               </div>
 

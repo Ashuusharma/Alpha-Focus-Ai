@@ -2,7 +2,7 @@
 
 import { AnalyzerType } from "@/lib/analyzeImage";
 import { motion } from "framer-motion";
-import { ScanFace, User, Scissors, CircleDot, Eye, Clock, Brain, Smile, ShirtIcon, Droplet } from "lucide-react";
+import { User, Scissors, CircleDot, Eye, Clock, Brain, ShirtIcon, Droplet } from "lucide-react";
 
 interface AnalyzerSelectorProps {
   selected: AnalyzerType | null;
@@ -23,14 +23,6 @@ export default function AnalyzerSelector({
     color: string;
     tag?: string;
   }> = [
-    {
-      type: "skin",
-      label: "Skin Health",
-      icon: ScanFace,
-      description: "Texture, tone, pores, oiliness, dehydration & sensitivity",
-      color: "from-blue-400 to-cyan-400",
-      tag: "Most Popular",
-    },
     {
       type: "acne",
       label: "Acne Analysis",
@@ -72,14 +64,6 @@ export default function AnalyzerSelector({
       icon: Scissors,
       description: "Patchiness, density, ingrown hairs & texture issues",
       color: "from-emerald-400 to-teal-400",
-    },
-    {
-      type: "teeth",
-      label: "Teeth & Smile",
-      icon: Smile,
-      description: "Staining, alignment, gum health & whitening potential",
-      color: "from-sky-400 to-blue-400",
-      tag: "New",
     },
     {
       type: "body_acne",

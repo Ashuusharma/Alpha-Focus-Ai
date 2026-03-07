@@ -11,6 +11,8 @@ interface LoginScreenProps {
 
 export default function LoginScreen({ onLogin }: LoginScreenProps) {
   const [name, setName] = useState("");
+  const [ageRange, setAgeRange] = useState("");
+  const [primaryConcern, setPrimaryConcern] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [consent, setConsent] = useState(false);
@@ -25,12 +27,16 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
       setError("Please provide consent to continue");
       return;
     }
+    if (!ageRange || !primaryConcern) {
+      setError("Please select your age range and primary concern");
+      return;
+    }
     setLoading(true);
     try {
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, consent }),
+        body: JSON.stringify({ name, consent, ageRange, primaryConcern }),
       });
 
       if (!response.ok) {
@@ -38,7 +44,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
         return;
       }
 
-      writeUserSession(name, consent);
+      writeUserSession(name, consent, { ageRange, primaryConcern });
       onLogin(name);
     } catch {
       setError("Unable to login. Please try again.");
@@ -90,6 +96,48 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
               className="w-full bg-[#162826] border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
             />
             {error && <p className="text-red-400 text-xs mt-2 ml-1">{error}</p>}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Age Range</label>
+              <select
+                value={ageRange}
+                onChange={(e) => {
+                  setAgeRange(e.target.value);
+                  setError("");
+                }}
+                disabled={loading}
+                className="w-full bg-[#162826] border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+              >
+                <option value="">Select</option>
+                <option value="18-24">18-24</option>
+                <option value="25-34">25-34</option>
+                <option value="35-44">35-44</option>
+                <option value="45+">45+</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Primary Concern</label>
+              <select
+                value={primaryConcern}
+                onChange={(e) => {
+                  setPrimaryConcern(e.target.value);
+                  setError("");
+                }}
+                disabled={loading}
+                className="w-full bg-[#162826] border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+              >
+                <option value="">Select</option>
+                <option value="hair_loss">Hair Loss</option>
+                <option value="acne">Acne</option>
+                <option value="scalp_health">Scalp Health</option>
+                <option value="dark_circles">Dark Circles</option>
+                <option value="beard_growth">Beard Growth</option>
+                <option value="anti_aging">Confidence Routine</option>
+              </select>
+            </div>
           </div>
 
           <label className="flex items-start gap-2 text-xs text-gray-300">

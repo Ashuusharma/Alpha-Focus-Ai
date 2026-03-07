@@ -48,6 +48,42 @@ export default function CoreUserHydrator() {
           void hydrateUserData(user.id);
         }
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "assessment_answers",
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          void hydrateUserData(user.id);
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "photo_scans",
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          void hydrateUserData(user.id);
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "user_clinical_scores",
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          void hydrateUserData(user.id);
+        }
+      )
       .subscribe();
 
     return () => {

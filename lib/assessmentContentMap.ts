@@ -15,34 +15,38 @@ export interface CategoryAdminContent {
   imageLocal: string;
 }
 
-export const CATEGORY_CONTENT_MAP: Record<CategoryId, CategoryAdminContent> = {
-  hairCare: {
+export const CATEGORY_CONTENT_MAP: Partial<Record<CategoryId, CategoryAdminContent>> = {
+  scalp_health: {
     imageExternal: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=1400&auto=format&fit=crop",
     imageLocal: "/images/assessment/male-hair.svg",
   },
-  skinCare: {
+  acne: {
     imageExternal: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?q=80&w=1400&auto=format&fit=crop",
     imageLocal: "/images/assessment/male-skin.svg",
   },
-  beardCare: {
+  dark_circles: {
+    imageExternal: "https://images.unsplash.com/photo-1616683693504-3ea7e9ad6fec?q=80&w=1400&auto=format&fit=crop",
+    imageLocal: "/images/assessment/male-skin.svg",
+  },
+  hair_loss: {
+    imageExternal: "https://images.unsplash.com/photo-1622286342621-4bd786c2447c?q=80&w=1400&auto=format&fit=crop",
+    imageLocal: "/images/assessment/male-hair.svg",
+  },
+  beard_growth: {
     imageExternal: "https://images.unsplash.com/photo-1621607512214-68297480165e?q=80&w=1400&auto=format&fit=crop",
     imageLocal: "/images/assessment/male-beard.svg",
   },
-  bodyCare: {
+  body_acne: {
     imageExternal: "https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?q=80&w=1400&auto=format&fit=crop",
     imageLocal: "/images/assessment/male-body.svg",
   },
-  healthCare: {
-    imageExternal: "https://images.unsplash.com/photo-1498837167922-ddd27525d352?q=80&w=1400&auto=format&fit=crop",
-    imageLocal: "/images/assessment/male-health.svg",
+  lip_care: {
+    imageExternal: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=1400&auto=format&fit=crop",
+    imageLocal: "/images/assessment/male-skin.svg",
   },
-  fitness: {
-    imageExternal: "https://images.unsplash.com/photo-1517963879433-6ad2b056d712?q=80&w=1400&auto=format&fit=crop",
-    imageLocal: "/images/assessment/male-fitness.svg",
-  },
-  fragrance: {
-    imageExternal: "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?q=80&w=1400&auto=format&fit=crop",
-    imageLocal: "/images/assessment/male-fragrance.svg",
+  anti_aging: {
+    imageExternal: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?q=80&w=1400&auto=format&fit=crop",
+    imageLocal: "/images/assessment/male-skin.svg",
   },
 };
 

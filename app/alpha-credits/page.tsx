@@ -17,7 +17,6 @@ import {
   getRewardProgress,
 } from "@/lib/couponService";
 import { calculateDisciplineScore, getTierProgress } from "@/lib/rewardTierService";
-import { supabase } from "@/lib/supabaseClient";
 import { AuthContext } from "@/contexts/AuthProvider";
 import { useUserStore } from "@/stores/useUserStore";
 import { hydrateUserData } from "@/lib/hydrateUserData";
@@ -57,27 +56,27 @@ type EarnAction = {
 };
 
 const EARN_ACTIONS: EarnAction[] = [
-  { code: "daily_login", label: "Daily login", helper: "+2 A$ / day" },
-  { code: "log_am_routine", label: "AM routine completed", helper: "+3 A$ / day" },
-  { code: "log_pm_routine", label: "PM routine completed", helper: "+3 A$ / day" },
-  { code: "hydration_goal", label: "Hydration goal met", helper: "+2 A$ / day" },
+  { code: "daily_login", label: "Daily login", helper: "+1 A$ / day" },
+  { code: "log_am_routine", label: "AM routine completed", helper: "+2 A$ / day" },
+  { code: "log_pm_routine", label: "PM routine completed", helper: "+2 A$ / day" },
+  { code: "hydration_goal", label: "Hydration goal met", helper: "+3 A$ / day" },
   { code: "sleep_goal", label: "Sleep goal met", helper: "+2 A$ / day" },
-  { code: "full_day_completed", label: "Full day completed", helper: "+5 A$ bonus" },
+  { code: "full_day_completed", label: "Full day completed", helper: "Daily cap: 20 A$" },
   {
     code: "improve_alpha_5",
-    label: "Reassessment: +5% Alpha Score",
-    helper: "+10 A$ once per reassessment",
-    metadata: { percent: 5 },
+    label: "Weekly adherence > 80%",
+    helper: "+10 A$",
+    metadata: { adherence: 80 },
   },
   {
     code: "severity_drop_one_level",
-    label: "Reassessment: Severity drop",
-    helper: "+20 A$ once per reassessment",
-    metadata: { dropped: true },
+    label: "Severity drop by 10 points",
+    helper: "+25 A$",
+    metadata: { dropped: true, points: 10 },
   },
-  { code: "challenge_weekly_milestone", label: "Challenge weekly milestone", helper: "+20 A$" },
-  { code: "challenge_30_complete", label: "30-Day Glow Up completed", helper: "+120 A$" },
-  { code: "streak_30", label: "30-day streak milestone", helper: "+120 A$" },
+  { code: "challenge_30_complete", label: "30-day consistency complete", helper: "+50 A$" },
+  { code: "product_review_submitted", label: "Product review", helper: "+5 A$" },
+  { code: "first_scan_uploaded", label: "Photo scan upload", helper: "+5 A$" },
 ];
 
 function ProgressBar({ value, max }: { value: number; max: number }) {
@@ -114,36 +113,20 @@ const EMPTY_SNAPSHOT: LedgerSnapshot = {
   transactions: [],
 };
 
-async function getAccessToken() {
-  const { data } = await supabase.auth.getSession();
-  return data.session?.access_token || null;
-}
-
-function buildSnapshotFromApi(payload: {
-  summary?: {
-    currentBalance?: number;
-    lifetimeEarned?: number;
-    lifetimeSpent?: number;
-    tierLevel?: string;
-  };
-  transactions?: Array<{
-    id: string;
-    amount: number;
-    category: string;
-    description?: string;
-    created_at: string;
-  }>;
+function buildSnapshotFromStore(input: {
+  summary: Record<string, unknown> | null;
+  transactions: Array<Record<string, unknown>>;
 }): LedgerSnapshot {
-  const summary = payload.summary;
-  const transactions = (payload.transactions || []).map((tx) => {
+  const summary = input.summary;
+  const transactions = (input.transactions || []).map((tx) => {
     const amount = Number(tx.amount || 0);
     return {
-      id: tx.id,
+      id: String(tx.id || `${Date.now()}`),
       type: amount >= 0 ? "earn" : "spend",
-      source: tx.category,
-      label: tx.description || tx.category,
+      source: String(tx.category || "discipline"),
+      label: String(tx.description || tx.category || "transaction"),
       amount: Math.abs(amount),
-      timestamp: tx.created_at,
+      timestamp: String(tx.created_at || new Date().toISOString()),
       balanceAfter: 0,
     } as LedgerTransaction;
   });
@@ -155,12 +138,12 @@ function buildSnapshotFromApi(payload: {
 
   return {
     model: {
-      currentBalance: Number(summary?.currentBalance || 0),
-      totalEarned: Number(summary?.lifetimeEarned || 0),
-      totalSpent: Number(summary?.lifetimeSpent || 0),
+      currentBalance: Number(summary?.current_balance || 0),
+      totalEarned: Number(summary?.lifetime_earned || 0),
+      totalSpent: Number(summary?.lifetime_spent || 0),
     },
     tier: {
-      label: toTierLabel(summary?.tierLevel),
+      label: toTierLabel(String(summary?.tier_level || "Bronze")),
     },
     dailyCapRemaining: Math.max(0, DAILY_CAP - todayDisciplineEarned),
     transactions,
@@ -169,73 +152,20 @@ function buildSnapshotFromApi(payload: {
 
 export default function AlphaCreditsPage() {
   const { user } = useContext(AuthContext);
-  const setUserData = useUserStore((state) => state.setUserData);
-  const [snapshot, setSnapshot] = useState<LedgerSnapshot>(EMPTY_SNAPSHOT);
+  const loading = useUserStore((state) => state.loading);
+  const alphaSummary = useUserStore((state) => state.alphaSummary as Record<string, unknown> | null);
+  const alphaTransactions = useUserStore((state) => state.alphaTransactions as Array<Record<string, unknown>>);
   const [message, setMessage] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const snapshot = useMemo(
+    () => (user ? buildSnapshotFromStore({ summary: alphaSummary, transactions: alphaTransactions }) : EMPTY_SNAPSHOT),
+    [user?.id, alphaSummary, alphaTransactions]
+  );
 
   useEffect(() => {
-    const loadSummary = async () => {
-      if (!user) {
-        setSnapshot(EMPTY_SNAPSHOT);
-        setLoading(false);
-        return;
-      }
-
-      const accessToken = await getAccessToken();
-      if (!accessToken) {
-        setMessage("Missing session token. Please sign in again.");
-        setLoading(false);
-        return;
-      }
-
-      const res = await fetch("/api/alpha-sikka/summary", {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-        cache: "no-store",
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data?.ok) {
-        setMessage(data?.error || "Unable to load Alpha Sikka summary.");
-        setLoading(false);
-        return;
-      }
-
-      setSnapshot(buildSnapshotFromApi(data));
-      setUserData({ alphaSummary: data.summary || null });
-      setLoading(false);
-    };
-
-    loadSummary();
-  }, [user?.id, setUserData]);
-
-  const refreshSummary = async () => {
-    const accessToken = await getAccessToken();
-    if (!accessToken) {
-      setMessage("Missing session token. Please sign in again.");
-      return;
-    }
-
-    const res = await fetch("/api/alpha-sikka/summary", {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-      cache: "no-store",
-    });
-
-    const data = await res.json();
-    if (!res.ok || !data?.ok) {
-      setMessage(data?.error || "Unable to refresh Alpha Sikka summary.");
-      return;
-    }
-
-    setSnapshot(buildSnapshotFromApi(data));
-    setUserData({ alphaSummary: data.summary || null });
-  };
+    if (!user) return;
+    if (alphaSummary) return;
+    void hydrateUserData(user.id);
+  }, [user?.id, alphaSummary]);
 
   const rewardCatalog = useMemo(() => getRewardCatalog(), []);
   const rewardProgress = useMemo(
@@ -294,17 +224,10 @@ export default function AlphaCreditsPage() {
       referenceId: String(action.metadata?.referenceId || `${action.code}_${Date.now()}`),
     };
 
-    const accessToken = await getAccessToken();
-    if (!accessToken) {
-      setMessage("Missing session token. Please sign in again.");
-      return;
-    }
-
     const response = await fetch("/api/alpha-sikka/earn", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({
         action: action.code,
@@ -315,24 +238,16 @@ export default function AlphaCreditsPage() {
 
     const result = await response.json();
     setMessage(result?.ok ? `+${result.awarded} A$ added` : result?.error || "No credits added");
-    await refreshSummary();
     if (result?.ok && user) {
       await hydrateUserData(user.id);
     }
   };
 
   const handleRedeem = async (discountPercent: number, cost: number) => {
-    const accessToken = await getAccessToken();
-    if (!accessToken) {
-      setMessage("Missing session token. Please sign in again.");
-      return;
-    }
-
     const response = await fetch("/api/alpha-sikka/spend", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({
         amount: cost,
@@ -344,7 +259,6 @@ export default function AlphaCreditsPage() {
 
     const result = await response.json();
     setMessage(result?.ok ? `Redeemed ${discountPercent}% reward` : result?.error || "Unable to redeem");
-    await refreshSummary();
     if (result?.ok && user) {
       await hydrateUserData(user.id);
     }
@@ -352,7 +266,7 @@ export default function AlphaCreditsPage() {
 
   const dailyEarned = DAILY_CAP - snapshot.dailyCapRemaining;
 
-  if (loading) {
+  if (loading || !user) {
     return (
       <div className="min-h-screen bg-[#F4EFE6] text-[#1F3D2B] pb-20">
         <div className="mx-auto max-w-7xl px-6 pt-16">
@@ -455,11 +369,11 @@ export default function AlphaCreditsPage() {
             <div className="rounded-xl bg-[#F4EFE6] border border-[#E2DDD4] p-4 text-sm text-[#1F3D2B] space-y-2">
               <div className="flex items-center gap-2">
                 <Clock3 className="h-4 w-4" />
-                <span>Coupons expire 7 days after issuance.</span>
+                <span>Coupons expire 30 days after issuance.</span>
               </div>
               <div className="flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4" />
-                <span>One coupon per checkout. No stacking.</span>
+                <span>Max 20% of cart · Min cart ₹1000 · No stacking.</span>
               </div>
             </div>
           </div>
@@ -536,7 +450,7 @@ export default function AlphaCreditsPage() {
                     </div>
                     <BadgePercent className="h-8 w-8 text-[#2F6F57]" />
                   </div>
-                  <p className="text-xs text-[#6B665D] mt-2">Coupon expires in 7 days. One-time use per checkout.</p>
+                  <p className="text-xs text-[#6B665D] mt-2">Coupon expires in 30 days. Max 20% cart discount, min cart ₹1000.</p>
                   <button
                     onClick={() => handleRedeem(reward.discountPercent, reward.cost)}
                     disabled={!canRedeem}

@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { type ProductCatalogItem } from "@/lib/productCatalogData";
 import { useCartStore } from "@/lib/cartStore";
+import { formatINR } from "@/lib/currency";
 
 interface ProductCardProps {
   product: ProductCatalogItem;
@@ -25,7 +26,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     addItem({
       id: product.sku || product.name,
       name: product.name,
-      price: 24.00, // Placeholder price if not in catalog
+      price: 2400,
       quantity: 1,
       usageDays: 30,
     });
@@ -73,7 +74,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
         <div className="mt-auto flex items-center justify-between gap-3">
           <div className="flex flex-col">
-            <span className="text-lg font-bold text-[#1F3D2B]">$24.00</span>
+            <span className="text-lg font-bold text-[#1F3D2B]">{formatINR(2400)}</span>
             <span className="text-[10px] text-[#6B665D]">Free Shipping</span>
           </div>
           

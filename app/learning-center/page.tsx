@@ -6,61 +6,69 @@ import Container from "@/app/result/_components/Container";
 import { ArrowLeft, BookOpen, ChevronDown, Compass, FileText, ScanFace, ShieldCheck } from "lucide-react";
 import { categories, questions, type CategoryId } from "@/lib/questions";
 
-const categoryInsights: Record<CategoryId, { headline: string; guidance: string[] }> = {
-  hairCare: {
-    headline: "Hair recovery is driven by scalp stability and consistency.",
+const categoryInsights: Partial<Record<CategoryId, { headline: string; guidance: string[] }>> = {
+  scalp_health: {
+    headline: "Scalp recovery improves when inflammation and oil balance are managed together.",
     guidance: [
-      "Keep cleansing frequency aligned to oil level and sweat exposure.",
-      "Use treatment products in measurable cycles of 6-8 weeks.",
-      "Track shedding and density monthly instead of day-to-day."
+      "Track itch, redness, and flake frequency weekly to monitor trends.",
+      "Match wash frequency to sweat/oil burden rather than fixed routines.",
+      "Avoid abrupt product switches during active flare windows."
     ],
   },
-  skinCare: {
-    headline: "Barrier-first skincare reduces noise and improves response to actives.",
+  acne: {
+    headline: "Acne outcomes improve with inflammation control and pore management.",
     guidance: [
-      "Prioritize cleanser + moisturizer + SPF before adding intense actives.",
-      "Introduce one new product at a time and observe for 10-14 days.",
-      "Use objective indicators: redness frequency, breakout count, texture changes."
+      "Track lesion count and post-mark activity separately for clarity.",
+      "Keep routines non-comedogenic and consistent for at least 4-6 weeks.",
+      "Prioritize UV protection to reduce post-inflammatory pigmentation."
     ],
   },
-  beardCare: {
-    headline: "Beard quality depends on skin comfort, not only growth products.",
+  dark_circles: {
+    headline: "Under-eye changes are usually multifactorial: vascular, pigment, sleep, and hydration.",
     guidance: [
-      "Exfoliate and hydrate the skin beneath facial hair to reduce irritation.",
-      "Use trimming intervals to maintain shape and reduce mechanical stress.",
-      "Address ingrown-prone zones with gentle anti-inflammatory care."
+      "Compare morning and evening appearance to identify fluid vs pigment dominance.",
+      "Improve sleep regularity before escalating product complexity.",
+      "Use hydration and UV protection as baseline control variables."
     ],
   },
-  bodyCare: {
-    headline: "Body skin responds strongly to friction, sweat, and cleansing quality.",
+  hair_loss: {
+    headline: "Hair loss tracking should focus on pattern progression and shedding behavior.",
     guidance: [
-      "Use breathable fabrics and post-workout cleansing to limit congestion.",
-      "Treat roughness with consistent hydration and mild exfoliation cycles.",
-      "Keep products simple and fragrance-balanced when sensitivity is present."
+      "Track frontal, temporal, and crown photos in consistent lighting.",
+      "Correlate shed spikes with stress, sleep, and routine changes.",
+      "Assess outcomes in monthly windows instead of daily checks."
     ],
   },
-  healthCare: {
-    headline: "Sleep, stress, and nutrition visibly influence skin and scalp outcomes.",
+  beard_growth: {
+    headline: "Beard growth quality depends on density, irritation control, and grooming hygiene.",
     guidance: [
-      "Target stable sleep timing before adding complex supplement stacks.",
-      "Use hydration and protein baselines as non-negotiable daily anchors.",
-      "Reduce routine volatility by keeping weekday behavior predictable."
+      "Reduce ingrown triggers with gentle exfoliation and shaving technique.",
+      "Maintain hydration to improve texture and perceived fullness.",
+      "Review patchy zones over 4-week intervals for reliable trend detection."
     ],
   },
-  fitness: {
-    headline: "Training quality and recovery quality should improve together.",
+  body_acne: {
+    headline: "Body acne frequently reflects sweat retention, friction load, and hygiene timing.",
     guidance: [
-      "Balance intensity with recovery to avoid inflammation-driven setbacks.",
-      "Support training with nutrition timing and adequate hydration.",
-      "Track consistency rate weekly, not just single-session performance."
+      "Prioritize post-sweat cleansing and breathable fabrics.",
+      "Track lesion density by area: back, chest, shoulders.",
+      "Keep laundry and towel cadence consistent to reduce bacterial load."
     ],
   },
-  fragrance: {
-    headline: "Signature scent strategy works best with context-aware selection.",
+  lip_care: {
+    headline: "Lip recovery requires barrier support, UV defense, and hydration consistency.",
     guidance: [
-      "Match fragrance concentration to climate and event duration.",
-      "Use pulse-point placement and controlled sprays for cleaner projection.",
-      "Build a small rotation: office-safe, evening, and all-season options."
+      "Limit irritant exposure during active dryness/cracking.",
+      "Use protective balms with regular reapplication intervals.",
+      "Track pigmentation changes over multi-week periods."
+    ],
+  },
+  anti_aging: {
+    headline: "Aging signals respond best to cumulative daily protection and repair.",
+    guidance: [
+      "Use consistent SPF and antioxidant protection as foundation care.",
+      "Support elasticity with night repair and sleep quality.",
+      "Measure progress by texture, tone, and line depth trends monthly."
     ],
   },
 };
@@ -159,7 +167,10 @@ export default function LearningCenterPage() {
             <div className="space-y-4">
               {categories.map((category) => {
                 const isOpen = selectedCategory === category.id;
-                const insight = categoryInsights[category.id];
+                const insight = categoryInsights[category.id] || {
+                  headline: "Category guidance is being refreshed.",
+                  guidance: ["Complete analyzer and assessment to unlock structured tips."],
+                };
                 const topQuestions = questions[category.id].slice(0, 3);
 
                 return (

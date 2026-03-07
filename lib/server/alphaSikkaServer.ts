@@ -21,6 +21,7 @@ export type AlphaSikkaAction =
   | "first_assessment_completed"
   | "first_scan_uploaded"
   | "weekly_reassessment"
+  | "referral_completed"
   | "product_review_submitted"
   | "purchase_cashback";
 
@@ -40,32 +41,33 @@ type Rule = {
 };
 
 export const ALPHA_SIKKA_RULES: Record<AlphaSikkaAction, Rule> = {
-  daily_login: { category: "discipline", amount: 2, frequency: "daily", description: "Daily login" },
-  log_am_routine: { category: "discipline", amount: 3, frequency: "daily", description: "AM routine completed" },
-  log_pm_routine: { category: "discipline", amount: 3, frequency: "daily", description: "PM routine completed" },
-  hydration_goal: { category: "discipline", amount: 2, frequency: "daily", description: "Hydration goal met" },
+  daily_login: { category: "discipline", amount: 1, frequency: "daily", description: "Daily login" },
+  log_am_routine: { category: "discipline", amount: 2, frequency: "daily", description: "AM routine completed" },
+  log_pm_routine: { category: "discipline", amount: 2, frequency: "daily", description: "PM routine completed" },
+  hydration_goal: { category: "discipline", amount: 3, frequency: "daily", description: "Hydration goal met" },
   sleep_goal: { category: "discipline", amount: 2, frequency: "daily", description: "Sleep goal met" },
   full_day_completed: { category: "discipline", amount: 5, frequency: "daily", description: "Full day completed" },
 
-  improve_alpha_5: { category: "improvement", amount: 10, frequency: "event", description: "Alpha score improved by 5%" },
+  improve_alpha_5: { category: "improvement", amount: 10, frequency: "event", description: "Weekly adherence above 80%" },
   improve_alpha_10: { category: "improvement", amount: 25, frequency: "event", description: "Alpha score improved by 10%" },
-  severity_drop_one_level: { category: "improvement", amount: 20, frequency: "event", description: "Severity dropped by one level" },
+  severity_drop_one_level: { category: "improvement", amount: 25, frequency: "event", description: "Severity dropped by 10 points" },
   recovery_plus_10: { category: "improvement", amount: 15, frequency: "event", description: "Recovery probability increased by 10%" },
 
-  challenge_30_complete: { category: "challenge", amount: 120, frequency: "once", description: "30-Day Glow Up completed" },
+  challenge_30_complete: { category: "challenge", amount: 50, frequency: "once", description: "30-Day consistency completed" },
   challenge_60_complete: { category: "challenge", amount: 250, frequency: "once", description: "60-Day Transformation completed" },
   challenge_90_complete: { category: "challenge", amount: 400, frequency: "once", description: "90-Day Mastery completed" },
   challenge_weekly_milestone: { category: "challenge", amount: 20, frequency: "weekly", description: "Challenge weekly milestone" },
 
-  streak_7: { category: "milestone", amount: 25, frequency: "once", description: "7-day streak milestone" },
+  streak_7: { category: "milestone", amount: 15, frequency: "once", description: "7-day streak milestone" },
   streak_14: { category: "milestone", amount: 50, frequency: "once", description: "14-day streak milestone" },
-  streak_30: { category: "milestone", amount: 120, frequency: "once", description: "30-day streak milestone" },
+  streak_30: { category: "milestone", amount: 75, frequency: "once", description: "30-day streak milestone" },
   streak_60: { category: "milestone", amount: 250, frequency: "once", description: "60-day streak milestone" },
   streak_90: { category: "milestone", amount: 400, frequency: "once", description: "90-day streak milestone" },
 
   first_assessment_completed: { category: "engagement", amount: 15, frequency: "once", description: "First assessment completed" },
-  first_scan_uploaded: { category: "engagement", amount: 20, frequency: "once", description: "First scan uploaded" },
+  first_scan_uploaded: { category: "engagement", amount: 5, frequency: "once", description: "First scan uploaded" },
   weekly_reassessment: { category: "engagement", amount: 10, frequency: "weekly", description: "Weekly reassessment completed" },
+  referral_completed: { category: "engagement", amount: 10, frequency: "event", description: "Referral completed" },
   product_review_submitted: { category: "engagement", amount: 5, frequency: "event", description: "Product review submitted" },
   purchase_cashback: { category: "engagement", amount: 0, frequency: "event", description: "Purchase cashback" },
 };
@@ -104,9 +106,7 @@ export function computeAwardAmount(action: AlphaSikkaAction, metadata?: Record<s
 }
 
 export function deriveTier(lifetimeEarned: number) {
-  if (lifetimeEarned >= 3000) return "Elite";
-  if (lifetimeEarned >= 1500) return "Platinum";
-  if (lifetimeEarned >= 600) return "Gold";
-  if (lifetimeEarned >= 200) return "Silver";
-  return "Bronze";
+  if (lifetimeEarned >= 600) return "Champion";
+  if (lifetimeEarned >= 200) return "Performer";
+  return "Starter";
 }

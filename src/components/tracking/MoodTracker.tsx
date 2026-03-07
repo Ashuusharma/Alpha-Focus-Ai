@@ -4,6 +4,7 @@ import { useContext, useMemo, useState } from "react";
 import { AuthContext } from "@/contexts/AuthProvider";
 import { supabase } from "@/lib/supabaseClient";
 import { hydrateUserData } from "@/lib/hydrateUserData";
+import { recalculateClinicalScores } from "@/lib/recalculateClinicalScores";
 
 type Mood = "calm" | "neutral" | "stressed";
 
@@ -27,6 +28,7 @@ export default function MoodTracker() {
       { onConflict: "user_id,log_date" }
     );
 
+    await recalculateClinicalScores(user.id);
     await hydrateUserData(user.id);
 
     setSavedAt(new Date().toLocaleTimeString());

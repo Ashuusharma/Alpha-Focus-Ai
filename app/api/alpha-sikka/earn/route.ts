@@ -26,6 +26,16 @@ type SummaryRow = {
   lifetime_spent: number;
 };
 
+type TierRpcRow = {
+  tier_name: string;
+};
+
+type StreakRpcRow = {
+  current_streak: number;
+  longest_streak: number;
+  bonus_awarded: number;
+};
+
 function getSupabaseConfig() {
   const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -129,6 +139,36 @@ async function callProcessTransactionRpc(input: {
   return response;
 }
 
+async function fetchTierFromRpc(baseUrl: string, serviceKey: string, userId: string) {
+  const response = await fetch(`${baseUrl}/rest/v1/rpc/get_user_tier`, {
+    method: "POST",
+    headers: buildAuthHeaders(serviceKey),
+    body: JSON.stringify({ p_user: userId }),
+    cache: "no-store",
+  });
+
+  if (!response.ok) return null;
+  const payload = (await response.json()) as TierRpcRow[] | TierRpcRow | null;
+  if (!payload) return null;
+  if (Array.isArray(payload)) return payload[0]?.tier_name || null;
+  return payload.tier_name || null;
+}
+
+async function updateStreakRpc(baseUrl: string, serviceKey: string, userId: string) {
+  const response = await fetch(`${baseUrl}/rest/v1/rpc/update_user_streak`, {
+    method: "POST",
+    headers: buildAuthHeaders(serviceKey),
+    body: JSON.stringify({ p_user: userId }),
+    cache: "no-store",
+  });
+
+  if (!response.ok) return null;
+  const payload = (await response.json()) as StreakRpcRow[] | StreakRpcRow | null;
+  if (!payload) return null;
+  if (Array.isArray(payload)) return payload[0] || null;
+  return payload;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const authUser = await getSupabaseRequestUser(request);
@@ -200,11 +240,38 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, error: "insert_failed", detail: message }, { status: 500 });
     }
 
+    let streakBonus = 0;
+    if (rule.category === "discipline") {
+      const streak = await updateStreakRpc(config.baseUrl, config.serviceKey, supabaseUserId);
+      const computedBonus = Number(streak?.bonus_awarded || 0);
+      if (computedBonus > 0) {
+        streakBonus = computedBonus;
+        const streakReferenceId = `streak_bonus:${supabaseUserId}:${new Date().toISOString().slice(0, 10)}:${computedBonus}`;
+        const bonusResponse = await callProcessTransactionRpc({
+          baseUrl: config.baseUrl,
+          serviceKey: config.serviceKey,
+          userId: supabaseUserId,
+          amount: computedBonus,
+          category: "milestone",
+          description: computedBonus === 75 ? "30-day streak milestone" : "7-day streak milestone",
+          referenceId: streakReferenceId,
+          metadata: {
+            milestone: computedBonus === 75 ? 30 : 7,
+            trigger: action,
+          },
+        });
+
+        if (!bonusResponse.ok) {
+          streakBonus = 0;
+        }
+      }
+    }
+
     const summary = await fetchSummary(config.baseUrl, config.serviceKey, supabaseUserId);
     const recent = await fetchRecent(config.baseUrl, config.serviceKey, supabaseUserId);
 
     const lifetimeEarned = Number(summary?.lifetime_earned || 0);
-    const tier = deriveTier(lifetimeEarned);
+    const tier = (await fetchTierFromRpc(config.baseUrl, config.serviceKey, supabaseUserId)) || deriveTier(lifetimeEarned);
 
     await writeAuditLog({ action: "alpha_sikka.earn", userId: authUser.id, ok: true, route: "/api/alpha-sikka/earn" });
     return NextResponse.json({
@@ -218,7 +285,8 @@ export async function POST(request: NextRequest) {
         tier,
       },
       recent,
-      toast: `+${amount} A$ earned`,
+      streakBonus,
+      toast: `+${amount + streakBonus} A$ earned`,
     });
   } catch (error) {
     return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "alpha_sikka_earn_failed" }, { status: 500 });

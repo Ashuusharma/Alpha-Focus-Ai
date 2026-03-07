@@ -9,6 +9,8 @@ import { AnalyzerType, AnalysisResult, DetectedIssue } from "@/lib/analyzeImage"
 import { AuthContext } from "@/contexts/AuthProvider";
 import { supabase } from "@/lib/supabaseClient";
 import { hydrateUserData } from "@/lib/hydrateUserData";
+import { recalculateClinicalScores } from "@/lib/recalculateClinicalScores";
+import { getCategoryFromAnalyzer, buildCategoryPhotoMetrics } from "@/lib/clinicalFlow";
 import MultiAngleUpload from "./_components/ImageUpload";
 import AnalyzerSelector from "./_components/AnalyzerSelector";
 
@@ -34,6 +36,44 @@ type GalaxyAnalyzeResponse = {
   annotatedImageUrl?: string;
   confidence?: number;
 };
+
+type SubscriptionPlan = "basic" | "plus" | "pro";
+
+async function assertMonthlyScanLimit(userId: string) {
+  const monthStart = new Date();
+  monthStart.setUTCDate(1);
+  monthStart.setUTCHours(0, 0, 0, 0);
+
+  const [{ data: subscription }, { count }] = await Promise.all([
+    supabase
+      .from("user_subscriptions")
+      .select("plan,active,expires_at")
+      .eq("user_id", userId)
+      .maybeSingle(),
+    supabase
+      .from("photo_scans")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .gte("scan_date", monthStart.toISOString()),
+  ]);
+
+  const plan = ((subscription?.plan || "basic") as string).toLowerCase() as SubscriptionPlan;
+  const isActive = subscription?.active !== false && (!subscription?.expires_at || new Date(subscription.expires_at) > new Date());
+  const effectivePlan: SubscriptionPlan = isActive ? plan : "basic";
+
+  const monthlyCapByPlan: Record<SubscriptionPlan, number> = {
+    basic: 2,
+    plus: 5,
+    pro: Number.POSITIVE_INFINITY,
+  };
+
+  const used = Number(count || 0);
+  const cap = monthlyCapByPlan[effectivePlan] ?? 2;
+  if (used >= cap) {
+    const label = effectivePlan.toUpperCase();
+    throw new Error(`${label} plan limit reached (${used}/${Number.isFinite(cap) ? cap : "∞"} scans this month).`);
+  }
+}
 
 function extractOpenedCategoriesFromAnswers(answers: Record<string, string>): string[] {
   const categories = new Set<string>();
@@ -70,6 +110,23 @@ function deriveSeverity(issues: DetectedIssue[]): AnalysisResult["severity"] {
   return "moderate";
 }
 
+function deriveConfidenceScore(apiConfidence: number | undefined, issues: DetectedIssue[]) {
+  if (typeof apiConfidence === "number" && Number.isFinite(apiConfidence) && apiConfidence > 0) {
+    return Math.max(0, Math.min(100, Math.round(apiConfidence)));
+  }
+
+  if (!issues.length) return 0;
+  const avgIssueConfidence = issues.reduce((sum, issue) => sum + (issue.confidence || 0), 0) / issues.length;
+  return Math.max(0, Math.min(100, Math.round(avgIssueConfidence)));
+}
+
+function assertValidImagePayload(result: AnalysisResult) {
+  const hasIssues = Array.isArray(result.detectedIssues) && result.detectedIssues.length > 0;
+  if (!hasIssues || result.confidence < 45) {
+    throw new Error("Image validation failed. Please retake photos in clear lighting with full target area visibility.");
+  }
+}
+
 export default function ImageAnalyzerPage() {
   const router = useRouter();
   const { user } = useContext(AuthContext);
@@ -78,10 +135,31 @@ export default function ImageAnalyzerPage() {
   const [selectedType, setSelectedType] = useState<AnalyzerType | null>(null);
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [analysisStatus, setAnalysisStatus] = useState("Preparing photos...");
+  const [diagnosticMode, setDiagnosticMode] = useState<"db_persisted" | "session_only" | null>(null);
 
   const handleTypeSelect = (type: AnalyzerType) => {
     setSelectedType(type);
     setStep("upload");
+
+    const category = getCategoryFromAnalyzer(type);
+    if (user && category) {
+      (async () => {
+        try {
+          await supabase
+            .from("user_active_analysis")
+            .upsert(
+              {
+                user_id: user.id,
+                selected_category: category,
+                selected_at: new Date().toISOString(),
+              },
+              { onConflict: "user_id" }
+            );
+        } catch (error) {
+          console.error("Failed to persist active analysis category", error);
+        }
+      })();
+    }
   };
 
   const handleAllCaptured = async (images: string[]) => {
@@ -92,15 +170,20 @@ export default function ImageAnalyzerPage() {
     setAnalysisStatus("Preparing secure request...");
 
     const answers: Record<string, string> = {};
-
-    const answerCategories = extractOpenedCategoriesFromAnswers(answers);
-    const selectedCategories = Array.from(new Set([selectedType, ...answerCategories]));
+    const selectedCategory = getCategoryFromAnalyzer(selectedType);
+    if (!selectedCategory) {
+      throw new Error("Unsupported analyzer category for clinical protocol flow.");
+    }
 
     const progressTimer = setInterval(() => {
       setAnalysisProgress((prev) => (prev < 88 ? prev + 4 : prev));
     }, 350);
 
     try {
+      if (user) {
+        await assertMonthlyScanLimit(user.id);
+      }
+
       setAnalysisStatus("Sending photos to Galaxy AI for hotspot detection...");
       const galaxyRaw = await fetch("/api/galaxy/analyze", {
         method: "POST",
@@ -108,7 +191,7 @@ export default function ImageAnalyzerPage() {
         body: JSON.stringify({
           images,
           analyzerType: selectedType,
-          categories: selectedCategories,
+          categories: [selectedCategory],
           answers,
         }),
       });
@@ -121,10 +204,11 @@ export default function ImageAnalyzerPage() {
 
       const galaxyIssues = galaxyData?.issues || [];
       const mergedIssues = mapGalaxyIssuesToDetectedIssues(galaxyIssues);
+      const derivedConfidence = deriveConfidenceScore(galaxyData?.confidence, mergedIssues);
 
       const finalResult: AnalysisResult = {
         type: selectedType,
-        confidence: galaxyData?.confidence ?? 0,
+        confidence: derivedConfidence,
         detectedIssues: mergedIssues,
         severity: deriveSeverity(mergedIssues),
         recommendations: [],
@@ -134,10 +218,17 @@ export default function ImageAnalyzerPage() {
         capturedPhotos: images,
       };
 
+      assertValidImagePayload(finalResult);
+
+      const photoMetrics = buildCategoryPhotoMetrics(selectedCategory, mergedIssues, finalResult.confidence);
+      const imageValid = photoMetrics.image_valid !== false;
+
       if (typeof window !== "undefined") {
         sessionStorage.setItem("capturedPhotos", JSON.stringify(images));
         sessionStorage.setItem("photoAnalysis", JSON.stringify(finalResult));
         sessionStorage.setItem("analyzerType", selectedType);
+        sessionStorage.setItem("analysisCategory", selectedCategory);
+        sessionStorage.setItem("analysisAt", new Date().toISOString());
         sessionStorage.setItem(
           "galaxyAnalysis",
           JSON.stringify({
@@ -145,7 +236,7 @@ export default function ImageAnalyzerPage() {
             originalImages: images,
             annotatedImageUrl: galaxyData?.annotatedImageUrl || images[0],
             hotspots: galaxyData?.hotspots || [],
-            selectedCategories,
+            selectedCategories: [selectedCategory],
             issues: galaxyIssues,
           })
         );
@@ -154,28 +245,54 @@ export default function ImageAnalyzerPage() {
       if (user) {
         const hairAnalyzers: AnalyzerType[] = ["hair", "scalp", "beard"];
         const isHairFlow = hairAnalyzers.includes(selectedType);
-        await supabase.from("photo_scans").insert({
+        const { error: scanInsertError } = await supabase.from("photo_scans").insert({
           user_id: user.id,
           scan_date: new Date().toISOString(),
           image_url: galaxyData?.annotatedImageUrl || images[0],
+          analyzer_category: selectedCategory,
+          image_valid: imageValid,
+          photo_metrics: photoMetrics,
           density_score: isHairFlow ? finalResult.confidence : null,
           inflammation_score: !isHairFlow ? Math.max(0, 100 - finalResult.confidence) : null,
           oil_balance_score: !isHairFlow ? finalResult.confidence : null,
         });
+        if (scanInsertError) {
+          throw new Error(`Could not save scan: ${scanInsertError.message}`);
+        }
 
+        const { error: activeAnalysisError } = await supabase
+          .from("user_active_analysis")
+          .upsert(
+            {
+              user_id: user.id,
+              selected_category: selectedCategory,
+              selected_at: new Date().toISOString(),
+            },
+            { onConflict: "user_id" }
+          );
+        if (activeAnalysisError) {
+          throw new Error(`Could not save active category: ${activeAnalysisError.message}`);
+        }
+
+        await recalculateClinicalScores(user.id, selectedCategory);
         await hydrateUserData(user.id);
+        setDiagnosticMode("db_persisted");
+        setAnalysisStatus("Scan persisted to DB. Redirecting to category assessment...");
+      } else {
+        setDiagnosticMode("session_only");
+        setAnalysisStatus("Saved in session mode (guest). Redirecting to category assessment...");
       }
 
-      setAnalysisStatus("Analysis complete. Redirecting to report...");
       setAnalysisProgress(100);
       setStep("done");
 
       setTimeout(() => {
-        router.push("/result?source=photo");
+        router.push(`/assessment?category=${selectedCategory}`);
       }, 600);
     } catch (error) {
       console.error("Analysis failed:", error);
-      setAnalysisStatus("Analysis failed. Returning to upload...");
+      const message = error instanceof Error ? error.message : "Analysis failed";
+      setAnalysisStatus(`${message} Returning to upload...`);
       setTimeout(() => setStep("upload"), 1000);
     } finally {
       clearInterval(progressTimer);
@@ -278,6 +395,11 @@ export default function ImageAnalyzerPage() {
                   {step === "done" ? "Analysis Complete" : "Analyzing Images..."}
                 </h2>
                 <p className="text-[#2F6F57]">{analysisStatus}</p>
+                {diagnosticMode && (
+                  <p className="mt-2 text-xs text-[#6B665D]">
+                    Diagnostic mode: {diagnosticMode === "db_persisted" ? "DB persisted" : "Session only"}
+                  </p>
+                )}
               </div>
 
               <div className="w-full max-w-md">

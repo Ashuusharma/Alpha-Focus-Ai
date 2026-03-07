@@ -9,14 +9,15 @@ interface Props {
   onSubmit: (answers: Record<string, string>, severities: Record<string, string>) => void;
 }
 
-const categoryIcons: Record<CategoryId, string> = {
-  hairCare: "💇",
-  skinCare: "✨",
-  beardCare: "🧔",
-  bodyCare: "🧴",
-  healthCare: "❤️",
-  fitness: "💪",
-  fragrance: "🌸",
+const categoryIcons: Partial<Record<CategoryId, string>> = {
+  scalp_health: "🧠",
+  acne: "🔴",
+  dark_circles: "🟣",
+  hair_loss: "💇",
+  beard_growth: "🧔",
+  body_acne: "🧴",
+  lip_care: "💧",
+  anti_aging: "⏳",
 };
 
 export default function AnalyzerQuestionsPage({ onSubmit }: Props) {
@@ -243,16 +244,16 @@ export default function AnalyzerQuestionsPage({ onSubmit }: Props) {
 
                   <div className="space-y-3">
                     {current.question.options.map((opt) => {
-                      const selected = answers[current.question.id] === opt;
+                      const selected = answers[current.question.id] === opt.label;
                       return (
                         <button
-                          key={opt}
+                          key={opt.label}
                           className={`block w-full text-left px-5 py-4 rounded-xl border transition-all duration-200 font-medium text-sm group ${
                             selected
                               ? "bg-[var(--lux-accent)]/10 border-[var(--lux-accent)] text-[var(--lux-accent)] shadow-[0_0_15px_rgba(0,242,255,0.1)]"
                               : "bg-[var(--lux-bg-elevated)] border-[var(--lux-glass-border)] text-[var(--lux-text-secondary)] hover:bg-[var(--lux-bg-secondary)] hover:border-[var(--lux-accent)]/30 hover:text-[var(--lux-text-primary)]"
                           }`}
-                          onClick={() => handleAnswer(opt)}
+                          onClick={() => handleAnswer(opt.label)}
                         >
                           <span className="flex items-center gap-3">
                             <span className={`w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 transition-all ${
@@ -260,7 +261,7 @@ export default function AnalyzerQuestionsPage({ onSubmit }: Props) {
                             }`}>
                               {selected && <CheckCircle2 className="w-3.5 h-3.5 text-[#060b14]" />}
                             </span>
-                            {opt}
+                            {opt.label}
                           </span>
                         </button>
                       );

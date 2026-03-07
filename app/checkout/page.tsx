@@ -7,6 +7,7 @@ import { ChevronRight, CreditCard, Lock, ShieldCheck } from "lucide-react";
 import { Coupon } from "@/lib/creditService";
 import { applyCouponToSubtotal, getAvailableCoupons, getBestAvailableCoupon, markCouponApplied, markCouponRedeemed } from "@/lib/couponService";
 import { useCartStore } from "@/lib/cartStore";
+import { formatINR } from "@/lib/currency";
 
 const STEPS = [
   { id: 1, label: "Information" },
@@ -26,7 +27,7 @@ export default function CheckoutPage() {
       () => items.reduce((sum, item) => sum + item.price * item.quantity, 0),
       [items]
    );
-   const shipping = subtotal > 50 ? 0 : 5.99;
+   const shipping = subtotal >= 1000 ? 0 : 99;
    const total = Math.max(0, subtotal - discount + shipping);
 
    useEffect(() => {
@@ -156,7 +157,7 @@ export default function CheckoutPage() {
                               <p className="text-xs text-[#6B665D]">3-5 Business Days</p>
                            </div>
                         </div>
-                        <span className="font-bold text-[#1F3D2B]">{shipping === 0 ? "Free" : `$${shipping.toFixed(2)}`}</span>
+                        <span className="font-bold text-[#1F3D2B]">{shipping === 0 ? "Free" : formatINR(shipping)}</span>
                      </label>
                      <label className="flex items-center justify-between p-4 border border-[#E2DDD4] hover:bg-[#F4EFE6] rounded-xl cursor-pointer opacity-60">
                         <div className="flex items-center gap-3">
@@ -166,7 +167,7 @@ export default function CheckoutPage() {
                               <p className="text-xs text-[#6B665D]">1 Business Day</p>
                            </div>
                         </div>
-                        <span className="font-bold text-[#1F3D2B]">$24.00</span>
+                        <span className="font-bold text-[#1F3D2B]">{formatINR(299)}</span>
                      </label>
                   </div>
                   <div className="flex item-center gap-4">
@@ -216,7 +217,7 @@ export default function CheckoutPage() {
                   <div className="flex item-center gap-4">
                      <button onClick={handleBack} className="flex-1 py-4 text-[#6B665D] font-bold hover:text-[#1F3D2B] transition-colors">Back</button>
                      <button onClick={handlePay} className="flex-[2] bg-[#1F3D2B] text-white font-bold py-4 rounded-xl hover:bg-[#2A5239] transition-colors flex justify-center items-center gap-2 shadow-lg shadow-[#1F3D2B]/20">
-                        <ShieldCheck className="h-4 w-4" /> Pay ${total.toFixed(2)}
+                        <ShieldCheck className="h-4 w-4" /> Pay {formatINR(total)}
                      </button>
                   </div>
                </div>
@@ -244,7 +245,7 @@ export default function CheckoutPage() {
                             <p className="font-bold text-[#1F3D2B] text-sm line-clamp-1">{item.name}</p>
                             <p className="text-xs text-[#6B665D]">Qty: {item.quantity}</p>
                          </div>
-                         <p className="font-bold text-[#1F3D2B] text-sm">${(item.price * item.quantity).toFixed(2)}</p>
+                         <p className="font-bold text-[#1F3D2B] text-sm">{formatINR(item.price * item.quantity)}</p>
                       </div>
                    ))}
                 </div>
@@ -278,21 +279,21 @@ export default function CheckoutPage() {
                 <div className="border-t border-[#E2DDD4] pt-4 space-y-2">
                    <div className="flex justify-between text-sm text-[#6B665D]">
                       <span>Subtotal</span>
-                      <span>${subtotal.toFixed(2)}</span>
+                      <span>{formatINR(subtotal)}</span>
                    </div>
                             {discount > 0 && (
                                <div className="flex justify-between text-sm text-[#2F6F57]">
                                   <span>Coupon {activeCoupon ? `(${activeCoupon.discountPercent}%)` : ""}</span>
-                                  <span>- ${discount.toFixed(2)}</span>
+                                  <span>- {formatINR(discount)}</span>
                                </div>
                             )}
                    <div className="flex justify-between text-sm text-[#6B665D]">
                       <span>Shipping</span>
-                      <span>{shipping === 0 ? "Free" : `$${shipping.toFixed(2)}`}</span>
+                      <span>{shipping === 0 ? "Free" : formatINR(shipping)}</span>
                    </div>
                    <div className="flex justify-between text-lg font-bold text-[#1F3D2B] pt-2">
                       <span>Total</span>
-                                 <span>${total.toFixed(2)}</span>
+                                 <span>{formatINR(total)}</span>
                    </div>
                 </div>
              </div>

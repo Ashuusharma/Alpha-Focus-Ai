@@ -101,6 +101,32 @@ async function callProcessTransactionRpc(input: {
   return response;
 }
 
+async function validateRedemption(input: {
+  baseUrl: string;
+  serviceKey: string;
+  userId: string;
+  cartTotal: number;
+  requestedDiscount: number;
+}) {
+  const response = await fetch(`${input.baseUrl}/rest/v1/rpc/validate_alpha_redemption`, {
+    method: "POST",
+    headers: buildAuthHeaders(input.serviceKey),
+    body: JSON.stringify({
+      p_user: input.userId,
+      p_cart_total: input.cartTotal,
+      p_requested_discount: input.requestedDiscount,
+    }),
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    return false;
+  }
+
+  const payload = await response.json();
+  return Boolean(payload);
+}
+
 export async function POST(request: NextRequest) {
   try {
     const authUser = await getSupabaseRequestUser(request);
@@ -126,6 +152,28 @@ export async function POST(request: NextRequest) {
     }
 
     const body = parsed.data;
+
+    if (body.category === "redemption" && Number.isFinite(body.cartTotal)) {
+      const isValid = await validateRedemption({
+        baseUrl: config.baseUrl,
+        serviceKey: config.serviceKey,
+        userId: authUser.id,
+        cartTotal: Number(body.cartTotal),
+        requestedDiscount: Math.abs(body.amount),
+      });
+
+      if (!isValid) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: "redemption_validation_failed",
+            message: "Redemption exceeds allowed rules (balance, max 20%, or min cart ₹1000).",
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     const insertResponse = await callProcessTransactionRpc({
       baseUrl: config.baseUrl,
       serviceKey: config.serviceKey,

@@ -7,6 +7,7 @@ import { useToast } from "@/app/toast/ToastContext";
 import IngredientsDisplay from "./IngredientsDisplay";
 import { ShoppingCart, Check, Star } from "lucide-react";
 import { getActiveUserName } from "@/lib/userScopedStorage";
+import { formatINR } from "@/lib/currency";
 
 type ExtendedProduct = Product & {
   benefits?: string[];
@@ -35,7 +36,7 @@ export default function EnhancedProductCard({
 
   const handleAdd = () => {
     if (!isAdded) {
-      if (!product.price) product.price = 29.99; // Fallback
+      if (!product.price) product.price = 2999;
       addItem({ id: product.id, name: product.name, price: product.price, quantity: 1 });
       showToast(`${product.name} added to cart!`, "success");
     } else {
@@ -98,8 +99,8 @@ export default function EnhancedProductCard({
         {/* Action Area */}
         <div className="flex items-center justify-between pt-4 border-t border-white/5 mt-auto">
           <div>
-            <span className="text-xs text-gray-500 line-through mr-2">$39.99</span>
-            <span className="text-xl font-bold text-white">${product.price || 29.99}</span>
+            <span className="text-xs text-gray-500 line-through mr-2">{formatINR(3999)}</span>
+            <span className="text-xl font-bold text-white">{formatINR(product.price || 2999)}</span>
           </div>
 
           <button

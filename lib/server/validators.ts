@@ -107,6 +107,7 @@ export const alphaSikkaEarnSchema = z.object({
     "first_assessment_completed",
     "first_scan_uploaded",
     "weekly_reassessment",
+    "referral_completed",
     "product_review_submitted",
     "purchase_cashback",
   ]),
@@ -121,6 +122,7 @@ export const alphaSikkaSummarySchema = z.object({
 
 export const alphaSikkaSpendSchema = z.object({
   amount: z.number().positive(),
+  cartTotal: z.number().int().positive().optional(),
   category: z.enum(["redemption", "engagement", "challenge", "discipline", "improvement", "milestone"]).optional(),
   description: z.string().min(2).max(140),
   referenceId: z.string().min(1).max(120).optional(),

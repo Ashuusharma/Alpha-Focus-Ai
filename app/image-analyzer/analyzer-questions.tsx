@@ -16,8 +16,16 @@ export default function AnalyzerQuestionsRoute() {
       sessionStorage.setItem("photoAnalysis", photoData);
     }
 
-    // Lightweight navigation (no large query payloads)
-    router.push("/result");
+    const selectedCategoriesRaw = sessionStorage.getItem("selectedCategories");
+    const selectedCategories = selectedCategoriesRaw ? (JSON.parse(selectedCategoriesRaw) as string[]) : [];
+    const firstCategory = selectedCategories[0];
+
+    if (firstCategory) {
+      router.push(`/assessment?category=${firstCategory}`);
+      return;
+    }
+
+    router.push("/assessment");
   };
 
   return <AnalyzerQuestionsPage onSubmit={handleSubmit} />;

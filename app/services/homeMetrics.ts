@@ -1,6 +1,6 @@
 import { CategoryId } from "@/lib/questions";
 
-export const categoryColors: Record<CategoryId, string> = {
+export const categoryColors: Partial<Record<CategoryId, string>> = {
   hairCare: "from-blue-700 to-indigo-500",
   skinCare: "from-blue-600 to-cyan-500",
   beardCare: "from-indigo-700 to-blue-600",
