@@ -5,7 +5,8 @@
 alter table if exists public.photo_scans
   add column if not exists scan_date timestamptz default now(),
   add column if not exists analyzer_category text,
-  add column if not exists parent_category text;
+  add column if not exists parent_category text,
+  add column if not exists captured_image_urls jsonb default '[]'::jsonb;
 
 alter table if exists public.assessment_answers
   add column if not exists completed_at timestamptz default now(),

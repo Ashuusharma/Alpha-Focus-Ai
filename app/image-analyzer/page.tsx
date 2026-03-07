@@ -12,6 +12,7 @@ import { hydrateUserData } from "@/lib/hydrateUserData";
 import { recalculateClinicalScores } from "@/lib/recalculateClinicalScores";
 import { getCategoryFromAnalyzer, buildCategoryPhotoMetrics } from "@/lib/clinicalFlow";
 import { getParentCategoryFromChild } from "@/lib/categorySync";
+import { uploadAnalyzerImagesToSupabase } from "@/lib/photoStorage";
 import MultiAngleUpload from "./_components/ImageUpload";
 import AnalyzerSelector from "./_components/AnalyzerSelector";
 
@@ -158,6 +159,10 @@ export default function ImageAnalyzerPage() {
     setStep("upload");
 
     const category = getCategoryFromAnalyzer(type);
+    if (typeof window !== "undefined" && category) {
+      sessionStorage.setItem("analysisCategory", category);
+      sessionStorage.setItem("analysisAt", new Date().toISOString());
+    }
     if (user && category) {
       const parentCategory = getParentCategoryFromChild(category);
       (async () => {
@@ -199,9 +204,11 @@ export default function ImageAnalyzerPage() {
     }, 350);
 
     try {
-      if (user) {
-        await assertMonthlyScanLimit(user.id);
+      if (!user) {
+        throw new Error("Please log in first. Assessment and result sync require an authenticated account.");
       }
+
+      await assertMonthlyScanLimit(user.id);
 
       setAnalysisStatus("Sending photos to Galaxy AI for hotspot detection...");
       const galaxyRaw = await fetch("/api/galaxy/analyze", {
@@ -263,47 +270,65 @@ export default function ImageAnalyzerPage() {
         );
       }
 
-      if (user) {
-        const hairAnalyzers: AnalyzerType[] = ["hair", "scalp", "beard"];
-        const isHairFlow = hairAnalyzers.includes(selectedType);
-        const { error: scanInsertError } = await supabase.from("photo_scans").insert({
-          user_id: user.id,
-          scan_date: new Date().toISOString(),
-          image_url: galaxyData?.annotatedImageUrl || images[0],
-          analyzer_category: selectedCategory,
-          parent_category: parentCategory,
-          image_valid: imageValid,
-          photo_metrics: photoMetrics,
-          density_score: isHairFlow ? finalResult.confidence : null,
-          inflammation_score: !isHairFlow ? Math.max(0, 100 - finalResult.confidence) : null,
-          oil_balance_score: !isHairFlow ? finalResult.confidence : null,
-        });
-        if (scanInsertError) {
-          throw new Error(`Could not save scan: ${scanInsertError.message}`);
-        }
+      const storageUpload = await uploadAnalyzerImagesToSupabase({
+        userId: user.id,
+        category: selectedCategory,
+        images,
+      });
 
-        const { error: activeAnalysisError } = await supabase
-          .from("user_active_analysis")
-          .upsert(
-            {
-              user_id: user.id,
-              selected_category: selectedCategory,
-              parent_category: parentCategory,
-              selected_at: new Date().toISOString(),
-            },
-            { onConflict: "user_id" }
-          );
-        if (activeAnalysisError) {
-          throw new Error(`Could not save active category: ${activeAnalysisError.message}`);
-        }
+      const persistedImageUrl =
+        storageUpload.urls[0] ||
+        galaxyData?.annotatedImageUrl ||
+        images[0];
 
-        await recalculateClinicalScores(user.id, selectedCategory);
-        await hydrateUserData(user.id);
-        setDiagnosticMode("db_persisted");
-        setAnalysisStatus("Scan persisted to DB. Redirecting to category assessment...");
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("uploadedPhotoUrls", JSON.stringify(storageUpload.urls));
+      }
+
+      const hairAnalyzers: AnalyzerType[] = ["hair", "scalp", "beard"];
+      const isHairFlow = hairAnalyzers.includes(selectedType);
+      const { error: scanInsertError } = await supabase.from("photo_scans").insert({
+        user_id: user.id,
+        scan_date: new Date().toISOString(),
+        image_url: persistedImageUrl,
+        captured_image_urls: storageUpload.urls,
+        analyzer_category: selectedCategory,
+        parent_category: parentCategory,
+        image_valid: imageValid,
+        photo_metrics: photoMetrics,
+        density_score: isHairFlow ? finalResult.confidence : null,
+        inflammation_score: !isHairFlow ? Math.max(0, 100 - finalResult.confidence) : null,
+        oil_balance_score: !isHairFlow ? finalResult.confidence : null,
+      });
+      if (scanInsertError) {
+        throw new Error(`Could not save scan: ${scanInsertError.message}`);
+      }
+
+      const { error: activeAnalysisError } = await supabase
+        .from("user_active_analysis")
+        .upsert(
+          {
+            user_id: user.id,
+            selected_category: selectedCategory,
+            parent_category: parentCategory,
+            selected_at: new Date().toISOString(),
+          },
+          { onConflict: "user_id" }
+        );
+      if (activeAnalysisError) {
+        throw new Error(`Could not save active category: ${activeAnalysisError.message}`);
+      }
+
+      await recalculateClinicalScores(user.id, selectedCategory);
+      await hydrateUserData(user.id);
+      setDiagnosticMode("db_persisted");
+      if (storageUpload.urls.length > 0) {
+        setAnalysisStatus("Scan + photos persisted to Supabase Storage. Redirecting to category assessment...");
       } else {
-        setDiagnosticMode("session_only");
-        setAnalysisStatus("Saved in session mode (guest). Redirecting to category assessment...");
+        const storageHint = storageUpload.errors.length
+          ? ` Storage upload warning: ${storageUpload.errors[0]}`
+          : "";
+        setAnalysisStatus(`Scan persisted to DB.${storageHint} Redirecting to category assessment...`);
       }
 
       setAnalysisProgress(100);

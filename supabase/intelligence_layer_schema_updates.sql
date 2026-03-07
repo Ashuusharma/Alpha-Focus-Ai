@@ -57,6 +57,7 @@ alter table if exists public.photo_scans
   add column if not exists scan_date timestamptz default now(),
   add column if not exists analyzer_category text,
   add column if not exists parent_category text,
+  add column if not exists captured_image_urls jsonb default '[]'::jsonb,
   add column if not exists image_valid boolean default true,
   add column if not exists photo_metrics jsonb default '{}'::jsonb,
   add column if not exists severity_snapshot int,
