@@ -238,7 +238,7 @@ export default function AssessmentPage() {
         ? Math.round((answeredCount / categoryQuestions.length) * 100)
         : 0;
 
-      await supabase.from("assessment_answers").insert({
+      const fullAssessmentPayload = {
         user_id: user.id,
         category: activeCategory,
         parent_category: getParentCategoryFromChild(activeCategory),
@@ -246,7 +246,27 @@ export default function AssessmentPage() {
         completeness_pct: completenessPct,
         answers,
         answer_scores: answersWithScore,
-      });
+      };
+
+      let { error: assessmentInsertError } = await supabase.from("assessment_answers").insert(fullAssessmentPayload);
+
+      if (assessmentInsertError) {
+        const schemaMissingOptionalColumns = /completeness_pct|parent_category|answer_scores/i.test(assessmentInsertError.message || "");
+        if (schemaMissingOptionalColumns) {
+          const minimalAssessmentPayload = {
+            user_id: user.id,
+            category: activeCategory,
+            completed_at: new Date().toISOString(),
+            answers,
+          };
+          const retry = await supabase.from("assessment_answers").insert(minimalAssessmentPayload);
+          assessmentInsertError = retry.error;
+        }
+      }
+
+      if (assessmentInsertError) {
+        throw new Error(`Could not save assessment: ${assessmentInsertError.message}`);
+      }
 
       await recalculateClinicalScores(user.id, activeCategory);
 

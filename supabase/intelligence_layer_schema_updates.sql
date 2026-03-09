@@ -60,6 +60,9 @@ alter table if exists public.photo_scans
   add column if not exists captured_image_urls jsonb default '[]'::jsonb,
   add column if not exists image_valid boolean default true,
   add column if not exists photo_metrics jsonb default '{}'::jsonb,
+  add column if not exists density_score int,
+  add column if not exists inflammation_score int,
+  add column if not exists oil_balance_score int,
   add column if not exists severity_snapshot int,
   add column if not exists inflammation_snapshot int;
 
@@ -73,6 +76,7 @@ alter table if exists public.assessment_answers
   add column if not exists completed_at timestamptz default now(),
   add column if not exists category text,
   add column if not exists parent_category text,
+  add column if not exists completeness_pct int default 0,
   add column if not exists answers jsonb default '{}'::jsonb,
   add column if not exists answer_scores jsonb default '[]'::jsonb;
 

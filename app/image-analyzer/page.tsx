@@ -287,7 +287,7 @@ export default function ImageAnalyzerPage() {
 
       const hairAnalyzers: AnalyzerType[] = ["hair", "scalp", "beard"];
       const isHairFlow = hairAnalyzers.includes(selectedType);
-      const { error: scanInsertError } = await supabase.from("photo_scans").insert({
+      const fullScanPayload = {
         user_id: user.id,
         scan_date: new Date().toISOString(),
         image_url: persistedImageUrl,
@@ -299,7 +299,30 @@ export default function ImageAnalyzerPage() {
         density_score: isHairFlow ? finalResult.confidence : null,
         inflammation_score: !isHairFlow ? Math.max(0, 100 - finalResult.confidence) : null,
         oil_balance_score: !isHairFlow ? finalResult.confidence : null,
-      });
+      };
+
+      let { error: scanInsertError } = await supabase.from("photo_scans").insert(fullScanPayload);
+
+      if (scanInsertError) {
+        const schemaMissingOptionalScoreColumn = /density_score|inflammation_score|oil_balance_score/i.test(scanInsertError.message || "");
+
+        if (schemaMissingOptionalScoreColumn) {
+          const minimalScanPayload = {
+            user_id: user.id,
+            scan_date: new Date().toISOString(),
+            image_url: persistedImageUrl,
+            captured_image_urls: storageUpload.urls,
+            analyzer_category: selectedCategory,
+            parent_category: parentCategory,
+            image_valid: imageValid,
+            photo_metrics: photoMetrics,
+          };
+
+          const retry = await supabase.from("photo_scans").insert(minimalScanPayload);
+          scanInsertError = retry.error;
+        }
+      }
+
       if (scanInsertError) {
         throw new Error(`Could not save scan: ${scanInsertError.message}`);
       }
@@ -316,7 +339,7 @@ export default function ImageAnalyzerPage() {
           { onConflict: "user_id" }
         );
       if (activeAnalysisError) {
-        throw new Error(`Could not save active category: ${activeAnalysisError.message}`);
+        console.warn("Active analysis upsert skipped:", activeAnalysisError.message);
       }
 
       await recalculateClinicalScores(user.id, selectedCategory);

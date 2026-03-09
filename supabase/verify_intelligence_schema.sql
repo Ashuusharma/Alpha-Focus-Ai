@@ -6,12 +6,17 @@ alter table if exists public.photo_scans
   add column if not exists scan_date timestamptz default now(),
   add column if not exists analyzer_category text,
   add column if not exists parent_category text,
-  add column if not exists captured_image_urls jsonb default '[]'::jsonb;
+  add column if not exists captured_image_urls jsonb default '[]'::jsonb,
+  add column if not exists density_score int,
+  add column if not exists inflammation_score int,
+  add column if not exists oil_balance_score int;
 
 alter table if exists public.assessment_answers
   add column if not exists completed_at timestamptz default now(),
   add column if not exists category text,
   add column if not exists parent_category text;
+alter table if exists public.assessment_answers
+  add column if not exists completeness_pct int default 0;
 
 alter table if exists public.user_active_analysis
   add column if not exists parent_category text;
@@ -92,6 +97,9 @@ where table_schema = 'public'
     'analyzer_category',
     'parent_category',
     'captured_image_urls',
+    'density_score',
+    'inflammation_score',
+    'oil_balance_score',
     'image_valid',
     'photo_metrics',
     'severity_snapshot',
@@ -105,7 +113,7 @@ select column_name, data_type
 from information_schema.columns
 where table_schema = 'public'
   and table_name = 'assessment_answers'
-  and column_name in ('category', 'parent_category', 'answers', 'answer_scores', 'completed_at')
+  and column_name in ('category', 'parent_category', 'completeness_pct', 'answers', 'answer_scores', 'completed_at')
 order by column_name;
 
 -- 3b) Critical columns: user_active_analysis
@@ -153,6 +161,13 @@ select routine_name
 from information_schema.routines
 where specific_schema = 'public'
   and routine_name in ('recalculate_integrated_scores');
+
+-- 7b) Clinical flow RLS policies
+select tablename, policyname, cmd
+from pg_policies
+where schemaname = 'public'
+  and tablename in ('photo_scans', 'assessment_answers', 'user_active_analysis')
+order by tablename, policyname;
 
 -- 8) Quick pass/fail summary
 with req_tables as (
