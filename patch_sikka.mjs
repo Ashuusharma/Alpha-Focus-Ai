@@ -1,273 +1,9 @@
-"use client";
-
-import { useContext, useEffect, useMemo, useState } from "react";
-import {
-  ArrowRight,
-  BadgePercent,
-  CheckCircle2,
-  Clock3,
-  ShieldCheck,
-  Sparkles,
-  TrendingUp,
-} from "lucide-react";
-
-import { CreditActionCode } from "@/lib/creditService";
-import {
-  getRewardCatalog,
-  getRewardProgress,
-} from "@/lib/couponService";
-import { calculateDisciplineScore, getTierProgress } from "@/lib/rewardTierService";
-import { AuthContext } from "@/contexts/AuthProvider";
-import { useUserStore } from "@/stores/useUserStore";
-import { hydrateUserData } from "@/lib/hydrateUserData";
-import Link from "next/link";
-
-const DAILY_CAP = 20;
-
-type TierLabel = "Bronze" | "Silver" | "Gold" | "Platinum" | "Elite";
-
-type LedgerTransaction = {
-  id: string;
-  type: "earn" | "spend";
-  source: string;
-  label: string;
-  amount: number;
-  timestamp: string;
-  balanceAfter: number;
-};
-
-type LedgerSnapshot = {
-  model: {
-    currentBalance: number;
-    totalEarned: number;
-    totalSpent: number;
-  };
-  tier: {
-    label: TierLabel;
-  };
-  dailyCapRemaining: number;
-  transactions: LedgerTransaction[];
-};
-
-type EarnAction = {
-  code: CreditActionCode;
-  label: string;
-  helper: string;
-  metadata?: Record<string, unknown>;
-};
-
-const EARN_ACTIONS: EarnAction[] = [
-  { code: "daily_login", label: "Daily login", helper: "+1 A$ / day" },
-  { code: "log_am_routine", label: "AM routine completed", helper: "+2 A$ / day" },
-  { code: "log_pm_routine", label: "PM routine completed", helper: "+2 A$ / day" },
-  { code: "hydration_goal", label: "Hydration goal met", helper: "+3 A$ / day" },
-  { code: "sleep_goal", label: "Sleep goal met", helper: "+2 A$ / day" },
-  { code: "full_day_completed", label: "Full day completed", helper: "Daily cap: 20 A$" },
-  {
-    code: "improve_alpha_5",
-    label: "Weekly adherence > 80%",
-    helper: "+10 A$",
-    metadata: { adherence: 80 },
-  },
-  {
-    code: "severity_drop_one_level",
-    label: "Severity drop by 10 points",
-    helper: "+25 A$",
-    metadata: { dropped: true, points: 10 },
-  },
-  { code: "challenge_30_complete", label: "30-day consistency complete", helper: "+50 A$" },
-  { code: "product_review_submitted", label: "Product review", helper: "+5 A$" },
-  { code: "first_scan_uploaded", label: "Photo scan upload", helper: "+5 A$" },
-];
-
-function ProgressBar({ value, max }: { value: number; max: number }) {
-  const percent = Math.min(100, Math.round((value / max) * 100));
-  return (
-    <div className="h-2 w-full rounded-full bg-[#E2DDD4] overflow-hidden">
-      <div
-        className="h-full rounded-full bg-[#1F3D2B]"
-        style={{ width: `${percent}%` }}
-      />
-    </div>
-  );
-}
-
-function formatAmount(amount: number) {
-  return `${amount.toLocaleString()} A$`;
-}
-
-function toTierLabel(value?: string): TierLabel {
-  if (value === "Silver" || value === "Gold" || value === "Platinum" || value === "Elite") return value;
-  return "Bronze";
-}
-
-const EMPTY_SNAPSHOT: LedgerSnapshot = {
-  model: {
-    currentBalance: 0,
-    totalEarned: 0,
-    totalSpent: 0,
-  },
-  tier: {
-    label: "Bronze",
-  },
-  dailyCapRemaining: DAILY_CAP,
-  transactions: [],
-};
-
-function buildSnapshotFromStore(input: {
-  summary: Record<string, unknown> | null;
-  transactions: Array<Record<string, unknown>>;
-}): LedgerSnapshot {
-  const summary = input.summary;
-  const transactions = (input.transactions || []).map((tx) => {
-    const amount = Number(tx.amount || 0);
-    return {
-      id: String(tx.id || `${Date.now()}`),
-      type: amount >= 0 ? "earn" : "spend",
-      source: String(tx.category || "discipline"),
-      label: String(tx.description || tx.category || "transaction"),
-      amount: Math.abs(amount),
-      timestamp: String(tx.created_at || new Date().toISOString()),
-      balanceAfter: 0,
-    } as LedgerTransaction;
-  });
-
-  const today = new Date().toISOString().slice(0, 10);
-  const todayDisciplineEarned = transactions
-    .filter((tx) => tx.type === "earn" && tx.source === "discipline" && tx.timestamp.slice(0, 10) === today)
-    .reduce((sum, tx) => sum + tx.amount, 0);
-
-  return {
-    model: {
-      currentBalance: Number(summary?.current_balance || 0),
-      totalEarned: Number(summary?.lifetime_earned || 0),
-      totalSpent: Number(summary?.lifetime_spent || 0),
-    },
-    tier: {
-      label: toTierLabel(String(summary?.tier_level || "Bronze")),
-    },
-    dailyCapRemaining: Math.max(0, DAILY_CAP - todayDisciplineEarned),
-    transactions,
-  };
-}
-
-export default function AlphaCreditsPage() {
-  const { user } = useContext(AuthContext);
-  const loading = useUserStore((state) => state.loading);
-  const alphaSummary = useUserStore((state) => state.alphaSummary as Record<string, unknown> | null);
-  const alphaTransactions = useUserStore((state) => state.alphaTransactions as Array<Record<string, unknown>>);
-  const [message, setMessage] = useState<string | null>(null);
-  const snapshot = useMemo(
-    () => (user ? buildSnapshotFromStore({ summary: alphaSummary, transactions: alphaTransactions }) : EMPTY_SNAPSHOT),
-    [user?.id, alphaSummary, alphaTransactions]
-  );
-
-  useEffect(() => {
-    if (!user) return;
-    if (alphaSummary) return;
-    void hydrateUserData(user.id);
-  }, [user?.id, alphaSummary]);
-
-  const rewardCatalog = useMemo(() => getRewardCatalog(), []);
-  const rewardProgress = useMemo(
-    () => getRewardProgress(snapshot.model.currentBalance),
-    [snapshot.model.currentBalance]
-  );
-  const tierProgress = useMemo(
-    () => getTierProgress(snapshot.model.totalEarned),
-    [snapshot.model.totalEarned]
-  );
-  const programProgress = useMemo(() => {
-    const programSources = new Set(
-      snapshot.transactions
-        .filter((tx) => tx.type === "earn" && /challenge|30-Day|60-Day|90-Day/i.test(tx.label))
-        .map((tx) => tx.label)
-    );
-    const completedCount = ["30-Day", "60-Day", "90-Day"].filter((id) =>
-      Array.from(programSources).some((label) => label.includes(id))
-    ).length;
-    const percent = Math.min(100, Math.round((completedCount / 3) * 100));
-    const nextLabel = completedCount === 0
-      ? "30-Day Glow Up · 120 A$"
-      : completedCount === 1
-        ? "60-Day Transformation · 250 A$"
-        : completedCount === 2
-          ? "90-Day Mastery · 400 A$"
-          : null;
-
-    return { completedCount, percent, nextLabel };
-  }, [snapshot.transactions]);
-
-  const discipline = useMemo(() => {
-    const todayKey = new Date().toISOString().slice(0, 10);
-    const todaySources = new Set(
-      snapshot.transactions
-        .filter((tx) => tx.type === "earn" && tx.timestamp.slice(0, 10) === todayKey && tx.source === "discipline")
-        .map((tx) => tx.source)
-    );
-    const completedDailyTasks = ["daily_login", "log_am_routine", "log_pm_routine", "hydration_goal", "sleep_goal"].filter((source) =>
-      todaySources.has(source)
-    ).length;
-
-    return calculateDisciplineScore({
-      completedDailyTasks,
-      totalDailyTasks: 5,
-    });
-  }, [snapshot]);
-
-  const recentRedemptions = useMemo(() => snapshot.transactions.filter((tx) => tx.type === "spend").slice(0, 4), [snapshot.transactions]);
-
-  const history: LedgerTransaction[] = snapshot.transactions.slice(0, 8);
-
-  const handleEarn = async (action: EarnAction) => {
-    const dynamicMetadata = {
-      ...(action.metadata || {}),
-      referenceId: String(action.metadata?.referenceId || `${action.code}_${Date.now()}`),
-    };
-
-    const response = await fetch("/api/alpha-sikka/earn", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        action: action.code,
-        metadata: dynamicMetadata,
-        referenceId: (dynamicMetadata as { referenceId?: string })?.referenceId,
-      }),
-    });
-
-    const result = await response.json();
-    setMessage(result?.ok ? `+${result.awarded} A$ added` : result?.error || "No credits added");
-    if (result?.ok && user) {
-      await hydrateUserData(user.id);
-    }
-  };
-
-  const handleRedeem = async (discountPercent: number, cost: number) => {
-    const response = await fetch("/api/alpha-sikka/spend", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        amount: cost,
-        category: "redemption",
-        description: `${discountPercent}% reward redeemed`,
-        referenceId: `redeem_${discountPercent}_${Date.now()}`,
-      }),
-    });
-
-    const result = await response.json();
-    setMessage(result?.ok ? `Redeemed ${discountPercent}% reward` : result?.error || "Unable to redeem");
-    if (result?.ok && user) {
-      await hydrateUserData(user.id);
-    }
-  };
-
-  const dailyEarned = DAILY_CAP - snapshot.dailyCapRemaining;
-
-  if (loading) {
+import fs from 'fs';
+const lines = fs.readFileSync('app/alpha-credits/page.tsx', 'utf8').split('\n');
+const start = lines.findIndex(l => l.includes('if (loading) {'));
+if (start !== -1) {
+    const keep = lines.slice(0, start);
+    keep.push(`  if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full animate-spin"></div>
@@ -319,7 +55,7 @@ export default function AlphaCreditsPage() {
             </div>
           </div>
           <p className="mt-4 text-center text-sm text-zinc-400">
-            {rewardProgress.next ? `Next Reward: ${rewardProgress.next.cost} A$` : 'Highest Tier Unlocked'}
+            {rewardProgress.next ? \`Next Reward: \${rewardProgress.next.cost} A$\` : 'Highest Tier Unlocked'}
           </p>
         </div>
       </div>
@@ -348,7 +84,7 @@ export default function AlphaCreditsPage() {
                  <span className="text-white font-bold">{Math.round((dailyEarned/DAILY_CAP)*100)}%</span>
                </div>
                <div className="h-3 bg-black/40 rounded-full overflow-hidden border border-white/5">
-                 <div className="h-full bg-gradient-to-r from-blue-500 to-green-400 rounded-full transition-all" style={{ width: `${(dailyEarned/DAILY_CAP)*100}%`}}></div>
+                 <div className="h-full bg-gradient-to-r from-blue-500 to-green-400 rounded-full transition-all" style={{ width: \`\${(dailyEarned/DAILY_CAP)*100}%\`}}></div>
                </div>
              </div>
              
@@ -358,7 +94,7 @@ export default function AlphaCreditsPage() {
                  <span className="text-white font-bold">{programProgress.completedCount}/3</span>
                </div>
                <div className="h-3 bg-black/40 rounded-full overflow-hidden border border-white/5">
-                 <div className="h-full bg-gradient-to-r from-orange-500 to-yellow-400 rounded-full transition-all" style={{ width: `${(programProgress.completedCount/3)*100}%`}}></div>
+                 <div className="h-full bg-gradient-to-r from-orange-500 to-yellow-400 rounded-full transition-all" style={{ width: \`\${(programProgress.completedCount/3)*100}%\`}}></div>
                </div>
              </div>
 
@@ -368,7 +104,7 @@ export default function AlphaCreditsPage() {
                  <span className="text-white font-bold">{programProgress.percent}%</span>
                </div>
                <div className="h-3 bg-black/40 rounded-full overflow-hidden border border-white/5">
-                 <div className="h-full bg-gradient-to-r from-purple-500 to-pink-400 rounded-full transition-all" style={{ width: `${programProgress.percent}%`}}></div>
+                 <div className="h-full bg-gradient-to-r from-purple-500 to-pink-400 rounded-full transition-all" style={{ width: \`\${programProgress.percent}%\`}}></div>
                </div>
              </div>
            </div>
@@ -428,13 +164,13 @@ export default function AlphaCreditsPage() {
                   <button
                     onClick={() => handleRedeem(reward.discountPercent, reward.cost)}
                     disabled={!canRedeem}
-                    className={`mt-8 w-full py-3 rounded-xl font-bold text-sm transition-all ${
+                    className={\`mt-8 w-full py-3 rounded-xl font-bold text-sm transition-all \${
                       canRedeem 
                       ? 'bg-green-500 hover:bg-green-400 text-black shadow-[0_0_15px_rgba(74,222,128,0.3)]' 
                       : 'bg-white/5 text-zinc-500 cursor-not-allowed'
-                    }`}
+                    }\`}
                   >
-                    {canRedeem ? 'Redeem Reward' : `Need ${reward.cost - snapshot.model.currentBalance} A$`}
+                    {canRedeem ? 'Redeem Reward' : \`Need \${reward.cost - snapshot.model.currentBalance} A$\`}
                   </button>
                </div>
              );
@@ -472,8 +208,8 @@ export default function AlphaCreditsPage() {
                   <tr key={tx.id} className="hover:bg-white/5 transition-colors">
                     <td className="py-4 text-zinc-400 pr-4">{new Date(tx.timestamp).toLocaleDateString()}</td>
                     <td className="py-4 text-white font-medium pr-4">{tx.label}</td>
-                    <td className="py-4 text-green-400 text-right pr-4">{tx.type === 'earn' ? `+${tx.amount}` : '-'}</td>
-                    <td className="py-4 text-red-400 text-right pr-4">{tx.type === 'spend' ? `-${tx.amount}` : '-'}</td>
+                    <td className="py-4 text-green-400 text-right pr-4">{tx.type === 'earn' ? \`+\${tx.amount}\` : '-'}</td>
+                    <td className="py-4 text-red-400 text-right pr-4">{tx.type === 'spend' ? \`-\${tx.amount}\` : '-'}</td>
                     <td className="py-4 text-white font-bold text-right">{tx.balanceAfter}</td>
                   </tr>
                 ))
@@ -485,4 +221,7 @@ export default function AlphaCreditsPage() {
       
     </div>
   );
+}
+`);
+    fs.writeFileSync('app/alpha-credits/page.tsx', keep.join('\n'));
 }

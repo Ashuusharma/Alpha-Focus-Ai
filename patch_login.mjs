@@ -1,59 +1,9 @@
-"use client";
+import fs from 'fs';
+const file = 'app/_components/LoginScreen.tsx';
+let content = fs.readFileSync(file, 'utf8');
 
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { User, Sparkles } from "lucide-react";
-import { writeUserSession } from "@/lib/session/userSession";
-
-interface LoginScreenProps {
-  onLogin: (name: string) => void;
-}
-
-export default function LoginScreen({ onLogin }: LoginScreenProps) {
-  const [name, setName] = useState("");
-  const [ageRange, setAgeRange] = useState("");
-  const [primaryConcern, setPrimaryConcern] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [consent, setConsent] = useState(false);
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim()) {
-      setError("Please enter your name");
-      return;
-    }
-    if (!consent) {
-      setError("Please provide consent to continue");
-      return;
-    }
-    if (!ageRange || !primaryConcern) {
-      setError("Please select your age range and primary concern");
-      return;
-    }
-    setLoading(true);
-    try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, consent, ageRange, primaryConcern }),
-      });
-
-      if (!response.ok) {
-        setError("Unable to login. Please try again.");
-        return;
-      }
-
-      writeUserSession(name, consent, { ageRange, primaryConcern });
-      onLogin(name);
-    } catch {
-      setError("Unable to login. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-return (
+const replacement = `
+  return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -218,11 +168,23 @@ return (
         </div>
       </motion.div>
       
-      <style jsx global>{`
+      <style jsx global>{\`
         @keyframes shimmer {
           100% { transform: translateX(150%) skewX(-30deg); }
         }
-      `}</style>
+      \`}</style>
     </motion.div>
   );
+}
+`;
+
+const lines = content.split('\n');
+const startIdx = lines.findIndex(l => l.includes('  return ('));
+
+if (startIdx !== -1) {
+  const keep = lines.slice(0, startIdx);
+  fs.writeFileSync(file, keep.join('\n') + '\n' + replacement.trim() + '\n');
+  console.log("Success");
+} else {
+  console.error("Could not find start index");
 }

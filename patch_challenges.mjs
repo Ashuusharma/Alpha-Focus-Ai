@@ -1,157 +1,9 @@
-"use client";
+import fs from 'fs';
+const file = 'app/challenges/page.tsx';
+let content = fs.readFileSync(file, 'utf8');
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Trophy, Flame, Target, ChevronLeft, ChevronRight, CheckCircle2, Circle,
-  Calendar, Star, Zap, Lock, ArrowRight, TrendingUp,
-} from "lucide-react";
-
-import {
-  Challenge,
-  ChallengeProgress,
-  getChallenges,
-  getCategoryIcon,
-  loadChallengeProgress,
-  saveChallengeProgress,
-  getActiveChallengeId,
-  setActiveChallengeId,
-  calculateStreak,
-  clearChallengeProgress,
-} from "@/lib/challengeEngine";
-import { useRewardsStore } from "../../lib/rewardsStore";
-import { getSupabaseAuthHeaders } from "@/lib/auth/clientAuthHeaders";
-
-export default function ChallengesPage() {
-  const router = useRouter();
-  const addCredits = useRewardsStore((s) => s.addCredits);
-
-  const [challenges] = useState<Challenge[]>(getChallenges);
-  const [activeChallengeId, setActiveId] = useState<string | null>(null);
-  const [selectedChallenge, setSelectedChallenge] = useState<Challenge | null>(null);
-  const [progress, setProgress] = useState<ChallengeProgress | null>(null);
-  const [activeWeek, setActiveWeek] = useState(0);
-  const [view, setView] = useState<"list" | "detail">("list");
-
-  const emitNotification = useCallback(async (eventType: string, dedupeKey: string, metadata?: Record<string, unknown>) => {
-    try {
-      const headers = await getSupabaseAuthHeaders({ "Content-Type": "application/json" });
-      await fetch("/api/notifications", {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ eventType, dedupeKey, metadata }),
-      });
-    } catch {
-      // Notification writes are non-blocking.
-    }
-  }, []);
-
-  useEffect(() => {
-    const id = getActiveChallengeId();
-    setActiveId(id);
-    if (id) {
-      const p = loadChallengeProgress(id);
-      setProgress(p);
-    }
-  }, []);
-
-  const openChallenge = useCallback(
-    (challenge: Challenge) => {
-      setSelectedChallenge(challenge);
-      const p = loadChallengeProgress(challenge.id);
-      setProgress(p);
-      setActiveWeek(0);
-      setView("detail");
-    },
-    []
-  );
-
-  const startChallenge = useCallback(
-    (challenge: Challenge) => {
-      const newProgress: ChallengeProgress = {
-        challengeId: challenge.id,
-        completedDays: [],
-        streak: 0,
-        longestStreak: 0,
-        totalXP: 0,
-        startedAt: new Date().toISOString(),
-      };
-      saveChallengeProgress(newProgress);
-      setActiveChallengeId(challenge.id);
-      setActiveId(challenge.id);
-      setProgress(newProgress);
-      setActiveWeek(0);
-      void emitNotification("challenge_started", `challenge_started:${challenge.id}`, { challengeId: challenge.id });
-    },
-    [emitNotification]
-  );
-
-  const setChallengeActive = useCallback((challengeId: string) => {
-    setActiveChallengeId(challengeId);
-    setActiveId(challengeId);
-  }, []);
-
-  const pauseActiveChallenge = useCallback(() => {
-    setActiveChallengeId(null);
-    setActiveId(null);
-  }, []);
-
-  const restartChallenge = useCallback((challenge: Challenge) => {
-    clearChallengeProgress(challenge.id);
-    startChallenge(challenge);
-  }, [startChallenge]);
-
-  const toggleDay = useCallback(
-    (day: number, xp: number) => {
-      if (!progress || !selectedChallenge) return;
-      
-      const updated = { ...progress };
-      const idx = updated.completedDays.indexOf(day);
-      
-      if (idx >= 0) {
-        updated.completedDays.splice(idx, 1);
-        updated.totalXP -= xp;
-        addCredits(-xp, "challenge_rollback");
-      } else {
-        updated.completedDays.push(day);
-        updated.totalXP += xp;
-        updated.lastCompletedAt = new Date().toISOString();
-        addCredits(xp, "challenge_completion");
-      }
-
-      const { streak, longestStreak } = calculateStreak(
-        updated.completedDays,
-        selectedChallenge.totalDays
-      );
-      updated.streak = streak;
-      updated.longestStreak = longestStreak;
-
-      saveChallengeProgress(updated);
-      setProgress({ ...updated });
-
-      const milestoneDay = [7, 14, 21, 28, 56, 84].find((value) => updated.completedDays.length === value);
-      if (milestoneDay) {
-        void emitNotification("challenge_milestone", `challenge_milestone:${selectedChallenge.id}:${milestoneDay}`, {
-          challengeId: selectedChallenge.id,
-          milestoneDay,
-        });
-      }
-    },
-    [progress, selectedChallenge, addCredits, emitNotification]
-  );
-
-  const getDayStatus = (day: number): boolean => {
-    return progress?.completedDays.includes(day) || false;
-  };
-
-  const completionPercent = selectedChallenge && progress
-    ? Math.round((progress.completedDays.length / selectedChallenge.totalDays) * 100)
-    : 0;
-
-  // ─── CHALLENGE LIST VIEW ────────────────────────────────────
-
-if (view === "list") {
+const replacement = `
+  if (view === "list") {
     return (
       <div className="flex flex-col h-full w-full bg-[#071318] min-h-screen animate-in fade-in duration-700">
         {/* Glow Effects */}
@@ -214,11 +66,11 @@ if (view === "list") {
                 <div
                   key={challenge.id}
                   onClick={() => openChallenge(challenge)}
-                  className={`group relative overflow-hidden rounded-3xl border transition-all duration-300 cursor-pointer shadow-xl ${
+                  className={\`group relative overflow-hidden rounded-3xl border transition-all duration-300 cursor-pointer shadow-xl \${
                     isActive
                       ? "border-green-500/30 bg-green-500/5 shadow-[0_0_30px_rgba(74,222,128,0.1)]"
                       : "bg-black/20 border-white/5 hover:border-white/20 hover:bg-white/5"
-                  }`}
+                  }\`}
                 >
                   <div className="p-6 h-full flex flex-col justify-between">
                     <div className="flex items-start gap-5">
@@ -238,7 +90,7 @@ if (view === "list") {
                         <p className="text-xs text-zinc-500 line-clamp-2 leading-relaxed mb-4">{challenge.description}</p>
                         
                         <div className="flex flex-wrap gap-2 text-[10px] font-medium uppercase tracking-wider text-zinc-500">
-                          <span className="px-2 py-1 rounded bg-white/5 border border-white/5">{challenge.duration}</span>
+                          <span className="px-2 py-1 rounded bg-white/5 border border-white/5">{challenge.category}</span>
                           <span className="px-2 py-1 rounded bg-white/5 border border-white/5">{challenge.totalDays} Days</span>
                           <span className="px-2 py-1 rounded border border-yellow-500/20 text-yellow-400 bg-yellow-500/10 flex items-center gap-1">
                              <Circle className="w-3 h-3 fill-yellow-400"/>
@@ -256,7 +108,7 @@ if (view === "list") {
                            <span className="text-green-400 font-bold">{pct}%</span>
                         </div>
                         <div className="h-1.5 bg-black/40 rounded-full overflow-hidden border border-white/5">
-                          <div className="h-full bg-gradient-to-r from-blue-500 to-green-400 rounded-full" style={{ width: `${pct}%` }} />
+                          <div className="h-full bg-gradient-to-r from-blue-500 to-green-400 rounded-full" style={{ width: \`\${pct}%\` }} />
                         </div>
                       </div>
                     )}
@@ -294,7 +146,7 @@ if (view === "list") {
                      {progress.completedDays.length} / {selectedChallenge.totalDays} Days
                   </span>
                   <div className="w-24 h-1.5 bg-black/50 rounded-full overflow-hidden border border-white/5">
-                     <div className="h-full bg-green-400" style={{ width: `${completionPercent}%`}} />
+                     <div className="h-full bg-green-400" style={{ width: \`\${completionPercent}%\`}} />
                   </div>
                 </div>
              )}
@@ -317,7 +169,7 @@ if (view === "list") {
                    <div className="pt-4 border-t border-white/5">
                      <div className="flex justify-between items-center py-2">
                         <span>Category</span>
-                        <span className="text-white font-medium capitalize">{selectedChallenge.duration}</span>
+                        <span className="text-white font-medium capitalize">{selectedChallenge.category}</span>
                      </div>
                      <div className="flex justify-between items-center py-2">
                         <span>Duration</span>
@@ -362,13 +214,13 @@ if (view === "list") {
                       <button
                         key={wIdx}
                         onClick={() => setActiveWeek(wIdx)}
-                        className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-bold transition-all border ${
+                        className={\`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-bold transition-all border \${
                            activeWeek === wIdx 
                            ? "bg-green-500/10 border-green-500/30 text-green-400 shadow-[0_0_15px_rgba(74,222,128,0.1)]"
                            : "bg-white/5 border-white/5 text-zinc-400 hover:text-white"
-                        }`}
+                        }\`}
                       >
-                         Phase {week.week}
+                         Phase {week.weekNumber}
                       </button>
                    ))}
                 </div>
@@ -389,26 +241,26 @@ if (view === "list") {
                               key={task.day}
                               disabled={isLocked}
                               onClick={() => isActive && toggleDay(task.day, 10)}
-                              className={`relative text-left p-4 rounded-2xl border transition-all duration-300 overflow-hidden ${
+                              className={\`relative text-left p-4 rounded-2xl border transition-all duration-300 overflow-hidden \${
                                  isDone 
                                    ? "bg-green-500/10 border-green-500/30 shadow-[0_0_15px_rgba(74,222,128,0.05)]"
                                    : isLocked
                                    ? "bg-black/40 border-white/5 opacity-50 cursor-not-allowed"
                                    : "bg-white/5 border-white/10 hover:border-white/20 hover:bg-white/10"
-                              }`}
+                              }\`}
                             >
                                <div className="flex items-start gap-4">
-                                  <div className={`w-6 h-6 shrink-0 rounded-full flex items-center justify-center border ${
+                                  <div className={\`w-6 h-6 shrink-0 rounded-full flex items-center justify-center border \${
                                      isDone ? "bg-green-500 border-green-500 text-black" : "border-zinc-600 text-transparent"
-                                  }`}>
+                                  }\`}>
                                      {isDone && <CheckCircle2 className="w-4 h-4"/>}
                                   </div>
                                   <div className="flex-1">
                                      <div className="flex justify-between items-center mb-1">
-                                        <span className={`text-[10px] font-bold uppercase tracking-widest ${isDone? "text-green-400" : "text-zinc-500"}`}>Day {task.day}</span>
+                                        <span className={\`text-[10px] font-bold uppercase tracking-widest \${isDone? "text-green-400" : "text-zinc-500"}\`}>Day {task.day}</span>
                                         <span className="text-[10px] font-mono text-yellow-500 bg-yellow-500/10 px-1.5 rounded opacity-70">+10 A$</span>
                                      </div>
-                                     <p className={`text-sm font-medium ${isDone ? "text-white" : "text-zinc-300"}`}>{task.title}</p>
+                                     <p className={\`text-sm font-medium \${isDone ? "text-white" : "text-zinc-300"}\`}>{task.action}</p>
                                   </div>
                                </div>
                             </button>
@@ -439,4 +291,16 @@ if (view === "list") {
        </div>
     </div>
   );
+}
+`;
+
+const lines = content.split('\n');
+const startIdx = lines.findIndex(l => l.includes('if (view === "list") {'));
+
+if (startIdx !== -1) {
+  const keep = lines.slice(0, startIdx);
+  fs.writeFileSync(file, keep.join('\n') + '\n' + replacement.trim() + '\n');
+  console.log("Success");
+} else {
+  console.error("Could not find start index");
 }

@@ -1,233 +1,9 @@
-"use client";
+import fs from 'fs';
+const file = 'app/result/page.tsx';
+let content = fs.readFileSync(file, 'utf8');
 
-import { useContext, useEffect, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Activity, Calendar, Sun, Moon, ShoppingBag, ArrowRight } from "lucide-react";
-import { AuthContext } from "@/contexts/AuthProvider";
-import { supabase } from "@/lib/supabaseClient";
-import { categories, CategoryId } from "@/lib/questions";
-import { recalculateClinicalScores } from "@/lib/recalculateClinicalScores";
-import { calculateProgressMetricsForCategory } from "@/lib/calculateProgressMetrics";
-import { productRecommendationLogic } from "@/lib/productRecommendationLogic";
-import { getProgressTimeline, type ProgressTimeline } from "@/lib/progressTimeline";
-import { generateDailyProtocolTasks, getCurrentProtocolPhase, getProtocolTemplate, type ProtocolTask } from "@/lib/protocolTemplates";
-import { resolveClinicalChildCategoryFromAny } from "@/lib/categorySync";
-
-type SubscriptionPlan = "basic" | "plus" | "pro";
-
-type ClinicalRow = {
-  user_id: string;
-  category: string;
-  severity_score: number;
-  confidence_score: number;
-  risk_level: string;
-  recovery_probability: number;
-  condition_label: string;
-  assessment_completeness: number;
-  domain_scores: Record<string, number>;
-  root_cause_map: Array<{ domain: string; score: number; impact_pct: number }>;
-  report_payload: {
-    insufficient_data?: boolean;
-    message?: string;
-    clinical_overview?: {
-      primary_condition?: string;
-      severity_score?: number;
-      risk_level?: string;
-      recovery_probability?: number;
-      confidence_pct?: number;
-      stage_label?: string;
-      clinical_description?: string;
-    };
-    what_this_means?: string;
-    protocol_30_day?: { phase_1?: string; phase_2?: string; phase_3?: string };
-    routine_schedule?: { morning?: string; night?: string; weekly_reset?: string };
-    product_logic?: { why_recommended?: string; target_symptom?: string; timeline_expectation?: string };
-    risk_if_ignored?: string;
-    performance_metrics?: { adherence_pct?: number; projected_recovery_days?: number };
-  };
-};
-
-type GlobalDomainsRow = {
-  inflammation_load: number;
-  hormonal_instability: number;
-  stress_load: number;
-  sleep_deprivation: number;
-  barrier_integrity: number;
-  oxidative_stress: number;
-  metabolic_load: number;
-};
-
-type RelapseRiskRow = {
-  relapse_score: number;
-  risk_level: string;
-  predicted_trigger: string;
-  behavior_response: string;
-};
-
-type ProgressRow = {
-  scans_count: number;
-  first_severity: number;
-  latest_severity: number;
-  improvement_pct: number;
-  inflammation_reduction_rate: number;
-  consistency_score: number;
-  recovery_velocity: number;
-  discipline_index: number;
-  confidence_score: number;
-  trend_direction: string;
-  trend_message: string;
-};
-
-function safeLabel(category: string) {
-  return categories.find((item) => item.id === category)?.label || category.replace(/_/g, " ");
-}
-
-function normalizeDomainName(value: string) {
-  return value.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
-}
-
-function buildProtocolTimeline(severity: number, recoveryProbability: number) {
-  const week1 = Math.max(0, Math.min(100, severity));
-  const week2 = Math.max(0, Math.round(week1 - recoveryProbability * 0.22));
-  const week3 = Math.max(0, Math.round(week2 - recoveryProbability * 0.18));
-  const week4 = Math.max(0, Math.round(week3 - recoveryProbability * 0.15));
-  return [week1, week2, week3, week4];
-}
-
-export default function ResultPage() {
-  const router = useRouter();
-  const params = useSearchParams();
-  const { user } = useContext(AuthContext);
-
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [clinical, setClinical] = useState<ClinicalRow | null>(null);
-  const [plan, setPlan] = useState<SubscriptionPlan>("basic");
-  const [globalDomains, setGlobalDomains] = useState<GlobalDomainsRow | null>(null);
-  const [relapseRisk, setRelapseRisk] = useState<RelapseRiskRow | null>(null);
-  const [progress, setProgress] = useState<ProgressRow | null>(null);
-  const [timelineData, setTimelineData] = useState<ProgressTimeline | null>(null);
-  const [protocolTasks, setProtocolTasks] = useState<ProtocolTask[]>([]);
-  const [protocolPhaseName, setProtocolPhaseName] = useState<string>("Stabilization");
-  const [protocolDayNumber, setProtocolDayNumber] = useState<number>(1);
-
-  useEffect(() => {
-    async function loadClinicalResult() {
-      if (!user) {
-        setError("Please log in to view clinical report.");
-        setLoading(false);
-        return;
-      }
-
-      const queryCategory = params?.get("category");
-      const sessionCategory = typeof window !== "undefined" ? sessionStorage.getItem("analysisCategory") : null;
-      let category = resolveClinicalChildCategoryFromAny(queryCategory, sessionCategory as CategoryId | null);
-
-      if (!category) {
-        const { data: activeAnalysis } = await supabase
-          .from("user_active_analysis")
-          .select("selected_category")
-          .eq("user_id", user.id)
-          .maybeSingle();
-        category = resolveClinicalChildCategoryFromAny(activeAnalysis?.selected_category || null, sessionCategory as CategoryId | null);
-      }
-
-      if (!category) {
-        setError("No active category found. Please complete analyzer and assessment flow first.");
-        setLoading(false);
-        return;
-      }
-
-      const categoryId = (categories.find((item) => item.id === category)?.id || category) as CategoryId;
-
-      await recalculateClinicalScores(user.id, categoryId);
-      await Promise.allSettled([
-        calculateProgressMetricsForCategory(user.id, categoryId),
-        productRecommendationLogic(user.id, categoryId),
-      ]);
-
-      const timeline = await getProgressTimeline(user.id, categoryId);
-      setTimelineData(timeline);
-
-      const firstSnapshotDate = timeline.snapshots[0]?.scan_date;
-      const derivedDayNumber = firstSnapshotDate
-        ? Math.max(1, Math.min(30, Math.floor((Date.now() - new Date(firstSnapshotDate).getTime()) / (1000 * 60 * 60 * 24)) + 1))
-        : 1;
-      setProtocolDayNumber(derivedDayNumber);
-
-      const template = getProtocolTemplate(categoryId);
-      const tasks = generateDailyProtocolTasks(categoryId, derivedDayNumber);
-      setProtocolTasks(tasks);
-      if (template) {
-        setProtocolPhaseName(getCurrentProtocolPhase(template, derivedDayNumber).name);
-      }
-
-      const [
-        clinicalRes,
-        subscriptionRes,
-        globalRes,
-        relapseRes,
-        progressRes,
-      ] = await Promise.all([
-        supabase
-          .from("user_category_clinical_scores")
-          .select("*")
-          .eq("user_id", user.id)
-          .eq("category", categoryId)
-          .maybeSingle(),
-        supabase
-          .from("user_subscriptions")
-          .select("plan,active,expires_at")
-          .eq("user_id", user.id)
-          .maybeSingle(),
-        supabase
-          .from("user_global_domains")
-          .select("*")
-          .eq("user_id", user.id)
-          .maybeSingle(),
-        supabase
-          .from("user_relapse_risk")
-          .select("*")
-          .eq("user_id", user.id)
-          .maybeSingle(),
-        supabase
-          .from("user_progress_metrics")
-          .select("*")
-          .eq("user_id", user.id)
-          .eq("category", categoryId)
-          .maybeSingle(),
-      ]);
-
-      if (clinicalRes.error || !clinicalRes.data) {
-        setError("No clinical report data available for this category.");
-        setLoading(false);
-        return;
-      }
-
-      const rawPlan = String(subscriptionRes.data?.plan || "basic").toLowerCase();
-      const isActiveSubscription = subscriptionRes.data?.active !== false
-        && (!subscriptionRes.data?.expires_at || new Date(subscriptionRes.data.expires_at) > new Date());
-      const effectivePlan: SubscriptionPlan = isActiveSubscription && (rawPlan === "plus" || rawPlan === "pro")
-        ? (rawPlan as SubscriptionPlan)
-        : "basic";
-
-      setPlan(effectivePlan);
-      setClinical(clinicalRes.data as ClinicalRow);
-      setGlobalDomains((globalRes.data || null) as GlobalDomainsRow | null);
-      setRelapseRisk((relapseRes.data || null) as RelapseRiskRow | null);
-      setProgress((progressRes.data || null) as ProgressRow | null);
-      setLoading(false);
-    }
-
-    loadClinicalResult();
-  }, [params, user]);
-
-  const timeline = useMemo(() => {
-    if (!clinical) return [0, 0, 0, 0];
-    return buildProtocolTimeline(clinical.severity_score, clinical.recovery_probability);
-  }, [clinical]);
-
-if (loading) {
+const replacement = `
+  if (loading) {
     return (
       <div className="flex h-full items-center justify-center p-6">
         <div className="rounded-2xl bg-black/20 border border-white/5 backdrop-blur-md px-6 py-5 text-sm text-zinc-400">Generating deterministic clinical report...</div>
@@ -259,7 +35,7 @@ if (loading) {
           <h1 className="text-2xl font-bold text-white">Insufficient structured data</h1>
           <p className="text-sm text-zinc-400">Complete a valid photo scan and at least 60% category assessment to unlock report generation.</p>
           <button
-            onClick={() => router.push(`/assessment?category=${clinical.category}`)}
+            onClick={() => router.push(\`/assessment?category=\${clinical.category}\`)}
             className="rounded-full bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 border border-yellow-500/20 px-6 py-3 text-sm font-semibold transition-colors"
           >
             Continue Assessment
@@ -279,8 +55,9 @@ if (loading) {
   const shouldAdjustProtocol = Boolean(
     isPlusOrPro
     && progress
-    && progress.consistency_score > 60
-    && progress.recovery_velocity > 0
+    && progress.streak_days >= 3
+    && progress.current_phase === "Phase 1: Stabilization"
+    && progress.recovery_rate > 5
   );
 
   return (
@@ -330,7 +107,7 @@ if (loading) {
                    <span className="text-xl font-bold text-blue-400">{clinical.recovery_probability}%</span>
                  </div>
                  <div className="h-2 bg-black/40 rounded-full overflow-hidden">
-                   <div className="h-full bg-blue-400 rounded-full" style={{ width: `${clinical.recovery_probability}%` }} />
+                   <div className="h-full bg-blue-400 rounded-full" style={{ width: \`\${clinical.recovery_probability}%\` }} />
                  </div>
                </div>
                <div>
@@ -365,7 +142,7 @@ if (loading) {
                       <span className="text-xs text-zinc-500">{rc.impact_pct}% Impact</span>
                     </div>
                     <div className="h-1.5 bg-black/40 rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-red-500 to-orange-400 transition-all duration-1000 ease-out group-hover:opacity-80" style={{ width: `${rc.impact_pct}%` }} />
+                      <div className="h-full bg-gradient-to-r from-red-500 to-orange-400 transition-all duration-1000 ease-out group-hover:opacity-80" style={{ width: \`\${rc.impact_pct}%\` }} />
                     </div>
                   </div>
                ))}
@@ -476,4 +253,14 @@ if (loading) {
       </div>
     </div>
   );
+}
+`;
+
+const startIdx = content.indexOf('  if (loading) {');
+if (startIdx !== -1) {
+  content = content.substring(0, startIdx) + replacement.trim();
+  fs.writeFileSync(file, content);
+  console.log("Success");
+} else {
+  console.error("Could not find start index");
 }

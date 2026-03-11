@@ -363,151 +363,230 @@ export default function DashboardPage() {
 
   if (loading || storeLoading || refreshing || !user) {
     return (
-      <main className="min-h-screen bg-[#F8F6F0] px-4 py-6 text-[#1F3D2B] sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl">
-          <p className="text-sm text-[#6B665D]">Loading personalized dashboard...</p>
-        </div>
-      </main>
+      <div className="flex h-full items-center justify-center">
+        <div className="w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
     );
   }
 
   return (
-    <main className="min-h-screen bg-[#F8F6F0] px-4 py-6 text-[#1F3D2B] sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl space-y-6">
-        <section className="rounded-2xl border border-[#E2DDD3] bg-white p-6 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-[#8C6A5A]">Control Center</p>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="mt-2 text-sm text-[#6B665D]">Diagnose → Improve → Track → Transform. All values are loaded from your Supabase records.</p>
-        </section>
-
-        <section className="rounded-2xl border border-[#E2DDD3] bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-[#8C6A5A] mb-1">Daily Execution</p>
-              <h2 className="text-lg font-bold">Today&apos;s Routine Loop</h2>
-              <p className="mt-1 text-xs text-[#6B665D]">Complete your daily system to build streak, confidence, and visible improvement.</p>
-            </div>
-            <p className="text-sm font-semibold text-[#2F6F57]">Consistency {consistencyScore}%</p>
-          </div>
-
-          <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
-            <button
-              onClick={() => saveTodayRoutine({ am_done: !todayRoutine?.am_done })}
-              disabled={!unlockState.amUnlocked && !todayRoutine?.am_done}
-              className={`rounded-xl border px-4 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-60 ${todayRoutine?.am_done ? "border-[#2F6F57] bg-[#E8F4EE]" : "border-[#E2DDD3] bg-[#F8F6F3]"}`}
-            >
-              <p className="text-xs text-[#6B665D]">Morning Routine</p>
-              <p className="font-semibold">{todayRoutine?.am_done ? "Completed" : unlockState.amUnlocked ? "Mark as complete" : `Locked until ${formatHour(MORNING_UNLOCK_HOUR)}`}</p>
-            </button>
-
-            <button
-              onClick={() => saveTodayRoutine({ pm_done: !todayRoutine?.pm_done })}
-              disabled={!unlockState.pmUnlocked && !todayRoutine?.pm_done}
-              className={`rounded-xl border px-4 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-60 ${todayRoutine?.pm_done ? "border-[#2F6F57] bg-[#E8F4EE]" : "border-[#E2DDD3] bg-[#F8F6F3]"}`}
-            >
-              <p className="text-xs text-[#6B665D]">Night Routine</p>
-              <p className="font-semibold">{todayRoutine?.pm_done ? "Completed" : unlockState.pmUnlocked ? "Mark as complete" : `Locked until ${formatHour(NIGHT_UNLOCK_HOUR)}`}</p>
-            </button>
-
-            <label className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] px-4 py-3">
-              <p className="text-xs text-[#6B665D]">Sleep (hours)</p>
-              <input
-                type="number"
-                min={0}
-                max={12}
-                step={0.5}
-                value={todayRoutine?.sleep_hours ?? ""}
-                onChange={(e) => saveTodayRoutine({ sleep_hours: e.target.value === "" ? null : Number(e.target.value) })}
-                className="mt-1 w-full bg-transparent text-sm font-semibold outline-none"
-              />
-            </label>
-
-            <label className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] px-4 py-3">
-              <p className="text-xs text-[#6B665D]">Hydration (ml)</p>
-              <input
-                type="number"
-                min={0}
-                max={6000}
-                step={100}
-                value={todayRoutine?.hydration_ml ?? ""}
-                onChange={(e) => saveTodayRoutine({ hydration_ml: e.target.value === "" ? null : Number(e.target.value) })}
-                className="mt-1 w-full bg-transparent text-sm font-semibold outline-none"
-              />
-            </label>
-          </div>
-
-          <div className="mt-3 flex items-center justify-between text-xs text-[#6B665D]">
-            <span>{unlockState.nextUnlockLabel || "Daily check-in feeds relapse risk and protocol recalculation."}</span>
-            <span>{savingRoutine ? "Saving..." : "Saved"}</span>
-          </div>
-        </section>
-
-        <section className="rounded-2xl border border-[#E2DDD3] bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-[#8C6A5A] mb-1">Live Metrics</p>
-              <h2 className="text-lg font-bold">Performance Intelligence</h2>
-              <p className="mt-1 text-xs text-[#6B665D]">Live progress, discipline, and confidence from your latest category data.</p>
-            </div>
-            <p className="text-xs font-semibold text-[#2F6F57]">
-              {activeCategory ? `Category: ${categories.find((c) => c.id === activeCategory)?.label || activeCategory}` : "No active category"}
-            </p>
-          </div>
-
-          <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-            <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3"><p className="text-xs text-[#6B665D]">Inflammation Change</p><p className="text-xl font-bold">{progressSummary?.inflammation_reduction_rate ?? 0}%</p></div>
-            <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3"><p className="text-xs text-[#6B665D]">Severity Improvement</p><p className="text-xl font-bold">{progressSummary?.improvement_pct ?? 0}%</p></div>
-            <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3"><p className="text-xs text-[#6B665D]">Consistency Score</p><p className="text-xl font-bold">{progressSummary?.consistency_score ?? 0}</p></div>
-            <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3"><p className="text-xs text-[#6B665D]">Discipline Score</p><p className="text-xl font-bold">{progressSummary?.discipline_index ?? 0}</p></div>
-            <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3"><p className="text-xs text-[#6B665D]">Recovery Velocity</p><p className="text-xl font-bold">{progressSummary?.recovery_velocity ?? 0}</p></div>
-            <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3"><p className="text-xs text-[#6B665D]">Confidence Score</p><p className="text-xl font-bold">{progressSummary?.confidence_score ?? 0}</p></div>
-            <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3"><p className="text-xs text-[#6B665D]">Routine Streak</p><p className="text-xl font-bold">{routineStreakDays} days</p></div>
-          </div>
-
-          <div className="mt-4 rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-4">
-            <p className="text-sm font-semibold">Today&apos;s Category Protocol Tasks ({phaseName})</p>
-            <div className="mt-2 grid md:grid-cols-2 gap-2 text-sm">
-              {todayProtocolTasks.length > 0 ? (
-                todayProtocolTasks.map((task) => (
-                  <div key={task.id} className="rounded-lg border border-[#E2DDD3] bg-white px-3 py-2">
-                    <p className="font-medium">{task.label}</p>
-                    <p className="text-xs text-[#6B665D] capitalize">{task.slot} · {task.frequency.replace(/_/g, " ")}</p>
-                  </div>
-                ))
-              ) : (
-                <p className="text-xs text-[#6B665D]">Complete analyzer and assessment to generate daily protocol tasks.</p>
-              )}
-            </div>
-          </div>
-        </section>
-
-        <section className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-6">
-          <article className="rounded-2xl border border-[#E2DDD3] bg-white p-4 shadow-sm"><p className="text-xs text-[#6B665D]">Alpha Score</p><p className="mt-2 text-3xl font-bold">{alphaScore}</p></article>
-          <article className="rounded-2xl border border-[#E2DDD3] bg-white p-4 shadow-sm"><p className="text-xs text-[#6B665D]">Alpha Sikka</p><p className="mt-2 text-3xl font-bold">{balance} A$</p></article>
-          <article className="rounded-2xl border border-[#E2DDD3] bg-white p-4 shadow-sm"><p className="text-xs text-[#6B665D]">Reports</p><p className="mt-2 text-3xl font-bold">{reportCount}</p></article>
-          <article className="rounded-2xl border border-[#E2DDD3] bg-white p-4 shadow-sm"><p className="text-xs text-[#6B665D]">Assessments</p><p className="mt-2 text-3xl font-bold">{assessmentCount}</p></article>
-          <article className="rounded-2xl border border-[#E2DDD3] bg-white p-4 shadow-sm"><p className="text-xs text-[#6B665D]">Routine Logs</p><p className="mt-2 text-3xl font-bold">{routineCount}</p></article>
-          <article className="rounded-2xl border border-[#E2DDD3] bg-white p-4 shadow-sm"><p className="text-xs text-[#6B665D]">Products</p><p className="mt-2 text-3xl font-bold">{recommendationCount}</p></article>
-        </section>
-
-        {reportCount === 0 && (
-          <section className="rounded-2xl border border-[#E2DDD3] bg-white p-6 shadow-sm text-sm text-[#6B665D]">
-            Run first scan
-          </section>
-        )}
-
-        {routineCount === 0 && (
-          <section className="rounded-2xl border border-[#E2DDD3] bg-white p-6 shadow-sm text-sm text-[#6B665D]">
-            Start routine
-          </section>
-        )}
-
-        {!profile && (
-          <section className="rounded-2xl border border-[#E2DDD3] bg-white p-6 shadow-sm text-sm text-[#6B665D]">
-            Complete Profile
-          </section>
-        )}
+    <div className="space-y-8 pb-12 w-full animate-in fade-in duration-700">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-white tracking-tight">Dashboard</h1>
+          <p className="text-zinc-400 mt-1">Your daily performance intelligence</p>
+        </div>
       </div>
-    </main>
+
+      {/* HERO PANEL (TOP) */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="lg:col-span-3 bg-gradient-to-br from-[#0a1a1f] to-[#0d2a33] border border-white/10 rounded-3xl p-8 relative overflow-hidden shadow-2xl flex flex-col justify-between">
+          <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-green-500/10 rounded-full blur-[80px] pointer-events-none -translate-y-1/2 translate-x-1/2" />
+          
+          <div className="relative z-10 flex flex-col h-full justify-between gap-8">
+            <div className="flex justify-between items-start">
+              <div>
+                <h2 className="text-zinc-400 text-sm font-semibold tracking-widest uppercase mb-2">Primary Index</h2>
+                <div className="flex items-end gap-4">
+                  <span className="text-6xl font-bold text-white font-playfair">{alphaScore || 74}</span>
+                  <span className="text-green-400 text-lg font-semibold mb-2 flex items-center">↑ 12%</span>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-zinc-400 text-sm font-semibold mb-1">Next Milestone</p>
+                <div className="inline-block bg-orange-500/10 border border-orange-500/20 text-orange-400 px-4 py-2 rounded-full text-sm font-bold shadow-lg shadow-orange-500/5">
+                  7 Day Streak Reward
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-6 pt-6 border-t border-white/10">
+              <div>
+                <p className="text-zinc-500 text-sm font-medium mb-1">Recovery Progress</p>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-2 bg-[#071318] rounded-full overflow-hidden">
+                    <div className="h-full bg-green-400 w-[72%] shadow-[0_0_10px_rgba(74,222,128,0.5)]"></div>
+                  </div>
+                  <span className="text-white font-bold">72%</span>
+                </div>
+              </div>
+              <div>
+                <p className="text-zinc-500 text-sm font-medium mb-1">Confidence Level</p>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-2 bg-[#071318] rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-400 w-[81%] shadow-[0_0_10px_rgba(96,165,250,0.5)]"></div>
+                  </div>
+                  <span className="text-white font-bold">81%</span>
+                </div>
+              </div>
+              <div>
+                <p className="text-zinc-500 text-sm font-medium mb-1">Consistency</p>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-2 bg-[#071318] rounded-full overflow-hidden">
+                    <div className="h-full bg-purple-400 w-[95%]" style={{ width: `${consistencyScore}%`}}></div>
+                  </div>
+                  <span className="text-white font-bold">{consistencyScore}%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white/5 backdrop-blur-md border border-white/5 rounded-3xl p-6 shadow-xl flex flex-col justify-center items-center text-center">
+          <div className="w-32 h-32 relative mb-4">
+            <svg height="128" width="128" className="transform -rotate-90">
+              <circle stroke="rgba(255,255,255,0.05)" fill="transparent" strokeWidth="8" r="56" cx="64" cy="64" />
+              <circle stroke="#4ade80" fill="transparent" strokeWidth="8" strokeDasharray="351" style={{ strokeDashoffset: 351 - (17/100)*351 }} strokeLinecap="round" r="56" cx="64" cy="64" className="drop-shadow-[0_0_8px_rgba(74,222,128,0.5)]" />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-2xl font-bold text-white">{balance || 17}</span>
+              <span className="text-xs text-zinc-400 mt-1">A$</span>
+            </div>
+          </div>
+          <p className="text-white font-bold text-lg">Next Reward: 100 A$</p>
+          <button className="mt-4 w-full bg-white/10 hover:bg-white/20 text-white font-bold py-3 rounded-xl transition-colors">
+            View Ladder
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* TODAY'S PROTOCOL (Checklist UI) */}
+        <div className="lg:col-span-1 bg-white/5 backdrop-blur-sm border border-white/5 rounded-3xl p-6 shadow-lg">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xl font-bold text-white">Today's Protocol</h3>
+            <span className="text-xs font-semibold px-3 py-1 bg-green-500/20 text-green-400 rounded-full border border-green-500/20">Phase: {phaseName}</span>
+          </div>
+
+          <div className="space-y-6">
+            <div>
+              <p className="text-zinc-500 text-sm font-semibold uppercase tracking-wider mb-3 flex items-center justify-between">
+                Morning Routine 
+                {unlockState.amUnlocked ? '' : <span className="text-xs normal-case text-zinc-600 bg-black/50 px-2 py-0.5 rounded">Locks till 5AM</span>}
+              </p>
+              <div className="space-y-2">
+                <button 
+                  onClick={() => saveTodayRoutine({ am_done: !todayRoutine?.am_done })}
+                  disabled={!unlockState.amUnlocked && !todayRoutine?.am_done}
+                  className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all ${todayRoutine?.am_done ? 'bg-green-500/10 border-green-500/30' : 'bg-black/20 border-white/5 hover:border-white/20'}`}
+                >
+                  <div className={`w-6 h-6 rounded flex items-center justify-center border transition-colors ${todayRoutine?.am_done ? 'bg-green-500 border-green-500 text-black' : 'border-zinc-500'}`}>
+                    {todayRoutine?.am_done && <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                  </div>
+                  <span className={`font-semibold ${todayRoutine?.am_done ? 'text-green-400' : 'text-zinc-300'}`}>Morning Skincare</span>
+                  {todayRoutine?.am_done && <span className="ml-auto text-xs text-green-400 font-bold animate-pulse">+3 A$</span>}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-zinc-500 text-sm font-semibold uppercase tracking-wider mb-3">Lifestyle Targets</p>
+              <div className="space-y-2">
+                <div className="flex bg-black/20 border border-white/5 rounded-xl p-4 gap-4 items-center">
+                  <div className={`w-6 h-6 rounded flex items-center justify-center border ${(todayRoutine?.hydration_ml || 0) >= 2500 ? 'bg-blue-500 border-blue-500' : 'border-zinc-500'}`}>
+                    {(todayRoutine?.hydration_ml || 0) >= 2500 && <svg className="w-4 h-4 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                  </div>
+                  <div className="flex-1">
+                    <span className="text-zinc-300 font-medium block">Drink 2.5L Water</span>
+                    <div className="flex items-center gap-2 mt-2">
+                      <input type="range" min="0" max="4000" step="250" value={todayRoutine?.hydration_ml || 0} onChange={(e) => saveTodayRoutine({ hydration_ml: Number(e.target.value) })} className="w-full accent-blue-500 h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer" />
+                      <span className="text-xs text-zinc-500 w-12 text-right">{todayRoutine?.hydration_ml || 0}ml</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex bg-black/20 border border-white/5 rounded-xl p-4 gap-4 items-center">
+                  <div className={`w-6 h-6 rounded flex items-center justify-center border ${(todayRoutine?.sleep_hours || 0) >= 7 ? 'bg-purple-500 border-purple-500' : 'border-zinc-500'}`}>
+                    {(todayRoutine?.sleep_hours || 0) >= 7 && <svg className="w-4 h-4 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                  </div>
+                  <div className="flex-1">
+                    <span className="text-zinc-300 font-medium block">Sleep 7+ Hours</span>
+                    <input type="number" min="0" max="14" step="0.5" value={todayRoutine?.sleep_hours || ''} onChange={(e) => saveTodayRoutine({ sleep_hours: Number(e.target.value) })} placeholder="Hours..." className="mt-2 w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-purple-500" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-zinc-500 text-sm font-semibold uppercase tracking-wider mb-3">Night Routine</p>
+              <div className="space-y-2">
+                <button 
+                  onClick={() => saveTodayRoutine({ pm_done: !todayRoutine?.pm_done })}
+                  disabled={!unlockState.pmUnlocked && !todayRoutine?.pm_done}
+                  className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all ${todayRoutine?.pm_done ? 'bg-blue-500/10 border-blue-500/30' : 'bg-black/20 border-white/5 hover:border-white/20'}`}
+                >
+                   <div className={`w-6 h-6 rounded flex items-center justify-center border transition-colors ${todayRoutine?.pm_done ? 'bg-blue-500 border-blue-500 text-black' : 'border-zinc-500'}`}>
+                    {todayRoutine?.pm_done && <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                  </div>
+                  <span className={`font-semibold ${todayRoutine?.pm_done ? 'text-blue-400' : 'text-zinc-300'}`}>Night Skincare</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        {/* METRICS & CATEGORY PROTOCOL */}
+        <div className="lg:col-span-2 space-y-8">
+          
+          <div>
+            <h3 className="text-xl font-bold text-white mb-6">Performance Analytics</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-white/5 border border-white/5 rounded-2xl p-5 hover:bg-white/10 transition-colors">
+                <p className="text-zinc-400 text-xs font-semibold mb-2">Severity Change</p>
+                <div className="flex items-end gap-2">
+                  <span className="text-3xl font-bold text-white">{progressSummary?.improvement_pct ?? 0}%</span>
+                  <span className="text-green-400 text-sm mb-1">↓</span>
+                </div>
+              </div>
+              <div className="bg-white/5 border border-white/5 rounded-2xl p-5 hover:bg-white/10 transition-colors">
+                <p className="text-zinc-400 text-xs font-semibold mb-2">Recovery Speed</p>
+                <div className="flex items-end gap-2">
+                  <span className="text-3xl font-bold text-white">{progressSummary?.recovery_velocity ?? 0}%</span>
+                  <span className="text-green-400 text-sm mb-1">↑</span>
+                </div>
+              </div>
+              <div className="bg-white/5 border border-white/5 rounded-2xl p-5 hover:bg-white/10 transition-colors">
+                <p className="text-zinc-400 text-xs font-semibold mb-2">Consistency</p>
+                <div className="flex items-end gap-2">
+                  <span className="text-3xl font-bold text-white">{consistencyScore}</span>
+                </div>
+              </div>
+              <div className="bg-white/5 border border-white/5 rounded-2xl p-5 hover:bg-white/10 transition-colors">
+                <p className="text-zinc-400 text-xs font-semibold mb-2">Confidence</p>
+                <div className="flex items-end gap-2">
+                  <span className="text-3xl font-bold text-white">{progressSummary?.confidence_score ?? 0}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+             <h3 className="text-xl font-bold text-white mb-4 flex items-center justify-between">
+                Category Protocol
+                <span className="text-sm font-normal text-zinc-400 cursor-pointer hover:text-white transition-colors">View full map →</span>
+             </h3>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+               {todayProtocolTasks.length > 0 ? todayProtocolTasks.map((task) => (
+                  <div key={task.id} className="bg-black/20 border border-white/5 rounded-2xl p-5 flex flex-col justify-between">
+                    <div>
+                      <p className="text-green-400 text-xs font-bold uppercase tracking-wider mb-2">{task.slot} Protocol</p>
+                      <p className="text-white font-medium text-lg leading-tight mb-2">{task.label}</p>
+                    </div>
+                    <p className="text-zinc-500 text-xs mt-4 capitalize">Freq: {task.frequency.replace(/_/g, " ")}</p>
+                  </div>
+               )) : (
+                  <div className="col-span-2 bg-black/20 border border-white/5 rounded-2xl p-8 text-center border-dashed">
+                    <p className="text-zinc-400">Complete analyzer to generate your personalized category protocol today.</p>
+                    <button className="mt-4 bg-white text-black px-6 py-2 rounded-full font-bold text-sm hover:bg-green-400 transition-colors">Analyze Skin</button>
+                  </div>
+               )}
+             </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
   );
 }

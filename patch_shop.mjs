@@ -1,44 +1,9 @@
-"use client";
+import fs from 'fs';
+const file = 'app/shop/page.tsx';
+let content = fs.readFileSync(file, 'utf8');
 
-import { useMemo, useState } from "react";
-import { Search, Sparkles } from "lucide-react";
-
-import ProductCard from "@/components/shop/ProductCard";
-import CartDrawer from "@/components/shop/CartDrawer";
-import { PRODUCT_CATALOG_DATA } from "@/lib/productCatalogData";
-
-const CATEGORIES = [
-  { id: "all", label: "All Products" },
-  { id: "Cleanser", label: "Cleansers" },
-  { id: "Moisturizer", label: "Moisturizers" },
-  { id: "Serum", label: "Serums & Actives" },
-  { id: "Sunscreen", label: "Sun Protection" },
-  { id: "Tool", label: "Tools" },
-];
-
-export default function ShopPage() {
-  const [activeCategory, setActiveCategory] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const filteredProducts = useMemo(() => {
-    return PRODUCT_CATALOG_DATA.filter((product) => {
-      const matchesCategory =
-        activeCategory === "all" || product.type === activeCategory;
-      const matchesSearch =
-        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.tags?.some((tag) => tag.includes(searchQuery.toLowerCase()));
-      
-      return matchesCategory && matchesSearch;
-    });
-  }, [activeCategory, searchQuery]);
-
-  const protocolProducts = filteredProducts.filter((product) =>
-    ["Cleanser", "Serum", "Sunscreen", "Moisturizer"].includes(product.type)
-  );
-
-  const advancedProducts = filteredProducts.filter((product) => !protocolProducts.some((p) => p.name === product.name));
-
-return (
+const replacement = `
+  return (
     <div className="flex flex-col h-full bg-[#071318] w-full min-h-screen animate-in fade-in duration-700 relative">
       <CartDrawer />
       
@@ -81,11 +46,11 @@ return (
             <button
               key={cat.id}
               onClick={() => setActiveCategory(cat.id)}
-              className={`whitespace-nowrap rounded-full px-6 py-2.5 text-sm font-semibold transition-all ${
+              className={\`whitespace-nowrap rounded-full px-6 py-2.5 text-sm font-semibold transition-all \${
                 activeCategory === cat.id
                   ? "bg-green-500 text-black shadow-[0_0_15px_rgba(74,222,128,0.3)] hover:bg-green-400"
                   : "bg-white/5 border border-white/10 text-zinc-400 hover:bg-white/10 hover:text-white"
-              }`}
+              }\`}
             >
               {cat.label}
             </button>
@@ -117,7 +82,7 @@ return (
                 </div>
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {advancedProducts.map((product) => (
-                    <ProductCard key={`adv-${product.name}`} product={product} />
+                    <ProductCard key={\`adv-\${product.name}\`} product={product} />
                   ))}
                 </div>
               </section>
@@ -143,4 +108,16 @@ return (
       </div>
     </div>
   );
+}
+`;
+
+const lines = content.split('\n');
+const startIdx = lines.findIndex(l => l.includes('  return ('));
+
+if (startIdx !== -1) {
+  const keep = lines.slice(0, startIdx);
+  fs.writeFileSync(file, keep.join('\n') + '\n' + replacement.trim() + '\n');
+  console.log("Success");
+} else {
+  console.error("Could not find start index");
 }
