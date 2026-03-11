@@ -21,6 +21,7 @@ import {
   clearChallengeProgress,
 } from "@/lib/challengeEngine";
 import { useRewardsStore } from "../../lib/rewardsStore";
+import { getSupabaseAuthHeaders } from "@/lib/auth/clientAuthHeaders";
 
 export default function ChallengesPage() {
   const router = useRouter();
@@ -32,6 +33,19 @@ export default function ChallengesPage() {
   const [progress, setProgress] = useState<ChallengeProgress | null>(null);
   const [activeWeek, setActiveWeek] = useState(0);
   const [view, setView] = useState<"list" | "detail">("list");
+
+  const emitNotification = useCallback(async (eventType: string, dedupeKey: string, metadata?: Record<string, unknown>) => {
+    try {
+      const headers = await getSupabaseAuthHeaders({ "Content-Type": "application/json" });
+      await fetch("/api/notifications", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ eventType, dedupeKey, metadata }),
+      });
+    } catch {
+      // Notification writes are non-blocking.
+    }
+  }, []);
 
   useEffect(() => {
     const id = getActiveChallengeId();
@@ -68,8 +82,9 @@ export default function ChallengesPage() {
       setActiveId(challenge.id);
       setProgress(newProgress);
       setActiveWeek(0);
+      void emitNotification("challenge_started", `challenge_started:${challenge.id}`, { challengeId: challenge.id });
     },
-    []
+    [emitNotification]
   );
 
   const setChallengeActive = useCallback((challengeId: string) => {
@@ -114,8 +129,16 @@ export default function ChallengesPage() {
 
       saveChallengeProgress(updated);
       setProgress({ ...updated });
+
+      const milestoneDay = [7, 14, 21, 28, 56, 84].find((value) => updated.completedDays.length === value);
+      if (milestoneDay) {
+        void emitNotification("challenge_milestone", `challenge_milestone:${selectedChallenge.id}:${milestoneDay}`, {
+          challengeId: selectedChallenge.id,
+          milestoneDay,
+        });
+      }
     },
-    [progress, selectedChallenge, addCredits]
+    [progress, selectedChallenge, addCredits, emitNotification]
   );
 
   const getDayStatus = (day: number): boolean => {

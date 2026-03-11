@@ -117,7 +117,7 @@ export default function Home() {
               >
                 <Link
                   href="/image-analyzer"
-                  className="relative overflow-hidden px-8 py-4 rounded-xl bg-[#2F6F57] text-white font-bold text-lg shadow-[0_8px_30px_rgba(47,111,87,0.25)] hover:shadow-[0_15px_30px_rgba(47,111,87,0.4)] hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-3 group active:scale-[0.98]"
+                  className="relative overflow-hidden min-h-[52px] px-8 py-3.5 rounded-xl bg-[#2F6F57] text-white font-semibold text-base shadow-[0_8px_30px_rgba(47,111,87,0.25)] hover:shadow-[0_15px_30px_rgba(47,111,87,0.4)] hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-3 group active:scale-[0.98]"
                 >
                   <span className="relative z-10 flex items-center gap-2">
                     Start Clinical Assessment
@@ -127,7 +127,7 @@ export default function Home() {
                 </Link>
                 <Link
                   href="/ai-demo"
-                  className="px-8 py-4 rounded-xl bg-white border border-[#E2DDD3] text-[#1F3D2B] font-bold text-lg hover:border-[#2F6F57] hover:bg-[#F8F6F0] hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2 shadow-sm active:scale-[0.98]"
+                  className="min-h-[52px] px-8 py-3.5 rounded-xl bg-white border border-[#E2DDD3] text-[#1F3D2B] font-semibold text-base hover:border-[#2F6F57] hover:bg-[#F8F6F0] hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2 shadow-sm active:scale-[0.98]"
                 >
                   View Sample Report
                 </Link>
@@ -253,6 +253,46 @@ export default function Home() {
               <Lock className="w-4 h-4 text-[#A9CBB7]" />
               Data Privacy Protected
             </span>
+          </div>
+        </Container>
+      </section>
+
+      {/* Journey Navigator */}
+      <section className="py-14 bg-[#F8F6F0] border-b border-[#E2DDD3]">
+        <Container>
+          <div className="rounded-3xl border border-[#E2DDD3] bg-white p-6 md:p-8 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-[#8C6A5A]">Execution Map</p>
+                <h2 className="text-2xl md:text-3xl font-bold text-[#1F3D2B] mt-1">Follow The Transformation Sequence</h2>
+              </div>
+              <Link href="/dashboard" className="inline-flex min-h-[40px] items-center gap-2 rounded-full bg-[#1F3D2B] px-4 py-2 text-sm font-semibold text-white hover:bg-[#2A5239] transition-colors">
+                Open Dashboard <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-4">
+              <Link href="/image-analyzer" className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-4 hover:border-[#2F6F57]/40 transition-colors">
+                <p className="text-[11px] uppercase tracking-wider text-[#8C6A5A]">Step 1</p>
+                <p className="font-semibold text-[#1F3D2B] mt-1">Analyze Face</p>
+                <p className="text-xs text-[#6B665D] mt-1">Capture validated baseline images.</p>
+              </Link>
+              <Link href="/assessment" className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-4 hover:border-[#2F6F57]/40 transition-colors">
+                <p className="text-[11px] uppercase tracking-wider text-[#8C6A5A]">Step 2</p>
+                <p className="font-semibold text-[#1F3D2B] mt-1">Answer Assessment</p>
+                <p className="text-xs text-[#6B665D] mt-1">Map lifestyle and root-cause drivers.</p>
+              </Link>
+              <Link href="/result" className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-4 hover:border-[#2F6F57]/40 transition-colors">
+                <p className="text-[11px] uppercase tracking-wider text-[#8C6A5A]">Step 3</p>
+                <p className="font-semibold text-[#1F3D2B] mt-1">Execute Protocol</p>
+                <p className="text-xs text-[#6B665D] mt-1">Follow clinical routine and timing.</p>
+              </Link>
+              <Link href="/shop" className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-4 hover:border-[#2F6F57]/40 transition-colors">
+                <p className="text-[11px] uppercase tracking-wider text-[#8C6A5A]">Step 4</p>
+                <p className="font-semibold text-[#1F3D2B] mt-1">Optimize Stack</p>
+                <p className="text-xs text-[#6B665D] mt-1">Choose products aligned to your report.</p>
+              </Link>
+            </div>
           </div>
         </Container>
       </section>

@@ -215,34 +215,60 @@ export default function ProfilePage() {
         </section>
 
         {activeTab === "overview" && (
-          <section className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <MedicalCard className="p-5">
+          <section className="space-y-6">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <MedicalCard className="p-5">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-[#6B665D]">Total scans</p>
                 <Camera className="h-4 w-4 text-[#2F6F57]" />
               </div>
               <p className="metric-number mt-3 text-4xl text-[#1F3D2B]">{totalScans}</p>
-            </MedicalCard>
-            <MedicalCard className="p-5">
+              </MedicalCard>
+              <MedicalCard className="p-5">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-[#6B665D]">Average score</p>
                 <Sparkles className="h-4 w-4 text-[#2F6F57]" />
               </div>
               <p className="metric-number mt-3 text-4xl text-[#1F3D2B]">{averageScore}%</p>
-            </MedicalCard>
-            <MedicalCard className="p-5">
+              </MedicalCard>
+              <MedicalCard className="p-5">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-[#6B665D]">Reports generated</p>
                 <FileText className="h-4 w-4 text-[#2F6F57]" />
               </div>
               <p className="metric-number mt-3 text-4xl text-[#1F3D2B]">{reportsGenerated}</p>
-            </MedicalCard>
-            <MedicalCard className="p-5">
+              </MedicalCard>
+              <MedicalCard className="p-5">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-[#6B665D]">Streak</p>
                 <Flame className="h-4 w-4 text-[#C27803]" />
               </div>
               <p className="metric-number mt-3 text-4xl text-[#1F3D2B]">{streakCount}d</p>
+              </MedicalCard>
+            </div>
+
+            <MedicalCard className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-[#1F3D2B]">Transformation Timeline</h3>
+                <StatusBadge variant="success">Data-linked journey</StatusBadge>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="rounded-xl border border-[#E2DDD4] bg-[#F8F6F3] p-4">
+                  <p className="text-xs uppercase tracking-wider text-[#8C877D]">Day 0</p>
+                  <p className="font-semibold mt-1">Baseline capture</p>
+                  <p className="text-xs text-[#6B665D] mt-1">Initial score {Math.max(0, averageScore - 18)}%</p>
+                </div>
+                <div className="rounded-xl border border-[#E2DDD4] bg-[#F8F6F3] p-4">
+                  <p className="text-xs uppercase tracking-wider text-[#8C877D]">Day 14</p>
+                  <p className="font-semibold mt-1">Protocol adaptation</p>
+                  <p className="text-xs text-[#6B665D] mt-1">Discipline trend {Math.max(0, streakCount * 4)}%</p>
+                </div>
+                <div className="rounded-xl border border-[#E2DDD4] bg-[#F8F6F3] p-4">
+                  <p className="text-xs uppercase tracking-wider text-[#8C877D]">Day 30</p>
+                  <p className="font-semibold mt-1">Transformation checkpoint</p>
+                  <p className="text-xs text-[#6B665D] mt-1">Projected confidence {Math.min(100, averageScore + 12)}%</p>
+                </div>
+              </div>
             </MedicalCard>
           </section>
         )}

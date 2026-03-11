@@ -128,3 +128,36 @@ export const alphaSikkaSpendSchema = z.object({
   referenceId: z.string().min(1).max(120).optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
 });
+
+export const notificationCreateSchema = z.object({
+  eventType: z.enum([
+    "routine_completed",
+    "routine_missed",
+    "challenge_started",
+    "challenge_milestone",
+    "progress_improved",
+    "streak_milestone",
+    "daily_tip",
+    "system_alert",
+  ]),
+  dedupeKey: z.string().min(1).max(180).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
+
+export const notificationReadSchema = z.object({
+  all: z.boolean().optional(),
+  ids: z.array(z.string().uuid()).max(50).optional(),
+}).refine((value) => Boolean(value.all) || (Array.isArray(value.ids) && value.ids.length > 0), {
+  message: "Either all=true or ids[] is required",
+});
+
+export const notificationListSchema = z.object({
+  limit: z.coerce.number().int().min(1).max(50).optional(),
+});
+
+export const notificationPreferenceUpdateSchema = z.object({
+  routineEnabled: z.boolean().optional(),
+  challengeEnabled: z.boolean().optional(),
+  progressEnabled: z.boolean().optional(),
+  tipsEnabled: z.boolean().optional(),
+});

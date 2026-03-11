@@ -356,11 +356,16 @@ export default function AssessmentPage() {
               </div>
 
               <div className="space-y-2">
+                <div className="flex items-center justify-between text-[11px] uppercase tracking-wider text-[#8C867D]">
+                  <span>Question {activeQuestionIndex + 1} of {categoryQuestions.length}</span>
+                  <span>{Math.max(0, categoryQuestions.length - (activeQuestionIndex + 1))} remaining</span>
+                </div>
                 <p className="text-xs text-[#8C867D] uppercase tracking-wider">Domain: {activeQuestion.domain.replace(/_/g, " ")}</p>
                 <h2 className="text-xl font-bold text-[#1F3D2B]">{activeQuestion.text}</h2>
                 <p className="text-xs text-[#6B665D] flex items-center gap-2">
                   <Activity className="w-3.5 h-3.5" /> Question weight: {activeQuestion.weight.toFixed(1)}
                 </p>
+                <p className="text-xs text-[#6B665D]">Answer based on your recent 2-4 week pattern for accurate clinical calibration.</p>
               </div>
 
               <div className="space-y-3">

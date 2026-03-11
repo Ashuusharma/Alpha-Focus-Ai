@@ -32,6 +32,12 @@ export default function ShopPage() {
     });
   }, [activeCategory, searchQuery]);
 
+  const protocolProducts = filteredProducts.filter((product) =>
+    ["Cleanser", "Serum", "Sunscreen", "Moisturizer"].includes(product.type)
+  );
+
+  const advancedProducts = filteredProducts.filter((product) => !protocolProducts.some((p) => p.name === product.name));
+
   return (
     <div className="min-h-screen bg-[#F4EFE6] pb-20 pt-24 text-[#1F3D2B]">
       <CartDrawer />
@@ -80,10 +86,34 @@ export default function ShopPage() {
 
         {/* Product Grid */}
         {filteredProducts.length > 0 ? (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filteredProducts.map((product) => (
-              <ProductCard key={product.name} product={product} />
-            ))}
+          <div className="space-y-10">
+            <section>
+              <div className="mb-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-[#6B665D]">Recommended For You</p>
+                <h2 className="text-2xl font-bold text-[#1F3D2B]">Protocol Products</h2>
+                <p className="text-sm text-[#6B665D]">Foundation products mapped to cleanser-treatment-protect sequence.</p>
+              </div>
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {(protocolProducts.length > 0 ? protocolProducts : filteredProducts).map((product) => (
+                  <ProductCard key={product.name} product={product} />
+                ))}
+              </div>
+            </section>
+
+            {advancedProducts.length > 0 && (
+              <section>
+                <div className="mb-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-[#6B665D]">Optimization Layer</p>
+                  <h2 className="text-2xl font-bold text-[#1F3D2B]">Advanced Products</h2>
+                  <p className="text-sm text-[#6B665D]">High-impact add-ons for targeted correction and maintenance phases.</p>
+                </div>
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {advancedProducts.map((product) => (
+                    <ProductCard key={`adv-${product.name}`} product={product} />
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center rounded-2xl bg-white/40 border border-[#E2DDD4] py-20 text-center">

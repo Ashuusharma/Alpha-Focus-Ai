@@ -9,6 +9,7 @@ import { calculateProgressMetricsForCategory } from "@/lib/calculateProgressMetr
 import { generateDailyProtocolTasks, getCurrentProtocolPhase, getProtocolTemplate, type ProtocolTask } from "@/lib/protocolTemplates";
 import { maybeSendRoutineReminder } from "@/lib/routineReminderSystem";
 import { categories, CategoryId } from "@/lib/questions";
+import { getSupabaseAuthHeaders } from "@/lib/auth/clientAuthHeaders";
 
 type RoutineLogRow = {
   id?: string;
@@ -28,6 +29,95 @@ type ProgressSummary = {
   discipline_index: number;
   confidence_score: number;
 };
+
+const MORNING_UNLOCK_HOUR = 5;
+const NIGHT_UNLOCK_HOUR = 18;
+
+type UnlockState = {
+  amUnlocked: boolean;
+  pmUnlocked: boolean;
+  nextUnlockLabel: string | null;
+};
+
+function formatHour(hour24: number) {
+  const normalized = ((hour24 % 24) + 24) % 24;
+  const suffix = normalized >= 12 ? "PM" : "AM";
+  const h12 = normalized % 12 || 12;
+  return `${h12}:00 ${suffix}`;
+}
+
+function getUnlockState(now: Date): UnlockState {
+  const hour = now.getHours();
+  const amUnlocked = hour >= MORNING_UNLOCK_HOUR;
+  const pmUnlocked = hour >= NIGHT_UNLOCK_HOUR;
+
+  let nextUnlockLabel: string | null = null;
+  if (!amUnlocked) nextUnlockLabel = `Morning unlocks at ${formatHour(MORNING_UNLOCK_HOUR)}`;
+  else if (!pmUnlocked) nextUnlockLabel = `Night unlocks at ${formatHour(NIGHT_UNLOCK_HOUR)}`;
+
+  return { amUnlocked, pmUnlocked, nextUnlockLabel };
+}
+
+function normalizeDateKey(input: string) {
+  return input.slice(0, 10);
+}
+
+function calculateRoutineStreakDays(routineRows: Array<Record<string, unknown>>, today: RoutineLogRow | null) {
+  const fullDoneByDate = new Map<string, boolean>();
+
+  for (const row of routineRows) {
+    const dateValue = typeof row.log_date === "string" ? normalizeDateKey(row.log_date) : null;
+    if (!dateValue) continue;
+    const am = Boolean(row.am_done);
+    const pm = Boolean(row.pm_done);
+    fullDoneByDate.set(dateValue, am && pm);
+  }
+
+  if (today?.log_date) {
+    fullDoneByDate.set(normalizeDateKey(today.log_date), Boolean(today.am_done) && Boolean(today.pm_done));
+  }
+
+  const cursor = new Date();
+  cursor.setHours(0, 0, 0, 0);
+  let streak = 0;
+
+  for (let i = 0; i < 365; i += 1) {
+    const key = cursor.toISOString().slice(0, 10);
+    if (fullDoneByDate.get(key)) {
+      streak += 1;
+      cursor.setDate(cursor.getDate() - 1);
+      continue;
+    }
+    break;
+  }
+
+  return streak;
+}
+
+async function awardAlphaSikka(action: string, referenceId: string, metadata?: Record<string, unknown>) {
+  try {
+    await fetch("/api/alpha-sikka/earn", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, referenceId, metadata }),
+    });
+  } catch {
+    // Reward write is best-effort and should never block routine save UX.
+  }
+}
+
+async function emitNotification(eventType: string, dedupeKey: string, metadata?: Record<string, unknown>) {
+  try {
+    const headers = await getSupabaseAuthHeaders({ "Content-Type": "application/json" });
+    await fetch("/api/notifications", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ eventType, dedupeKey, metadata }),
+    });
+  } catch {
+    // Notifications are best-effort to avoid interrupting routine save.
+  }
+}
 
 function todayDateKey() {
   return new Date().toISOString().slice(0, 10);
@@ -49,14 +139,18 @@ export default function DashboardPage() {
   const [progressSummary, setProgressSummary] = useState<ProgressSummary | null>(null);
   const [todayProtocolTasks, setTodayProtocolTasks] = useState<ProtocolTask[]>([]);
   const [phaseName, setPhaseName] = useState<string>("Stabilization");
+  const [nowTick, setNowTick] = useState<Date>(new Date());
 
   useEffect(() => {
     if (!user) return;
 
     const run = async () => {
       setRefreshing(true);
-      await hydrateUserData(user.id);
-      setRefreshing(false);
+      try {
+        await hydrateUserData(user.id);
+      } finally {
+        setRefreshing(false);
+      }
     };
 
     void run();
@@ -141,6 +235,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const interval = setInterval(() => {
       maybeSendRoutineReminder();
+      setNowTick(new Date());
     }, 60 * 1000);
 
     return () => clearInterval(interval);
@@ -150,12 +245,16 @@ export default function DashboardPage() {
     if (!user || !todayRoutine || savingRoutine) return;
     setSavingRoutine(true);
 
+    const previous = { ...todayRoutine };
+
     const next = {
       ...todayRoutine,
       ...updates,
       user_id: user.id,
       log_date: todayRoutine.log_date || todayDateKey(),
     } as RoutineLogRow & { user_id: string };
+
+    let persisted: RoutineLogRow | null = null;
 
     if (todayRoutine.id) {
       const { data } = await supabase
@@ -171,7 +270,10 @@ export default function DashboardPage() {
         .select("id,log_date,am_done,pm_done,sleep_hours,hydration_ml,stress_level")
         .maybeSingle();
 
-      if (data) setTodayRoutine(data as RoutineLogRow);
+      if (data) {
+        persisted = data as RoutineLogRow;
+        setTodayRoutine(persisted);
+      }
     } else {
       const { data } = await supabase
         .from("routine_logs")
@@ -179,8 +281,63 @@ export default function DashboardPage() {
         .select("id,log_date,am_done,pm_done,sleep_hours,hydration_ml,stress_level")
         .maybeSingle();
 
-      if (data) setTodayRoutine(data as RoutineLogRow);
-      else setTodayRoutine({ ...todayRoutine, ...updates });
+      if (data) {
+        persisted = data as RoutineLogRow;
+        setTodayRoutine(persisted);
+      } else {
+        persisted = { ...todayRoutine, ...updates };
+        setTodayRoutine(persisted);
+      }
+    }
+
+    const settled = persisted || { ...previous, ...updates };
+    const dayRef = normalizeDateKey(settled.log_date || todayDateKey());
+
+    const awardJobs: Array<Promise<void>> = [];
+
+    if (!previous.am_done && settled.am_done) {
+      awardJobs.push(awardAlphaSikka("log_am_routine", `routine:${dayRef}:am`, { log_date: dayRef }));
+      awardJobs.push(emitNotification("routine_completed", `routine_completed:${dayRef}:am`, { phase: "am", logDate: dayRef }));
+    }
+
+    if (!previous.pm_done && settled.pm_done) {
+      awardJobs.push(awardAlphaSikka("log_pm_routine", `routine:${dayRef}:pm`, { log_date: dayRef }));
+      awardJobs.push(emitNotification("routine_completed", `routine_completed:${dayRef}:pm`, { phase: "pm", logDate: dayRef }));
+    }
+
+    const prevHydrationGoal = (previous.hydration_ml || 0) >= 2500;
+    const nextHydrationGoal = (settled.hydration_ml || 0) >= 2500;
+    if (!prevHydrationGoal && nextHydrationGoal) {
+      awardJobs.push(awardAlphaSikka("hydration_goal", `routine:${dayRef}:hydration_goal`, { hydration_ml: settled.hydration_ml || 0 }));
+    }
+
+    const prevSleepGoal = (previous.sleep_hours || 0) >= 7;
+    const nextSleepGoal = (settled.sleep_hours || 0) >= 7;
+    if (!prevSleepGoal && nextSleepGoal) {
+      awardJobs.push(awardAlphaSikka("sleep_goal", `routine:${dayRef}:sleep_goal`, { sleep_hours: settled.sleep_hours || 0 }));
+    }
+
+    const prevFullDay = Boolean(previous.am_done) && Boolean(previous.pm_done) && prevHydrationGoal && prevSleepGoal;
+    const nextFullDay = Boolean(settled.am_done) && Boolean(settled.pm_done) && nextHydrationGoal && nextSleepGoal;
+    if (!prevFullDay && nextFullDay) {
+      awardJobs.push(
+        awardAlphaSikka("full_day_completed", `routine:${dayRef}:full_day`, {
+          am_done: Boolean(settled.am_done),
+          pm_done: Boolean(settled.pm_done),
+          hydration_ml: settled.hydration_ml || 0,
+          sleep_hours: settled.sleep_hours || 0,
+        })
+      );
+      awardJobs.push(
+        emitNotification("streak_milestone", `full_day_completed:${dayRef}`, {
+          logDate: dayRef,
+          consistencyScore: (Boolean(settled.am_done) ? 1 : 0) + (Boolean(settled.pm_done) ? 1 : 0),
+        })
+      );
+    }
+
+    if (awardJobs.length) {
+      void Promise.all(awardJobs).then(() => hydrateUserData(user.id));
     }
 
     setSavingRoutine(false);
@@ -200,6 +357,10 @@ export default function DashboardPage() {
     return am + pm + hydration + sleep;
   }, [todayRoutine]);
 
+  const unlockState = useMemo(() => getUnlockState(nowTick), [nowTick]);
+
+  const routineStreakDays = useMemo(() => calculateRoutineStreakDays(routines, todayRoutine), [routines, todayRoutine]);
+
   if (loading || storeLoading || refreshing || !user) {
     return (
       <main className="min-h-screen bg-[#F8F6F0] px-4 py-6 text-[#1F3D2B] sm:px-6 lg:px-8">
@@ -214,6 +375,7 @@ export default function DashboardPage() {
     <main className="min-h-screen bg-[#F8F6F0] px-4 py-6 text-[#1F3D2B] sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl space-y-6">
         <section className="rounded-2xl border border-[#E2DDD3] bg-white p-6 shadow-sm">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-[#8C6A5A]">Control Center</p>
           <h1 className="text-2xl font-bold">Dashboard</h1>
           <p className="mt-2 text-sm text-[#6B665D]">Diagnose → Improve → Track → Transform. All values are loaded from your Supabase records.</p>
         </section>
@@ -221,6 +383,7 @@ export default function DashboardPage() {
         <section className="rounded-2xl border border-[#E2DDD3] bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between gap-4">
             <div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-[#8C6A5A] mb-1">Daily Execution</p>
               <h2 className="text-lg font-bold">Today&apos;s Routine Loop</h2>
               <p className="mt-1 text-xs text-[#6B665D]">Complete your daily system to build streak, confidence, and visible improvement.</p>
             </div>
@@ -230,18 +393,20 @@ export default function DashboardPage() {
           <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
             <button
               onClick={() => saveTodayRoutine({ am_done: !todayRoutine?.am_done })}
-              className={`rounded-xl border px-4 py-3 text-left transition ${todayRoutine?.am_done ? "border-[#2F6F57] bg-[#E8F4EE]" : "border-[#E2DDD3] bg-[#F8F6F3]"}`}
+              disabled={!unlockState.amUnlocked && !todayRoutine?.am_done}
+              className={`rounded-xl border px-4 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-60 ${todayRoutine?.am_done ? "border-[#2F6F57] bg-[#E8F4EE]" : "border-[#E2DDD3] bg-[#F8F6F3]"}`}
             >
               <p className="text-xs text-[#6B665D]">Morning Routine</p>
-              <p className="font-semibold">{todayRoutine?.am_done ? "Completed" : "Mark as complete"}</p>
+              <p className="font-semibold">{todayRoutine?.am_done ? "Completed" : unlockState.amUnlocked ? "Mark as complete" : `Locked until ${formatHour(MORNING_UNLOCK_HOUR)}`}</p>
             </button>
 
             <button
               onClick={() => saveTodayRoutine({ pm_done: !todayRoutine?.pm_done })}
-              className={`rounded-xl border px-4 py-3 text-left transition ${todayRoutine?.pm_done ? "border-[#2F6F57] bg-[#E8F4EE]" : "border-[#E2DDD3] bg-[#F8F6F3]"}`}
+              disabled={!unlockState.pmUnlocked && !todayRoutine?.pm_done}
+              className={`rounded-xl border px-4 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-60 ${todayRoutine?.pm_done ? "border-[#2F6F57] bg-[#E8F4EE]" : "border-[#E2DDD3] bg-[#F8F6F3]"}`}
             >
               <p className="text-xs text-[#6B665D]">Night Routine</p>
-              <p className="font-semibold">{todayRoutine?.pm_done ? "Completed" : "Mark as complete"}</p>
+              <p className="font-semibold">{todayRoutine?.pm_done ? "Completed" : unlockState.pmUnlocked ? "Mark as complete" : `Locked until ${formatHour(NIGHT_UNLOCK_HOUR)}`}</p>
             </button>
 
             <label className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] px-4 py-3">
@@ -272,7 +437,7 @@ export default function DashboardPage() {
           </div>
 
           <div className="mt-3 flex items-center justify-between text-xs text-[#6B665D]">
-            <span>Daily check-in feeds relapse risk and protocol recalculation.</span>
+            <span>{unlockState.nextUnlockLabel || "Daily check-in feeds relapse risk and protocol recalculation."}</span>
             <span>{savingRoutine ? "Saving..." : "Saved"}</span>
           </div>
         </section>
@@ -280,6 +445,7 @@ export default function DashboardPage() {
         <section className="rounded-2xl border border-[#E2DDD3] bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between gap-4">
             <div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-[#8C6A5A] mb-1">Live Metrics</p>
               <h2 className="text-lg font-bold">Performance Intelligence</h2>
               <p className="mt-1 text-xs text-[#6B665D]">Live progress, discipline, and confidence from your latest category data.</p>
             </div>
@@ -295,6 +461,7 @@ export default function DashboardPage() {
             <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3"><p className="text-xs text-[#6B665D]">Discipline Score</p><p className="text-xl font-bold">{progressSummary?.discipline_index ?? 0}</p></div>
             <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3"><p className="text-xs text-[#6B665D]">Recovery Velocity</p><p className="text-xl font-bold">{progressSummary?.recovery_velocity ?? 0}</p></div>
             <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3"><p className="text-xs text-[#6B665D]">Confidence Score</p><p className="text-xl font-bold">{progressSummary?.confidence_score ?? 0}</p></div>
+            <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3"><p className="text-xs text-[#6B665D]">Routine Streak</p><p className="text-xl font-bold">{routineStreakDays} days</p></div>
           </div>
 
           <div className="mt-4 rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-4">

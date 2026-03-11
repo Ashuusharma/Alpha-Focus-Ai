@@ -22,11 +22,16 @@ import { languages, type LanguageOption } from "../../lib/languageContext";
 import { AuthContext } from "@/contexts/AuthProvider";
 import { readUserState, writeUserState } from "@/lib/dbUserState";
 import { useContext } from "react";
+import { getSupabaseAuthHeaders } from "@/lib/auth/clientAuthHeaders";
 
 interface UserPreferences {
   notifications: boolean;
   emailUpdates: boolean;
   weeklyReport: boolean;
+  routineNotifications: boolean;
+  challengeNotifications: boolean;
+  progressNotifications: boolean;
+  tipNotifications: boolean;
   dataCollection: boolean;
   twoFactor: boolean;
   theme: "dark" | "light" | "system";
@@ -42,6 +47,10 @@ export default function SettingsPage() {
     notifications: true,
     emailUpdates: true,
     weeklyReport: false,
+    routineNotifications: true,
+    challengeNotifications: true,
+    progressNotifications: true,
+    tipNotifications: true,
     dataCollection: true,
     twoFactor: false,
     theme: "dark",
@@ -76,6 +85,37 @@ export default function SettingsPage() {
       if (saved) {
         setSettings(saved);
       }
+
+      try {
+        const headers = await getSupabaseAuthHeaders();
+        const response = await fetch("/api/notifications/preferences", { cache: "no-store", headers });
+        if (!response.ok) return;
+        const payload = (await response.json()) as {
+          ok: boolean;
+          preferences?: {
+            routineEnabled: boolean;
+            challengeEnabled: boolean;
+            progressEnabled: boolean;
+            tipsEnabled: boolean;
+          };
+        };
+        if (!payload.ok || !payload.preferences) return;
+
+        setSettings((prev) => ({
+          ...prev,
+          routineNotifications: payload.preferences?.routineEnabled ?? prev.routineNotifications,
+          challengeNotifications: payload.preferences?.challengeEnabled ?? prev.challengeNotifications,
+          progressNotifications: payload.preferences?.progressEnabled ?? prev.progressNotifications,
+          tipNotifications: payload.preferences?.tipsEnabled ?? prev.tipNotifications,
+          notifications:
+            Boolean(payload.preferences?.routineEnabled)
+            || Boolean(payload.preferences?.challengeEnabled)
+            || Boolean(payload.preferences?.progressEnabled)
+            || Boolean(payload.preferences?.tipsEnabled),
+        }));
+      } catch {
+        return;
+      }
     };
 
     if (mounted) {
@@ -101,6 +141,39 @@ export default function SettingsPage() {
     }));
   };
 
+  const handleMasterNotificationsToggle = () => {
+    setSettings((prev) => {
+      const next = !prev.notifications;
+      return {
+        ...prev,
+        notifications: next,
+        routineNotifications: next,
+        challengeNotifications: next,
+        progressNotifications: next,
+        tipNotifications: next,
+      };
+    });
+  };
+
+  const handleNotificationChannelToggle = (key: "routineNotifications" | "challengeNotifications" | "progressNotifications" | "tipNotifications") => {
+    setSettings((prev) => {
+      const next = !prev[key];
+      const updated = {
+        ...prev,
+        [key]: next,
+      };
+      const anyEnabled =
+        Boolean(updated.routineNotifications)
+        || Boolean(updated.challengeNotifications)
+        || Boolean(updated.progressNotifications)
+        || Boolean(updated.tipNotifications);
+      return {
+        ...updated,
+        notifications: anyEnabled,
+      };
+    });
+  };
+
   const handleChange = (key: keyof typeof settings, value: string) => {
     setSettings((prev) => ({
       ...prev,
@@ -113,6 +186,17 @@ export default function SettingsPage() {
       await writeUserState(user.id, "oneman_preferences", settings);
       await writeUserState(user.id, "oneman-theme", settings.theme);
       await writeUserState(user.id, "oneman-language", settings.language);
+
+      await fetch("/api/notifications/preferences", {
+        method: "PATCH",
+        headers: await getSupabaseAuthHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({
+          routineEnabled: Boolean(settings.routineNotifications),
+          challengeEnabled: Boolean(settings.challengeNotifications),
+          progressEnabled: Boolean(settings.progressNotifications),
+          tipsEnabled: Boolean(settings.tipNotifications),
+        }),
+      });
     }
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -662,7 +746,38 @@ export default function SettingsPage() {
                           <h3 className="font-bold text-[#1F3D2B] mb-1">Push Notifications</h3>
                           <p className="text-sm text-[#6B665D]">Get alerts about analysis results</p>
                         </div>
-                        <Toggle active={settings.notifications} onClick={() => handleToggle("notifications")} />
+                        <Toggle active={settings.notifications} onClick={handleMasterNotificationsToggle} />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                        <button
+                          onClick={() => handleNotificationChannelToggle("routineNotifications")}
+                          className={`rounded-xl border px-4 py-3 text-left transition ${settings.routineNotifications ? "bg-[#2F6F57]/10 border-[#2F6F57]/40" : "bg-white/40 border-white/40"}`}
+                        >
+                          <p className="text-sm font-semibold text-[#1F3D2B]">Routine Alerts</p>
+                          <p className="text-xs text-[#6B665D] mt-1">AM/PM completion and missed routine nudges</p>
+                        </button>
+                        <button
+                          onClick={() => handleNotificationChannelToggle("challengeNotifications")}
+                          className={`rounded-xl border px-4 py-3 text-left transition ${settings.challengeNotifications ? "bg-[#2F6F57]/10 border-[#2F6F57]/40" : "bg-white/40 border-white/40"}`}
+                        >
+                          <p className="text-sm font-semibold text-[#1F3D2B]">Challenge Milestones</p>
+                          <p className="text-xs text-[#6B665D] mt-1">Start updates and milestone-day achievements</p>
+                        </button>
+                        <button
+                          onClick={() => handleNotificationChannelToggle("progressNotifications")}
+                          className={`rounded-xl border px-4 py-3 text-left transition ${settings.progressNotifications ? "bg-[#2F6F57]/10 border-[#2F6F57]/40" : "bg-white/40 border-white/40"}`}
+                        >
+                          <p className="text-sm font-semibold text-[#1F3D2B]">Progress Signals</p>
+                          <p className="text-xs text-[#6B665D] mt-1">Improvements and streak notifications</p>
+                        </button>
+                        <button
+                          onClick={() => handleNotificationChannelToggle("tipNotifications")}
+                          className={`rounded-xl border px-4 py-3 text-left transition ${settings.tipNotifications ? "bg-[#2F6F57]/10 border-[#2F6F57]/40" : "bg-white/40 border-white/40"}`}
+                        >
+                          <p className="text-sm font-semibold text-[#1F3D2B]">Daily Tips</p>
+                          <p className="text-xs text-[#6B665D] mt-1">One tactical optimization tip per day</p>
+                        </button>
                       </div>
                       
                       <div className="flex items-center justify-between">

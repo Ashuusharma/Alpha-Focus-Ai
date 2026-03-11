@@ -20,6 +20,7 @@ import { calculateDisciplineScore, getTierProgress } from "@/lib/rewardTierServi
 import { AuthContext } from "@/contexts/AuthProvider";
 import { useUserStore } from "@/stores/useUserStore";
 import { hydrateUserData } from "@/lib/hydrateUserData";
+import Link from "next/link";
 
 const DAILY_CAP = 20;
 
@@ -266,11 +267,25 @@ export default function AlphaCreditsPage() {
 
   const dailyEarned = DAILY_CAP - snapshot.dailyCapRemaining;
 
-  if (loading || !user) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-[#F4EFE6] text-[#1F3D2B] pb-20">
         <div className="mx-auto max-w-7xl px-6 pt-16">
           <p className="text-sm text-[#6B665D]">Loading Alpha Sikka ledger...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-[#F4EFE6] text-[#1F3D2B] pb-20">
+        <div className="mx-auto max-w-7xl px-6 pt-16">
+          <h1 className="text-2xl font-bold">Sign in required</h1>
+          <p className="mt-2 text-sm text-[#6B665D]">Please sign in to view your Alpha Sikka ledger and rewards.</p>
+          <Link href="/" className="inline-flex mt-5 rounded-xl border border-[#D9D2C6] px-4 py-2 text-sm font-semibold text-[#1F3D2B] hover:bg-white">
+            Go to Home
+          </Link>
         </div>
       </div>
     );

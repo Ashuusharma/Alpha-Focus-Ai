@@ -23,20 +23,24 @@ import { useMounted } from "@/app/hooks/useMounted";
 import { useLocation } from "@/app/hooks/useLocation";
 import { useCartStore } from "@/lib/cartStore";
 import { BRAND_LOGO_FALLBACK, BRAND_LOGO_LEGACY_FALLBACK, BRAND_LOGO_PRIMARY } from "@/lib/branding";
-import { getCreditSnapshot, type CreditTransaction } from "@/lib/creditService";
-import { getAvailableCoupons } from "@/lib/couponService";
-import { getActiveUserName } from "@/lib/userScopedStorage";
 import AuthModal from "@/components/AuthModal";
 import { AuthContext } from "@/contexts/AuthProvider";
+import { getSupabaseAuthHeaders } from "@/lib/auth/clientAuthHeaders";
 
 const LINKS = [
-  { label: "Dashboard", href: "/dashboard" },
-  { label: "Assessment", href: "/assessment" },
-  { label: "Reports", href: "/result" },
-  { label: "Alpha Sikka", href: "/alpha-credits" },
-  { label: "Programs", href: "/challenges" }, // "Programs" maps to Challenges? Or maybe a new page. Assuming Challenges for now or placeholder.
-  { label: "Research", href: "/learning-center" }, // "Research" maps to Learning Center
+  { label: "Home", href: "/dashboard" },
+  { label: "Analyze", href: "/assessment" },
+  { label: "Protocol", href: "/result" },
+  { label: "Progress", href: "/alpha-credits" },
+  { label: "Challenges", href: "/challenges" },
+  { label: "Knowledge", href: "/learning-center" },
   { label: "Shop", href: "/shop" },
+] as const;
+
+const MOBILE_PRIMARY_LINKS = [
+  { label: "Home", href: "/dashboard" },
+  { label: "Protocol", href: "/result" },
+  { label: "Progress", href: "/alpha-credits" },
 ] as const;
 
 type NotificationItem = {
@@ -48,9 +52,8 @@ type NotificationItem = {
   createdAt: string;
   ctaHref?: string;
   ctaLabel?: string;
+  isRead?: boolean;
 };
-
-const NOTIFICATION_HIDDEN_IDS_KEY = "oneman_notification_hidden_ids";
 
 function formatTimeAgo(iso?: string) {
   if (!iso) return "Just now";
@@ -66,121 +69,15 @@ function formatTimeAgo(iso?: string) {
   return `${days}d ago`;
 }
 
-function buildNotifications(): NotificationItem[] {
-  const snapshot = getCreditSnapshot();
-  const coupons = getAvailableCoupons();
-
-  const txNotes: NotificationItem[] = (snapshot.transactions || []).slice(0, 6).map((tx: CreditTransaction) => {
-    const isEarn = tx.type === "earn";
-    const delta = `${isEarn ? "+" : ""}${tx.amount} A$`;
-    return {
-      id: `tx:${tx.id}`,
-      title: isEarn ? "Credits earned" : "Credits spent",
-      body: `${tx.label} (${delta}). Balance ${tx.balanceAfter} A$.`,
-      time: formatTimeAgo(tx.timestamp),
-      tag: isEarn ? "Credits" : "Redemption",
-      createdAt: tx.timestamp,
-      ctaHref: "/alpha-credits",
-      ctaLabel: "View credits",
-    };
-  });
-
-  const couponNotes: NotificationItem[] = coupons.slice(0, 3).map((c) => ({
-    id: `cp:${c.code}`,
-    title: `${c.discountPercent}% coupon ready`,
-    body: `Code ${c.code} expires ${new Date(c.expiresAt).toLocaleDateString()}. One per checkout.`,
-    time: formatTimeAgo(c.createdAt),
-    tag: "Coupon",
-    createdAt: c.createdAt,
-    ctaHref: "/shop",
-    ctaLabel: "Use in shop",
-  }));
-
-  const programNote: NotificationItem | null = (() => {
-    const programTx = snapshot.transactions.find((t) => t.source.startsWith("program_"));
-    if (!programTx) return null;
-    return {
-      id: `pg:${programTx.id}`,
-      title: "Program milestone",
-      body: `${programTx.label} · ${programTx.amount} A$ granted.`,
-      time: formatTimeAgo(programTx.timestamp),
-      tag: "Program",
-      createdAt: programTx.timestamp,
-      ctaHref: "/challenges",
-      ctaLabel: "Open program",
-    };
-  })();
-
-  const merged = [...txNotes, ...couponNotes, ...(programNote ? [programNote] : [])];
-  const byId: Record<string, NotificationItem> = {};
-  merged.forEach((n) => {
-    if (!byId[n.id]) byId[n.id] = n;
-  });
-  return Object.values(byId)
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 20);
-}
-
-function safeBuildNotifications(): NotificationItem[] {
-  try {
-    const built = buildNotifications();
-    if (built.length > 0) return built;
-
-    const now = new Date().toISOString();
-    return [
-      {
-        id: "sys:welcome",
-        title: "Welcome to Alpha Focus",
-        body: "Your personalized grooming insights and reminders appear here.",
-        time: "Just now",
-        tag: "System",
-        createdAt: now,
-        ctaHref: "/dashboard",
-        ctaLabel: "Open dashboard",
-      },
-      {
-        id: "sys:assessment",
-        title: "Complete your latest assessment",
-        body: "Get sharper recommendations by completing your next assessment.",
-        time: "Just now",
-        tag: "Program",
-        createdAt: now,
-        ctaHref: "/assessment",
-        ctaLabel: "Start assessment",
-      },
-    ];
-  } catch {
-    return [];
-  }
+function mapCategoryToTag(category?: string) {
+  if (category === "challenge") return "Program";
+  if (category === "progress") return "Progress";
+  if (category === "routine") return "Routine";
+  if (category === "tips") return "Tip";
+  return "System";
 }
 
 const LOGO_SOURCES = [BRAND_LOGO_PRIMARY, BRAND_LOGO_FALLBACK, BRAND_LOGO_LEGACY_FALLBACK] as const;
-
-function getHiddenIdsStorageKey(userId: string) {
-  return `${NOTIFICATION_HIDDEN_IDS_KEY}:${userId}`;
-}
-
-function readHiddenNotificationIds(userId: string): Set<string> {
-  if (typeof window === "undefined") return new Set();
-  try {
-    const raw = localStorage.getItem(getHiddenIdsStorageKey(userId));
-    if (!raw) return new Set();
-    const parsed = JSON.parse(raw) as string[];
-    if (!Array.isArray(parsed)) return new Set();
-    return new Set(parsed);
-  } catch {
-    return new Set();
-  }
-}
-
-function persistHiddenNotificationIds(userId: string, hiddenIds: Set<string>) {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(getHiddenIdsStorageKey(userId), JSON.stringify(Array.from(hiddenIds)));
-  } catch {
-    return;
-  }
-}
 
 export default function MainNavbar() {
   const pathname = usePathname();
@@ -191,16 +88,16 @@ export default function MainNavbar() {
   const { user, profile, signOut } = useContext(AuthContext);
 
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
   const [toast, setToast] = useState<NotificationItem | null>(null);
   const [toastPhase, setToastPhase] = useState<"enter" | "exit">("enter");
-  const [hiddenNotificationIds, setHiddenNotificationIds] = useState<Set<string>>(new Set());
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [mountedDom, setMountedDom] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false); // Added mobile menu state
   const [logoSrc, setLogoSrc] = useState<string>(LOGO_SOURCES[0]);
-  const [activeNotificationUserId, setActiveNotificationUserId] = useState("guest");
+  const [streakDays, setStreakDays] = useState(0);
 
   const userDisplayName =
     profile?.full_name?.trim() ||
@@ -213,20 +110,78 @@ export default function MainNavbar() {
   const toastHideTimerRef = useRef<number | null>(null);
 
   const visibleNotifications = useMemo(
-    () => notifications.filter((note) => !hiddenNotificationIds.has(note.id)),
-    [notifications, hiddenNotificationIds]
+    () => notifications,
+    [notifications]
   );
 
-  const refreshNotifications = () => {
-    setNotifications(safeBuildNotifications());
+  const refreshNotifications = async () => {
+    if (!user) {
+      setNotifications([]);
+      setUnreadCount(0);
+      return;
+    }
+
+    try {
+      const headers = await getSupabaseAuthHeaders();
+      const response = await fetch("/api/notifications?limit=20", { cache: "no-store", headers });
+      if (response.status === 401) {
+        setNotifications([]);
+        setUnreadCount(0);
+        return;
+      }
+      if (!response.ok) return;
+      const payload = (await response.json()) as {
+        ok: boolean;
+        notifications?: Array<{
+          id: string;
+          title: string;
+          message: string;
+          category: string;
+          created_at: string;
+          action_url: string | null;
+          is_read: boolean;
+        }>;
+        unreadCount?: number;
+      };
+      if (!payload.ok || !Array.isArray(payload.notifications)) return;
+
+      const mapped = payload.notifications
+        .filter((item) => !item.is_read)
+        .map((item) => ({
+        id: item.id,
+        title: item.title,
+        body: item.message,
+        tag: mapCategoryToTag(item.category),
+        createdAt: item.created_at,
+        time: formatTimeAgo(item.created_at),
+        ctaHref: item.action_url || undefined,
+        ctaLabel: item.action_url ? "Open" : undefined,
+        isRead: Boolean(item.is_read),
+      }));
+
+      setNotifications(mapped);
+      setUnreadCount(Number(payload.unreadCount || 0));
+    } catch {
+      return;
+    }
   };
 
-  const markNotificationHidden = (id: string) => {
-    setHiddenNotificationIds((current) => {
-      const next = new Set(current);
-      next.add(id);
-      return next;
-    });
+  const markNotificationRead = async (id: string) => {
+    if (!user) return;
+
+    try {
+      const headers = await getSupabaseAuthHeaders({ "Content-Type": "application/json" });
+      await fetch("/api/notifications/read", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ ids: [id] }),
+      });
+    } catch {
+      // Ignore transient read-write failures.
+    }
+
+    setNotifications((current) => current.filter((item) => item.id !== id));
+    setUnreadCount((current) => Math.max(0, current - 1));
   };
 
   const dismissToast = (id?: string) => {
@@ -245,7 +200,7 @@ export default function MainNavbar() {
     }
 
     setToastPhase("exit");
-    markNotificationHidden(id);
+    void markNotificationRead(id);
     window.setTimeout(() => {
       setToast((current) => (current?.id === id ? null : current));
       setToastPhase("enter");
@@ -275,31 +230,36 @@ export default function MainNavbar() {
         : displayLabel;
 
   useEffect(() => {
-    refreshNotifications();
-  }, []);
+    if (typeof window === "undefined") return;
+    try {
+      const raw = localStorage.getItem("challenge_progress");
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Record<string, { streak?: number }>;
+      const highestStreak = Object.values(parsed || {}).reduce((max, item) => Math.max(max, Number(item?.streak || 0)), 0);
+      setStreakDays(highestStreak);
+    } catch {
+      setStreakDays(0);
+    }
+  }, [user?.id]);
 
   useEffect(() => {
-    const nextUserId = (userDisplayName || getActiveUserName() || "guest").trim() || "guest";
-    setActiveNotificationUserId(nextUserId);
-  }, [userDisplayName, mountedDom]);
+    void refreshNotifications();
+  }, [user?.id]);
 
   useEffect(() => {
-    setHiddenNotificationIds(readHiddenNotificationIds(activeNotificationUserId));
-  }, [activeNotificationUserId]);
+    if (!user) return;
 
-  useEffect(() => {
-    if (!mountedDom) return;
-    persistHiddenNotificationIds(activeNotificationUserId, hiddenNotificationIds);
-  }, [activeNotificationUserId, hiddenNotificationIds, mountedDom]);
+    const interval = setInterval(() => {
+      void refreshNotifications();
+    }, 30000);
 
-  useEffect(() => {
-    const interval = setInterval(() => refreshNotifications(), 30000);
-
-    const onFocus = () => refreshNotifications();
+    const onFocus = () => {
+      void refreshNotifications();
+    };
     window.addEventListener("focus", onFocus);
 
     const onVisibility = () => {
-      if (!document.hidden) refreshNotifications();
+      if (!document.hidden) void refreshNotifications();
     };
     document.addEventListener("visibilitychange", onVisibility);
 
@@ -308,7 +268,7 @@ export default function MainNavbar() {
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     if (toast) return;
@@ -335,7 +295,7 @@ export default function MainNavbar() {
     }, 4500);
 
     toastHideTimerRef.current = window.setTimeout(() => {
-      markNotificationHidden(toast.id);
+      void markNotificationRead(toast.id);
       setToast((current) => (current?.id === toast.id ? null : current));
       setToastPhase("enter");
     }, 5000);
@@ -402,7 +362,7 @@ export default function MainNavbar() {
           <div className="flex items-start justify-between pb-3 mb-3 border-b border-[#E6E1D7]">
             <div className="space-y-0.5">
               <p className="text-lg font-semibold text-[#1F3D2B]">Updates & alerts</p>
-              <p className="text-sm text-[#6C7A70]">User: {activeNotificationUserId}</p>
+              <p className="text-sm text-[#6C7A70]">Unread: {unreadCount}</p>
             </div>
             <button
               type="button"
@@ -417,39 +377,36 @@ export default function MainNavbar() {
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={refreshNotifications}
+              onClick={() => {
+                void refreshNotifications();
+              }}
               className="rounded-full border border-[#D9D2C6] px-3 py-1.5 text-xs font-semibold text-[#1F3D2B] hover:bg-white"
             >
               Refresh
             </button>
             <button
               type="button"
-              onClick={() => {
-                setHiddenNotificationIds((current) => {
-                  const next = new Set(current);
-                  visibleNotifications.forEach((note) => next.add(note.id));
-                  return next;
+              onClick={async () => {
+                const headers = await getSupabaseAuthHeaders({ "Content-Type": "application/json" });
+                await fetch("/api/notifications/read", {
+                  method: "POST",
+                  headers,
+                  body: JSON.stringify({ all: true }),
                 });
                 setToast(null);
+                void refreshNotifications();
               }}
               className="rounded-full border border-[#D9D2C6] px-3 py-1.5 text-xs font-semibold text-[#1F3D2B] hover:bg-white"
               disabled={visibleNotifications.length === 0}
             >
               Mark all read
             </button>
-            <button
-              type="button"
-              onClick={() => setHiddenNotificationIds(new Set())}
-              className="rounded-full border border-[#D9D2C6] px-3 py-1.5 text-xs font-semibold text-[#1F3D2B] hover:bg-white"
-            >
-              Show dismissed
-            </button>
           </div>
 
           {visibleNotifications.length > 0 && (
             <div className="mb-3 rounded-xl border border-[#E2DDD3] bg-gradient-to-r from-[#F6F0E3] to-[#EFE8DD] px-4 py-3 text-sm text-[#1F3D2B]">
               <p className="font-semibold">You have {visibleNotifications.length} active notification{visibleNotifications.length === 1 ? "" : "s"}</p>
-              <p className="text-xs text-[#6C7A70]">Latest credits, coupons, and progress updates for this user.</p>
+              <p className="text-xs text-[#6C7A70]">Latest routine, challenge, and progress updates for your account.</p>
             </div>
           )}
 
@@ -471,7 +428,7 @@ export default function MainNavbar() {
               >
                 <div className="flex-shrink-0">
                   <div className="h-10 w-10 rounded-xl bg-[#E8F1EC] flex items-center justify-center text-[#2F5D46]">
-                    {note.tag === "Coupon" ? <Zap className="h-4 w-4" /> : note.tag === "Program" ? <Activity className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
+                    {note.tag === "Program" ? <Activity className="h-4 w-4" /> : note.tag === "Progress" ? <Zap className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
                   </div>
                 </div>
                 <div className="flex-1 min-w-0 space-y-1">
@@ -498,12 +455,12 @@ export default function MainNavbar() {
                     <button
                       type="button"
                       onClick={() => {
-                        markNotificationHidden(note.id);
+                        void markNotificationRead(note.id);
                         if (toast?.id === note.id) setToast(null);
                       }}
                       className="inline-flex items-center rounded-full border border-[#D9D2C6] px-2.5 py-1 text-[11px] font-semibold text-[#1F3D2B] hover:bg-[#F4EFE6]"
                     >
-                      Dismiss
+                      Mark read
                     </button>
                   </div>
                 </div>
@@ -590,7 +547,7 @@ export default function MainNavbar() {
                 ref={notificationTriggerRef}
                 type="button"
                 onClick={() => {
-                  refreshNotifications();
+                  void refreshNotifications();
                   setShowNotifications((current) => !current);
                 }}
                 className="relative p-2 hover:bg-white/40 rounded-full transition-colors"
@@ -599,9 +556,9 @@ export default function MainNavbar() {
                 onClickCapture={(e) => e.stopPropagation()}
               >
                 <Bell className="h-5 w-5 text-[#1F3D2B]" />
-                {visibleNotifications.length > 0 && (
+                {unreadCount > 0 && (
                   <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#8C6A5A] text-[10px] text-white font-bold ring-2 ring-[#F4EFE6]">
-                    {visibleNotifications.length}
+                    {unreadCount}
                   </span>
                 )}
               </button>
@@ -630,6 +587,10 @@ export default function MainNavbar() {
                 Welcome, {userDisplayName}
               </span>
             )}
+
+            <span className="hidden lg:flex items-center rounded-full border border-[#E2DDD3] bg-white/50 px-2.5 py-1 text-[11px] font-semibold text-[#8C6A5A] whitespace-nowrap">
+              🔥 {streakDays} Day Streak
+            </span>
 
             {!user ? (
               <button
@@ -695,7 +656,7 @@ export default function MainNavbar() {
 
             {/* Links List */}
             <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1">
-              {LINKS.map((link) => {
+              {MOBILE_PRIMARY_LINKS.map((link) => {
                 const isActive = pathname === link.href || pathname?.startsWith(link.href + '/');
                 return (
                 <Link
@@ -709,6 +670,25 @@ export default function MainNavbar() {
                   }`}
                 >
                   {/* Optional icons mapping could go here if links had icons */}
+                  {link.label}
+                </Link>
+              )})}
+
+              <div className="mt-2 px-4 text-[11px] uppercase tracking-wider text-[#8C877D]">More</div>
+
+              {LINKS.filter((item) => !MOBILE_PRIMARY_LINKS.some((m) => m.href === item.href)).map((link) => {
+                const isActive = pathname === link.href || pathname?.startsWith(link.href + '/');
+                return (
+                <Link
+                  key={`more-${link.label}`}
+                  href={link.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-3 text-base font-medium rounded-xl transition-all ${
+                    isActive
+                      ? "bg-[#2F6F57] text-white shadow-md shadow-[#2F6F57]/20"
+                      : "text-[#1F3D2B] hover:bg-black/5"
+                  }`}
+                >
                   {link.label}
                 </Link>
               )})}

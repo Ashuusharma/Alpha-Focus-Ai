@@ -127,6 +127,31 @@ export default function LearningCenterPage() {
             </div>
           </div>
 
+          <section className="mb-12 rounded-3xl border border-white/40 bg-white/60 backdrop-blur-md p-8 shadow-sm">
+            <h2 className="text-2xl font-bold text-[#1F3D2B] mb-2">Protocol Learning Paths</h2>
+            <p className="text-sm text-[#6B665D] mb-6">Choose your current phase and follow the shortest path to execution quality.</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="rounded-xl border border-[#E2DDD4] bg-[#F8F6F3] p-4">
+                <p className="text-xs uppercase tracking-wider text-[#8C877D]">Path 1</p>
+                <p className="font-semibold mt-1">Baseline Week</p>
+                <p className="text-xs text-[#6B665D] mt-1">Focus on analyzer quality + complete first full assessment cycle.</p>
+                <button onClick={() => router.push("/image-analyzer")} className="mt-3 rounded-lg bg-[#1F3D2B] px-3 py-2 text-xs font-semibold text-white">Start Baseline</button>
+              </div>
+              <div className="rounded-xl border border-[#E2DDD4] bg-[#F8F6F3] p-4">
+                <p className="text-xs uppercase tracking-wider text-[#8C877D]">Path 2</p>
+                <p className="font-semibold mt-1">Execution Week</p>
+                <p className="text-xs text-[#6B665D] mt-1">Use challenge loops to convert your report into daily completed actions.</p>
+                <button onClick={() => router.push("/challenges")} className="mt-3 rounded-lg bg-[#1F3D2B] px-3 py-2 text-xs font-semibold text-white">Open Challenges</button>
+              </div>
+              <div className="rounded-xl border border-[#E2DDD4] bg-[#F8F6F3] p-4">
+                <p className="text-xs uppercase tracking-wider text-[#8C877D]">Path 3</p>
+                <p className="font-semibold mt-1">Optimization Week</p>
+                <p className="text-xs text-[#6B665D] mt-1">Refine routine and product fit based on measurable trend movement.</p>
+                <button onClick={() => router.push("/dashboard")} className="mt-3 rounded-lg bg-[#1F3D2B] px-3 py-2 text-xs font-semibold text-white">Track Progress</button>
+              </div>
+            </div>
+          </section>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
             {guidance.map((item) => {
               const isOpen = selectedGuide === item.id;

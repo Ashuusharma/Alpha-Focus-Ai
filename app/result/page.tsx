@@ -286,8 +286,31 @@ export default function ResultPage() {
     <div className="min-h-screen bg-[#F4EFE6] text-[#1F3D2B]">
       <main className="max-w-6xl mx-auto px-4 md:px-8 py-8 md:py-12 space-y-6">
         <section className="rounded-3xl border border-[#E2DDD3] bg-white p-6 md:p-8">
-          <h1 className="text-2xl md:text-3xl font-bold">Clinical Report - {safeLabel(clinical.category)}</h1>
+          <p className="text-[11px] font-bold uppercase tracking-wider text-[#8C6A5A]">Clinical Output</p>
+          <h1 className="text-2xl md:text-3xl font-bold mt-1">Clinical Report - {safeLabel(clinical.category)}</h1>
           <p className="text-sm text-[#6B665D] mt-2">Deterministic protocol generated from latest valid scan + weighted category assessment.</p>
+          <div className="mt-5 grid gap-3 md:grid-cols-3 text-sm">
+            <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] px-4 py-3">
+              <p className="text-xs text-[#6B665D] uppercase tracking-wider">Step 1</p>
+              <p className="font-semibold mt-1">Diagnose</p>
+              <p className="text-xs text-[#6B665D] mt-1">Validated scan + assessment merged into category score model.</p>
+            </div>
+            <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] px-4 py-3">
+              <p className="text-xs text-[#6B665D] uppercase tracking-wider">Step 2</p>
+              <p className="font-semibold mt-1">Execute</p>
+              <p className="text-xs text-[#6B665D] mt-1">Follow your daily protocol and complete routine + challenge loop.</p>
+            </div>
+            <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] px-4 py-3">
+              <p className="text-xs text-[#6B665D] uppercase tracking-wider">Step 3</p>
+              <p className="font-semibold mt-1">Transform</p>
+              <p className="text-xs text-[#6B665D] mt-1">Track measurable progress and refine protocol at each checkpoint.</p>
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button onClick={() => router.push("/dashboard")} className="min-h-[40px] rounded-full bg-[#1F3D2B] px-4 py-2 text-xs font-semibold text-white">Open Dashboard</button>
+            <button onClick={() => router.push("/challenges")} className="min-h-[40px] rounded-full border border-[#1F3D2B] px-4 py-2 text-xs font-semibold text-[#1F3D2B]">Start Challenge</button>
+            <button onClick={() => router.push("/shop")} className="min-h-[40px] rounded-full border border-[#E2DDD3] bg-[#F8F6F3] px-4 py-2 text-xs font-semibold text-[#1F3D2B]">Review Products</button>
+          </div>
         </section>
 
         <section className="rounded-3xl border border-[#E2DDD3] bg-white p-6 md:p-8">

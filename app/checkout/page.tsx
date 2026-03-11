@@ -90,6 +90,13 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-[#F4EFE6] pb-20 pt-24 text-[#1F3D2B]">
+       <div className="mx-auto max-w-7xl px-6 lg:px-8 mb-6">
+          <div className="rounded-2xl border border-[#C8DACF] bg-[#E8EFEA] px-4 py-3 text-sm text-[#1F3D2B] flex flex-wrap items-center gap-4 justify-between">
+             <span className="inline-flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-[#2F6F57]" /> Secure checkout</span>
+             <span className="inline-flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-[#2F6F57]" /> Dermatologist recommended products</span>
+             <span className="inline-flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-[#2F6F57]" /> 30-day guarantee</span>
+          </div>
+       </div>
        <div className="mx-auto max-w-7xl px-6 lg:px-8 grid lg:grid-cols-2 gap-12">
           
           {/* Left Column: Form */}
