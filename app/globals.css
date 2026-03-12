@@ -97,6 +97,51 @@ body {
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
 
+/* Shared minimal clean theme primitives */
+.af-page {
+  min-height: 100vh;
+  background: #F8F6F0;
+  color: #1F3D2B;
+}
+
+.af-card {
+  background: #ffffff;
+  border: 1px solid #E2DDD3;
+  border-radius: 1rem;
+  box-shadow: 0 1px 2px rgba(31, 61, 43, 0.06);
+}
+
+.af-muted {
+  color: #6B665D;
+}
+
+.af-accent {
+  color: #2F6F57;
+}
+
+.af-btn-primary {
+  background: #1F3D2B;
+  color: #ffffff;
+  border-radius: 0.75rem;
+  font-weight: 600;
+}
+
+.af-btn-primary:hover {
+  background: #2F6F57;
+}
+
+.af-btn-soft {
+  background: #F8F6F3;
+  border: 1px solid #D7D1C6;
+  color: #1F3D2B;
+  border-radius: 0.75rem;
+  font-weight: 600;
+}
+
+.af-btn-soft:hover {
+  background: #F1ECE3;
+}
+
 /* Premium transitions for interactive elements */
 button, .rounded-lg, .rounded-xl, .card, .transition {
   transition-property: background, color, box-shadow, border, transform, opacity;

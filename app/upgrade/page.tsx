@@ -72,14 +72,14 @@ export default function UpgradePage() {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-[#030917] text-white pb-28">
+    <div className="af-page pb-28">
       <main className="max-w-7xl mx-auto px-4 pt-24 space-y-10">
-        <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-8 shadow-[0_12px_30px_rgba(2,6,23,0.22)]">
-          <p className="inline-flex items-center gap-2 text-xs uppercase tracking-wider text-blue-300 mb-4">
+        <section className="af-card p-8">
+          <p className="inline-flex items-center gap-2 text-xs uppercase tracking-wider af-accent mb-4">
             <Sparkles className="w-4 h-4" /> Subscription Plans
           </p>
           <h1 className="text-[2rem] md:text-[2.25rem] font-semibold leading-tight">Upgrade Your Alpha Focus Experience</h1>
-          <p className="mt-3 text-gray-300 max-w-3xl">
+          <p className="mt-3 af-muted max-w-3xl">
             Smart Indian 3-tier model optimized for conversion and retention.
           </p>
         </section>
@@ -88,35 +88,35 @@ export default function UpgradePage() {
           {tiers.map((tier) => (
             <article
               key={tier.name}
-              className={`rounded-2xl border p-5 bg-white/[0.03] shadow-[0_10px_24px_rgba(2,6,23,0.2)] ${
-                tier.recommended ? "border-blue-400/40" : "border-white/10"
+              className={`af-card p-5 ${
+                tier.recommended ? "border-[#2F6F57]" : "border-[#E2DDD3]"
               }`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-lg font-semibold text-white">{tier.name}</p>
-                  <p className="text-xs text-gray-400 mt-1">{tier.subtitle}</p>
+                  <p className="text-lg font-semibold text-[#1F3D2B]">{tier.name}</p>
+                  <p className="text-xs af-muted mt-1">{tier.subtitle}</p>
                 </div>
                 {tier.recommended && (
-                  <span className="text-[11px] px-2 py-1 rounded-full border border-blue-400/30 bg-blue-500/10 text-blue-200">Most Popular</span>
+                  <span className="text-[11px] px-2 py-1 rounded-full border border-[#2F6F57]/30 bg-[#E8F4EE] text-[#2F6F57]">Most Popular</span>
                 )}
               </div>
 
-              <p className="text-2xl font-bold mt-4 text-white">{tier.price}</p>
-              <p className="text-xs text-gray-400 mt-2">AI Cost: {tier.aiCost}</p>
-              <p className="text-xs text-blue-300 mt-1">Profit: {tier.profit}</p>
+              <p className="text-2xl font-bold mt-4 text-[#1F3D2B]">{tier.price}</p>
+              <p className="text-xs af-muted mt-2">AI Cost: {tier.aiCost}</p>
+              <p className="text-xs af-accent mt-1">Profit: {tier.profit}</p>
 
-              <ul className="mt-4 space-y-2 text-sm text-gray-200">
+              <ul className="mt-4 space-y-2 text-sm text-[#1F3D2B]">
                 {tier.features.map((feature) => (
                   <li key={feature} className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-blue-300 mt-0.5" />
+                    <CheckCircle2 className="w-4 h-4 text-[#2F6F57] mt-0.5" />
                     <span>{feature}</span>
                   </li>
                 ))}
               </ul>
 
               {tier.limitations && (
-                <ul className="mt-3 space-y-1 text-xs text-gray-400 list-disc pl-5">
+                <ul className="mt-3 space-y-1 text-xs text-[#8C877D] list-disc pl-5">
                   {tier.limitations.map((limit) => (
                     <li key={limit}>{limit}</li>
                   ))}
@@ -125,10 +125,10 @@ export default function UpgradePage() {
 
               <button
                 onClick={() => router.push(tier.name === "Basic" ? "/" : "/settings")}
-                className={`mt-5 w-full rounded-xl py-2.5 text-sm font-semibold transition-colors ${
+                className={`mt-5 w-full py-2.5 text-sm transition-colors ${
                   tier.recommended
-                    ? "bg-blue-600 hover:bg-blue-500 text-white"
-                    : "border border-white/20 bg-white/[0.04] hover:bg-white/[0.08] text-white"
+                    ? "af-btn-primary"
+                    : "af-btn-soft"
                 }`}
               >
                 {tier.name === "Basic" ? "Continue Free" : `Choose ${tier.name}`}
@@ -137,27 +137,27 @@ export default function UpgradePage() {
           ))}
         </section>
 
-        <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 shadow-[0_10px_24px_rgba(2,6,23,0.2)]">
+        <section className="af-card p-6">
           <div className="flex items-center gap-2 mb-4">
-            <TrendingUp className="w-5 h-5 text-blue-300" />
+            <TrendingUp className="w-5 h-5 text-[#2F6F57]" />
             <h2 className="text-2xl font-semibold">Profit Strategy</h2>
           </div>
-          <ul className="space-y-2 text-sm text-gray-200">
+          <ul className="space-y-2 text-sm text-[#1F3D2B]">
             {profitStrategies.map((item) => (
               <li key={item} className="flex items-start gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-300 mt-0.5" />
+                <CheckCircle2 className="w-4 h-4 text-[#2F6F57] mt-0.5" />
                 <span>{item}</span>
               </li>
             ))}
           </ul>
         </section>
 
-        <section className="rounded-2xl border border-blue-400/30 bg-blue-500/10 p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <section className="af-card p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
             <h3 className="text-lg font-semibold">Free Trial Conversion Strategy</h3>
-            <p className="text-sm text-blue-100/80 mt-1">Start users on Free, nudge with results proof, and convert into Premium/Pro in 7–14 days.</p>
+            <p className="text-sm af-muted mt-1">Start users on Free, nudge with results proof, and convert into Premium/Pro in 7–14 days.</p>
           </div>
-          <button onClick={() => router.push("/image-analyzer")} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-500">
+          <button onClick={() => router.push("/image-analyzer")} className="inline-flex items-center gap-2 af-btn-primary px-5 py-2.5 text-sm">
             <Crown className="w-4 h-4" />
             Start Free Trial Flow
           </button>

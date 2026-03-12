@@ -6,7 +6,6 @@ import {
   BadgePercent,
   CheckCircle2,
   Clock3,
-  ShieldCheck,
   Sparkles,
   TrendingUp,
 } from "lucide-react";
@@ -56,6 +55,18 @@ type EarnAction = {
   metadata?: Record<string, unknown>;
 };
 
+type ActionRuntimeState = {
+  status: "idle" | "running" | "completed";
+  startedAtMs?: number;
+  durationSec?: number;
+};
+
+type ActionConfig = {
+  mode: "instant" | "timed";
+  durationSec?: number;
+  allowCancel?: boolean;
+};
+
 const EARN_ACTIONS: EarnAction[] = [
   { code: "daily_login", label: "Daily login", helper: "+1 A$ / day" },
   { code: "log_am_routine", label: "AM routine completed", helper: "+2 A$ / day" },
@@ -79,6 +90,27 @@ const EARN_ACTIONS: EarnAction[] = [
   { code: "product_review_submitted", label: "Product review", helper: "+5 A$" },
   { code: "first_scan_uploaded", label: "Photo scan upload", helper: "+5 A$" },
 ];
+
+const ACTION_CONFIG: Partial<Record<CreditActionCode, ActionConfig>> = {
+  daily_login: { mode: "instant" },
+  log_am_routine: { mode: "timed", durationSec: 10 * 60, allowCancel: true },
+  log_pm_routine: { mode: "timed", durationSec: 10 * 60, allowCancel: true },
+  hydration_goal: { mode: "instant" },
+  sleep_goal: { mode: "instant" },
+  full_day_completed: { mode: "instant" },
+  improve_alpha_5: { mode: "instant" },
+  severity_drop_one_level: { mode: "instant" },
+  challenge_30_complete: { mode: "instant" },
+  product_review_submitted: { mode: "instant" },
+  first_scan_uploaded: { mode: "instant" },
+};
+
+function formatRemainingTime(totalSec: number) {
+  const clamped = Math.max(0, totalSec);
+  const minutes = Math.floor(clamped / 60);
+  const seconds = clamped % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
 
 function ProgressBar({ value, max }: { value: number; max: number }) {
   const percent = Math.min(100, Math.round((value / max) * 100));
@@ -157,6 +189,10 @@ export default function AlphaCreditsPage() {
   const alphaSummary = useUserStore((state) => state.alphaSummary as Record<string, unknown> | null);
   const alphaTransactions = useUserStore((state) => state.alphaTransactions as Array<Record<string, unknown>>);
   const [message, setMessage] = useState<string | null>(null);
+  const [completedActions, setCompletedActions] = useState<Record<string, boolean>>({});
+  const [actionRuntime, setActionRuntime] = useState<Record<string, ActionRuntimeState>>({});
+  const [pendingAction, setPendingAction] = useState<string | null>(null);
+  const [, setTimerTick] = useState(0);
   const snapshot = useMemo(
     () => (user ? buildSnapshotFromStore({ summary: alphaSummary, transactions: alphaTransactions }) : EMPTY_SNAPSHOT),
     [user?.id, alphaSummary, alphaTransactions]
@@ -165,8 +201,55 @@ export default function AlphaCreditsPage() {
   useEffect(() => {
     if (!user) return;
     if (alphaSummary) return;
-    void hydrateUserData(user.id);
+    void hydrateUserData(user.id, { silent: true });
   }, [user?.id, alphaSummary]);
+
+  useEffect(() => {
+    if (!user) return;
+    const key = `alpha_actions:${user.id}:${new Date().toISOString().slice(0, 10)}`;
+    const raw = window.localStorage.getItem(key);
+    if (!raw) {
+      setCompletedActions({});
+      return;
+    }
+    try {
+      setCompletedActions(JSON.parse(raw) as Record<string, boolean>);
+    } catch {
+      setCompletedActions({});
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user) return;
+    const key = `alpha_actions:${user.id}:${new Date().toISOString().slice(0, 10)}`;
+    window.localStorage.setItem(key, JSON.stringify(completedActions));
+  }, [user?.id, completedActions]);
+
+  useEffect(() => {
+    if (!user) return;
+    const key = `alpha_runtime:${user.id}:${new Date().toISOString().slice(0, 10)}`;
+    const raw = window.localStorage.getItem(key);
+    if (!raw) {
+      setActionRuntime({});
+      return;
+    }
+    try {
+      setActionRuntime(JSON.parse(raw) as Record<string, ActionRuntimeState>);
+    } catch {
+      setActionRuntime({});
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user) return;
+    const key = `alpha_runtime:${user.id}:${new Date().toISOString().slice(0, 10)}`;
+    window.localStorage.setItem(key, JSON.stringify(actionRuntime));
+  }, [user?.id, actionRuntime]);
+
+  useEffect(() => {
+    const interval = setInterval(() => setTimerTick((v) => v + 1), 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const rewardCatalog = useMemo(() => getRewardCatalog(), []);
   const rewardProgress = useMemo(
@@ -219,28 +302,86 @@ export default function AlphaCreditsPage() {
 
   const history: LedgerTransaction[] = snapshot.transactions.slice(0, 8);
 
+  const getRuntimeState = (code: CreditActionCode): ActionRuntimeState => {
+    const base = actionRuntime[code] || { status: "idle" as const };
+    if (base.status !== "running") return base;
+
+    const startedAtMs = Number(base.startedAtMs || 0);
+    const durationSec = Number(base.durationSec || 0);
+    if (!startedAtMs || !durationSec) return { status: "idle" };
+
+    const elapsedSec = Math.floor((Date.now() - startedAtMs) / 1000);
+    if (elapsedSec >= durationSec) {
+      return { status: "running", startedAtMs, durationSec };
+    }
+
+    return { status: "running", startedAtMs, durationSec };
+  };
+
+  const getRemainingSec = (code: CreditActionCode) => {
+    const runtime = getRuntimeState(code);
+    if (runtime.status !== "running" || !runtime.startedAtMs || !runtime.durationSec) return 0;
+    const elapsedSec = Math.floor((Date.now() - runtime.startedAtMs) / 1000);
+    return Math.max(0, runtime.durationSec - elapsedSec);
+  };
+
+  const startTimedAction = (code: CreditActionCode) => {
+    const config: ActionConfig = ACTION_CONFIG[code] || { mode: "instant" };
+    if (config.mode !== "timed") return;
+    setActionRuntime((prev) => ({
+      ...prev,
+      [code]: {
+        status: "running",
+        startedAtMs: Date.now(),
+        durationSec: config.durationSec,
+      },
+    }));
+    setMessage("Action timer started. You can resume this any time today.");
+  };
+
+  const cancelTimedAction = (code: CreditActionCode) => {
+    setActionRuntime((prev) => ({
+      ...prev,
+      [code]: { status: "idle" },
+    }));
+    setMessage("Action reset. You can start again when ready.");
+  };
+
   const handleEarn = async (action: EarnAction) => {
+    if (pendingAction || completedActions[action.code]) return;
+    setPendingAction(action.code);
     const dynamicMetadata = {
       ...(action.metadata || {}),
-      referenceId: String(action.metadata?.referenceId || `${action.code}_${Date.now()}`),
+      referenceId: String(action.metadata?.referenceId || `${action.code}_${new Date().toISOString().slice(0, 10)}`),
     };
 
-    const response = await fetch("/api/alpha-sikka/earn", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        action: action.code,
-        metadata: dynamicMetadata,
-        referenceId: (dynamicMetadata as { referenceId?: string })?.referenceId,
-      }),
-    });
+    try {
+      const response = await fetch("/api/alpha-sikka/earn", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: action.code,
+          metadata: dynamicMetadata,
+          referenceId: (dynamicMetadata as { referenceId?: string })?.referenceId,
+        }),
+      });
 
-    const result = await response.json();
-    setMessage(result?.ok ? `+${result.awarded} A$ added` : result?.error || "No credits added");
-    if (result?.ok && user) {
-      await hydrateUserData(user.id);
+      const result = await response.json();
+      setMessage(result?.ok ? `+${result.awarded} A$ added` : result?.error || "No credits added");
+      if (result?.ok) {
+        setCompletedActions((prev) => ({ ...prev, [action.code]: true }));
+        setActionRuntime((prev) => ({
+          ...prev,
+          [action.code]: { status: "completed" },
+        }));
+      }
+      if (result?.ok && user) {
+        await hydrateUserData(user.id, { force: true, silent: true });
+      }
+    } finally {
+      setPendingAction(null);
     }
   };
 
@@ -261,13 +402,13 @@ export default function AlphaCreditsPage() {
     const result = await response.json();
     setMessage(result?.ok ? `Redeemed ${discountPercent}% reward` : result?.error || "Unable to redeem");
     if (result?.ok && user) {
-      await hydrateUserData(user.id);
+      await hydrateUserData(user.id, { force: true, silent: true });
     }
   };
 
   const dailyEarned = DAILY_CAP - snapshot.dailyCapRemaining;
 
-  if (loading) {
+  if (loading && !alphaSummary && alphaTransactions.length === 0) {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full animate-spin"></div>
@@ -288,37 +429,37 @@ export default function AlphaCreditsPage() {
   }
 
   return (
-    <div className="space-y-8 pb-12 w-full animate-in fade-in duration-700">
+    <div className="af-page space-y-8 pb-12 w-full animate-in fade-in duration-700">
       
       {/* 1. BALANCE PROGRESS HERO */}
-      <div className="bg-gradient-to-br from-[#0a1a1f] to-[#0d2a33] border border-green-500/20 rounded-3xl p-8 relative overflow-hidden shadow-2xl flex flex-col md:flex-row items-center justify-between gap-8">
-        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-green-500/10 rounded-full blur-[80px] pointer-events-none -translate-y-1/2 translate-x-1/2" />
+      <div className="af-card rounded-3xl p-8 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8">
+        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[#2F6F57]/10 rounded-full blur-[80px] pointer-events-none -translate-y-1/2 translate-x-1/2" />
         
         <div className="relative z-10 flex-1 space-y-4">
-          <p className="text-xs font-semibold uppercase tracking-widest text-green-400">Alpha Sikka Dashboard</p>
+           <p className="text-xs font-semibold uppercase tracking-widest text-[#2F6F57]">Alpha Sikka Dashboard</p>
           <div className="flex items-baseline gap-4">
-             <h1 className="text-6xl font-bold text-white font-playfair">{formatAmount(snapshot.model.currentBalance)} <span className="text-3xl text-zinc-400">A$</span></h1>
+             <h1 className="text-6xl font-bold text-[#1F3D2B] font-playfair">{formatAmount(snapshot.model.currentBalance)} <span className="text-3xl text-[#6B665D]">A$</span></h1>
           </div>
           <div className="flex items-center gap-3">
-             <span className="text-sm text-zinc-400">Tier: <strong className="text-white">{snapshot.tier.label}</strong></span>
-             <span className="w-1 h-1 rounded-full bg-zinc-600" />
-             <span className="text-sm text-zinc-400">Lifetime: {formatAmount(snapshot.model.totalEarned)} A$</span>
+             <span className="text-sm text-[#6B665D]">Tier: <strong className="text-[#1F3D2B]">{snapshot.tier.label}</strong></span>
+             <span className="w-1 h-1 rounded-full bg-[#BEB7AC]" />
+             <span className="text-sm text-[#6B665D]">Lifetime: {formatAmount(snapshot.model.totalEarned)} A$</span>
           </div>
-          <p className="text-sm text-zinc-500 max-w-xl">Earn and redeem A$ based on consistent routines, verified progress, and program completion. No noise, just measured effort translating into meaningful value.</p>
+           <p className="text-sm text-[#6B665D] max-w-xl">Earn and redeem A$ based on consistent routines, verified progress, and program completion. No noise, just measured effort translating into meaningful value.</p>
         </div>
 
         <div className="relative z-10 w-full md:w-auto flex flex-col items-center">
            <div className="w-40 h-40 relative">
             <svg height="160" width="160" className="transform -rotate-90">
-              <circle stroke="rgba(255,255,255,0.05)" fill="transparent" strokeWidth="8" r="72" cx="80" cy="80" />
-              <circle stroke="#4ade80" fill="transparent" strokeWidth="8" strokeDasharray="452" style={{ strokeDashoffset: 452 - (rewardProgress.percent / 100) * 452 }} strokeLinecap="round" r="72" cx="80" cy="80" className="drop-shadow-[0_0_10px_rgba(74,222,128,0.5)] transition-all duration-1000" />
+              <circle stroke="#E2DDD4" fill="transparent" strokeWidth="8" r="72" cx="80" cy="80" />
+              <circle stroke="#2F6F57" fill="transparent" strokeWidth="8" strokeDasharray="452" style={{ strokeDashoffset: 452 - (rewardProgress.percent / 100) * 452 }} strokeLinecap="round" r="72" cx="80" cy="80" className="transition-all duration-1000" />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-xl font-bold text-white">{rewardProgress.percent}%</span>
-              <span className="text-[10px] uppercase tracking-wider text-green-400 mt-1">Progress</span>
+              <span className="text-xl font-bold text-[#1F3D2B]">{rewardProgress.percent}%</span>
+              <span className="text-[10px] uppercase tracking-wider text-[#2F6F57] mt-1">Progress</span>
             </div>
           </div>
-          <p className="mt-4 text-center text-sm text-zinc-400">
+          <p className="mt-4 text-center text-sm text-[#6B665D]">
             {rewardProgress.next ? `Next Reward: ${rewardProgress.next.cost} A$` : 'Highest Tier Unlocked'}
           </p>
         </div>
@@ -335,94 +476,164 @@ export default function AlphaCreditsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Daily Earnings Progress */}
-        <div className="bg-white/5 backdrop-blur-md border border-white/5 rounded-3xl p-6 shadow-xl flex flex-col">
+        <div className="af-card rounded-3xl p-6 flex flex-col">
            <div className="flex items-center justify-between mb-6">
-             <h3 className="text-xl font-bold text-white flex items-center gap-2"><Sparkles className="w-5 h-5 text-green-400" /> Daily Earnings</h3>
-             <span className="text-xs text-zinc-500 uppercase tracking-widest">{dailyEarned}/{DAILY_CAP} A$ Today</span>
+             <h3 className="text-xl font-bold text-[#1F3D2B] flex items-center gap-2"><Sparkles className="w-5 h-5 text-[#2F6F57]" /> Daily Earnings</h3>
+             <span className="text-xs text-[#6B665D] uppercase tracking-widest">{dailyEarned}/{DAILY_CAP} A$ Today</span>
            </div>
            
            <div className="space-y-6 flex-1 flex flex-col justify-center">
              <div>
                <div className="flex justify-between text-sm mb-2">
-                 <span className="text-zinc-300 font-medium">Daily Routine Cap</span>
-                 <span className="text-white font-bold">{Math.round((dailyEarned/DAILY_CAP)*100)}%</span>
+                 <span className="text-[#6B665D] font-medium">Daily Routine Cap</span>
+                 <span className="text-[#1F3D2B] font-bold">{Math.round((dailyEarned/DAILY_CAP)*100)}%</span>
                </div>
-               <div className="h-3 bg-black/40 rounded-full overflow-hidden border border-white/5">
-                 <div className="h-full bg-gradient-to-r from-blue-500 to-green-400 rounded-full transition-all" style={{ width: `${(dailyEarned/DAILY_CAP)*100}%`}}></div>
+               <div className="h-3 bg-[#F1EDE5] rounded-full overflow-hidden border border-[#E2DDD3]">
+                 <div className="h-full bg-gradient-to-r from-[#8C6A5A] to-[#2F6F57] rounded-full transition-all" style={{ width: `${(dailyEarned/DAILY_CAP)*100}%`}}></div>
                </div>
              </div>
              
              <div>
                <div className="flex justify-between text-sm mb-2">
-                 <span className="text-zinc-300 font-medium">Challenge Milestones</span>
-                 <span className="text-white font-bold">{programProgress.completedCount}/3</span>
+                 <span className="text-[#6B665D] font-medium">Challenge Milestones</span>
+                 <span className="text-[#1F3D2B] font-bold">{programProgress.completedCount}/3</span>
                </div>
-               <div className="h-3 bg-black/40 rounded-full overflow-hidden border border-white/5">
+               <div className="h-3 bg-[#F1EDE5] rounded-full overflow-hidden border border-[#E2DDD3]">
                  <div className="h-full bg-gradient-to-r from-orange-500 to-yellow-400 rounded-full transition-all" style={{ width: `${(programProgress.completedCount/3)*100}%`}}></div>
                </div>
              </div>
 
               <div>
                <div className="flex justify-between text-sm mb-2">
-                 <span className="text-zinc-300 font-medium">Program Progress</span>
-                 <span className="text-white font-bold">{programProgress.percent}%</span>
+                 <span className="text-[#6B665D] font-medium">Program Progress</span>
+                 <span className="text-[#1F3D2B] font-bold">{programProgress.percent}%</span>
                </div>
-               <div className="h-3 bg-black/40 rounded-full overflow-hidden border border-white/5">
-                 <div className="h-full bg-gradient-to-r from-purple-500 to-pink-400 rounded-full transition-all" style={{ width: `${programProgress.percent}%`}}></div>
+               <div className="h-3 bg-[#F1EDE5] rounded-full overflow-hidden border border-[#E2DDD3]">
+                 <div className="h-full bg-gradient-to-r from-[#2F6F57] to-[#8C6A5A] rounded-full transition-all" style={{ width: `${programProgress.percent}%`}}></div>
                </div>
              </div>
            </div>
         </div>
 
         {/* Growth Actions */}
-        <div className="bg-white/5 backdrop-blur-md border border-white/5 rounded-3xl p-6 shadow-xl">
+        <div className="af-card rounded-3xl p-6">
            <div className="flex items-center justify-between mb-6">
-             <h3 className="text-xl font-bold text-white flex items-center gap-2"><TrendingUp className="w-5 h-5 text-green-400" /> Growth Actions</h3>
+             <h3 className="text-xl font-bold text-[#1F3D2B] flex items-center gap-2"><TrendingUp className="w-5 h-5 text-[#2F6F57]" /> Growth Actions</h3>
            </div>
            
            <div className="space-y-3">
              {EARN_ACTIONS.slice(0, 4).map((action) => (
-                <button
+                <div
                   key={action.code}
-                  onClick={() => handleEarn(action)}
-                  className="w-full bg-black/20 hover:bg-black/40 border border-white/5 hover:border-green-500/30 transition-all rounded-2xl p-4 flex items-center justify-between group"
+                  className="w-full bg-[#F8F6F3] border border-[#E2DDD3] hover:border-[#2F6F57]/40 transition-all rounded-2xl p-4"
                 >
-                  <div className="text-left">
-                    <p className="text-white font-medium group-hover:text-green-400 transition-colors">{action.label}</p>
-                    <p className="text-xs text-zinc-500">{action.helper}</p>
-                  </div>
-                  <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <ArrowRight className="w-4 h-4 text-green-400" />
-                  </div>
-                </button>
+                  {(() => {
+                    const config: ActionConfig = ACTION_CONFIG[action.code] || { mode: "instant" };
+                    const runtime = getRuntimeState(action.code);
+                    const completed = Boolean(completedActions[action.code]) || runtime.status === "completed";
+                    const running = runtime.status === "running";
+                    const remaining = getRemainingSec(action.code);
+                    const canCompleteTimed = config.mode !== "timed" || remaining === 0;
+
+                    return (
+                      <>
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="text-left">
+                            <p className="text-[#1F3D2B] font-medium">{action.label}</p>
+                            <p className="text-xs text-[#6B665D]">
+                              {completed
+                                ? "Completed today"
+                                : running
+                                  ? remaining > 0
+                                    ? `In progress · ${formatRemainingTime(remaining)} remaining`
+                                    : "Ready to complete"
+                                  : action.helper}
+                            </p>
+                          </div>
+                          <div className="w-8 h-8 rounded-full bg-[#E8F4EE] flex items-center justify-center">
+                            <ArrowRight className="w-4 h-4 text-[#2F6F57]" />
+                          </div>
+                        </div>
+
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          {completed ? (
+                            <span className="inline-flex items-center rounded-full border border-green-300 bg-green-50 px-2.5 py-1 text-[11px] font-semibold text-green-700">
+                              Completed
+                            </span>
+                          ) : config.mode === "timed" ? (
+                            <>
+                              {!running ? (
+                                <button
+                                  type="button"
+                                  onClick={() => startTimedAction(action.code)}
+                                  className="af-btn-soft px-3 py-1.5 text-xs"
+                                >
+                                  Start
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => handleEarn(action)}
+                                  disabled={pendingAction === action.code || !canCompleteTimed}
+                                  className="af-btn-primary px-3 py-1.5 text-xs disabled:opacity-60"
+                                >
+                                  {pendingAction === action.code ? "Submitting..." : canCompleteTimed ? "Complete" : "Wait Timer"}
+                                </button>
+                              )}
+
+                              {running && config.allowCancel && (
+                                <button
+                                  type="button"
+                                  onClick={() => cancelTimedAction(action.code)}
+                                  className="af-btn-soft px-3 py-1.5 text-xs"
+                                >
+                                  Cancel
+                                </button>
+                              )}
+                            </>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleEarn(action)}
+                              disabled={pendingAction === action.code}
+                              className="af-btn-primary px-3 py-1.5 text-xs disabled:opacity-60"
+                            >
+                              {pendingAction === action.code ? "Submitting..." : "Complete"}
+                            </button>
+                          )}
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
              ))}
            </div>
         </div>
       </div>
 
       {/* 3. REWARD LADDER */}
-      <div className="bg-white/5 backdrop-blur-md border border-white/5 rounded-3xl p-6 lg:p-8 shadow-xl">
+      <div className="af-card rounded-3xl p-6 lg:p-8">
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            <BadgePercent className="w-6 h-6 text-green-400" /> Reward Ladder
+          <h2 className="text-2xl font-bold text-[#1F3D2B] flex items-center gap-2">
+            <BadgePercent className="w-6 h-6 text-[#2F6F57]" /> Reward Ladder
           </h2>
-          <p className="text-zinc-400 mt-2 text-sm">Redeem your discipline for clinically meaningful clinical store discounts.</p>
+          <p className="text-[#6B665D] mt-2 text-sm">Redeem your discipline for clinically meaningful clinical store discounts.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {rewardCatalog.map((reward) => {
              const canRedeem = snapshot.model.currentBalance >= reward.cost;
              return (
-               <div key={reward.id} className="relative bg-black/20 border border-white/10 rounded-2xl p-6 flex flex-col justify-between overflow-hidden group hover:border-green-500/50 transition-colors">
-                  {canRedeem && <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 blur-[40px] pointer-events-none rounded-full" />}
+              <div key={reward.id} className="relative bg-[#F8F6F3] border border-[#E2DDD3] rounded-2xl p-6 flex flex-col justify-between overflow-hidden group hover:border-[#2F6F57]/40 transition-colors">
+                {canRedeem && <div className="absolute top-0 right-0 w-32 h-32 bg-[#2F6F57]/10 blur-[40px] pointer-events-none rounded-full" />}
                   
                   <div>
                     <div className="flex justify-between items-start mb-4">
-                      <div className="px-3 py-1 rounded-full border border-white/10 bg-white/5 text-xs text-zinc-300 font-semibold">{formatAmount(reward.cost)} A$</div>
-                      {canRedeem && <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />}
+                      <div className="px-3 py-1 rounded-full border border-[#E2DDD3] bg-white text-xs text-[#1F3D2B] font-semibold">{formatAmount(reward.cost)} A$</div>
+                      {canRedeem && <div className="w-2 h-2 rounded-full bg-[#2F6F57] animate-pulse" />}
                     </div>
-                    <p className="text-4xl font-bold text-white mb-2">{reward.discountPercent}% OFF</p>
-                    <p className="text-xs text-zinc-500">Max 20% cart discount. Valid 30 days.</p>
+                    <p className="text-4xl font-bold text-[#1F3D2B] mb-2">{reward.discountPercent}% OFF</p>
+                    <p className="text-xs text-[#6B665D]">Max 20% cart discount. Valid 30 days.</p>
                   </div>
 
                   <button
@@ -430,8 +641,8 @@ export default function AlphaCreditsPage() {
                     disabled={!canRedeem}
                     className={`mt-8 w-full py-3 rounded-xl font-bold text-sm transition-all ${
                       canRedeem 
-                      ? 'bg-green-500 hover:bg-green-400 text-black shadow-[0_0_15px_rgba(74,222,128,0.3)]' 
-                      : 'bg-white/5 text-zinc-500 cursor-not-allowed'
+                      ? 'bg-[#1F3D2B] hover:bg-[#2F6F57] text-white' 
+                      : 'bg-[#E8E2D8] text-[#8C877D] cursor-not-allowed'
                     }`}
                   >
                     {canRedeem ? 'Redeem Reward' : `Need ${reward.cost - snapshot.model.currentBalance} A$`}
@@ -443,38 +654,38 @@ export default function AlphaCreditsPage() {
       </div>
 
       {/* 4. CLINICAL LEDGER */}
-      <div className="bg-white/5 backdrop-blur-md border border-white/5 rounded-3xl p-6 lg:p-8 shadow-xl">
+      <div className="af-card rounded-3xl p-6 lg:p-8">
         <div className="mb-6 flex justify-between items-end">
           <div>
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-              <Clock3 className="w-6 h-6 text-zinc-400" /> Audit Ledger
+            <h2 className="text-2xl font-bold text-[#1F3D2B] flex items-center gap-2">
+              <Clock3 className="w-6 h-6 text-[#6B665D]" /> Audit Ledger
             </h2>
-            <p className="text-zinc-400 mt-2 text-sm">Transparent history of all Alpha Sikka transactions.</p>
+            <p className="text-[#6B665D] mt-2 text-sm">Transparent history of all Alpha Sikka transactions.</p>
           </div>
         </div>
         
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left whitespace-nowrap">
-            <thead className="text-zinc-500 border-b border-white/10">
+            <thead className="text-[#6B665D] border-b border-[#E2DDD3]">
               <tr>
                 <th className="pb-4 font-medium pr-4">Date</th>
                 <th className="pb-4 font-medium pr-4 w-full">Activity</th>
                 <th className="pb-4 font-medium text-right pr-4">Earned</th>
                 <th className="pb-4 font-medium text-right pr-4">Spent</th>
-                <th className="pb-4 font-medium text-right font-bold">Balance</th>
+                <th className="pb-4 text-right font-bold">Balance</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-[#EEE7DC]">
               {history.length === 0 ? (
-                <tr><td colSpan={5} className="py-8 text-center text-zinc-500">No transactions recorded. Complete your protocol to start earning.</td></tr>
+                <tr><td colSpan={5} className="py-8 text-center text-[#8C877D]">No transactions recorded. Complete your protocol to start earning.</td></tr>
               ) : (
                 history.map((tx) => (
-                  <tr key={tx.id} className="hover:bg-white/5 transition-colors">
-                    <td className="py-4 text-zinc-400 pr-4">{new Date(tx.timestamp).toLocaleDateString()}</td>
-                    <td className="py-4 text-white font-medium pr-4">{tx.label}</td>
+                  <tr key={tx.id} className="hover:bg-[#F8F6F3] transition-colors">
+                    <td className="py-4 text-[#6B665D] pr-4">{new Date(tx.timestamp).toLocaleDateString()}</td>
+                    <td className="py-4 text-[#1F3D2B] font-medium pr-4">{tx.label}</td>
                     <td className="py-4 text-green-400 text-right pr-4">{tx.type === 'earn' ? `+${tx.amount}` : '-'}</td>
                     <td className="py-4 text-red-400 text-right pr-4">{tx.type === 'spend' ? `-${tx.amount}` : '-'}</td>
-                    <td className="py-4 text-white font-bold text-right">{tx.balanceAfter}</td>
+                    <td className="py-4 text-[#1F3D2B] font-bold text-right">{tx.balanceAfter}</td>
                   </tr>
                 ))
               )}

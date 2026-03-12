@@ -4,6 +4,7 @@ import { writeAuditLog } from "@/lib/server/auditLog";
 import { alphaSikkaSpendSchema } from "@/lib/server/validators";
 import { deriveTier } from "@/lib/server/alphaSikkaServer";
 import { getSupabaseRequestUser } from "@/lib/server/supabaseRequestAuth";
+import { invalidateRequestCache, invalidateRequestCachePrefix } from "@/lib/server/requestCache";
 
 export const runtime = "nodejs";
 
@@ -207,6 +208,8 @@ export async function POST(request: NextRequest) {
     const lifetimeEarned = Number(summary?.lifetime_earned || 0);
 
     await writeAuditLog({ action: "alpha_sikka.spend", userId: authUser.id, ok: true, route: "/api/alpha-sikka/spend" });
+    invalidateRequestCache(`alpha-summary:${authUser.id}`);
+    invalidateRequestCachePrefix(`dashboard:${authUser.id}`);
 
     return NextResponse.json({
       ok: true,

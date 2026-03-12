@@ -16,11 +16,19 @@ export default function CoreUserHydrator() {
       return;
     }
 
-    void hydrateUserData(user.id);
+    void hydrateUserData(user.id, { force: true });
   }, [user?.id, reset]);
 
   useEffect(() => {
     if (!user) return;
+
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleHydrate = () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => {
+        void hydrateUserData(user.id, { silent: true, minIntervalMs: 8000 });
+      }, 500);
+    };
 
     const channel = supabase
       .channel(`user-updates-${user.id}`)
@@ -33,7 +41,7 @@ export default function CoreUserHydrator() {
           filter: `user_id=eq.${user.id}`,
         },
         () => {
-          void hydrateUserData(user.id);
+          scheduleHydrate();
         }
       )
       .on(
@@ -45,7 +53,7 @@ export default function CoreUserHydrator() {
           filter: `user_id=eq.${user.id}`,
         },
         () => {
-          void hydrateUserData(user.id);
+          scheduleHydrate();
         }
       )
       .on(
@@ -57,7 +65,7 @@ export default function CoreUserHydrator() {
           filter: `user_id=eq.${user.id}`,
         },
         () => {
-          void hydrateUserData(user.id);
+          scheduleHydrate();
         }
       )
       .on(
@@ -69,7 +77,7 @@ export default function CoreUserHydrator() {
           filter: `user_id=eq.${user.id}`,
         },
         () => {
-          void hydrateUserData(user.id);
+          scheduleHydrate();
         }
       )
       .on(
@@ -81,12 +89,13 @@ export default function CoreUserHydrator() {
           filter: `user_id=eq.${user.id}`,
         },
         () => {
-          void hydrateUserData(user.id);
+          scheduleHydrate();
         }
       )
       .subscribe();
 
     return () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
       void supabase.removeChannel(channel);
     };
   }, [user?.id]);

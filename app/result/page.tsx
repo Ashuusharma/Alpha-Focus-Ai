@@ -2,7 +2,6 @@
 
 import { useContext, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Activity, Calendar, Sun, Moon, ShoppingBag, ArrowRight } from "lucide-react";
 import { AuthContext } from "@/contexts/AuthProvider";
 import { supabase } from "@/lib/supabaseClient";
 import { categories, CategoryId } from "@/lib/questions";
@@ -227,23 +226,23 @@ export default function ResultPage() {
     return buildProtocolTimeline(clinical.severity_score, clinical.recovery_probability);
   }, [clinical]);
 
-if (loading) {
+  if (loading) {
     return (
-      <div className="flex h-full items-center justify-center p-6">
-        <div className="rounded-2xl bg-black/20 border border-white/5 backdrop-blur-md px-6 py-5 text-sm text-zinc-400">Generating deterministic clinical report...</div>
+      <div className="min-h-screen bg-[#F4EFE6] flex items-center justify-center px-6">
+        <div className="rounded-2xl border border-[#E2DDD3] bg-white px-6 py-5 text-sm text-[#6B665D]">Generating deterministic clinical report...</div>
       </div>
     );
   }
 
   if (error || !clinical) {
     return (
-      <div className="flex h-full items-center justify-center p-6">
-        <div className="max-w-xl w-full rounded-3xl bg-[#0a1a1f] border border-red-500/20 shadow-[0_0_40px_rgba(239,68,68,0.1)] p-8 text-center space-y-4">
-          <h1 className="text-xl font-bold text-white">Clinical Report Unavailable</h1>
-          <p className="text-sm text-zinc-400">{error || "No report found."}</p>
+      <div className="min-h-screen bg-[#F4EFE6] flex items-center justify-center px-6">
+        <div className="max-w-xl w-full rounded-3xl bg-white border border-[#E2DDD3] p-8 text-center space-y-4">
+          <h1 className="text-xl font-bold text-[#1F3D2B]">Clinical Report Unavailable</h1>
+          <p className="text-sm text-[#6B665D]">{error || "No report found."}</p>
           <button
             onClick={() => router.push("/image-analyzer")}
-            className="inline-flex items-center justify-center rounded-full bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 px-6 py-3 text-sm font-semibold transition-colors"
+            className="rounded-full bg-[#1F3D2B] px-6 py-3 text-sm font-semibold text-white"
           >
             Restart Flow
           </button>
@@ -254,13 +253,13 @@ if (loading) {
 
   if (clinical.report_payload?.insufficient_data || clinical.assessment_completeness < 60) {
     return (
-      <div className="flex h-full items-center justify-center p-6">
-        <div className="max-w-2xl w-full rounded-3xl bg-[#0a1a1f] border border-yellow-500/20 shadow-[0_0_40px_rgba(234,179,8,0.1)] p-8 text-center space-y-4">
-          <h1 className="text-2xl font-bold text-white">Insufficient structured data</h1>
-          <p className="text-sm text-zinc-400">Complete a valid photo scan and at least 60% category assessment to unlock report generation.</p>
+      <div className="min-h-screen bg-[#F4EFE6] flex items-center justify-center px-6">
+        <div className="max-w-2xl w-full rounded-3xl bg-white border border-[#E2DDD3] p-8 text-center space-y-4">
+          <h1 className="text-2xl font-bold text-[#1F3D2B]">Insufficient structured data to generate clinical protocol.</h1>
+          <p className="text-sm text-[#6B665D]">Complete a valid photo scan and at least 60% category assessment to unlock report generation.</p>
           <button
             onClick={() => router.push(`/assessment?category=${clinical.category}`)}
-            className="rounded-full bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 border border-yellow-500/20 px-6 py-3 text-sm font-semibold transition-colors"
+            className="rounded-full bg-[#2F6F57] px-6 py-3 text-sm font-semibold text-white"
           >
             Continue Assessment
           </button>
@@ -279,201 +278,256 @@ if (loading) {
   const shouldAdjustProtocol = Boolean(
     isPlusOrPro
     && progress
-    && progress.consistency_score > 60
-    && progress.recovery_velocity > 0
+    && progress.scans_count >= 3
+    && (progress.improvement_pct <= 5 || progress.trend_direction === "worsening")
   );
 
   return (
-    <div className="space-y-8 pb-12 w-full animate-in fade-in duration-700 max-w-6xl mx-auto">
+    <div className="min-h-screen bg-[#F4EFE6] text-[#1F3D2B]">
+      <main className="max-w-6xl mx-auto px-4 md:px-8 py-8 md:py-12 space-y-6">
+        <section className="rounded-3xl border border-[#E2DDD3] bg-white p-6 md:p-8">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-[#8C6A5A]">Clinical Output</p>
+          <h1 className="text-2xl md:text-3xl font-bold mt-1">Clinical Report - {safeLabel(clinical.category)}</h1>
+          <p className="text-sm text-[#6B665D] mt-2">Deterministic protocol generated from latest valid scan + weighted category assessment.</p>
+          <div className="mt-5 grid gap-3 md:grid-cols-3 text-sm">
+            <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] px-4 py-3">
+              <p className="text-xs text-[#6B665D] uppercase tracking-wider">Step 1</p>
+              <p className="font-semibold mt-1">Diagnose</p>
+              <p className="text-xs text-[#6B665D] mt-1">Validated scan + assessment merged into category score model.</p>
+            </div>
+            <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] px-4 py-3">
+              <p className="text-xs text-[#6B665D] uppercase tracking-wider">Step 2</p>
+              <p className="font-semibold mt-1">Execute</p>
+              <p className="text-xs text-[#6B665D] mt-1">Follow your daily protocol and complete routine + challenge loop.</p>
+            </div>
+            <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] px-4 py-3">
+              <p className="text-xs text-[#6B665D] uppercase tracking-wider">Step 3</p>
+              <p className="font-semibold mt-1">Transform</p>
+              <p className="text-xs text-[#6B665D] mt-1">Track measurable progress and refine protocol at each checkpoint.</p>
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button onClick={() => router.push("/dashboard")} className="min-h-[40px] rounded-full bg-[#1F3D2B] px-4 py-2 text-xs font-semibold text-white">Open Dashboard</button>
+            <button onClick={() => router.push("/challenges")} className="min-h-[40px] rounded-full border border-[#1F3D2B] px-4 py-2 text-xs font-semibold text-[#1F3D2B]">Start Challenge</button>
+            <button onClick={() => router.push("/shop")} className="min-h-[40px] rounded-full border border-[#E2DDD3] bg-[#F8F6F3] px-4 py-2 text-xs font-semibold text-[#1F3D2B]">Review Products</button>
+          </div>
+        </section>
 
-      {/* HEADER HERO */}
-      <div className="relative bg-gradient-to-br from-[#0a1a1f] to-[#0d2a33] border border-green-500/20 rounded-3xl overflow-hidden shadow-2xl p-8 lg:p-12 text-center lg:text-left flex flex-col lg:flex-row items-center gap-10">
-        <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 pointer-events-none" />
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-green-500/10 blur-[100px] rounded-full pointer-events-none -translate-y-1/2 translate-x-1/3" />
-        
-        <div className="relative z-10 flex-1 space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-green-500/30 bg-green-500/10 text-xs font-bold uppercase tracking-wider text-green-400">
-             <Activity className="w-3.5 h-3.5" />
-             Clinical Report Generated
+        <section className="rounded-3xl border border-[#E2DDD3] bg-white p-6 md:p-8">
+          <h2 className="text-xl font-semibold mb-4">Section 1 - Clinical Overview</h2>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+            <div className="rounded-2xl border border-[#E2DDD3] bg-[#F8F6F3] p-4"><p className="text-xs text-[#6B665D]">Primary Condition</p><p className="font-semibold mt-1">{overview?.primary_condition || clinical.condition_label}</p></div>
+            <div className="rounded-2xl border border-[#E2DDD3] bg-[#F8F6F3] p-4"><p className="text-xs text-[#6B665D]">Severity Score</p><p className="text-2xl font-bold">{overview?.severity_score ?? clinical.severity_score}</p></div>
+            <div className="rounded-2xl border border-[#E2DDD3] bg-[#F8F6F3] p-4"><p className="text-xs text-[#6B665D]">Risk Level</p><p className="text-2xl font-bold">{overview?.risk_level ?? clinical.risk_level}</p></div>
+            <div className="rounded-2xl border border-[#E2DDD3] bg-[#F8F6F3] p-4"><p className="text-xs text-[#6B665D]">Recovery Probability</p><p className="text-2xl font-bold">{overview?.recovery_probability ?? clinical.recovery_probability}%</p></div>
+            <div className="rounded-2xl border border-[#E2DDD3] bg-[#F8F6F3] p-4"><p className="text-xs text-[#6B665D]">Confidence</p><p className="text-2xl font-bold">{overview?.confidence_pct ?? clinical.confidence_score}%</p></div>
           </div>
-          <h1 className="text-4xl lg:text-5xl font-bold text-white font-playfair leading-tight">
-            {overview?.primary_condition || "Baseline Assessment"}
-          </h1>
-          <p className="text-lg text-zinc-400 max-w-2xl">
-            {overview?.clinical_description || clinical.report_payload?.what_this_means}
-          </p>
-        </div>
+          {isPlusOrPro && (
+            <div className="mt-4 rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-4 text-sm">
+              <p className="font-semibold">Severity Stage: {overview?.stage_label || "Unstaged"}</p>
+              <p className="text-[#6B665D] mt-1">{overview?.clinical_description || "Clinical staging description unavailable."}</p>
+            </div>
+          )}
+        </section>
 
-        <div className="relative z-10 grid grid-cols-2 gap-4 w-full lg:w-auto">
-          <div className="bg-black/40 border border-white/5 backdrop-blur-md rounded-2xl p-5 flex flex-col items-center justify-center">
-             <span className="text-3xl font-bold text-white mb-1">{clinical.severity_score}/10</span>
-             <span className="text-[10px] uppercase tracking-wider text-zinc-500">Severity Score</span>
-          </div>
-          <div className="bg-black/40 border border-white/5 backdrop-blur-md rounded-2xl p-5 flex flex-col items-center justify-center">
-             <span className="text-3xl font-bold text-green-400 mb-1">{overview?.confidence_pct || 90}%</span>
-             <span className="text-[10px] uppercase tracking-wider text-zinc-500">Algorithm Confidence</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* LEFT COL: SCANS & METRICS */}
-        <div className="space-y-6 lg:col-span-1">
-          {/* Risk Level */}
-          <div className="bg-white/5 backdrop-blur-md border border-white/5 rounded-3xl p-6 shadow-xl">
-             <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-widest mb-4">Prognosis Matrix</h3>
-             <div className="space-y-6">
-               <div>
-                 <div className="flex justify-between items-end mb-2">
-                   <span className="text-sm text-white">Recovery Probability</span>
-                   <span className="text-xl font-bold text-blue-400">{clinical.recovery_probability}%</span>
-                 </div>
-                 <div className="h-2 bg-black/40 rounded-full overflow-hidden">
-                   <div className="h-full bg-blue-400 rounded-full" style={{ width: `${clinical.recovery_probability}%` }} />
-                 </div>
-               </div>
-               <div>
-                 <div className="flex justify-between items-end mb-2">
-                   <span className="text-sm text-white">Risk if Ignored</span>
-                   <span className="text-xs font-bold text-orange-400 uppercase px-2 py-1 rounded bg-orange-400/10 border border-orange-400/20">{overview?.risk_level || clinical.risk_level || "Moderate"}</span>
-                 </div>
-                 <p className="text-xs text-zinc-500 mt-2">{clinical.report_payload?.risk_if_ignored}</p>
-               </div>
-               {performance && (
-                 <div className="pt-4 border-t border-white/5">
-                   <div className="flex justify-between items-center text-sm">
-                      <span className="text-zinc-400">Projected Turnaround</span>
-                      <span className="text-white font-bold">{performance.projected_recovery_days} days</span>
-                   </div>
-                 </div>
-               )}
-             </div>
-          </div>
-
-          {/* Root Cause Map */}
-          <div className="bg-white/5 backdrop-blur-md border border-white/5 rounded-3xl p-6 shadow-xl">
-             <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-widest mb-6 flex items-center justify-between">
-                Root Cause Map
-                <Activity className="w-4 h-4" />
-             </h3>
-             <div className="space-y-5">
-               {clinical.root_cause_map?.map((rc, i) => (
-                  <div key={i} className="group cursor-default">
-                    <div className="flex justify-between items-end mb-2">
-                      <span className="text-sm text-white font-medium capitalize">{rc.domain.replace(/_/g, " ")}</span>
-                      <span className="text-xs text-zinc-500">{rc.impact_pct}% Impact</span>
-                    </div>
-                    <div className="h-1.5 bg-black/40 rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-red-500 to-orange-400 transition-all duration-1000 ease-out group-hover:opacity-80" style={{ width: `${rc.impact_pct}%` }} />
-                    </div>
-                  </div>
-               ))}
-             </div>
-          </div>
-          
-          {/* Quick Actions */}
-          <div className="flex flex-col gap-3">
-             <button onClick={() => router.push("/dashboard")} className="w-full bg-green-500 text-black py-4 rounded-xl font-bold shadow-[0_0_15px_rgba(74,222,128,0.2)] hover:shadow-[0_0_25px_rgba(74,222,128,0.4)] transition-all">
-               Start Protocol Schedule
-             </button>
-             <button onClick={() => router.push("/assessment")} className="w-full bg-white/5 text-white border border-white/10 hover:bg-white/10 hover:border-white/20 py-4 rounded-xl font-semibold transition-all">
-               Recalibrate Assessment
-             </button>
-          </div>
-        </div>
-
-        {/* RIGHT COL: PROTOCOLS & PRODUCTS */}
-        <div className="space-y-6 lg:col-span-2">
-          
-          {/* 30 Day Protocol Timeline */}
-           <div className="bg-white/5 backdrop-blur-md border border-white/5 rounded-3xl p-6 lg:p-8 shadow-xl">
-             <div className="flex items-center justify-between mb-8">
-               <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                 <Calendar className="w-5 h-5 text-green-400" />
-                 30-Day Phased Protocol
-               </h3>
-             </div>
-             
-             <div className="relative pl-6 space-y-8 before:absolute before:inset-0 before:ml-[11px] before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-white/10 before:to-transparent">
-                
-                {/* Phase 1 */}
-                <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-                  <div className="flex items-center justify-center w-6 h-6 rounded-full border-4 border-[#0a1a1f] bg-green-500 absolute left-0 md:left-1/2 -translate-x-1/2 -translate-y-4 md:-translate-y-0 shadow-[0_0_10px_rgba(74,222,128,0.5)]"></div>
-                  <div className="w-[calc(100%-2rem)] md:w-[calc(50%-2rem)] bg-black/20 hover:bg-black/30 border border-green-500/20 p-5 rounded-2xl transition-colors">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-green-400 mb-1 block">Phase 1: Stabilization</span>
-                    <p className="text-sm text-zinc-300">{protocol?.phase_1 || "Reduce immediate stressors and establish baseline hygiene routines."}</p>
-                  </div>
+        <section className="rounded-3xl border border-[#E2DDD3] bg-white p-6 md:p-8">
+          <h2 className="text-xl font-semibold mb-4">Section 2 - Root Cause Map</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+            {(clinical.root_cause_map || []).map((item) => (
+              <div key={item.domain} className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-4 flex items-center justify-between gap-3">
+                <div>
+                  <p className="font-semibold">{normalizeDomainName(item.domain)}</p>
+                  <p className="text-xs text-[#6B665D]">Domain score: {item.score}</p>
                 </div>
-                
-                {/* Phase 2 */}
-                <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group">
-                  <div className="flex items-center justify-center w-6 h-6 rounded-full border-4 border-[#0a1a1f] bg-zinc-700 absolute left-0 md:left-1/2 -translate-x-1/2 -translate-y-4 md:-translate-y-0"></div>
-                  <div className="w-[calc(100%-2rem)] md:w-[calc(50%-2rem)] bg-black/20 hover:bg-black/30 border border-white/5 p-5 rounded-2xl transition-colors">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-1 block">Phase 2: Transition</span>
-                    <p className="text-sm text-zinc-400">{protocol?.phase_2 || "Introduce targeted actives and increment routine complexity."}</p>
-                  </div>
-                </div>
-
-                {/* Phase 3 */}
-                <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group">
-                  <div className="flex items-center justify-center w-6 h-6 rounded-full border-4 border-[#0a1a1f] bg-zinc-700 absolute left-0 md:left-1/2 -translate-x-1/2 -translate-y-4 md:-translate-y-0"></div>
-                  <div className="w-[calc(100%-2rem)] md:w-[calc(50%-2rem)] bg-black/20 hover:bg-black/30 border border-white/5 p-5 rounded-2xl transition-colors">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-1 block">Phase 3: Optimization</span>
-                    <p className="text-sm text-zinc-400">{protocol?.phase_3 || "Maintain peak outcomes through balanced maintenance dosing."}</p>
-                  </div>
-                </div>
-
-             </div>
-           </div>
-
-           {/* Routine Schedules */}
-           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div className="bg-gradient-to-b from-white/5 to-transparent border border-white/5 rounded-3xl p-6">
-                 <div className="flex items-center gap-3 mb-4 text-orange-200">
-                   <Sun className="w-5 h-5" /> <h4 className="font-bold">AM Protocol</h4>
-                 </div>
-                 <p className="text-sm text-zinc-400">{schedule?.morning || "Morning protection and mitigation protocol."}</p>
+                <p className="text-lg font-bold text-[#2F6F57]">{item.impact_pct}%</p>
               </div>
-              <div className="bg-gradient-to-b from-black/20 to-transparent border border-white/5 rounded-3xl p-6">
-                 <div className="flex items-center gap-3 mb-4 text-indigo-300">
-                   <Moon className="w-5 h-5" /> <h4 className="font-bold">PM Protocol</h4>
-                 </div>
-                 <p className="text-sm text-zinc-400">{schedule?.night || "Nighttime restorative and recovery protocol."}</p>
+            ))}
+          </div>
+          {isPlusOrPro ? (
+            <div className="mt-4 rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-4 text-sm">
+              <p className="font-semibold mb-2">Cross-Category Interaction Model</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <p>Inflammation: <span className="font-semibold">{globalDomains?.inflammation_load ?? 0}</span></p>
+                <p>Hormonal: <span className="font-semibold">{globalDomains?.hormonal_instability ?? 0}</span></p>
+                <p>Stress: <span className="font-semibold">{globalDomains?.stress_load ?? 0}</span></p>
+                <p>Sleep Deprivation: <span className="font-semibold">{globalDomains?.sleep_deprivation ?? 0}</span></p>
               </div>
-           </div>
+            </div>
+          ) : (
+            <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] px-4 py-3">
+              <p className="text-xs text-[#6B665D]">Upgrade to Plus for cross-category interaction analytics.</p>
+              <button
+                onClick={() => router.push("/settings")}
+                className="rounded-full bg-[#1F3D2B] px-4 py-1.5 text-xs font-semibold text-white"
+              >
+                Upgrade
+              </button>
+            </div>
+          )}
+        </section>
 
-           {/* Clinical Product Logic (If any) */}
-           {productLogic && (
-             <div className="bg-white/5 backdrop-blur-md border border-white/5 rounded-3xl p-6 lg:p-8">
-               <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
-                 <ShoppingBag className="w-5 h-5 text-blue-400" /> Clinical Arsenal Logic
-               </h3>
-               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                 <div className="p-4 rounded-xl bg-black/20 border border-white/5">
-                   <span className="text-[10px] uppercase text-zinc-500 block mb-1">Target Symptom</span>
-                   <span className="text-sm text-white font-medium">{productLogic.target_symptom}</span>
-                 </div>
-                 <div className="p-4 rounded-xl bg-black/20 border border-white/5">
-                   <span className="text-[10px] uppercase text-zinc-500 block mb-1">Why Recommended</span>
-                   <span className="text-sm text-white font-medium">{productLogic.why_recommended}</span>
-                 </div>
-                 <div className="p-4 rounded-xl bg-black/20 border border-white/5">
-                   <span className="text-[10px] uppercase text-zinc-500 block mb-1">Expectation</span>
-                   <span className="text-sm text-green-400 font-medium">{productLogic.timeline_expectation}</span>
-                 </div>
-               </div>
-               
-               <div className="mt-6 flex justify-end">
-                 <button onClick={() => router.push("/shop")} className="text-sm font-bold text-white hover:text-green-400 transition-colors flex items-center gap-2">
-                   View Curated Products <ArrowRight className="w-4 h-4" />
-                 </button>
-               </div>
-             </div>
-           )}
+        <section className="rounded-3xl border border-[#E2DDD3] bg-white p-6 md:p-8">
+          <h2 className="text-xl font-semibold mb-4">Section 3 - What This Means</h2>
+          <p className="text-sm text-[#4A453E] leading-relaxed">{clinical.report_payload?.what_this_means}</p>
+        </section>
 
-        </div>
-      </div>
+        <section className="rounded-3xl border border-[#E2DDD3] bg-white p-6 md:p-8">
+          <h2 className="text-xl font-semibold mb-4">Section 4 - 30-Day Protocol</h2>
+          {isPro ? (
+            <>
+              <div className="grid md:grid-cols-3 gap-4 text-sm">
+                <div className="rounded-2xl border border-[#E2DDD3] bg-[#F8F6F3] p-4"><p className="font-semibold mb-2">Phase 1 - Stabilize</p><p>{protocol?.phase_1}</p></div>
+                <div className="rounded-2xl border border-[#E2DDD3] bg-[#F8F6F3] p-4"><p className="font-semibold mb-2">Phase 2 - Correct</p><p>{protocol?.phase_2}</p></div>
+                <div className="rounded-2xl border border-[#E2DDD3] bg-[#F8F6F3] p-4"><p className="font-semibold mb-2">Phase 3 - Reinforce</p><p>{protocol?.phase_3}</p></div>
+              </div>
+              <div className="grid grid-cols-4 gap-3 items-end h-28 mt-6">
+                {timeline.map((value, index) => (
+                  <div key={index} className="flex flex-col items-center gap-2">
+                    <div className="w-full max-w-[72px] rounded-t-xl bg-[#2F6F57]" style={{ height: `${Math.max(10, value)}%` }} />
+                    <p className="text-xs text-[#6B665D]">W{index + 1}</p>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm text-[#6B665D]">Basic protocol: cleanse, targeted active, and barrier-support nightly. Upgrade to Pro for full 30-day structured protocol timeline.</p>
+              <button
+                onClick={() => router.push("/settings")}
+                className="rounded-full bg-[#1F3D2B] px-4 py-2 text-xs font-semibold text-white"
+              >
+                Upgrade to Pro
+              </button>
+            </div>
+          )}
+
+          <div className="mt-4 rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-4">
+            <p className="font-semibold text-sm">Today&apos;s Dynamic Tasks - Day {protocolDayNumber} ({protocolPhaseName})</p>
+            <div className="mt-2 grid md:grid-cols-2 gap-2 text-sm">
+              {protocolTasks.length > 0 ? (
+                protocolTasks.map((task) => (
+                  <div key={task.id} className="rounded-lg border border-[#E2DDD3] bg-white px-3 py-2">
+                    <p className="font-medium">{task.label}</p>
+                    <p className="text-xs text-[#6B665D] capitalize">{task.slot} · {task.frequency.replace(/_/g, " ")}</p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-xs text-[#6B665D]">Protocol tasks will appear after valid category protocol initialization.</p>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-[#E2DDD3] bg-white p-6 md:p-8">
+          <h2 className="text-xl font-semibold mb-4">Section 5 - Routine Schedule</h2>
+          <div className="grid md:grid-cols-3 gap-4 text-sm">
+            <div className="rounded-2xl border border-[#E2DDD3] bg-[#F8F6F3] p-4"><p className="font-semibold mb-2">Morning</p><p>{schedule?.morning}</p></div>
+            <div className="rounded-2xl border border-[#E2DDD3] bg-[#F8F6F3] p-4"><p className="font-semibold mb-2">Night</p><p>{schedule?.night}</p></div>
+            <div className="rounded-2xl border border-[#E2DDD3] bg-[#F8F6F3] p-4"><p className="font-semibold mb-2">Weekly Reset</p><p>{schedule?.weekly_reset}</p></div>
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-[#E2DDD3] bg-white p-6 md:p-8">
+          <h2 className="text-xl font-semibold mb-4">Section 6 - Product Logic</h2>
+          <div className="space-y-3 text-sm">
+            <p className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] px-4 py-3"><strong>Why Recommended:</strong> {productLogic?.why_recommended}</p>
+            <p className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] px-4 py-3"><strong>Target Symptom:</strong> {productLogic?.target_symptom}</p>
+            <p className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] px-4 py-3"><strong>Timeline:</strong> {productLogic?.timeline_expectation}</p>
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-[#E2DDD3] bg-white p-6 md:p-8">
+          <h2 className="text-xl font-semibold mb-4">Section 7 - Risk If Ignored</h2>
+          <p className="text-sm text-[#4A453E] leading-relaxed">{clinical.report_payload?.risk_if_ignored}</p>
+        </section>
+
+        <section className="rounded-3xl border border-[#E2DDD3] bg-white p-6 md:p-8">
+          <h2 className="text-xl font-semibold mb-4">Section 8 - Performance Metrics</h2>
+          <div className="grid md:grid-cols-2 gap-4 text-sm">
+            <div className="rounded-2xl border border-[#E2DDD3] bg-[#F8F6F3] p-4"><p className="text-xs text-[#6B665D]">Adherence</p><p className="text-2xl font-bold">{performance?.adherence_pct ?? 0}%</p></div>
+            <div className="rounded-2xl border border-[#E2DDD3] bg-[#F8F6F3] p-4"><p className="text-xs text-[#6B665D]">Projected Recovery Days</p><p className="text-2xl font-bold">{performance?.projected_recovery_days ?? 0}</p></div>
+          </div>
+          {isPlusOrPro ? (
+            <div className="mt-4 space-y-3 text-sm">
+              <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-4">
+                <p className="font-semibold">Progress Trend</p>
+                <p className="text-[#6B665D] mt-1">{progress?.trend_message || "Trend data is stabilizing."}</p>
+                <p className="mt-1">Improvement: <span className="font-semibold">{progress?.improvement_pct ?? 0}%</span> | Scan History Used: <span className="font-semibold">{progress?.scans_count ?? 0}</span></p>
+              </div>
+
+              <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-4">
+                <p className="font-semibold">Relapse Prediction</p>
+                {relapseRisk ? (
+                  <>
+                    <p className="mt-1">Risk: <span className="font-semibold">{relapseRisk.risk_level}</span> ({relapseRisk.relapse_score})</p>
+                    <p className="text-[#6B665D] mt-1">{relapseRisk.behavior_response}</p>
+                  </>
+                ) : (
+                  <p className="text-[#6B665D] mt-1">No relapse prediction available yet.</p>
+                )}
+              </div>
+
+              {isPro && (
+                <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-4">
+                  <p className="font-semibold">Transformation Performance Matrix</p>
+                  <div className="grid md:grid-cols-2 gap-2 mt-2">
+                    <p>Consistency Score: <span className="font-semibold">{progress?.consistency_score ?? 0}</span></p>
+                    <p>Recovery Velocity: <span className="font-semibold">{progress?.recovery_velocity ?? 0}</span></p>
+                    <p>Discipline Index: <span className="font-semibold">{progress?.discipline_index ?? 0}</span></p>
+                    <p>Inflammation Reduction Rate: <span className="font-semibold">{progress?.inflammation_reduction_rate ?? 0}%</span></p>
+                    <p>Confidence Score: <span className="font-semibold">{progress?.confidence_score ?? clinical.confidence_score}</span></p>
+                  </div>
+                </div>
+              )}
+
+              {shouldAdjustProtocol && (
+                <div className="rounded-xl border border-[#DAB8A6] bg-[#FFF6F1] p-4">
+                  <p className="font-semibold text-[#7A3E2B]">Protocol Adjustment Recommended</p>
+                  <p className="text-[#6B665D] mt-1">Improvement appears stalled across recent check-ins. Re-analysis + reassessment will recalculate your protocol with updated signals.</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      onClick={() => router.push(`/image-analyzer?category=${clinical.category}`)}
+                      className="rounded-full bg-[#1F3D2B] px-4 py-2 text-xs font-semibold text-white"
+                    >
+                      Re-analyze Now
+                    </button>
+                    <button
+                      onClick={() => router.push(`/assessment?category=${clinical.category}`)}
+                      className="rounded-full border border-[#1F3D2B] px-4 py-2 text-xs font-semibold text-[#1F3D2B]"
+                    >
+                      Update Assessment
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {timelineData && timelineData.deltas.length > 0 && (
+                <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-4">
+                  <p className="font-semibold">Proof of Improvement Timeline</p>
+                  <div className="mt-2 space-y-2">
+                    {timelineData.deltas.map((delta, index) => (
+                      <div key={`${delta.from_scan_date}-${delta.to_scan_date}-${index}`} className="rounded-lg border border-[#E2DDD3] bg-white px-3 py-2">
+                        <p className="text-xs text-[#6B665D]">{new Date(delta.from_scan_date).toLocaleDateString()} → {new Date(delta.to_scan_date).toLocaleDateString()}</p>
+                        <p className="text-sm">{delta.improvement_message}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] px-4 py-3">
+              <p className="text-xs text-[#6B665D]">Upgrade to Plus for trend tracking and relapse risk analytics.</p>
+              <button
+                onClick={() => router.push("/settings")}
+                className="rounded-full bg-[#1F3D2B] px-4 py-1.5 text-xs font-semibold text-white"
+              >
+                Upgrade
+              </button>
+            </div>
+          )}
+        </section>
+      </main>
     </div>
   );
 }

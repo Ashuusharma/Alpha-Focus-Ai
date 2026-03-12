@@ -10,6 +10,7 @@ import {
   deriveTier,
   type AlphaSikkaAction,
 } from "@/lib/server/alphaSikkaServer";
+import { invalidateRequestCache, invalidateRequestCachePrefix } from "@/lib/server/requestCache";
 
 export const runtime = "nodejs";
 
@@ -274,6 +275,8 @@ export async function POST(request: NextRequest) {
     const tier = (await fetchTierFromRpc(config.baseUrl, config.serviceKey, supabaseUserId)) || deriveTier(lifetimeEarned);
 
     await writeAuditLog({ action: "alpha_sikka.earn", userId: authUser.id, ok: true, route: "/api/alpha-sikka/earn" });
+    invalidateRequestCache(`alpha-summary:${supabaseUserId}`);
+    invalidateRequestCachePrefix(`dashboard:${supabaseUserId}`);
     return NextResponse.json({
       ok: true,
       awarded: amount,

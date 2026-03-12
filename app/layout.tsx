@@ -10,11 +10,10 @@ import { ThemeProvider } from "@/lib/themeContext";
 import { LanguageProvider as LegacyLangProvider } from "../lib/languageContext";
 import I18nProvider from "./_components/I18nProvider"; 
 import RouteTransition from "./_components/RouteTransition";
+import MainNavbar from "@/components/layout/MainNavbar";
 import AuthProvider from "@/contexts/AuthProvider";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import CoreUserHydrator from "@/components/providers/CoreUserHydrator";
-
-import { AppShell } from "@/components/ui/layout/AppShell";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -78,20 +77,21 @@ export default function RootLayout({
         />
       </head>
 
-      <body className={`${inter.variable} ${playfair.variable} bg-[#071318]`}>
+      <body className={`${inter.variable} ${playfair.variable}`}>
         <I18nProvider>
           <AuthProvider>
             <CoreUserHydrator />
             <ThemeProvider>
               <LegacyLangProvider>
                 <ToastProvider>
-                  
-                  {/* MAIN CONTENT WRAPPED IN NEW APP SHELL */}
-                  <AppShell>
+                  <MainNavbar />
+
+              {/* MAIN CONTENT */}
+                  <main className="pt-0 pb-24 md:pb-0">
                     <ProtectedRoute>
                       <RouteTransition>{children}</RouteTransition>
                     </ProtectedRoute>
-                  </AppShell>
+                  </main>
 
               {/* GLOBAL CART — ALWAYS MOUNTED */}
                   <CartDrawer />

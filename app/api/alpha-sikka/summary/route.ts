@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { alphaSikkaSummarySchema } from "@/lib/server/validators";
 import { deriveTier } from "@/lib/server/alphaSikkaServer";
 import { getSupabaseRequestUser } from "@/lib/server/supabaseRequestAuth";
+import { getOrSetRequestCache } from "@/lib/server/requestCache";
 
 export const runtime = "nodejs";
 
@@ -50,46 +51,54 @@ export async function GET(request: NextRequest) {
 
   const supabaseUserId = parsed.data.supabaseUserId || authUser.id;
 
-  const summaryUrl = new URL(`${config.baseUrl}/rest/v1/alpha_sikka_summary`);
-  summaryUrl.searchParams.set("select", "current_balance,lifetime_earned,lifetime_spent");
-  summaryUrl.searchParams.set("user_id", `eq.${supabaseUserId}`);
-  summaryUrl.searchParams.set("limit", "1");
+  const payload = await getOrSetRequestCache(`alpha-summary:${supabaseUserId}`, 15_000, async () => {
+    const summaryUrl = new URL(`${config.baseUrl}/rest/v1/alpha_sikka_summary`);
+    summaryUrl.searchParams.set("select", "current_balance,lifetime_earned,lifetime_spent");
+    summaryUrl.searchParams.set("user_id", `eq.${supabaseUserId}`);
+    summaryUrl.searchParams.set("limit", "1");
 
-  const summaryResponse = await fetch(summaryUrl.toString(), {
-    method: "GET",
-    headers: buildAuthHeaders(config.serviceKey),
-    cache: "no-store",
+    const summaryResponse = await fetch(summaryUrl.toString(), {
+      method: "GET",
+      headers: buildAuthHeaders(config.serviceKey),
+      cache: "no-store",
+    });
+
+    if (!summaryResponse.ok) {
+      throw new Error("summary_fetch_failed");
+    }
+
+    const rows = (await summaryResponse.json()) as SummaryRow[];
+    const row = rows[0] || { current_balance: 0, lifetime_earned: 0, lifetime_spent: 0 };
+
+    const transactionsUrl = new URL(`${config.baseUrl}/rest/v1/alpha_sikka_transactions`);
+    transactionsUrl.searchParams.set("select", "id,amount,category,description,created_at");
+    transactionsUrl.searchParams.set("user_id", `eq.${supabaseUserId}`);
+    transactionsUrl.searchParams.set("order", "created_at.desc");
+    transactionsUrl.searchParams.set("limit", "25");
+
+    const txResponse = await fetch(transactionsUrl.toString(), {
+      method: "GET",
+      headers: buildAuthHeaders(config.serviceKey),
+      cache: "no-store",
+    });
+
+    const transactions = txResponse.ok ? await txResponse.json() : [];
+
+    return {
+      ok: true,
+      summary: {
+        currentBalance: Number(row.current_balance || 0),
+        lifetimeEarned: Number(row.lifetime_earned || 0),
+        lifetimeSpent: Number(row.lifetime_spent || 0),
+        tierLevel: deriveTier(Number(row.lifetime_earned || 0)),
+      },
+      transactions,
+    };
   });
 
-  if (!summaryResponse.ok) {
-    return NextResponse.json({ ok: false, error: "summary_fetch_failed" }, { status: 500 });
-  }
-
-  const rows = (await summaryResponse.json()) as SummaryRow[];
-  const row = rows[0] || { current_balance: 0, lifetime_earned: 0, lifetime_spent: 0 };
-
-  const transactionsUrl = new URL(`${config.baseUrl}/rest/v1/alpha_sikka_transactions`);
-  transactionsUrl.searchParams.set("select", "id,amount,category,description,created_at");
-  transactionsUrl.searchParams.set("user_id", `eq.${supabaseUserId}`);
-  transactionsUrl.searchParams.set("order", "created_at.desc");
-  transactionsUrl.searchParams.set("limit", "25");
-
-  const txResponse = await fetch(transactionsUrl.toString(), {
-    method: "GET",
-    headers: buildAuthHeaders(config.serviceKey),
-    cache: "no-store",
-  });
-
-  const transactions = txResponse.ok ? await txResponse.json() : [];
-
-  return NextResponse.json({
-    ok: true,
-    summary: {
-      currentBalance: Number(row.current_balance || 0),
-      lifetimeEarned: Number(row.lifetime_earned || 0),
-      lifetimeSpent: Number(row.lifetime_spent || 0),
-      tierLevel: deriveTier(Number(row.lifetime_earned || 0)),
+  return NextResponse.json(payload, {
+    headers: {
+      "Cache-Control": "private, max-age=15, stale-while-revalidate=45",
     },
-    transactions,
   });
 }

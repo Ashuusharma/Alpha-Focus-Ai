@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseRequestUser } from "@/lib/server/supabaseRequestAuth";
 import { getDashboardDataForViewer } from "@/services/dashboardService";
+import { getOrSetRequestCache } from "@/lib/server/requestCache";
 
 export const runtime = "nodejs";
 
@@ -35,13 +36,21 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 
-  const fullName = await fetchProfileName(authUser.id);
-  const name = (fullName || authUser.email?.split("@")[0] || "User").trim();
+  const payload = await getOrSetRequestCache(`dashboard:${authUser.id}`, 12_000, async () => {
+    const fullName = await fetchProfileName(authUser.id);
+    const name = (fullName || authUser.email?.split("@")[0] || "User").trim();
 
-  const data = await getDashboardDataForViewer({
-    userId: authUser.id,
-    name,
+    const data = await getDashboardDataForViewer({
+      userId: authUser.id,
+      name,
+    });
+
+    return { ok: true, data };
   });
 
-  return NextResponse.json({ ok: true, data });
+  return NextResponse.json(payload, {
+    headers: {
+      "Cache-Control": "private, max-age=12, stale-while-revalidate=30",
+    },
+  });
 }
