@@ -10,6 +10,16 @@ import { generateDailyProtocolTasks, getCurrentProtocolPhase, getProtocolTemplat
 import { maybeSendRoutineReminder } from "@/lib/routineReminderSystem";
 import { categories, CategoryId } from "@/lib/questions";
 import { getSupabaseAuthHeaders } from "@/lib/auth/clientAuthHeaders";
+import {
+  ActivityTimeline,
+  DashboardHero,
+  InsightCard,
+  MetricCard,
+  ProtocolChecklist,
+  QuickActions,
+  RewardProgress,
+  TreatmentPlan,
+} from "./_components";
 
 type RoutineLogRow = {
   id?: string;
@@ -131,6 +141,7 @@ export default function DashboardPage() {
   const reports = useUserStore((state) => state.reports as Array<Record<string, unknown>>);
   const assessments = useUserStore((state) => state.assessments as Array<Record<string, unknown>>);
   const routines = useUserStore((state) => state.routines as Array<Record<string, unknown>>);
+  const scans = useUserStore((state) => state.scans as Array<Record<string, unknown>>);
   const products = useUserStore((state) => state.products as Array<Record<string, unknown>>);
   const [refreshing, setRefreshing] = useState(false);
   const [todayRoutine, setTodayRoutine] = useState<RoutineLogRow | null>(null);
@@ -142,6 +153,7 @@ export default function DashboardPage() {
   const [progressSummary, setProgressSummary] = useState<ProgressSummary | null>(null);
   const [todayProtocolTasks, setTodayProtocolTasks] = useState<ProtocolTask[]>([]);
   const [phaseName, setPhaseName] = useState<string>("Stabilization");
+  const [programDay, setProgramDay] = useState<number>(1);
   const [nowTick, setNowTick] = useState<Date>(new Date());
 
   useEffect(() => {
@@ -255,6 +267,7 @@ export default function DashboardPage() {
       const dayNumber = latestScan?.scan_date
         ? Math.max(1, Math.min(30, Math.floor((Date.now() - new Date(latestScan.scan_date).getTime()) / (1000 * 60 * 60 * 24)) + 1))
         : 1;
+      setProgramDay(dayNumber);
 
       const template = getProtocolTemplate(selectedCategory);
       if (template) {
@@ -388,10 +401,6 @@ export default function DashboardPage() {
 
   const balance = Number(alphaSummary?.current_balance ?? 0);
   const alphaScore = Number((reports[0]?.alpha_score as number | undefined) ?? 0);
-  const reportCount = reports.length;
-  const assessmentCount = assessments.length;
-  const routineCount = routines.length;
-  const recommendationCount = products.length;
   const consistencyScore = useMemo(() => {
     const am = todayRoutine?.am_done ? 25 : 0;
     const pm = todayRoutine?.pm_done ? 25 : 0;
@@ -403,6 +412,36 @@ export default function DashboardPage() {
   const unlockState = useMemo(() => getUnlockState(nowTick), [nowTick]);
 
   const routineStreakDays = useMemo(() => calculateRoutineStreakDays(routines, todayRoutine), [routines, todayRoutine]);
+  const categoryLabel = activeCategory ? categories.find((c) => c.id === activeCategory)?.label || "Recovery" : "Recovery";
+  const userName = String(profile?.full_name || user?.email?.split("@")[0] || "User");
+  const transformationProgress = Math.max(0, Math.min(100, Math.round((Number(progressSummary?.improvement_pct || 0) + Number(consistencyScore)) / 2)));
+  const confidenceScore = Number(progressSummary?.confidence_score || alphaScore || 0);
+  const focusScore = Number(progressSummary?.discipline_index || consistencyScore || 0);
+  const recoveryVelocityLabel = Number(progressSummary?.recovery_velocity || 0) >= 70 ? "Fast" : Number(progressSummary?.recovery_velocity || 0) >= 40 ? "Moderate" : "Stabilizing";
+
+  const timelineItems = useMemo(() => {
+    const routineEvents = routines.slice(0, 4).map((row, idx) => ({
+      id: `routine-${idx}-${String(row.id || row.log_date || idx)}`,
+      label: Boolean(row.am_done) || Boolean(row.pm_done) ? "Completed Routine Check-in" : "Routine Updated",
+      timestamp: String(row.log_date || new Date().toISOString()),
+    }));
+
+    const scanEvents = scans.slice(0, 3).map((row, idx) => ({
+      id: `scan-${idx}-${String(row.id || idx)}`,
+      label: "Photo Scan Uploaded",
+      timestamp: String(row.scan_date || row.created_at || new Date().toISOString()),
+    }));
+
+    const assessmentEvents = assessments.slice(0, 3).map((row, idx) => ({
+      id: `assessment-${idx}-${String(row.id || idx)}`,
+      label: "Assessment Completed",
+      timestamp: String(row.completed_at || row.created_at || new Date().toISOString()),
+    }));
+
+    return [...routineEvents, ...scanEvents, ...assessmentEvents]
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .slice(0, 8);
+  }, [routines, scans, assessments]);
 
   if (loading || !user) {
     return (
@@ -415,171 +454,91 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#F8F6F0] px-4 py-6 text-[#1F3D2B] sm:px-6 lg:px-8">
+    <main className="af-page px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl space-y-6">
-        <section className="rounded-2xl border border-[#E2DDD3] bg-white p-6 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-[#8C6A5A]">Control Center</p>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="mt-2 text-sm text-[#6B665D]">Diagnose → Improve → Track → Transform. All values are loaded from your Supabase records.</p>
-        </section>
+        <DashboardHero
+          userName={userName}
+          categoryLabel={categoryLabel}
+          transformationProgress={transformationProgress}
+          focusScore={focusScore}
+          recoveryVelocityLabel={recoveryVelocityLabel}
+          confidenceScore={confidenceScore}
+          streakDays={routineStreakDays}
+          alphaBalance={balance}
+          dayLabel={`Day ${programDay} / 30`}
+        />
 
-        <section className="rounded-2xl border border-[#E2DDD3] bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-[#8C6A5A] mb-1">Daily Execution</p>
-              <h2 className="text-lg font-bold">Today&apos;s Routine Loop</h2>
-              <p className="mt-1 text-xs text-[#6B665D]">Complete your daily system to build streak, confidence, and visible improvement.</p>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <ProtocolChecklist
+            tasks={todayProtocolTasks}
+            routine={todayRoutine}
+            amDisabled={!unlockState.amUnlocked && !todayRoutine?.am_done}
+            pmDisabled={!unlockState.pmUnlocked && !todayRoutine?.pm_done}
+            amHint={todayRoutine?.am_done ? "" : unlockState.amUnlocked ? "+3 A$ on completion" : `Locked until ${formatHour(MORNING_UNLOCK_HOUR)}`}
+            pmHint={todayRoutine?.pm_done ? "" : unlockState.pmUnlocked ? "+3 A$ on completion" : `Locked until ${formatHour(NIGHT_UNLOCK_HOUR)}`}
+            hydrationDraft={draftHydrationMl}
+            sleepDraft={draftSleepHours}
+            onToggleAm={() => saveTodayRoutine({ am_done: !todayRoutine?.am_done })}
+            onTogglePm={() => saveTodayRoutine({ pm_done: !todayRoutine?.pm_done })}
+            onHydrationDraftChange={(value) => {
+              setDraftHydrationMl(value);
+              setRoutineDraftDirty(true);
+            }}
+            onSleepDraftChange={(value) => {
+              setDraftSleepHours(value);
+              setRoutineDraftDirty(true);
+            }}
+            onSaveMetrics={saveMetricDraft}
+            onResetDraft={() => {
+              setDraftSleepHours(todayRoutine?.sleep_hours == null ? "" : String(todayRoutine.sleep_hours));
+              setDraftHydrationMl(todayRoutine?.hydration_ml == null ? "" : String(todayRoutine.hydration_ml));
+              setRoutineDraftDirty(false);
+            }}
+            canSaveDraft={routineDraftDirty}
+            saving={savingRoutine}
+          />
+
+          <section className="af-card rounded-2xl p-6">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-[#8C6A5A]">Progress & Recovery Metrics</p>
+                <h2 className="text-lg font-bold text-[#1F3D2B]">Your Recovery Metrics</h2>
+              </div>
+              <p className="text-xs font-semibold text-[#2F6F57]">
+                {activeCategory ? `Category: ${categoryLabel}` : "No active category"}
+              </p>
             </div>
-            <div className="text-right">
-              <p className="text-sm font-semibold text-[#2F6F57]">Consistency {consistencyScore}%</p>
-              {(refreshing || storeLoading) && <p className="text-[11px] text-[#6B665D]">Syncing latest data...</p>}
+
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <MetricCard title="Severity Change" value={`${progressSummary?.improvement_pct ?? 0}%`} trend="Downward severity trend" tone="green" />
+              <MetricCard title="Consistency Score" value={`${progressSummary?.consistency_score ?? consistencyScore}%`} trend="Routine adherence" tone="green" />
+              <MetricCard title="Recovery Velocity" value={recoveryVelocityLabel} trend={`${progressSummary?.recovery_velocity ?? 0} index`} tone="amber" />
+              <MetricCard title="Confidence Score" value={`${progressSummary?.confidence_score ?? 0}`} trend="Behavioral confidence" tone="green" />
             </div>
-          </div>
 
-          <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
-            <button
-              onClick={() => saveTodayRoutine({ am_done: !todayRoutine?.am_done })}
-              disabled={!unlockState.amUnlocked && !todayRoutine?.am_done}
-              className={`rounded-xl border px-4 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-60 ${todayRoutine?.am_done ? "border-[#2F6F57] bg-[#E8F4EE]" : "border-[#E2DDD3] bg-[#F8F6F3]"}`}
-            >
-              <p className="text-xs text-[#6B665D]">Morning Routine</p>
-              <p className="font-semibold">{todayRoutine?.am_done ? "Completed" : unlockState.amUnlocked ? "Mark as complete" : `Locked until ${formatHour(MORNING_UNLOCK_HOUR)}`}</p>
-            </button>
-
-            <button
-              onClick={() => saveTodayRoutine({ pm_done: !todayRoutine?.pm_done })}
-              disabled={!unlockState.pmUnlocked && !todayRoutine?.pm_done}
-              className={`rounded-xl border px-4 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-60 ${todayRoutine?.pm_done ? "border-[#2F6F57] bg-[#E8F4EE]" : "border-[#E2DDD3] bg-[#F8F6F3]"}`}
-            >
-              <p className="text-xs text-[#6B665D]">Night Routine</p>
-              <p className="font-semibold">{todayRoutine?.pm_done ? "Completed" : unlockState.pmUnlocked ? "Mark as complete" : `Locked until ${formatHour(NIGHT_UNLOCK_HOUR)}`}</p>
-            </button>
-
-            <label className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] px-4 py-3">
-              <p className="text-xs text-[#6B665D]">Sleep (hours)</p>
-              <input
-                type="number"
-                min={0}
-                max={12}
-                step={0.5}
-                value={draftSleepHours}
-                onChange={(e) => {
-                  setDraftSleepHours(e.target.value);
-                  setRoutineDraftDirty(true);
-                }}
-                className="mt-1 w-full bg-transparent text-sm font-semibold outline-none"
-              />
-            </label>
-
-            <label className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] px-4 py-3">
-              <p className="text-xs text-[#6B665D]">Hydration (ml)</p>
-              <input
-                type="number"
-                min={0}
-                max={6000}
-                step={100}
-                value={draftHydrationMl}
-                onChange={(e) => {
-                  setDraftHydrationMl(e.target.value);
-                  setRoutineDraftDirty(true);
-                }}
-                className="mt-1 w-full bg-transparent text-sm font-semibold outline-none"
-              />
-            </label>
-          </div>
-
-          <div className="mt-3 flex items-center justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setDraftSleepHours(todayRoutine?.sleep_hours == null ? "" : String(todayRoutine.sleep_hours));
-                setDraftHydrationMl(todayRoutine?.hydration_ml == null ? "" : String(todayRoutine.hydration_ml));
-                setRoutineDraftDirty(false);
-              }}
-              disabled={!routineDraftDirty || savingRoutine}
-              className="rounded-lg border border-[#D7D1C6] bg-white px-3 py-1.5 text-xs font-semibold text-[#6B665D] disabled:opacity-50"
-            >
-              Reset Draft
-            </button>
-            <button
-              type="button"
-              onClick={saveMetricDraft}
-              disabled={!routineDraftDirty || savingRoutine}
-              className="rounded-lg bg-[#1F3D2B] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#2F6F57] disabled:opacity-50"
-            >
-              {savingRoutine ? "Saving..." : "Save Metrics"}
-            </button>
-          </div>
-
-          <div className="mt-3 flex items-center justify-between text-xs text-[#6B665D]">
-            <span>{unlockState.nextUnlockLabel || "Daily check-in feeds relapse risk and protocol recalculation."}</span>
-            <span>{savingRoutine ? "Saving..." : "Saved"}</span>
-          </div>
-        </section>
-
-        <section className="rounded-2xl border border-[#E2DDD3] bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-[#8C6A5A] mb-1">Live Metrics</p>
-              <h2 className="text-lg font-bold">Performance Intelligence</h2>
-              <p className="mt-1 text-xs text-[#6B665D]">Live progress, discipline, and confidence from your latest category data.</p>
-            </div>
-            <p className="text-xs font-semibold text-[#2F6F57]">
-              {activeCategory ? `Category: ${categories.find((c) => c.id === activeCategory)?.label || activeCategory}` : "No active category"}
-            </p>
-          </div>
-
-          <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-            <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3"><p className="text-xs text-[#6B665D]">Inflammation Change</p><p className="text-xl font-bold">{progressSummary?.inflammation_reduction_rate ?? 0}%</p></div>
-            <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3"><p className="text-xs text-[#6B665D]">Severity Improvement</p><p className="text-xl font-bold">{progressSummary?.improvement_pct ?? 0}%</p></div>
-            <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3"><p className="text-xs text-[#6B665D]">Consistency Score</p><p className="text-xl font-bold">{progressSummary?.consistency_score ?? 0}</p></div>
-            <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3"><p className="text-xs text-[#6B665D]">Discipline Score</p><p className="text-xl font-bold">{progressSummary?.discipline_index ?? 0}</p></div>
-            <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3"><p className="text-xs text-[#6B665D]">Recovery Velocity</p><p className="text-xl font-bold">{progressSummary?.recovery_velocity ?? 0}</p></div>
-            <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3"><p className="text-xs text-[#6B665D]">Confidence Score</p><p className="text-xl font-bold">{progressSummary?.confidence_score ?? 0}</p></div>
-            <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3"><p className="text-xs text-[#6B665D]">Routine Streak</p><p className="text-xl font-bold">{routineStreakDays} days</p></div>
-          </div>
-
-          <div className="mt-4 rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-4">
-            <p className="text-sm font-semibold">Today&apos;s Category Protocol Tasks ({phaseName})</p>
-            <div className="mt-2 grid md:grid-cols-2 gap-2 text-sm">
-              {todayProtocolTasks.length > 0 ? (
-                todayProtocolTasks.map((task) => (
-                  <div key={task.id} className="rounded-lg border border-[#E2DDD3] bg-white px-3 py-2">
-                    <p className="font-medium">{task.label}</p>
-                    <p className="text-xs text-[#6B665D] capitalize">{task.slot} · {task.frequency.replace(/_/g, " ")}</p>
-                  </div>
-                ))
-              ) : (
-                <p className="text-xs text-[#6B665D]">Complete analyzer and assessment to generate daily protocol tasks.</p>
-              )}
-            </div>
-          </div>
-        </section>
-
-        <section className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-6">
-          <article className="rounded-2xl border border-[#E2DDD3] bg-white p-4 shadow-sm"><p className="text-xs text-[#6B665D]">Alpha Score</p><p className="mt-2 text-3xl font-bold">{alphaScore}</p></article>
-          <article className="rounded-2xl border border-[#E2DDD3] bg-white p-4 shadow-sm"><p className="text-xs text-[#6B665D]">Alpha Sikka</p><p className="mt-2 text-3xl font-bold">{balance} A$</p></article>
-          <article className="rounded-2xl border border-[#E2DDD3] bg-white p-4 shadow-sm"><p className="text-xs text-[#6B665D]">Reports</p><p className="mt-2 text-3xl font-bold">{reportCount}</p></article>
-          <article className="rounded-2xl border border-[#E2DDD3] bg-white p-4 shadow-sm"><p className="text-xs text-[#6B665D]">Assessments</p><p className="mt-2 text-3xl font-bold">{assessmentCount}</p></article>
-          <article className="rounded-2xl border border-[#E2DDD3] bg-white p-4 shadow-sm"><p className="text-xs text-[#6B665D]">Routine Logs</p><p className="mt-2 text-3xl font-bold">{routineCount}</p></article>
-          <article className="rounded-2xl border border-[#E2DDD3] bg-white p-4 shadow-sm"><p className="text-xs text-[#6B665D]">Products</p><p className="mt-2 text-3xl font-bold">{recommendationCount}</p></article>
-        </section>
-
-        {reportCount === 0 && (
-          <section className="rounded-2xl border border-[#E2DDD3] bg-white p-6 shadow-sm text-sm text-[#6B665D]">
-            Run first scan
+            <p className="mt-4 text-xs text-[#6B665D]">{refreshing || storeLoading ? "Syncing latest data..." : "Realtime sync is active for routine, rewards, and progress signals."}</p>
           </section>
-        )}
+        </div>
 
-        {routineCount === 0 && (
-          <section className="rounded-2xl border border-[#E2DDD3] bg-white p-6 shadow-sm text-sm text-[#6B665D]">
-            Start routine
-          </section>
-        )}
+        <InsightCard category={activeCategory} metrics={progressSummary} />
+
+        <TreatmentPlan
+          categoryLabel={categoryLabel}
+          phaseName={phaseName}
+          dayNumber={programDay}
+          category={activeCategory}
+        />
+
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <RewardProgress balance={balance} />
+          <ActivityTimeline items={timelineItems} />
+        </div>
+
+        <QuickActions />
 
         {!profile && (
-          <section className="rounded-2xl border border-[#E2DDD3] bg-white p-6 shadow-sm text-sm text-[#6B665D]">
-            Complete Profile
+          <section className="af-card rounded-2xl p-6 text-sm text-[#6B665D]">
+            Complete your profile to improve recommendation precision.
           </section>
         )}
       </div>
