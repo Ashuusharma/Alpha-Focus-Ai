@@ -91,6 +91,8 @@ export const alphaSikkaEarnSchema = z.object({
     "hydration_goal",
     "sleep_goal",
     "full_day_completed",
+    "treatment_task_completed",
+    "treatment_day_completed",
     "improve_alpha_5",
     "improve_alpha_10",
     "severity_drop_one_level",

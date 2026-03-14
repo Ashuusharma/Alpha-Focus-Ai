@@ -5,6 +5,8 @@ export type AlphaSikkaAction =
   | "hydration_goal"
   | "sleep_goal"
   | "full_day_completed"
+  | "treatment_task_completed"
+  | "treatment_day_completed"
   | "improve_alpha_5"
   | "improve_alpha_10"
   | "severity_drop_one_level"
@@ -47,6 +49,8 @@ export const ALPHA_SIKKA_RULES: Record<AlphaSikkaAction, Rule> = {
   hydration_goal: { category: "discipline", amount: 3, frequency: "daily", description: "Hydration goal met" },
   sleep_goal: { category: "discipline", amount: 2, frequency: "daily", description: "Sleep goal met" },
   full_day_completed: { category: "discipline", amount: 5, frequency: "daily", description: "Full day completed" },
+  treatment_task_completed: { category: "challenge", amount: 2, frequency: "event", description: "Recovery task completed" },
+  treatment_day_completed: { category: "challenge", amount: 5, frequency: "event", description: "Recovery day completed" },
 
   improve_alpha_5: { category: "improvement", amount: 10, frequency: "event", description: "Weekly adherence above 80%" },
   improve_alpha_10: { category: "improvement", amount: 25, frequency: "event", description: "Alpha score improved by 10%" },

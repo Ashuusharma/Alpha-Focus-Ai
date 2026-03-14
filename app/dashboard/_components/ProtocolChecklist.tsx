@@ -54,6 +54,9 @@ export default function ProtocolChecklist({
   const morningTasks = slotTasks(tasks, "morning");
   const nightTasks = slotTasks(tasks, "night");
   const lifestyleTasks = slotTasks(tasks, "lifestyle");
+  const morningFallback: ProtocolTask = { id: "am-default", label: "Cleanser + SPF", slot: "morning", frequency: "daily" };
+  const lifestyleFallback: ProtocolTask = { id: "life-default", label: "Hydration + sleep recovery", slot: "lifestyle", frequency: "daily" };
+  const nightFallback: ProtocolTask = { id: "pm-default", label: "Repair balm + barrier lock", slot: "night", frequency: "daily" };
 
   const hydrationDone = Number(routine?.hydration_ml || 0) >= 2500;
   const sleepDone = Number(routine?.sleep_hours || 0) >= 7;
@@ -72,8 +75,11 @@ export default function ProtocolChecklist({
         <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-4">
           <p className="text-sm font-bold text-[#1F3D2B]">Morning Routine</p>
           <ul className="mt-2 space-y-1 text-sm text-[#6B665D]">
-            {(morningTasks.length ? morningTasks : [{ id: "am-default", label: "Cleanser + SPF" }]).map((task) => (
-              <li key={task.id}>• {task.label}</li>
+            {(morningTasks.length ? morningTasks : [morningFallback]).map((task) => (
+              <li key={task.id}>
+                <span>• {task.label}</span>
+                {task.howTo ? <p className="text-[11px] text-[#8C877D]">{task.howTo}</p> : null}
+              </li>
             ))}
           </ul>
           <button
@@ -89,8 +95,11 @@ export default function ProtocolChecklist({
         <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-4">
           <p className="text-sm font-bold text-[#1F3D2B]">Lifestyle</p>
           <ul className="mt-2 space-y-1 text-sm text-[#6B665D]">
-            {(lifestyleTasks.length ? lifestyleTasks : [{ id: "life-default", label: "Hydration + sleep recovery" }]).map((task) => (
-              <li key={task.id}>• {task.label}</li>
+            {(lifestyleTasks.length ? lifestyleTasks : [lifestyleFallback]).map((task) => (
+              <li key={task.id}>
+                <span>• {task.label}</span>
+                {task.howTo ? <p className="text-[11px] text-[#8C877D]">{task.howTo}</p> : null}
+              </li>
             ))}
           </ul>
           <div className="mt-3 grid grid-cols-2 gap-2">
@@ -131,8 +140,11 @@ export default function ProtocolChecklist({
         <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-4">
           <p className="text-sm font-bold text-[#1F3D2B]">Night Routine</p>
           <ul className="mt-2 space-y-1 text-sm text-[#6B665D]">
-            {(nightTasks.length ? nightTasks : [{ id: "pm-default", label: "Repair balm + barrier lock" }]).map((task) => (
-              <li key={task.id}>• {task.label}</li>
+            {(nightTasks.length ? nightTasks : [nightFallback]).map((task) => (
+              <li key={task.id}>
+                <span>• {task.label}</span>
+                {task.howTo ? <p className="text-[11px] text-[#8C877D]">{task.howTo}</p> : null}
+              </li>
             ))}
           </ul>
           <button

@@ -8,6 +8,8 @@ export type CreditActionCode =
   | "hydration_goal"
   | "sleep_goal"
   | "full_day_completed"
+  | "treatment_task_completed"
+  | "treatment_day_completed"
   | "improve_alpha_5"
   | "improve_alpha_10"
   | "severity_drop_one_level"
@@ -113,6 +115,8 @@ const ACTION_RULES: Record<CreditActionCode, CreditActionRule> = {
   hydration_goal: { code: "hydration_goal", label: "Hydration goal met", amount: 3, frequency: "daily", category: "discipline" },
   sleep_goal: { code: "sleep_goal", label: "Sleep goal met", amount: 2, frequency: "daily", category: "discipline" },
   full_day_completed: { code: "full_day_completed", label: "Full day completed", amount: 5, frequency: "daily", category: "discipline" },
+  treatment_task_completed: { code: "treatment_task_completed", label: "Recovery task completed", amount: 2, frequency: "event", category: "challenge" },
+  treatment_day_completed: { code: "treatment_day_completed", label: "Recovery day completed", amount: 5, frequency: "event", category: "challenge" },
 
   improve_alpha_5: {
     code: "improve_alpha_5",

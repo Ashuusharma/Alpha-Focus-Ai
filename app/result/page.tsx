@@ -409,6 +409,8 @@ export default function ResultPage() {
                   <div key={task.id} className="rounded-lg border border-[#E2DDD3] bg-white px-3 py-2">
                     <p className="font-medium">{task.label}</p>
                     <p className="text-xs text-[#6B665D] capitalize">{task.slot} · {task.frequency.replace(/_/g, " ")}</p>
+                    {task.howTo ? <p className="mt-1 text-xs text-[#4A453E]">How: {task.howTo}</p> : null}
+                    {task.whyItHelps ? <p className="mt-1 text-xs text-[#2F6F57]">Why: {task.whyItHelps}</p> : null}
                   </div>
                 ))
               ) : (

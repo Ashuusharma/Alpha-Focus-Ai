@@ -12,10 +12,13 @@ import { categories, CategoryId } from "@/lib/questions";
 import { getSupabaseAuthHeaders } from "@/lib/auth/clientAuthHeaders";
 import {
   ActivityTimeline,
+  AIInsightEngine,
+  BeforeAfterTimeline,
   DashboardHero,
   InsightCard,
   MetricCard,
   ProtocolChecklist,
+  ProgressVisualization,
   QuickActions,
   RewardProgress,
   TreatmentPlan,
@@ -38,6 +41,26 @@ type ProgressSummary = {
   recovery_velocity: number;
   discipline_index: number;
   confidence_score: number;
+};
+
+type WeeklyProgressPoint = {
+  week: string;
+  severity: number;
+  adherence: number;
+  confidence: number;
+};
+
+type TimelinePhoto = {
+  label: "Day 1" | "Day 14" | "Day 30";
+  date: string | null;
+  imageUrl: string | null;
+};
+
+type AIInsight = {
+  id: string;
+  title: string;
+  message: string;
+  impact: "high" | "medium" | "low";
 };
 
 const MORNING_UNLOCK_HOUR = 5;
@@ -131,6 +154,43 @@ async function emitNotification(eventType: string, dedupeKey: string, metadata?:
 
 function todayDateKey() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function daysAgo(days: number) {
+  const date = new Date();
+  date.setDate(date.getDate() - days);
+  return date;
+}
+
+function safeDate(value: unknown) {
+  if (typeof value !== "string") return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function numericFromRow(row: Record<string, unknown>, keys: string[]) {
+  for (const key of keys) {
+    const value = Number(row[key]);
+    if (Number.isFinite(value)) return value;
+  }
+  return null;
+}
+
+function toCategoryId(value: unknown): CategoryId | null {
+  if (typeof value !== "string") return null;
+  const match = categories.find((item) => item.id === value);
+  if (!match) return null;
+  return getProtocolTemplate(match.id as CategoryId) ? (match.id as CategoryId) : null;
+}
+
+function pickCategoryFromRecord(row: Record<string, unknown>): CategoryId | null {
+  return (
+    toCategoryId(row.selected_category) ||
+    toCategoryId(row.analyzer_category) ||
+    toCategoryId(row.category) ||
+    toCategoryId(row.target_category) ||
+    null
+  );
 }
 
 export default function DashboardPage() {
@@ -232,17 +292,26 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!user) return;
 
-    const loadClinicalPanel = async () => {
+    const loadSelectedCategory = async () => {
       const { data: activeAnalysis } = await supabase
         .from("user_active_analysis")
         .select("selected_category")
         .eq("user_id", user.id)
         .maybeSingle();
 
-      const selectedCategory = (activeAnalysis?.selected_category || null) as CategoryId | null;
+      const selectedCategory = toCategoryId(activeAnalysis?.selected_category || null);
       if (!selectedCategory) return;
+      setActiveCategory((prev) => prev || selectedCategory);
+    };
 
-      setActiveCategory(selectedCategory);
+    void loadSelectedCategory();
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user || !activeCategory) return;
+
+    const loadClinicalPanel = async () => {
+      const selectedCategory = activeCategory;
 
       await calculateProgressMetricsForCategory(user.id, selectedCategory);
 
@@ -277,7 +346,7 @@ export default function DashboardPage() {
     };
 
     void loadClinicalPanel();
-  }, [user?.id]);
+  }, [user?.id, activeCategory]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -412,6 +481,22 @@ export default function DashboardPage() {
   const unlockState = useMemo(() => getUnlockState(nowTick), [nowTick]);
 
   const routineStreakDays = useMemo(() => calculateRoutineStreakDays(routines, todayRoutine), [routines, todayRoutine]);
+  const treatmentCategories = useMemo(() => {
+    const derived = [
+      ...scans.map((row) => pickCategoryFromRecord(row)).filter(Boolean),
+      ...assessments.map((row) => pickCategoryFromRecord(row)).filter(Boolean),
+      ...reports.map((row) => pickCategoryFromRecord(row)).filter(Boolean),
+    ] as CategoryId[];
+
+    const ordered = [activeCategory, ...derived].filter(Boolean) as CategoryId[];
+    return ordered.filter((cat, idx) => ordered.indexOf(cat) === idx);
+  }, [activeCategory, scans, assessments, reports]);
+
+  useEffect(() => {
+    if (activeCategory || treatmentCategories.length === 0) return;
+    setActiveCategory(treatmentCategories[0]);
+  }, [activeCategory, treatmentCategories]);
+
   const categoryLabel = activeCategory ? categories.find((c) => c.id === activeCategory)?.label || "Recovery" : "Recovery";
   const userName = String(profile?.full_name || user?.email?.split("@")[0] || "User");
   const transformationProgress = Math.max(0, Math.min(100, Math.round((Number(progressSummary?.improvement_pct || 0) + Number(consistencyScore)) / 2)));
@@ -442,6 +527,192 @@ export default function DashboardPage() {
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
       .slice(0, 8);
   }, [routines, scans, assessments]);
+
+  const weeklyProgressData = useMemo(() => {
+    const now = new Date();
+    const weekBoundaries = [28, 21, 14, 7, 0].map((offset) => {
+      const d = new Date(now);
+      d.setDate(now.getDate() - offset);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    });
+
+    const categoryScans = scans
+      .filter((row) => {
+        if (!activeCategory) return true;
+        const mapped = pickCategoryFromRecord(row) || toCategoryId(row.analyzer_category) || toCategoryId(row.category);
+        return mapped === activeCategory;
+      })
+      .map((row) => ({ ...row, scanDate: safeDate(row.scan_date || row.created_at) }))
+      .filter((row) => Boolean(row.scanDate))
+      .sort((a, b) => (a.scanDate!.getTime() - b.scanDate!.getTime()));
+
+    const firstSeverity = categoryScans.length > 0
+      ? numericFromRow(categoryScans[0], ["severity_score", "clinical_severity", "score", "alpha_score"]) ?? 70
+      : Math.max(35, Math.round(80 - Number(progressSummary?.improvement_pct || 0) * 0.6));
+
+    const finalSeverity = Math.max(5, Math.round(firstSeverity - Number(progressSummary?.improvement_pct || 0) * 0.6));
+
+    const rows: WeeklyProgressPoint[] = [];
+
+    for (let i = 0; i < 4; i += 1) {
+      const start = weekBoundaries[i];
+      const end = weekBoundaries[i + 1];
+
+      const weekRoutines = routines.filter((row) => {
+        const d = safeDate(row.log_date || row.created_at);
+        return Boolean(d && d >= start && d < end);
+      });
+
+      const adherence = weekRoutines.length
+        ? Math.round(
+            (weekRoutines.reduce((sum, row) => {
+              const completion = (Boolean(row.am_done) ? 0.5 : 0) + (Boolean(row.pm_done) ? 0.5 : 0);
+              return sum + completion;
+            }, 0) /
+              weekRoutines.length) *
+              100
+          )
+        : 0;
+
+      const scanInWeek = categoryScans
+        .filter((row) => Boolean(row.scanDate && row.scanDate >= start && row.scanDate < end))
+        .map((row) => numericFromRow(row, ["severity_score", "clinical_severity", "score", "alpha_score"]))
+        .find((value) => value != null);
+
+      const interpolatedSeverity = Math.round(firstSeverity - ((firstSeverity - finalSeverity) * (i + 1)) / 4);
+      const severity = Math.max(0, Math.min(100, Math.round(scanInWeek ?? interpolatedSeverity)));
+
+      const confidenceBase = Number(progressSummary?.confidence_score || 0);
+      const confidence = Math.max(10, Math.min(100, Math.round(confidenceBase * 0.7 + adherence * 0.3)));
+
+      rows.push({
+        week: `W${i + 1}`,
+        severity,
+        adherence,
+        confidence,
+      });
+    }
+
+    return rows;
+  }, [scans, routines, activeCategory, progressSummary]);
+
+  const beforeAfterPhotos = useMemo(() => {
+    const categoryScans = scans
+      .filter((row) => {
+        if (!activeCategory) return true;
+        const mapped = pickCategoryFromRecord(row) || toCategoryId(row.analyzer_category) || toCategoryId(row.category);
+        return mapped === activeCategory;
+      })
+      .map((row) => ({
+        id: String(row.id || ""),
+        scanDate: safeDate(row.scan_date || row.created_at),
+        scanDateRaw: typeof row.scan_date === "string" ? row.scan_date : typeof row.created_at === "string" ? row.created_at : null,
+        imageUrl: typeof row.image_url === "string" ? row.image_url : null,
+      }))
+      .filter((row) => Boolean(row.scanDate))
+      .sort((a, b) => a.scanDate!.getTime() - b.scanDate!.getTime());
+
+    if (categoryScans.length === 0) {
+      return [
+        { label: "Day 1", date: null, imageUrl: null },
+        { label: "Day 14", date: null, imageUrl: null },
+        { label: "Day 30", date: null, imageUrl: null },
+      ] as TimelinePhoto[];
+    }
+
+    const first = categoryScans[0];
+    const last = categoryScans[categoryScans.length - 1];
+    const targetMidTs = first.scanDate!.getTime() + Math.floor((last.scanDate!.getTime() - first.scanDate!.getTime()) / 2);
+
+    let mid = categoryScans[0];
+    let midDiff = Math.abs(categoryScans[0].scanDate!.getTime() - targetMidTs);
+    for (const row of categoryScans) {
+      const diff = Math.abs(row.scanDate!.getTime() - targetMidTs);
+      if (diff < midDiff) {
+        midDiff = diff;
+        mid = row;
+      }
+    }
+
+    return [
+      { label: "Day 1", date: first.scanDateRaw, imageUrl: first.imageUrl },
+      { label: "Day 14", date: mid.scanDateRaw, imageUrl: mid.imageUrl },
+      { label: "Day 30", date: last.scanDateRaw, imageUrl: last.imageUrl },
+    ] as TimelinePhoto[];
+  }, [scans, activeCategory]);
+
+  const aiInsights = useMemo(() => {
+    const items: AIInsight[] = [];
+
+    const last7 = routines.filter((row) => {
+      const d = safeDate(row.log_date || row.created_at);
+      return Boolean(d && d >= daysAgo(7));
+    });
+    const prev7 = routines.filter((row) => {
+      const d = safeDate(row.log_date || row.created_at);
+      return Boolean(d && d >= daysAgo(14) && d < daysAgo(7));
+    });
+
+    const avgHydrationLast7 = last7.length ? Math.round(last7.reduce((sum, row) => sum + Number(row.hydration_ml || 0), 0) / last7.length) : 0;
+    const avgHydrationPrev7 = prev7.length ? Math.round(prev7.reduce((sum, row) => sum + Number(row.hydration_ml || 0), 0) / prev7.length) : 0;
+    const avgSleepLast7 = last7.length ? Number((last7.reduce((sum, row) => sum + Number(row.sleep_hours || 0), 0) / last7.length).toFixed(1)) : 0;
+    const avgSleepPrev7 = prev7.length ? Number((prev7.reduce((sum, row) => sum + Number(row.sleep_hours || 0), 0) / prev7.length).toFixed(1)) : 0;
+
+    const w3 = weeklyProgressData[2]?.adherence ?? 0;
+    const w4 = weeklyProgressData[3]?.adherence ?? 0;
+    if (avgHydrationPrev7 > 0 && avgHydrationLast7 < avgHydrationPrev7 - 250) {
+      items.push({
+        id: "hydration-drop",
+        title: "Hydration drop detected",
+        message: `Your hydration dropped from ~${avgHydrationPrev7}ml to ~${avgHydrationLast7}ml this week, which can slow visible recovery. Target +400ml daily for next 5 days.`,
+        impact: "high",
+      });
+    }
+
+    if (avgSleepPrev7 > 0 && avgSleepLast7 < avgSleepPrev7 - 0.7) {
+      items.push({
+        id: "sleep-regression",
+        title: "Sleep consistency regressed",
+        message: `Average sleep reduced from ${avgSleepPrev7}h to ${avgSleepLast7}h. Move bedtime 30 minutes earlier to improve repair window.`,
+        impact: "medium",
+      });
+    }
+
+    if (w4 < w3 - 15) {
+      items.push({
+        id: "adherence-dip",
+        title: "Routine adherence dipped",
+        message: `Weekly adherence dropped from ${w3}% to ${w4}%. Use Beginner mode for 3 days and complete all morning slots before re-scaling.`,
+        impact: "high",
+      });
+    }
+
+    const latestScanDate = scans
+      .map((row) => safeDate(row.scan_date || row.created_at))
+      .filter((d): d is Date => Boolean(d))
+      .sort((a, b) => b.getTime() - a.getTime())[0];
+
+    if (!latestScanDate || latestScanDate < daysAgo(14)) {
+      items.push({
+        id: "scan-cadence",
+        title: "Progress scan overdue",
+        message: "No recent scan in the last 14 days. Upload a fresh scan to improve trend accuracy and AI recommendations.",
+        impact: "medium",
+      });
+    }
+
+    if (items.length === 0) {
+      items.push({
+        id: "positive-momentum",
+        title: "Momentum is stable",
+        message: "Your routine pattern is stable this week. Keep the same timing window for next 7 days to maximize compounding results.",
+        impact: "low",
+      });
+    }
+
+    return items.slice(0, 3);
+  }, [routines, weeklyProgressData, scans]);
 
   if (loading || !user) {
     return (
@@ -522,11 +793,21 @@ export default function DashboardPage() {
 
         <InsightCard category={activeCategory} metrics={progressSummary} />
 
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <ProgressVisualization data={weeklyProgressData} />
+          <AIInsightEngine insights={aiInsights} />
+        </div>
+
+        <BeforeAfterTimeline categoryLabel={categoryLabel} photos={beforeAfterPhotos} />
+
         <TreatmentPlan
           categoryLabel={categoryLabel}
           phaseName={phaseName}
           dayNumber={programDay}
           category={activeCategory}
+          availableCategories={treatmentCategories}
+          userId={user.id}
+          onCategoryChange={setActiveCategory}
         />
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
