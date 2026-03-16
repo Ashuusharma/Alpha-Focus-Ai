@@ -7,5 +7,6 @@ export { default as MetricCard } from "./MetricCard";
 export { default as ProtocolChecklist } from "./ProtocolChecklist";
 export { default as ProgressVisualization } from "./ProgressVisualization";
 export { default as QuickActions } from "./QuickActions";
+export { default as RecoveryProgramNavigator } from "./RecoveryProgramNavigator";
 export { default as RewardProgress } from "./RewardProgress";
 export { default as TreatmentPlan } from "./TreatmentPlan";

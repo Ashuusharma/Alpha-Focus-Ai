@@ -35,15 +35,15 @@ export default function ProgressVisualization({ data }: ProgressVisualizationPro
       <div className="flex items-center justify-between gap-2">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-wider text-[#8C6A5A]">Progress Visualization</p>
-          <h3 className="text-lg font-bold text-[#1F3D2B]">Week 1 to Week 4 Improvement</h3>
+          <h3 className="text-lg font-bold text-[#1F3D2B]">Recovery Progress Analytics</h3>
         </div>
-        <p className="text-xs text-[#6B665D]">Severity, adherence, confidence</p>
+        <p className="text-xs text-[#6B665D]">Severity ↓ · Consistency ↑ · Confidence ↑</p>
       </div>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+      <div className="mt-4 grid gap-4 lg:grid-cols-3">
         <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3">
           <p className="text-xs font-semibold text-[#1F3D2B]">Severity Trend (lower is better)</p>
-          <div className="mt-2 h-56 w-full">
+          <div className="mt-2 h-52 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={safe} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E7E1D7" />
@@ -57,17 +57,31 @@ export default function ProgressVisualization({ data }: ProgressVisualizationPro
         </div>
 
         <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3">
-          <p className="text-xs font-semibold text-[#1F3D2B]">Routine Adherence + Confidence</p>
-          <div className="mt-2 h-56 w-full">
+          <p className="text-xs font-semibold text-[#1F3D2B]">Routine Adherence</p>
+          <div className="mt-2 h-52 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={safe} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E7E1D7" />
                 <XAxis dataKey="week" tick={{ fill: "#6B665D", fontSize: 12 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fill: "#6B665D", fontSize: 12 }} axisLine={false} tickLine={false} domain={[0, 100]} />
-                <Tooltip formatter={(value, key) => [`${clampPct(Number(value || 0))}%`, key === "adherence" ? "Adherence" : "Confidence"]} />
+                <Tooltip formatter={(value) => [`${clampPct(Number(value || 0))}%`, "Adherence"]} />
                 <Bar dataKey="adherence" fill="#2F6F57" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="confidence" fill="#8C6A5A" radius={[6, 6, 0, 0]} />
               </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3">
+          <p className="text-xs font-semibold text-[#1F3D2B]">Confidence Score Trend</p>
+          <div className="mt-2 h-52 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={safe} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E7E1D7" />
+                <XAxis dataKey="week" tick={{ fill: "#6B665D", fontSize: 12 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: "#6B665D", fontSize: 12 }} axisLine={false} tickLine={false} domain={[0, 100]} />
+                <Tooltip formatter={(value) => [`${clampPct(Number(value || 0))}%`, "Confidence"]} />
+                <Line type="monotone" dataKey="confidence" stroke="#8C6A5A" strokeWidth={3} dot={{ r: 4 }} />
+              </LineChart>
             </ResponsiveContainer>
           </div>
         </div>

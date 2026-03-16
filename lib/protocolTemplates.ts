@@ -12,18 +12,24 @@ export type ClinicalCategoryId =
 
 export type ProtocolTask = {
   id: string;
+  title?: string;
   label: string;
   slot: "morning" | "night" | "weekly" | "lifestyle";
   frequency: "daily" | "alternate_days" | "weekly";
   howTo?: string;
+  why?: string;
   whyItHelps?: string;
+  ingredient?: string;
+  goal?: string;
+  expectedImprovement?: string;
   recommendedProduct?: string;
+  reward?: number;
   caution?: string;
   durationMin?: number;
 };
 
 export type ProtocolPhase = {
-  name: "Stabilization" | "Correction" | "Optimization";
+  name: "Reset" | "Repair" | "Stabilize" | "Stabilization" | "Correction" | "Optimization";
   duration_days: number;
   tasks: ProtocolTask[];
 };
@@ -57,9 +63,18 @@ type GuidedAction = {
   label: string;
   howTo: string;
   whyItHelps: string;
+  ingredient?: string;
+  goal?: string;
+  expectedImprovement?: string;
   product: string;
   durationMin?: number;
   caution?: string;
+};
+
+export type DailyProtocolMeta = {
+  phaseName: "Reset" | "Repair" | "Stabilize";
+  dailyGoal: string;
+  expectedResult: string;
 };
 
 type CategoryGuidance = {
@@ -73,65 +88,65 @@ const protocolTemplates: Record<ClinicalCategoryId, ProtocolTemplate> = {
   acne: {
     category: "acne",
     phases: [
-      { name: "Stabilization", duration_days: 7, tasks: [] },
-      { name: "Correction", duration_days: 14, tasks: [] },
-      { name: "Optimization", duration_days: 9, tasks: [] },
+      { name: "Reset", duration_days: 7, tasks: [] },
+      { name: "Repair", duration_days: 7, tasks: [] },
+      { name: "Stabilize", duration_days: 16, tasks: [] },
     ],
   },
   hair_loss: {
     category: "hair_loss",
     phases: [
-      { name: "Stabilization", duration_days: 7, tasks: [] },
-      { name: "Correction", duration_days: 14, tasks: [] },
-      { name: "Optimization", duration_days: 9, tasks: [] },
+      { name: "Reset", duration_days: 7, tasks: [] },
+      { name: "Repair", duration_days: 7, tasks: [] },
+      { name: "Stabilize", duration_days: 16, tasks: [] },
     ],
   },
   scalp_health: {
     category: "scalp_health",
     phases: [
-      { name: "Stabilization", duration_days: 7, tasks: [] },
-      { name: "Correction", duration_days: 14, tasks: [] },
-      { name: "Optimization", duration_days: 9, tasks: [] },
+      { name: "Reset", duration_days: 7, tasks: [] },
+      { name: "Repair", duration_days: 7, tasks: [] },
+      { name: "Stabilize", duration_days: 16, tasks: [] },
     ],
   },
   dark_circles: {
     category: "dark_circles",
     phases: [
-      { name: "Stabilization", duration_days: 7, tasks: [] },
-      { name: "Correction", duration_days: 14, tasks: [] },
-      { name: "Optimization", duration_days: 9, tasks: [] },
+      { name: "Reset", duration_days: 7, tasks: [] },
+      { name: "Repair", duration_days: 7, tasks: [] },
+      { name: "Stabilize", duration_days: 16, tasks: [] },
     ],
   },
   beard_growth: {
     category: "beard_growth",
     phases: [
-      { name: "Stabilization", duration_days: 7, tasks: [] },
-      { name: "Correction", duration_days: 14, tasks: [] },
-      { name: "Optimization", duration_days: 9, tasks: [] },
+      { name: "Reset", duration_days: 7, tasks: [] },
+      { name: "Repair", duration_days: 7, tasks: [] },
+      { name: "Stabilize", duration_days: 16, tasks: [] },
     ],
   },
   body_acne: {
     category: "body_acne",
     phases: [
-      { name: "Stabilization", duration_days: 7, tasks: [] },
-      { name: "Correction", duration_days: 14, tasks: [] },
-      { name: "Optimization", duration_days: 9, tasks: [] },
+      { name: "Reset", duration_days: 7, tasks: [] },
+      { name: "Repair", duration_days: 7, tasks: [] },
+      { name: "Stabilize", duration_days: 16, tasks: [] },
     ],
   },
   lip_care: {
     category: "lip_care",
     phases: [
-      { name: "Stabilization", duration_days: 7, tasks: [] },
-      { name: "Correction", duration_days: 14, tasks: [] },
-      { name: "Optimization", duration_days: 9, tasks: [] },
+      { name: "Reset", duration_days: 7, tasks: [] },
+      { name: "Repair", duration_days: 7, tasks: [] },
+      { name: "Stabilize", duration_days: 16, tasks: [] },
     ],
   },
   anti_aging: {
     category: "anti_aging",
     phases: [
-      { name: "Stabilization", duration_days: 7, tasks: [] },
-      { name: "Correction", duration_days: 14, tasks: [] },
-      { name: "Optimization", duration_days: 9, tasks: [] },
+      { name: "Reset", duration_days: 7, tasks: [] },
+      { name: "Repair", duration_days: 7, tasks: [] },
+      { name: "Stabilize", duration_days: 16, tasks: [] },
     ],
   },
 };
@@ -168,6 +183,55 @@ const DAY_FOCUS: string[] = [
   "Prepare long-term routine",
   "Final review and next-30-day plan",
 ];
+
+const DAY_EXPECTED_OUTCOME: string[] = [
+  "Visible reduction in irritation triggers.",
+  "Better hydration comfort by evening.",
+  "Lower morning puffiness/redness intensity.",
+  "Improved tolerance to routine steps.",
+  "More stable AM-to-PM symptom pattern.",
+  "Lower stress-linked flare tendency.",
+  "Week 1 checkpoint with measurable shift.",
+  "Correction starts with controlled active response.",
+  "Targeted symptom zones show improvement.",
+  "Texture/tone starts stabilizing.",
+  "Fewer reactive symptom spikes.",
+  "Higher adherence confidence.",
+  "Barrier resilience improves.",
+  "Week 2 trend becomes clearer.",
+  "Better dosage/cadence balance.",
+  "Circulation and recovery support improve.",
+  "Lower day-to-day volatility.",
+  "Sharper precision in execution.",
+  "Better consistency under real schedule.",
+  "Sustained correction with less irritation.",
+  "Week 3 checkpoint confirms direction.",
+  "Stabilization with lower effort.",
+  "Reduced rebound risk.",
+  "Weakest area receives focused support.",
+  "Lifestyle compounding becomes visible.",
+  "Maintenance-level control increases.",
+  "Confidence improves through repeatable wins.",
+  "Week 4 review secures consistency.",
+  "Long-term routine readiness.",
+  "30-day result ready for maintenance handoff.",
+];
+
+function inferIngredient(action: GuidedAction) {
+  if (action.ingredient) return action.ingredient;
+  const hay = `${action.label} ${action.product}`.toLowerCase();
+  if (hay.includes("caffeine")) return "Caffeine";
+  if (hay.includes("niacinamide")) return "Niacinamide";
+  if (hay.includes("salicylic") || hay.includes("bha")) return "Salicylic Acid (BHA)";
+  if (hay.includes("retinoid") || hay.includes("retinol")) return "Retinoid";
+  if (hay.includes("ketoconazole")) return "Ketoconazole";
+  if (hay.includes("ceramide")) return "Ceramides";
+  if (hay.includes("peptide")) return "Peptides";
+  if (hay.includes("spf")) return "UV Filters";
+  if (hay.includes("castor")) return "Castor Oil";
+  if (hay.includes("tea tree")) return "Tea Tree";
+  return "Targeted active blend";
+}
 
 const CATEGORY_GUIDANCE: Record<ClinicalCategoryId, CategoryGuidance> = {
   acne: {
@@ -380,12 +444,18 @@ function buildSlotTasks(
     const action = actions[(offset + i) % actions.length];
     tasks.push({
       id: `${category}-${slot}-${dayNumber}-${i + 1}`,
+      title: action.label,
       label: action.label,
       slot,
       frequency: slot === "weekly" ? "weekly" : "daily",
       howTo: `${action.howTo} Today focus: ${dayFocus}.`,
+      why: action.whyItHelps,
       whyItHelps: action.whyItHelps,
+      ingredient: inferIngredient(action),
+      goal: action.goal || dayFocus,
+      expectedImprovement: action.expectedImprovement || DAY_EXPECTED_OUTCOME[dayNumber - 1] || "Steady visible recovery with consistency.",
       recommendedProduct: action.product,
+      reward: slot === "weekly" ? 4 : 2,
       caution: action.caution,
       durationMin: action.durationMin,
     });
@@ -394,12 +464,18 @@ function buildSlotTasks(
   // Add one phase guidance anchor so each day clearly explains intent.
   tasks.unshift({
     id: `${category}-${slot}-${dayNumber}-anchor`,
+    title: `${phaseName} Focus`,
     label: `${phaseName} Focus: ${dayFocus}`,
     slot,
     frequency: "daily",
     howTo: `Keep this slot simple and consistent. Complete every step in order and avoid adding new products today.`,
+    why: `Daily intent clarity reduces decision fatigue and improves adherence consistency.`,
     whyItHelps: `Daily intent clarity reduces decision fatigue and improves adherence consistency.`,
+    ingredient: "N/A",
+    goal: dayFocus,
+    expectedImprovement: DAY_EXPECTED_OUTCOME[dayNumber - 1] || "Steady visible recovery with consistency.",
     recommendedProduct: "Use only routine-approved products",
+    reward: 1,
     durationMin: 2,
   });
 
@@ -532,14 +608,34 @@ function addWeeklyConfidencePrompt(tasks: ProtocolTask[], category: ClinicalCate
 
   tasks.push({
     id: `${category}-confidence-check-${dayNumber}`,
+    title: "Weekly confidence check-in",
     label: "Weekly confidence check-in",
     slot: "weekly",
     frequency: "weekly",
     howTo: `Review this week: ${completed}/7 days complete (${adherencePct}%). ${photoDone ? "Compare before/after photos now." : "Take this week photo now for comparison."}`,
+    why: message,
     whyItHelps: message,
+    ingredient: "N/A",
+    goal: "Measure confidence and adherence trend",
+    expectedImprovement: "Better consistency decisions for next week.",
     recommendedProduct: "Progress photo + adherence log",
+    reward: 3,
     durationMin: 6,
   });
+}
+
+export function generateDailyProtocolMeta(category: CategoryId, dayNumber: number): DailyProtocolMeta | null {
+  const template = getProtocolTemplate(category);
+  if (!template) return null;
+
+  const normalizedDay = Math.max(1, Math.min(30, dayNumber));
+  const phaseName: DailyProtocolMeta["phaseName"] = normalizedDay <= 7 ? "Reset" : normalizedDay <= 14 ? "Repair" : "Stabilize";
+
+  return {
+    phaseName,
+    dailyGoal: DAY_FOCUS[normalizedDay - 1] || "Daily recovery objective",
+    expectedResult: DAY_EXPECTED_OUTCOME[normalizedDay - 1] || "Improved symptom control with consistency.",
+  };
 }
 
 export function getProtocolTemplate(category: CategoryId): ProtocolTemplate | null {
@@ -570,9 +666,9 @@ export function generateDailyProtocolTasks(category: CategoryId, dayNumber: numb
   const dayFocus = DAY_FOCUS[normalizedDay - 1] || "Stay consistent and follow protocol";
 
   const baseSlotCount =
-    phase.name === "Stabilization"
+    phase.name === "Reset" || phase.name === "Stabilization"
       ? { morning: 2, night: 1, lifestyle: 1 }
-      : phase.name === "Correction"
+      : phase.name === "Repair" || phase.name === "Correction"
         ? { morning: 2, night: 2, lifestyle: 1 }
         : { morning: 2, night: 1, lifestyle: 1 };
 
@@ -588,12 +684,18 @@ export function generateDailyProtocolTasks(category: CategoryId, dayNumber: numb
     const weeklyAction = guidance.weekly[(Math.floor(normalizedDay / 7) - 1) % guidance.weekly.length];
     tasks.push({
       id: `${category}-weekly-${normalizedDay}`,
+      title: weeklyAction.label,
       label: weeklyAction.label,
       slot: "weekly",
       frequency: "weekly",
       howTo: `${weeklyAction.howTo} Keep comparison conditions the same as previous check.`,
+      why: weeklyAction.whyItHelps,
       whyItHelps: weeklyAction.whyItHelps,
+      ingredient: inferIngredient(weeklyAction),
+      goal: weeklyAction.goal || "Review weekly progress and refine routine",
+      expectedImprovement: weeklyAction.expectedImprovement || "Clearer progress visibility and better weekly decisions.",
       recommendedProduct: weeklyAction.product,
+      reward: 4,
       durationMin: weeklyAction.durationMin || 8,
     });
 
@@ -603,12 +705,18 @@ export function generateDailyProtocolTasks(category: CategoryId, dayNumber: numb
   if (normalizedDay === 1) {
     tasks.push({
       id: `${category}-day1-baseline`,
+      title: "Day 1 baseline record",
       label: "Day 1 baseline record",
       slot: "lifestyle",
       frequency: "daily",
       howTo: "Take clear before photos and rate severity, confidence, and consistency target for next 30 days.",
+      why: "A concrete baseline makes progress visible and improves confidence.",
       whyItHelps: "A concrete baseline makes progress visible and improves confidence.",
+      ingredient: "N/A",
+      goal: "Set baseline for objective improvement tracking",
+      expectedImprovement: "Clear comparison reference by Day 14 and Day 30.",
       recommendedProduct: "Phone notes + camera",
+      reward: 3,
       durationMin: 10,
     });
   }
@@ -616,12 +724,18 @@ export function generateDailyProtocolTasks(category: CategoryId, dayNumber: numb
   if (normalizedDay === 30) {
     tasks.push({
       id: `${category}-day30-maintenance`,
+      title: "Maintenance plan handoff",
       label: "Maintenance plan handoff",
       slot: "weekly",
       frequency: "weekly",
       howTo: "Finalize the 3 most effective steps and set a sustainable 4-week maintenance schedule.",
+      why: "Prevents relapse and protects gains after the 30-day program.",
       whyItHelps: "Prevents relapse and protects gains after the 30-day program.",
+      ingredient: "N/A",
+      goal: "Transition to low-friction long-term maintenance",
+      expectedImprovement: "Reduced relapse risk and improved long-term consistency.",
       recommendedProduct: "Simple maintenance checklist",
+      reward: 5,
       durationMin: 10,
     });
   }
@@ -633,7 +747,18 @@ export function generateDailyProtocolTasks(category: CategoryId, dayNumber: numb
   }
 
   const language = options.guidanceLanguage || "en";
-  tasks = tasks.map((task) => localizeTask(task, language));
+  tasks = tasks.map((task) => {
+    const localized = localizeTask(task, language);
+    return {
+      ...localized,
+      title: localized.title || localized.label,
+      why: localized.why || localized.whyItHelps,
+      ingredient: localized.ingredient || "Targeted active blend",
+      goal: localized.goal || DAY_FOCUS[normalizedDay - 1] || "Daily recovery objective",
+      expectedImprovement: localized.expectedImprovement || DAY_EXPECTED_OUTCOME[normalizedDay - 1] || "Steady visible recovery with consistency.",
+      reward: Number.isFinite(Number(localized.reward)) ? Number(localized.reward) : localized.slot === "weekly" ? 4 : 2,
+    };
+  });
 
   return tasks;
 }

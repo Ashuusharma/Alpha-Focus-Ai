@@ -5,6 +5,7 @@ import { Bell, CheckCircle2, ChevronDown, Clock3, Play, RotateCcw, Pause, Sparkl
 import { categories, type CategoryId } from "@/lib/questions";
 import {
   generateDailyProtocolTasks,
+  generateDailyProtocolMeta,
   getProtocolTemplate,
   getProtocolDurationDays,
   type ProtocolTask,
@@ -90,9 +91,12 @@ function taskDetailFor(category: CategoryId, task: ProtocolTask) {
     durationMin: task.durationMin || (task.slot === "weekly" ? 12 : task.slot === "lifestyle" ? 5 : 3),
     instruction: task.howTo || `Follow \"${task.label}\" precisely for ${String(category).replace("_", " ")} recovery consistency.`,
     productSuggestion: task.recommendedProduct || categoryProduct[String(category)] || "Targeted recovery essentials",
+    ingredient: task.ingredient || "Targeted active blend",
+    goal: task.goal || "Daily recovery objective",
+    expectedImprovement: task.expectedImprovement || "Steady visible recovery with consistency.",
     whyItHelps: task.whyItHelps || "Consistent execution supports visible improvements over time.",
     caution: task.caution,
-    rewardPoints: task.slot === "weekly" ? 4 : 2,
+    rewardPoints: Number.isFinite(Number(task.reward)) ? Number(task.reward) : task.slot === "weekly" ? 4 : 2,
   };
 }
 
@@ -352,6 +356,11 @@ export default function TreatmentPlan({ categoryLabel, phaseName, dayNumber, cat
         ? "Good momentum. Focus on one missed slot pattern and close it this week."
         : "Low consistency this week. Use Beginner mode and complete Recovery Lite today to restart cleanly.";
 
+  const dailyMeta = useMemo(() => {
+    if (!selectedCategory) return null;
+    return generateDailyProtocolMeta(selectedCategory, selectedDay);
+  }, [selectedCategory, selectedDay]);
+
   const todayKey = toDateKey();
   const missedDays = useMemo(() => {
     if (!lastCompletedDate) return 0;
@@ -572,6 +581,14 @@ export default function TreatmentPlan({ categoryLabel, phaseName, dayNumber, cat
         </div>
         <p className="mt-1 text-xs text-[#6B665D]">Transformation progress: {transformationPct}% · Streak: {streak} days</p>
 
+        {dailyMeta ? (
+          <div className="mt-3 rounded-lg border border-[#D7D1C6] bg-white px-3 py-2 text-xs">
+            <p className="font-semibold text-[#1F3D2B]">Daily Clinical Objective</p>
+            <p className="mt-1 text-[#6B665D]">Goal today: {dailyMeta.dailyGoal}</p>
+            <p className="mt-1 text-[#2F6F57]">Expected improvement: {dailyMeta.expectedResult}</p>
+          </div>
+        ) : null}
+
         <div className="mt-3 rounded-lg border border-[#D7D1C6] bg-white px-3 py-2 text-xs">
           <p className="font-semibold text-[#1F3D2B]">Weekly confidence tracker (Week {selectedWeek})</p>
           <p className="mt-1 text-[#6B665D]">Adherence: {completedDaysThisWeek}/{weekDayCount} days ({weeklyAdherencePct}%). {confidencePrompt}</p>
@@ -668,8 +685,11 @@ export default function TreatmentPlan({ categoryLabel, phaseName, dayNumber, cat
                             <div className="flex items-start justify-between gap-2">
                               <div>
                                 <p className="text-sm font-semibold text-[#1F3D2B]">{task.label}</p>
+                                <p className="mt-0.5 text-[11px] text-[#8C6A5A]">Goal: {detail.goal}</p>
                                 <p className="mt-0.5 text-xs text-[#6B665D]">{detail.instruction}</p>
                                 <p className="mt-1 text-[11px] text-[#2F6F57]">Why it helps: {detail.whyItHelps}</p>
+                                <p className="mt-1 text-[11px] text-[#6B665D]">Ingredient: {detail.ingredient}</p>
+                                <p className="mt-1 text-[11px] text-[#2F6F57]">Expected: {detail.expectedImprovement}</p>
                                 <p className="mt-1 text-[11px] text-[#8C877D]">Suggested: {detail.productSuggestion}</p>
                                 {detail.caution ? <p className="mt-1 text-[11px] text-amber-700">Note: {detail.caution}</p> : null}
                               </div>

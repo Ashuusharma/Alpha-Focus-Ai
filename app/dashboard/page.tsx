@@ -6,20 +6,24 @@ import { useUserStore } from "@/stores/useUserStore";
 import { hydrateUserData } from "@/lib/hydrateUserData";
 import { supabase } from "@/lib/supabaseClient";
 import { calculateProgressMetricsForCategory } from "@/lib/calculateProgressMetrics";
-import { generateDailyProtocolTasks, getCurrentProtocolPhase, getProtocolTemplate, type ProtocolTask } from "@/lib/protocolTemplates";
+import {
+  generateDailyProtocolMeta,
+  generateDailyProtocolTasks,
+  getCurrentProtocolPhase,
+  getProtocolTemplate,
+  type ProtocolTask,
+} from "@/lib/protocolTemplates";
 import { maybeSendRoutineReminder } from "@/lib/routineReminderSystem";
 import { categories, CategoryId } from "@/lib/questions";
 import { getSupabaseAuthHeaders } from "@/lib/auth/clientAuthHeaders";
 import {
-  ActivityTimeline,
   AIInsightEngine,
   BeforeAfterTimeline,
   DashboardHero,
   InsightCard,
-  MetricCard,
   ProtocolChecklist,
   ProgressVisualization,
-  QuickActions,
+  RecoveryProgramNavigator,
   RewardProgress,
   TreatmentPlan,
 } from "./_components";
@@ -60,6 +64,7 @@ type AIInsight = {
   id: string;
   title: string;
   message: string;
+  actions?: string[];
   impact: "high" | "medium" | "low";
 };
 
@@ -214,6 +219,8 @@ export default function DashboardPage() {
   const [todayProtocolTasks, setTodayProtocolTasks] = useState<ProtocolTask[]>([]);
   const [phaseName, setPhaseName] = useState<string>("Stabilization");
   const [programDay, setProgramDay] = useState<number>(1);
+  const [dailyGoal, setDailyGoal] = useState<string>("Daily recovery objective");
+  const [expectedResult, setExpectedResult] = useState<string>("Improved symptom control with consistency.");
   const [nowTick, setNowTick] = useState<Date>(new Date());
 
   useEffect(() => {
@@ -342,6 +349,13 @@ export default function DashboardPage() {
       if (template) {
         setPhaseName(getCurrentProtocolPhase(template, dayNumber).name);
       }
+
+      const dailyMeta = generateDailyProtocolMeta(selectedCategory, dayNumber);
+      if (dailyMeta) {
+        setDailyGoal(dailyMeta.dailyGoal);
+        setExpectedResult(dailyMeta.expectedResult);
+      }
+
       setTodayProtocolTasks(generateDailyProtocolTasks(selectedCategory, dayNumber));
     };
 
@@ -504,30 +518,6 @@ export default function DashboardPage() {
   const focusScore = Number(progressSummary?.discipline_index || consistencyScore || 0);
   const recoveryVelocityLabel = Number(progressSummary?.recovery_velocity || 0) >= 70 ? "Fast" : Number(progressSummary?.recovery_velocity || 0) >= 40 ? "Moderate" : "Stabilizing";
 
-  const timelineItems = useMemo(() => {
-    const routineEvents = routines.slice(0, 4).map((row, idx) => ({
-      id: `routine-${idx}-${String(row.id || row.log_date || idx)}`,
-      label: Boolean(row.am_done) || Boolean(row.pm_done) ? "Completed Routine Check-in" : "Routine Updated",
-      timestamp: String(row.log_date || new Date().toISOString()),
-    }));
-
-    const scanEvents = scans.slice(0, 3).map((row, idx) => ({
-      id: `scan-${idx}-${String(row.id || idx)}`,
-      label: "Photo Scan Uploaded",
-      timestamp: String(row.scan_date || row.created_at || new Date().toISOString()),
-    }));
-
-    const assessmentEvents = assessments.slice(0, 3).map((row, idx) => ({
-      id: `assessment-${idx}-${String(row.id || idx)}`,
-      label: "Assessment Completed",
-      timestamp: String(row.completed_at || row.created_at || new Date().toISOString()),
-    }));
-
-    return [...routineEvents, ...scanEvents, ...assessmentEvents]
-      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-      .slice(0, 8);
-  }, [routines, scans, assessments]);
-
   const weeklyProgressData = useMemo(() => {
     const now = new Date();
     const weekBoundaries = [28, 21, 14, 7, 0].map((offset) => {
@@ -666,6 +656,7 @@ export default function DashboardPage() {
         id: "hydration-drop",
         title: "Hydration drop detected",
         message: `Your hydration dropped from ~${avgHydrationPrev7}ml to ~${avgHydrationLast7}ml this week, which can slow visible recovery. Target +400ml daily for next 5 days.`,
+        actions: ["Add one 500ml bottle before lunch", "Set hydration reminder at 11:30 AM", "Track evening hydration in checkpoint"],
         impact: "high",
       });
     }
@@ -675,6 +666,7 @@ export default function DashboardPage() {
         id: "sleep-regression",
         title: "Sleep consistency regressed",
         message: `Average sleep reduced from ${avgSleepPrev7}h to ${avgSleepLast7}h. Move bedtime 30 minutes earlier to improve repair window.`,
+        actions: ["Set a fixed lights-off alarm", "Avoid caffeine after 4 PM"],
         impact: "medium",
       });
     }
@@ -684,6 +676,7 @@ export default function DashboardPage() {
         id: "adherence-dip",
         title: "Routine adherence dipped",
         message: `Weekly adherence dropped from ${w3}% to ${w4}%. Use Beginner mode for 3 days and complete all morning slots before re-scaling.`,
+        actions: ["Focus only on morning block for next 3 days", "Restart full routine after adherence recovers"],
         impact: "high",
       });
     }
@@ -698,6 +691,7 @@ export default function DashboardPage() {
         id: "scan-cadence",
         title: "Progress scan overdue",
         message: "No recent scan in the last 14 days. Upload a fresh scan to improve trend accuracy and AI recommendations.",
+        actions: ["Upload one scan in consistent lighting", "Repeat weekly scan every 7 days"],
         impact: "medium",
       });
     }
@@ -707,12 +701,49 @@ export default function DashboardPage() {
         id: "positive-momentum",
         title: "Momentum is stable",
         message: "Your routine pattern is stable this week. Keep the same timing window for next 7 days to maximize compounding results.",
+        actions: ["Keep current schedule unchanged", "Upload a weekly photo to validate trend"],
         impact: "low",
       });
     }
 
     return items.slice(0, 3);
   }, [routines, weeklyProgressData, scans]);
+
+  const behaviorInsights = useMemo(() => {
+    const insights: string[] = [];
+    const adherenceNow = weeklyProgressData[3]?.adherence ?? 0;
+    const adherencePrev = weeklyProgressData[2]?.adherence ?? 0;
+
+    if (adherenceNow >= adherencePrev + 10) {
+      insights.push("Adherence improved week-over-week, indicating better routine lock-in.");
+    } else if (adherenceNow + 10 <= adherencePrev) {
+      insights.push("Adherence declined this week; simplify mission load to recover momentum.");
+    }
+
+    if ((todayRoutine?.hydration_ml || 0) >= 2500 && (todayRoutine?.sleep_hours || 0) >= 7) {
+      insights.push("Hydration and sleep goals are both met, which supports faster overnight recovery.");
+    }
+
+    if (!todayRoutine?.am_done || !todayRoutine?.pm_done) {
+      insights.push("Completing both AM and PM check-ins today will improve confidence and streak stability.");
+    }
+
+    return insights.slice(0, 3);
+  }, [weeklyProgressData, todayRoutine]);
+
+  const recoveryTrend = useMemo(() => {
+    const w3 = weeklyProgressData[2]?.adherence ?? 0;
+    const w4 = weeklyProgressData[3]?.adherence ?? 0;
+    if (w4 >= w3 + 8) return "Improving";
+    if (w4 + 8 <= w3) return "Needs attention";
+    return "Stable";
+  }, [weeklyProgressData]);
+
+  const nextMilestone = useMemo(() => {
+    if (programDay < 8) return "Complete Reset phase with full AM consistency";
+    if (programDay < 15) return "Finish Repair phase and maintain hydration targets";
+    return "Close Stabilize phase with 80%+ adherence";
+  }, [programDay]);
 
   if (loading || !user) {
     return (
@@ -726,96 +757,117 @@ export default function DashboardPage() {
 
   return (
     <main className="af-page px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl space-y-6">
+      <div className="mx-auto max-w-7xl space-y-6 md:space-y-8">
         <DashboardHero
           userName={userName}
           categoryLabel={categoryLabel}
           transformationProgress={transformationProgress}
-          focusScore={focusScore}
-          recoveryVelocityLabel={recoveryVelocityLabel}
+          phaseLabel={phaseName}
+          recoveryTrend={recoveryTrend}
           confidenceScore={confidenceScore}
           streakDays={routineStreakDays}
           alphaBalance={balance}
           dayLabel={`Day ${programDay} / 30`}
+          nextMilestone={nextMilestone}
         />
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <ProtocolChecklist
-            tasks={todayProtocolTasks}
-            routine={todayRoutine}
-            amDisabled={!unlockState.amUnlocked && !todayRoutine?.am_done}
-            pmDisabled={!unlockState.pmUnlocked && !todayRoutine?.pm_done}
-            amHint={todayRoutine?.am_done ? "" : unlockState.amUnlocked ? "+3 A$ on completion" : `Locked until ${formatHour(MORNING_UNLOCK_HOUR)}`}
-            pmHint={todayRoutine?.pm_done ? "" : unlockState.pmUnlocked ? "+3 A$ on completion" : `Locked until ${formatHour(NIGHT_UNLOCK_HOUR)}`}
-            hydrationDraft={draftHydrationMl}
-            sleepDraft={draftSleepHours}
-            onToggleAm={() => saveTodayRoutine({ am_done: !todayRoutine?.am_done })}
-            onTogglePm={() => saveTodayRoutine({ pm_done: !todayRoutine?.pm_done })}
-            onHydrationDraftChange={(value) => {
-              setDraftHydrationMl(value);
-              setRoutineDraftDirty(true);
-            }}
-            onSleepDraftChange={(value) => {
-              setDraftSleepHours(value);
-              setRoutineDraftDirty(true);
-            }}
-            onSaveMetrics={saveMetricDraft}
-            onResetDraft={() => {
-              setDraftSleepHours(todayRoutine?.sleep_hours == null ? "" : String(todayRoutine.sleep_hours));
-              setDraftHydrationMl(todayRoutine?.hydration_ml == null ? "" : String(todayRoutine.hydration_ml));
-              setRoutineDraftDirty(false);
-            }}
-            canSaveDraft={routineDraftDirty}
-            saving={savingRoutine}
-          />
-
-          <section className="af-card rounded-2xl p-6">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-[11px] font-bold uppercase tracking-wider text-[#8C6A5A]">Progress & Recovery Metrics</p>
-                <h2 className="text-lg font-bold text-[#1F3D2B]">Your Recovery Metrics</h2>
-              </div>
-              <p className="text-xs font-semibold text-[#2F6F57]">
-                {activeCategory ? `Category: ${categoryLabel}` : "No active category"}
-              </p>
-            </div>
-
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <MetricCard title="Severity Change" value={`${progressSummary?.improvement_pct ?? 0}%`} trend="Downward severity trend" tone="green" />
-              <MetricCard title="Consistency Score" value={`${progressSummary?.consistency_score ?? consistencyScore}%`} trend="Routine adherence" tone="green" />
-              <MetricCard title="Recovery Velocity" value={recoveryVelocityLabel} trend={`${progressSummary?.recovery_velocity ?? 0} index`} tone="amber" />
-              <MetricCard title="Confidence Score" value={`${progressSummary?.confidence_score ?? 0}`} trend="Behavioral confidence" tone="green" />
-            </div>
-
-            <p className="mt-4 text-xs text-[#6B665D]">{refreshing || storeLoading ? "Syncing latest data..." : "Realtime sync is active for routine, rewards, and progress signals."}</p>
-          </section>
-        </div>
-
-        <InsightCard category={activeCategory} metrics={progressSummary} />
-
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <ProgressVisualization data={weeklyProgressData} />
-          <AIInsightEngine insights={aiInsights} />
-        </div>
-
-        <BeforeAfterTimeline categoryLabel={categoryLabel} photos={beforeAfterPhotos} />
-
-        <TreatmentPlan
-          categoryLabel={categoryLabel}
-          phaseName={phaseName}
+        <ProtocolChecklist
+          tasks={todayProtocolTasks}
+          routine={todayRoutine}
+          amDisabled={!unlockState.amUnlocked && !todayRoutine?.am_done}
+          pmDisabled={!unlockState.pmUnlocked && !todayRoutine?.pm_done}
+          amHint={todayRoutine?.am_done ? "" : unlockState.amUnlocked ? "+3 A$ on completion" : `Locked until ${formatHour(MORNING_UNLOCK_HOUR)}`}
+          pmHint={todayRoutine?.pm_done ? "" : unlockState.pmUnlocked ? "+3 A$ on completion" : `Locked until ${formatHour(NIGHT_UNLOCK_HOUR)}`}
+          hydrationDraft={draftHydrationMl}
+          sleepDraft={draftSleepHours}
           dayNumber={programDay}
-          category={activeCategory}
-          availableCategories={treatmentCategories}
-          userId={user.id}
-          onCategoryChange={setActiveCategory}
+          phaseName={phaseName}
+          dailyGoal={dailyGoal}
+          expectedResult={expectedResult}
+          onToggleAm={() => saveTodayRoutine({ am_done: !todayRoutine?.am_done })}
+          onTogglePm={() => saveTodayRoutine({ pm_done: !todayRoutine?.pm_done })}
+          onHydrationDraftChange={(value) => {
+            setDraftHydrationMl(value);
+            setRoutineDraftDirty(true);
+          }}
+          onSleepDraftChange={(value) => {
+            setDraftSleepHours(value);
+            setRoutineDraftDirty(true);
+          }}
+          onSaveMetrics={saveMetricDraft}
+          onResetDraft={() => {
+            setDraftSleepHours(todayRoutine?.sleep_hours == null ? "" : String(todayRoutine.sleep_hours));
+            setDraftHydrationMl(todayRoutine?.hydration_ml == null ? "" : String(todayRoutine.hydration_ml));
+            setRoutineDraftDirty(false);
+          }}
+          canSaveDraft={routineDraftDirty}
+          saving={savingRoutine}
         />
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <RewardProgress balance={balance} />
-          <ActivityTimeline items={timelineItems} />
-        </div>
+        <section className="af-card rounded-2xl p-6">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-[#8C6A5A]">Recovery Intelligence</p>
+              <h2 className="text-lg font-bold text-[#1F3D2B]">Clinical Signal Summary</h2>
+            </div>
+            <p className="text-xs font-semibold text-[#2F6F57]">
+              {activeCategory ? `Category: ${categoryLabel}` : "No active category"}
+            </p>
+          </div>
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3">
+              <p className="text-xs text-[#6B665D]">Severity Change</p>
+              <p className="mt-1 text-lg font-bold text-[#1F3D2B]">{progressSummary?.improvement_pct ?? 0}%</p>
+            </div>
+            <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3">
+              <p className="text-xs text-[#6B665D]">Consistency</p>
+              <p className="mt-1 text-lg font-bold text-[#1F3D2B]">{progressSummary?.consistency_score ?? consistencyScore}%</p>
+            </div>
+            <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3">
+              <p className="text-xs text-[#6B665D]">Recovery Velocity</p>
+              <p className="mt-1 text-lg font-bold text-[#1F3D2B]">{recoveryVelocityLabel}</p>
+            </div>
+            <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3">
+              <p className="text-xs text-[#6B665D]">Focus Score</p>
+              <p className="mt-1 text-lg font-bold text-[#1F3D2B]">{focusScore}</p>
+            </div>
+          </div>
+          <p className="mt-4 text-xs text-[#6B665D]">{refreshing || storeLoading ? "Syncing latest data..." : "Realtime sync is active for routine, rewards, and progress signals."}</p>
+          <div className="mt-4">
+            <InsightCard category={activeCategory} metrics={progressSummary} />
+          </div>
+        </section>
 
-        <QuickActions />
+        <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <ProgressVisualization data={weeklyProgressData} />
+          <BeforeAfterTimeline categoryLabel={categoryLabel} photos={beforeAfterPhotos} />
+        </section>
+
+        <section className="grid grid-cols-1 gap-6 lg:grid-cols-2" id="recovery-program">
+          <RecoveryProgramNavigator
+            dayNumber={programDay}
+            totalDays={30}
+            onViewFullProgram={() => {
+              const el = document.getElementById("full-treatment-plan");
+              if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
+          />
+          <div id="full-treatment-plan" className="scroll-mt-24">
+            <TreatmentPlan
+              categoryLabel={categoryLabel}
+              phaseName={phaseName}
+              dayNumber={programDay}
+              category={activeCategory}
+              availableCategories={treatmentCategories}
+              userId={user.id}
+              onCategoryChange={setActiveCategory}
+            />
+          </div>
+        </section>
+
+        <RewardProgress balance={balance} streakDays={routineStreakDays} />
+
+        <AIInsightEngine insights={aiInsights} behaviorInsights={behaviorInsights} />
 
         {!profile && (
           <section className="af-card rounded-2xl p-6 text-sm text-[#6B665D]">
