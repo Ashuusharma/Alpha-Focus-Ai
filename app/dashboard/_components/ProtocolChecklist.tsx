@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import type { ProtocolTask } from "@/lib/protocolTemplates";
 
 type RoutineState = {
@@ -78,6 +79,7 @@ export default function ProtocolChecklist({
   saving,
 }: ProtocolChecklistProps) {
   const [runtimeByTask, setRuntimeByTask] = useState<Record<string, Runtime>>({});
+  const [expandedTaskIds, setExpandedTaskIds] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -132,56 +134,74 @@ export default function ProtocolChecklist({
     }));
   };
 
+  const toggleExpanded = (taskId: string) => {
+    setExpandedTaskIds((prev) => ({ ...prev, [taskId]: !prev[taskId] }));
+  };
+
   const renderRow = (slot: "morning" | "lifestyle" | "night", task: ProtocolTask, index: number) => {
     const duration = toDuration(task);
     const runtime = runtimeByTask[task.id] || { running: false, remainingSec: duration * 60 };
+    const expanded = Boolean(expandedTaskIds[task.id]);
 
     return (
       <div key={task.id} className="rounded-lg border border-[#E2DDD3] bg-white p-3">
-        <p className="text-[11px] font-bold uppercase tracking-wide text-[#8C6A5A]">{toClock(slot, index)}</p>
-        <p className="mt-0.5 text-sm font-semibold text-[#1F3D2B]">{task.title || task.label}</p>
-        {task.goal ? <p className="mt-1 text-[11px] text-[#2F6F57]">Goal: {task.goal}</p> : null}
-        {task.ingredient ? <p className="mt-1 text-[11px] text-[#6B665D]">Ingredient: {task.ingredient}</p> : null}
+        <button
+          type="button"
+          onClick={() => toggleExpanded(task.id)}
+          className="flex w-full items-center justify-between gap-2 text-left"
+        >
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-wide text-[#8C6A5A]">{toClock(slot, index)}</p>
+            <p className="mt-0.5 text-sm font-semibold text-[#1F3D2B]">{task.title || task.label}</p>
+          </div>
+          {expanded ? <ChevronDown className="h-4 w-4 text-[#6B665D]" /> : <ChevronRight className="h-4 w-4 text-[#6B665D]" />}
+        </button>
 
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => toggleTimer(task.id, duration)}
-            className="af-btn-soft px-2.5 py-1 text-xs"
-          >
-            {runtime.running ? "Pause Timer" : "Start Timer"}
-          </button>
-          <button
-            type="button"
-            onClick={() => resetTimer(task.id, duration)}
-            className="af-btn-soft px-2.5 py-1 text-xs"
-          >
-            Reset
-          </button>
-          <span className="text-xs font-semibold text-[#2F6F57]">{Math.floor(runtime.remainingSec / 60)}:{String(runtime.remainingSec % 60).padStart(2, "0")}</span>
+        {expanded ? (
+          <div className="mt-2">
+            {task.goal ? <p className="text-[11px] text-[#2F6F57]">Goal: {task.goal}</p> : null}
+            {task.ingredient ? <p className="mt-1 text-[11px] text-[#6B665D]">Ingredient: {task.ingredient}</p> : null}
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => toggleTimer(task.id, duration)}
+                className="af-btn-soft px-2.5 py-1 text-xs"
+              >
+                {runtime.running ? "Pause Timer" : "Start Timer"}
+              </button>
+              <button
+                type="button"
+                onClick={() => resetTimer(task.id, duration)}
+                className="af-btn-soft px-2.5 py-1 text-xs"
+              >
+                Reset
+              </button>
+              <span className="text-xs font-semibold text-[#2F6F57]">{Math.floor(runtime.remainingSec / 60)}:{String(runtime.remainingSec % 60).padStart(2, "0")}</span>
 
-          {slot === "morning" ? (
-            <button
-              type="button"
-              onClick={onToggleAm}
-              disabled={amDisabled || Boolean(routine?.am_done)}
-              className="af-btn-primary px-2.5 py-1 text-xs disabled:opacity-60"
-            >
-              {routine?.am_done ? "Completed" : "Complete"}
-            </button>
-          ) : null}
+              {slot === "morning" ? (
+                <button
+                  type="button"
+                  onClick={onToggleAm}
+                  disabled={amDisabled || Boolean(routine?.am_done)}
+                  className="af-btn-primary px-2.5 py-1 text-xs disabled:opacity-60"
+                >
+                  {routine?.am_done ? "Completed" : "Complete"}
+                </button>
+              ) : null}
 
-          {slot === "night" ? (
-            <button
-              type="button"
-              onClick={onTogglePm}
-              disabled={pmDisabled || Boolean(routine?.pm_done)}
-              className="af-btn-primary px-2.5 py-1 text-xs disabled:opacity-60"
-            >
-              {routine?.pm_done ? "Completed" : "Complete"}
-            </button>
-          ) : null}
-        </div>
+              {slot === "night" ? (
+                <button
+                  type="button"
+                  onClick={onTogglePm}
+                  disabled={pmDisabled || Boolean(routine?.pm_done)}
+                  className="af-btn-primary px-2.5 py-1 text-xs disabled:opacity-60"
+                >
+                  {routine?.pm_done ? "Completed" : "Complete"}
+                </button>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
       </div>
     );
   };

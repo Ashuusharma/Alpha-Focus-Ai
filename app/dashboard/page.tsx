@@ -20,7 +20,6 @@ import {
   AIInsightEngine,
   BeforeAfterTimeline,
   DashboardHero,
-  InsightCard,
   ProtocolChecklist,
   ProgressVisualization,
   RecoveryProgramNavigator,
@@ -65,6 +64,7 @@ type AIInsight = {
   title: string;
   message: string;
   actions?: string[];
+  expectedOutcome?: string;
   impact: "high" | "medium" | "low";
 };
 
@@ -207,7 +207,7 @@ export default function DashboardPage() {
   const assessments = useUserStore((state) => state.assessments as Array<Record<string, unknown>>);
   const routines = useUserStore((state) => state.routines as Array<Record<string, unknown>>);
   const scans = useUserStore((state) => state.scans as Array<Record<string, unknown>>);
-  const products = useUserStore((state) => state.products as Array<Record<string, unknown>>);
+  const clinicalScores = useUserStore((state) => state.clinicalScores as Record<string, unknown> | null);
   const [refreshing, setRefreshing] = useState(false);
   const [todayRoutine, setTodayRoutine] = useState<RoutineLogRow | null>(null);
   const [savingRoutine, setSavingRoutine] = useState(false);
@@ -222,6 +222,7 @@ export default function DashboardPage() {
   const [dailyGoal, setDailyGoal] = useState<string>("Daily recovery objective");
   const [expectedResult, setExpectedResult] = useState<string>("Improved symptom control with consistency.");
   const [nowTick, setNowTick] = useState<Date>(new Date());
+  const [showProgramDetails, setShowProgramDetails] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -263,7 +264,7 @@ export default function DashboardPage() {
     };
 
     void loadTodayRoutine();
-  }, [user?.id]);
+  }, [user?.id, routines]);
 
   useEffect(() => {
     if (!user || !todayRoutine) return;
@@ -360,7 +361,7 @@ export default function DashboardPage() {
     };
 
     void loadClinicalPanel();
-  }, [user?.id, activeCategory]);
+  }, [user?.id, activeCategory, routines.length, scans.length, assessments.length, reports.length, clinicalScores]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -370,6 +371,47 @@ export default function DashboardPage() {
 
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleRefresh = () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => {
+        void hydrateUserData(user.id, { force: true, silent: true });
+      }, 300);
+    };
+
+    const channel = supabase
+      .channel(`dashboard-realtime-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "routine_logs", filter: `user_id=eq.${user.id}` },
+        scheduleRefresh
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "user_clinical_scores", filter: `user_id=eq.${user.id}` },
+        scheduleRefresh
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "user_progress_metrics", filter: `user_id=eq.${user.id}` },
+        scheduleRefresh
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "photo_scans", filter: `user_id=eq.${user.id}` },
+        scheduleRefresh
+      )
+      .subscribe();
+
+    return () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      void supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
 
   const saveTodayRoutine = async (updates: Partial<RoutineLogRow>) => {
     if (!user || !todayRoutine || savingRoutine) return;
@@ -657,6 +699,7 @@ export default function DashboardPage() {
         title: "Hydration drop detected",
         message: `Your hydration dropped from ~${avgHydrationPrev7}ml to ~${avgHydrationLast7}ml this week, which can slow visible recovery. Target +400ml daily for next 5 days.`,
         actions: ["Add one 500ml bottle before lunch", "Set hydration reminder at 11:30 AM", "Track evening hydration in checkpoint"],
+        expectedOutcome: "Hydration consistency rebounds within 3-5 days and supports visible recovery pace.",
         impact: "high",
       });
     }
@@ -667,6 +710,7 @@ export default function DashboardPage() {
         title: "Sleep consistency regressed",
         message: `Average sleep reduced from ${avgSleepPrev7}h to ${avgSleepLast7}h. Move bedtime 30 minutes earlier to improve repair window.`,
         actions: ["Set a fixed lights-off alarm", "Avoid caffeine after 4 PM"],
+        expectedOutcome: "Night recovery quality improves and inflammation markers stabilize.",
         impact: "medium",
       });
     }
@@ -677,6 +721,7 @@ export default function DashboardPage() {
         title: "Routine adherence dipped",
         message: `Weekly adherence dropped from ${w3}% to ${w4}%. Use Beginner mode for 3 days and complete all morning slots before re-scaling.`,
         actions: ["Focus only on morning block for next 3 days", "Restart full routine after adherence recovers"],
+        expectedOutcome: "Adherence trend recovers next week and confidence score increases.",
         impact: "high",
       });
     }
@@ -692,6 +737,7 @@ export default function DashboardPage() {
         title: "Progress scan overdue",
         message: "No recent scan in the last 14 days. Upload a fresh scan to improve trend accuracy and AI recommendations.",
         actions: ["Upload one scan in consistent lighting", "Repeat weekly scan every 7 days"],
+        expectedOutcome: "AI trend confidence improves with better longitudinal comparison.",
         impact: "medium",
       });
     }
@@ -702,6 +748,7 @@ export default function DashboardPage() {
         title: "Momentum is stable",
         message: "Your routine pattern is stable this week. Keep the same timing window for next 7 days to maximize compounding results.",
         actions: ["Keep current schedule unchanged", "Upload a weekly photo to validate trend"],
+        expectedOutcome: "Stable routine rhythm compounds into stronger monthly gains.",
         impact: "low",
       });
     }
@@ -771,6 +818,27 @@ export default function DashboardPage() {
           nextMilestone={nextMilestone}
         />
 
+        <section className="space-y-4" id="recovery-roadmap">
+          <RecoveryProgramNavigator
+            dayNumber={programDay}
+            totalDays={30}
+            activePhase={programDay <= 7 ? "Reset" : programDay <= 14 ? "Repair" : "Stabilize"}
+            onSelectPhase={() => setShowProgramDetails(true)}
+            onViewFullProgram={() => setShowProgramDetails((prev) => !prev)}
+          />
+          {showProgramDetails ? (
+            <TreatmentPlan
+              categoryLabel={categoryLabel}
+              phaseName={phaseName}
+              dayNumber={programDay}
+              category={activeCategory}
+              availableCategories={treatmentCategories}
+              userId={user.id}
+              onCategoryChange={setActiveCategory}
+            />
+          ) : null}
+        </section>
+
         <ProtocolChecklist
           tasks={todayProtocolTasks}
           routine={todayRoutine}
@@ -817,53 +885,27 @@ export default function DashboardPage() {
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3">
               <p className="text-xs text-[#6B665D]">Severity Change</p>
-              <p className="mt-1 text-lg font-bold text-[#1F3D2B]">{progressSummary?.improvement_pct ?? 0}%</p>
+              <p className="mt-1 text-lg font-bold text-[#1F3D2B]">↓ {progressSummary?.improvement_pct ?? 0}%</p>
             </div>
             <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3">
               <p className="text-xs text-[#6B665D]">Consistency</p>
               <p className="mt-1 text-lg font-bold text-[#1F3D2B]">{progressSummary?.consistency_score ?? consistencyScore}%</p>
             </div>
             <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3">
-              <p className="text-xs text-[#6B665D]">Recovery Velocity</p>
+              <p className="text-xs text-[#6B665D]">Recovery Speed</p>
               <p className="mt-1 text-lg font-bold text-[#1F3D2B]">{recoveryVelocityLabel}</p>
             </div>
             <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3">
-              <p className="text-xs text-[#6B665D]">Focus Score</p>
-              <p className="mt-1 text-lg font-bold text-[#1F3D2B]">{focusScore}</p>
+              <p className="text-xs text-[#6B665D]">Confidence</p>
+              <p className="mt-1 text-lg font-bold text-[#1F3D2B]">{confidenceScore}</p>
             </div>
           </div>
           <p className="mt-4 text-xs text-[#6B665D]">{refreshing || storeLoading ? "Syncing latest data..." : "Realtime sync is active for routine, rewards, and progress signals."}</p>
-          <div className="mt-4">
-            <InsightCard category={activeCategory} metrics={progressSummary} />
-          </div>
         </section>
 
-        <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <ProgressVisualization data={weeklyProgressData} />
-          <BeforeAfterTimeline categoryLabel={categoryLabel} photos={beforeAfterPhotos} />
-        </section>
+        <ProgressVisualization data={weeklyProgressData} />
 
-        <section className="grid grid-cols-1 gap-6 lg:grid-cols-2" id="recovery-program">
-          <RecoveryProgramNavigator
-            dayNumber={programDay}
-            totalDays={30}
-            onViewFullProgram={() => {
-              const el = document.getElementById("full-treatment-plan");
-              if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-            }}
-          />
-          <div id="full-treatment-plan" className="scroll-mt-24">
-            <TreatmentPlan
-              categoryLabel={categoryLabel}
-              phaseName={phaseName}
-              dayNumber={programDay}
-              category={activeCategory}
-              availableCategories={treatmentCategories}
-              userId={user.id}
-              onCategoryChange={setActiveCategory}
-            />
-          </div>
-        </section>
+        <BeforeAfterTimeline categoryLabel={categoryLabel} photos={beforeAfterPhotos} />
 
         <RewardProgress balance={balance} streakDays={routineStreakDays} />
 

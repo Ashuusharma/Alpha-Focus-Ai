@@ -1,6 +1,6 @@
 "use client";
 
-import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, BarChart, Bar } from "recharts";
+import TrendCharts from "@/components/dashboard/TrendCharts";
 
 type WeeklyPoint = {
   week: string;
@@ -13,79 +13,24 @@ type ProgressVisualizationProps = {
   data: WeeklyPoint[];
 };
 
-function clampPct(value: number) {
-  return Math.max(0, Math.min(100, Math.round(value)));
-}
-
 export default function ProgressVisualization({ data }: ProgressVisualizationProps) {
-  const safe = (data.length ? data : [
-    { week: "W1", severity: 0, adherence: 0, confidence: 0 },
-    { week: "W2", severity: 0, adherence: 0, confidence: 0 },
-    { week: "W3", severity: 0, adherence: 0, confidence: 0 },
-    { week: "W4", severity: 0, adherence: 0, confidence: 0 },
-  ]).map((row) => ({
-    week: row.week,
-    severity: clampPct(row.severity),
-    adherence: clampPct(row.adherence),
-    confidence: clampPct(row.confidence),
+  const chartData = data.map((row) => ({
+    label: row.week,
+    severity: row.severity,
+    adherence: row.adherence,
+    confidence: row.confidence,
   }));
 
   return (
     <section className="af-card rounded-2xl p-6">
       <div className="flex items-center justify-between gap-2">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-wider text-[#8C6A5A]">Progress Visualization</p>
-          <h3 className="text-lg font-bold text-[#1F3D2B]">Recovery Progress Analytics</h3>
+          <p className="text-[11px] font-bold uppercase tracking-wider text-[#8C6A5A]">Progress Analytics</p>
+          <h3 className="text-lg font-bold text-[#1F3D2B]">Weekly Recovery Charts</h3>
         </div>
-        <p className="text-xs text-[#6B665D]">Severity ↓ · Consistency ↑ · Confidence ↑</p>
+        <p className="text-xs text-[#6B665D]">Severity trend · Adherence trend · Confidence trend</p>
       </div>
-
-      <div className="mt-4 grid gap-4 lg:grid-cols-3">
-        <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3">
-          <p className="text-xs font-semibold text-[#1F3D2B]">Severity Trend (lower is better)</p>
-          <div className="mt-2 h-52 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={safe} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E7E1D7" />
-                <XAxis dataKey="week" tick={{ fill: "#6B665D", fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: "#6B665D", fontSize: 12 }} axisLine={false} tickLine={false} domain={[0, 100]} />
-                <Tooltip formatter={(value) => [`${clampPct(Number(value || 0))}%`, "Severity"]} />
-                <Line type="monotone" dataKey="severity" stroke="#A04747" strokeWidth={3} dot={{ r: 4 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3">
-          <p className="text-xs font-semibold text-[#1F3D2B]">Routine Adherence</p>
-          <div className="mt-2 h-52 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={safe} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E7E1D7" />
-                <XAxis dataKey="week" tick={{ fill: "#6B665D", fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: "#6B665D", fontSize: 12 }} axisLine={false} tickLine={false} domain={[0, 100]} />
-                <Tooltip formatter={(value) => [`${clampPct(Number(value || 0))}%`, "Adherence"]} />
-                <Bar dataKey="adherence" fill="#2F6F57" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3">
-          <p className="text-xs font-semibold text-[#1F3D2B]">Confidence Score Trend</p>
-          <div className="mt-2 h-52 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={safe} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E7E1D7" />
-                <XAxis dataKey="week" tick={{ fill: "#6B665D", fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: "#6B665D", fontSize: 12 }} axisLine={false} tickLine={false} domain={[0, 100]} />
-                <Tooltip formatter={(value) => [`${clampPct(Number(value || 0))}%`, "Confidence"]} />
-                <Line type="monotone" dataKey="confidence" stroke="#8C6A5A" strokeWidth={3} dot={{ r: 4 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
+      <TrendCharts data={chartData} />
     </section>
   );
 }

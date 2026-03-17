@@ -5,6 +5,7 @@ type InsightItem = {
   title: string;
   message: string;
   actions?: string[];
+  expectedOutcome?: string;
   impact: "high" | "medium" | "low";
 };
 
@@ -24,22 +25,32 @@ export default function AIInsightEngine({ insights, behaviorInsights = [] }: AII
     <section className="af-card rounded-2xl p-6">
       <div className="flex items-center justify-between gap-2">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-wider text-[#8C6A5A]">AI Insight Engine</p>
-          <h3 className="text-lg font-bold text-[#1F3D2B]">Behavior-Linked Recovery Insights</h3>
+          <p className="text-[11px] font-bold uppercase tracking-wider text-[#8C6A5A]">AI Coach Insights</p>
+          <h3 className="text-lg font-bold text-[#1F3D2B]">Insight, Action, and Expected Outcome</h3>
         </div>
       </div>
 
       <div className="mt-4 space-y-2">
         {insights.map((insight) => (
           <article key={insight.id} className={`rounded-lg border px-3 py-2 text-sm ${impactStyle[insight.impact]}`}>
-            <p className="font-semibold">{insight.title}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wide">Insight</p>
+            <p className="mt-0.5 font-semibold">{insight.title}</p>
             <p className="mt-1 text-xs">{insight.message}</p>
             {insight.actions?.length ? (
-              <ul className="mt-2 space-y-1 text-xs">
-                {insight.actions.map((action) => (
-                  <li key={action}>• {action}</li>
-                ))}
-              </ul>
+              <>
+                <p className="mt-2 text-[11px] font-semibold uppercase tracking-wide">Action</p>
+                <ul className="mt-1 space-y-1 text-xs">
+                  {insight.actions.map((action) => (
+                    <li key={action}>• {action}</li>
+                  ))}
+                </ul>
+              </>
+            ) : null}
+            {insight.expectedOutcome ? (
+              <>
+                <p className="mt-2 text-[11px] font-semibold uppercase tracking-wide">Expected Outcome</p>
+                <p className="mt-1 text-xs">{insight.expectedOutcome}</p>
+              </>
             ) : null}
           </article>
         ))}
