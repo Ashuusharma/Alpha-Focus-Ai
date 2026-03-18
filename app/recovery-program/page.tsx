@@ -1,0 +1,140 @@
+"use client";
+
+import Link from "next/link";
+import { useContext, useEffect, useMemo, useState } from "react";
+import { AuthContext } from "@/contexts/AuthProvider";
+import { useUserStore } from "@/stores/useUserStore";
+import { hydrateUserData } from "@/lib/hydrateUserData";
+import { supabase } from "@/lib/supabaseClient";
+import { categories, type CategoryId } from "@/lib/questions";
+import { getCurrentProtocolPhase, getProtocolTemplate } from "@/lib/protocolTemplates";
+import TreatmentPlan from "@/app/dashboard/_components/TreatmentPlan";
+
+function toCategoryId(value: unknown): CategoryId | null {
+  if (typeof value !== "string") return null;
+  const match = categories.find((item) => item.id === value);
+  if (!match) return null;
+  return getProtocolTemplate(match.id as CategoryId) ? (match.id as CategoryId) : null;
+}
+
+function pickCategoryFromRecord(row: Record<string, unknown>): CategoryId | null {
+  return (
+    toCategoryId(row.selected_category) ||
+    toCategoryId(row.analyzer_category) ||
+    toCategoryId(row.category) ||
+    toCategoryId(row.target_category) ||
+    null
+  );
+}
+
+export default function RecoveryProgramPage() {
+  const { user, loading } = useContext(AuthContext);
+  const reports = useUserStore((state) => state.reports as Array<Record<string, unknown>>);
+  const assessments = useUserStore((state) => state.assessments as Array<Record<string, unknown>>);
+  const scans = useUserStore((state) => state.scans as Array<Record<string, unknown>>);
+
+  const [activeCategory, setActiveCategory] = useState<CategoryId | null>(null);
+  const [programDay, setProgramDay] = useState(1);
+  const [phaseName, setPhaseName] = useState("Stabilization");
+
+  useEffect(() => {
+    if (!user) return;
+    void hydrateUserData(user.id, { silent: true, force: true });
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const loadSelectedCategory = async () => {
+      const { data: activeAnalysis } = await supabase
+        .from("user_active_analysis")
+        .select("selected_category")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      const selectedCategory = toCategoryId(activeAnalysis?.selected_category || null);
+      if (!selectedCategory) return;
+      setActiveCategory((prev) => prev || selectedCategory);
+    };
+
+    void loadSelectedCategory();
+  }, [user?.id]);
+
+  const treatmentCategories = useMemo(() => {
+    const derived = [
+      ...scans.map((row) => pickCategoryFromRecord(row)).filter(Boolean),
+      ...assessments.map((row) => pickCategoryFromRecord(row)).filter(Boolean),
+      ...reports.map((row) => pickCategoryFromRecord(row)).filter(Boolean),
+    ] as CategoryId[];
+
+    const ordered = [activeCategory, ...derived].filter(Boolean) as CategoryId[];
+    return ordered.filter((cat, idx) => ordered.indexOf(cat) === idx);
+  }, [activeCategory, scans, assessments, reports]);
+
+  useEffect(() => {
+    if (activeCategory || treatmentCategories.length === 0) return;
+    setActiveCategory(treatmentCategories[0]);
+  }, [activeCategory, treatmentCategories]);
+
+  useEffect(() => {
+    if (!user || !activeCategory) return;
+
+    const loadDay = async () => {
+      const { data: latestScan } = await supabase
+        .from("photo_scans")
+        .select("scan_date")
+        .eq("user_id", user.id)
+        .eq("analyzer_category", activeCategory)
+        .order("scan_date", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const dayNumber = latestScan?.scan_date
+        ? Math.max(1, Math.min(30, Math.floor((Date.now() - new Date(latestScan.scan_date).getTime()) / (1000 * 60 * 60 * 24)) + 1))
+        : 1;
+      setProgramDay(dayNumber);
+
+      const template = getProtocolTemplate(activeCategory);
+      if (template) setPhaseName(getCurrentProtocolPhase(template, dayNumber).name);
+    };
+
+    void loadDay();
+  }, [user?.id, activeCategory]);
+
+  if (loading || !user) {
+    return (
+      <main className="af-page px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-6xl">
+          <p className="text-sm text-[#6B665D]">Loading recovery planner...</p>
+        </div>
+      </main>
+    );
+  }
+
+  const categoryLabel = activeCategory ? categories.find((c) => c.id === activeCategory)?.label || "Recovery" : "Recovery";
+
+  return (
+    <main className="af-page px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-[#8C6A5A]">Daily Execution Engine</p>
+            <h1 className="text-2xl font-bold text-[#1F3D2B]">Full Recovery Planner</h1>
+          </div>
+          <Link href="/dashboard" className="af-btn-soft px-3 py-1.5 text-xs">Back to Dashboard</Link>
+        </div>
+
+        <TreatmentPlan
+          categoryLabel={categoryLabel}
+          phaseName={phaseName}
+          dayNumber={programDay}
+          category={activeCategory}
+          availableCategories={treatmentCategories}
+          userId={user.id}
+          onCategoryChange={setActiveCategory}
+          mode="full"
+        />
+      </div>
+    </main>
+  );
+}

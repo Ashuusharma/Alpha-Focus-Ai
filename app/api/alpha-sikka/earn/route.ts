@@ -207,6 +207,27 @@ export async function POST(request: NextRequest) {
 
     let amount = computeAwardAmount(action, body.metadata);
 
+    if (action === "treatment_task_completed") {
+      const timerCompleted = body.metadata?.timerCompleted === true;
+      const withinWindow = body.metadata?.withinWindow === true;
+      const completedOnce = body.metadata?.completedOnce === true;
+      const cooldownLock = body.metadata?.cooldownLock === true;
+      const isRecovery = body.metadata?.isRecovery === true;
+
+      if (!isRecovery && (!timerCompleted || !withinWindow || !completedOnce || !cooldownLock)) {
+        return NextResponse.json({ ok: false, error: "reward_policy_violation" }, { status: 400 });
+      }
+    }
+
+    if (action === "treatment_day_completed") {
+      const allTasksVerified = body.metadata?.allTasksVerified === true;
+      const completedOnce = body.metadata?.completedOnce === true;
+      const cooldownLock = body.metadata?.cooldownLock === true;
+      if (!allTasksVerified || !completedOnce || !cooldownLock) {
+        return NextResponse.json({ ok: false, error: "reward_policy_violation" }, { status: 400 });
+      }
+    }
+
     if (rule.category === "discipline") {
       const earnedToday = await fetchDisciplineTodayTotal(config.baseUrl, config.serviceKey, supabaseUserId);
       amount = Math.max(0, Math.min(amount, 20 - earnedToday));

@@ -1,20 +1,22 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Bell, CheckCircle2, ChevronDown, Clock3, Play, RotateCcw, Pause, Sparkles, TriangleAlert } from "lucide-react";
+import { CheckCircle2, Clock3, Pause, Play, RotateCcw, ShoppingBag, TriangleAlert } from "lucide-react";
 import { categories, type CategoryId } from "@/lib/questions";
 import {
-  generateDailyProtocolTasks,
-  generateDailyProtocolMeta,
-  getProtocolTemplate,
+  generateDailyExecutionPayload,
   getProtocolDurationDays,
-  type ProtocolTask,
-  type ProtocolToleranceMode,
-  type ProtocolGuidanceLanguage,
+  getProtocolTemplate,
+  type DailyExecutionTask,
   type ProtocolContraindications,
+  type ProtocolGuidanceLanguage,
+  type ProtocolToleranceMode,
 } from "@/lib/protocolTemplates";
 import { getSupabaseAuthHeaders } from "@/lib/auth/clientAuthHeaders";
 import { supabase } from "@/lib/supabaseClient";
+
+type TreatmentPlanMode = "mission" | "full";
 
 type TreatmentPlanProps = {
   categoryLabel: string;
@@ -24,11 +26,13 @@ type TreatmentPlanProps = {
   availableCategories: CategoryId[];
   userId: string;
   onCategoryChange?: (category: CategoryId) => void;
+  mode?: TreatmentPlanMode;
 };
 
 type TaskRuntime = {
   running: boolean;
   remainingSec: number;
+  startedAt: string | null;
 };
 
 type PersistedPlanState = {
@@ -36,270 +40,226 @@ type PersistedPlanState = {
   timezone: string;
   completedTaskKeys: Record<string, string>;
   dayCompletions: Record<string, string>;
-  currentDay: number;
-  streak: number;
-  lastCompletedDate: string | null;
   toleranceMode?: ProtocolToleranceMode;
   guidanceLanguage?: ProtocolGuidanceLanguage;
   contraindications?: ProtocolContraindications;
-  weeklyPhotoDoneByWeek?: Record<string, boolean>;
 };
 
-type TreatmentAction = "treatment_task_completed" | "treatment_day_completed";
+type ProductRow = {
+  product_id: string;
+};
 
 const DEFAULT_TIMEZONE = "Asia/Kolkata";
-const TIMEZONES = ["Asia/Kolkata", "Asia/Dubai", "Europe/London", "America/New_York", "America/Los_Angeles"];
-const LANGUAGE_CHOICES: Array<{ value: ProtocolGuidanceLanguage; label: string }> = [
-  { value: "en", label: "English" },
-  { value: "hinglish", label: "Hinglish" },
-  { value: "hi", label: "Hindi" },
-];
 
 function toDateKey(date = new Date()) {
   return date.toISOString().slice(0, 10);
 }
 
-function dayDiff(fromIso: string, toIso: string) {
-  const a = new Date(fromIso);
-  const b = new Date(toIso);
-  a.setHours(0, 0, 0, 0);
-  b.setHours(0, 0, 0, 0);
-  return Math.round((b.getTime() - a.getTime()) / (24 * 60 * 60 * 1000));
+function parseHHMM(value: string) {
+  const [h, m] = value.split(":").map((part) => Number(part || 0));
+  return Math.max(0, Math.min(23, h)) * 60 + Math.max(0, Math.min(59, m));
 }
 
-function taskDetailFor(category: CategoryId, task: ProtocolTask) {
-  const slotTime: Record<ProtocolTask["slot"], string> = {
-    morning: "7:00-9:00 AM",
-    lifestyle: "1:00-3:00 PM",
-    night: "10:00-11:30 PM",
-    weekly: "Flexible",
-  };
+function nowMinutesInTimezone(now: Date, timezone: string) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: timezone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(now);
 
-  const categoryProduct: Record<string, string> = {
-    acne: "Niacinamide + non-comedogenic SPF",
-    dark_circles: "Caffeine eye serum + barrier eye cream",
-    hair_loss: "Scalp serum + follicle support routine",
-    scalp_health: "pH-balanced scalp cleanser + soothing tonic",
-    beard_growth: "Growth support oil + irritation control",
-    body_acne: "Salicylic wash + friction-safe moisturizer",
-    lip_care: "SPF lip balm + occlusive repair balm",
-    anti_aging: "Antioxidant serum + retinoid cadence",
-  };
-
-  return {
-    timeWindow: slotTime[task.slot],
-    durationMin: task.durationMin || (task.slot === "weekly" ? 12 : task.slot === "lifestyle" ? 5 : 3),
-    instruction: task.howTo || `Follow \"${task.label}\" precisely for ${String(category).replace("_", " ")} recovery consistency.`,
-    productSuggestion: task.recommendedProduct || categoryProduct[String(category)] || "Targeted recovery essentials",
-    ingredient: task.ingredient || "Targeted active blend",
-    goal: task.goal || "Daily recovery objective",
-    expectedImprovement: task.expectedImprovement || "Steady visible recovery with consistency.",
-    whyItHelps: task.whyItHelps || "Consistent execution supports visible improvements over time.",
-    caution: task.caution,
-    rewardPoints: Number.isFinite(Number(task.reward)) ? Number(task.reward) : task.slot === "weekly" ? 4 : 2,
-  };
+  const hour = Number(parts.find((p) => p.type === "hour")?.value || "0");
+  const minute = Number(parts.find((p) => p.type === "minute")?.value || "0");
+  return hour * 60 + minute;
 }
 
-function reminderSchedule(slot: ProtocolTask["slot"], timezone: string) {
-  const schedule: Record<ProtocolTask["slot"], string[]> = {
-    morning: ["7:30 AM", "7:45 AM", "8:00 AM"],
-    lifestyle: ["1:15 PM", "1:45 PM", "2:30 PM"],
-    night: ["10:00 PM", "10:20 PM", "10:45 PM"],
-    weekly: ["7:00 PM", "8:00 PM", "9:00 PM"],
-  };
-  return `${schedule[slot].join(" · ")} (${timezone})`;
+function formatCountdown(seconds: number) {
+  const safe = Math.max(0, seconds);
+  const h = Math.floor(safe / 3600);
+  const m = Math.floor((safe % 3600) / 60);
+  const s = safe % 60;
+  if (h > 0) return `${h}h ${m}m ${s}s`;
+  return `${m}m ${s}s`;
 }
 
-async function awardAlphaSikka(action: TreatmentAction, referenceId: string, metadata?: Record<string, unknown>) {
-  try {
-    await fetch("/api/alpha-sikka/earn", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, referenceId, metadata }),
-    });
-  } catch {
-    // Reward write is best-effort to keep completion UX responsive.
+async function awardTaskReward(referenceId: string, metadata: Record<string, unknown>) {
+  const headers = await getSupabaseAuthHeaders({ "Content-Type": "application/json" });
+  await fetch("/api/alpha-sikka/earn", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      action: "treatment_task_completed",
+      referenceId,
+      metadata,
+    }),
+  });
+}
+
+async function awardDayReward(referenceId: string, metadata: Record<string, unknown>) {
+  const headers = await getSupabaseAuthHeaders({ "Content-Type": "application/json" });
+  await fetch("/api/alpha-sikka/earn", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      action: "treatment_day_completed",
+      referenceId,
+      metadata,
+    }),
+  });
+}
+
+function taskWindowState(task: DailyExecutionTask, nowTzMinutes: number, runtime: TaskRuntime, completed: boolean) {
+  const startMin = parseHHMM(task.timeWindow.start);
+  const endMin = parseHHMM(task.timeWindow.end);
+  const inWindow = nowTzMinutes >= startMin && nowTzMinutes <= endMin;
+  const beforeWindow = nowTzMinutes < startMin;
+
+  if (completed) {
+    return { code: "completed" as const, inWindow, countdownSec: 0 };
   }
-}
 
-async function emitNotification(eventType: "routine_completed" | "challenge_milestone", dedupeKey: string, metadata?: Record<string, unknown>) {
-  try {
-    const headers = await getSupabaseAuthHeaders({ "Content-Type": "application/json" });
-    await fetch("/api/notifications", {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ eventType, dedupeKey, metadata }),
-    });
-  } catch {
-    // Notification write is best-effort.
+  if (beforeWindow) {
+    const countdownSec = Math.max(0, (startMin - nowTzMinutes) * 60);
+    return { code: "locked" as const, inWindow, countdownSec };
   }
+
+  if (runtime.running) {
+    return { code: "in_progress" as const, inWindow, countdownSec: runtime.remainingSec };
+  }
+
+  if (runtime.startedAt && runtime.remainingSec === 0) {
+    return { code: "ready_complete" as const, inWindow, countdownSec: 0 };
+  }
+
+  if (inWindow) {
+    return { code: "start" as const, inWindow, countdownSec: 0 };
+  }
+
+  return { code: "missed" as const, inWindow, countdownSec: 0 };
 }
 
-export default function TreatmentPlan({ categoryLabel, phaseName, dayNumber, category, availableCategories, userId, onCategoryChange }: TreatmentPlanProps) {
+export default function TreatmentPlan({
+  categoryLabel,
+  phaseName,
+  dayNumber,
+  category,
+  availableCategories,
+  userId,
+  onCategoryChange,
+  mode = "full",
+}: TreatmentPlanProps) {
   const validCategories = useMemo(() => {
     const ordered = availableCategories.length > 0 ? availableCategories : category ? [category] : [];
     return ordered.filter((id, idx) => ordered.indexOf(id) === idx && !!getProtocolTemplate(id));
   }, [availableCategories, category]);
 
   const [selectedCategory, setSelectedCategory] = useState<CategoryId | null>(category && getProtocolTemplate(category) ? category : validCategories[0] || null);
-  const [expandedPhaseIndex, setExpandedPhaseIndex] = useState(0);
   const [selectedDay, setSelectedDay] = useState(Math.max(1, dayNumber));
   const [completedTaskKeys, setCompletedTaskKeys] = useState<Record<string, string>>({});
   const [dayCompletions, setDayCompletions] = useState<Record<string, string>>({});
   const [taskRuntime, setTaskRuntime] = useState<Record<string, TaskRuntime>>({});
+  const [showHomeAlternative, setShowHomeAlternative] = useState<Record<string, boolean>>({});
   const [timezone, setTimezone] = useState(DEFAULT_TIMEZONE);
-  const [streak, setStreak] = useState(0);
-  const [lastCompletedDate, setLastCompletedDate] = useState<string | null>(null);
-  const [hasRemoteState, setHasRemoteState] = useState(false);
+  const [serverOffsetMs, setServerOffsetMs] = useState(0);
   const [toleranceMode, setToleranceMode] = useState<ProtocolToleranceMode>("moderate");
   const [guidanceLanguage, setGuidanceLanguage] = useState<ProtocolGuidanceLanguage>("en");
-  const [contraindications, setContraindications] = useState<ProtocolContraindications>({
-    sensitiveSkin: false,
-    activeIrritation: false,
-    shavedToday: false,
-    severeDandruff: false,
-  });
-  const [weeklyPhotoDoneByWeek, setWeeklyPhotoDoneByWeek] = useState<Record<string, boolean>>({});
+  const [contraindications, setContraindications] = useState<ProtocolContraindications>({});
+  const [ownedProducts, setOwnedProducts] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    if (!selectedCategory && validCategories[0]) {
-      setSelectedCategory(validCategories[0]);
-    }
+    if (!selectedCategory && validCategories[0]) setSelectedCategory(validCategories[0]);
   }, [selectedCategory, validCategories]);
 
   useEffect(() => {
-    if (!selectedCategory) return;
-    const key = `recovery-plan:${userId}:${selectedCategory}`;
-    let cancelled = false;
+    if (mode === "mission") {
+      setSelectedDay(Math.max(1, dayNumber));
+    }
+  }, [mode, dayNumber]);
 
-    const applyLocal = () => {
-      const raw = window.localStorage.getItem(key);
-      if (!raw) {
-        setSelectedDay(Math.max(1, dayNumber));
-        setCompletedTaskKeys({});
-        setDayCompletions({});
-        setStreak(0);
-        setLastCompletedDate(null);
-        setTimezone(DEFAULT_TIMEZONE);
-        setHasRemoteState(false);
-        return;
-      }
-      try {
-        const parsed = JSON.parse(raw) as PersistedPlanState;
-        setSelectedDay(parsed.selectedDay || Math.max(1, dayNumber));
-        setCompletedTaskKeys(parsed.completedTaskKeys || {});
-        setDayCompletions(parsed.dayCompletions || {});
-        setStreak(parsed.streak || 0);
-        setLastCompletedDate(parsed.lastCompletedDate || null);
-        setTimezone(parsed.timezone || DEFAULT_TIMEZONE);
-        setToleranceMode(parsed.toleranceMode || "moderate");
-        setGuidanceLanguage(parsed.guidanceLanguage || "en");
-        setContraindications(parsed.contraindications || {});
-        setWeeklyPhotoDoneByWeek(parsed.weeklyPhotoDoneByWeek || {});
-        setHasRemoteState(false);
-      } catch {
-        setSelectedDay(Math.max(1, dayNumber));
-        setHasRemoteState(false);
-      }
+  useEffect(() => {
+    const syncServerTime = async () => {
+      const requestStart = Date.now();
+      const response = await fetch("/api/time", { cache: "no-store" });
+      const payload = (await response.json()) as { serverNow: string };
+      const requestEnd = Date.now();
+      const roundTrip = requestEnd - requestStart;
+      const estimatedServerNow = new Date(payload.serverNow).getTime() + Math.round(roundTrip / 2);
+      setServerOffsetMs(estimatedServerNow - requestEnd);
     };
 
-    const loadRemote = async () => {
-      const { data } = await supabase
-        .from("user_recovery_program_state")
-        .select("selected_day,timezone,completed_task_keys,day_completions,current_day,streak,last_completed_date")
-        .eq("user_id", userId)
-        .eq("category", selectedCategory)
-        .maybeSingle();
-
-      if (cancelled || !data) {
-        applyLocal();
-        return;
-      }
-
-      const remote: PersistedPlanState = {
-        selectedDay: Number(data.selected_day || 1),
-        timezone: String(data.timezone || DEFAULT_TIMEZONE),
-        completedTaskKeys: ((data.completed_task_keys || {}) as Record<string, string>),
-        dayCompletions: ((data.day_completions || {}) as Record<string, string>),
-        currentDay: Number(data.current_day || data.selected_day || 1),
-        streak: Number(data.streak || 0),
-        lastCompletedDate: data.last_completed_date ? String(data.last_completed_date) : null,
-      };
-
-      setSelectedDay(remote.selectedDay || Math.max(1, dayNumber));
-      setCompletedTaskKeys(remote.completedTaskKeys || {});
-      setDayCompletions(remote.dayCompletions || {});
-      setStreak(remote.streak || 0);
-      setLastCompletedDate(remote.lastCompletedDate || null);
-      setTimezone(remote.timezone || DEFAULT_TIMEZONE);
-      setHasRemoteState(true);
-    };
-
-    void loadRemote();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedCategory, userId, dayNumber]);
+    void syncServerTime();
+    const timer = setInterval(() => void syncServerTime(), 120000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (!selectedCategory) return;
-    const key = `recovery-plan:${userId}:${selectedCategory}`;
+    const key = `daily-execution:${userId}:${selectedCategory}`;
+    const raw = window.localStorage.getItem(key);
+    if (!raw) {
+      setCompletedTaskKeys({});
+      setDayCompletions({});
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(raw) as PersistedPlanState;
+      if (mode === "full") {
+        setSelectedDay(parsed.selectedDay || Math.max(1, dayNumber));
+      }
+      setTimezone(parsed.timezone || DEFAULT_TIMEZONE);
+      setCompletedTaskKeys(parsed.completedTaskKeys || {});
+      setDayCompletions(parsed.dayCompletions || {});
+      setToleranceMode(parsed.toleranceMode || "moderate");
+      setGuidanceLanguage(parsed.guidanceLanguage || "en");
+      setContraindications(parsed.contraindications || {});
+    } catch {
+      setCompletedTaskKeys({});
+      setDayCompletions({});
+    }
+  }, [selectedCategory, userId, dayNumber, mode]);
+
+  useEffect(() => {
+    if (!selectedCategory) return;
+
+    const key = `daily-execution:${userId}:${selectedCategory}`;
     const payload: PersistedPlanState = {
       selectedDay,
       timezone,
       completedTaskKeys,
       dayCompletions,
-      currentDay: selectedDay,
-      streak,
-      lastCompletedDate,
       toleranceMode,
       guidanceLanguage,
       contraindications,
-      weeklyPhotoDoneByWeek,
     };
     window.localStorage.setItem(key, JSON.stringify(payload));
+  }, [selectedCategory, userId, selectedDay, timezone, completedTaskKeys, dayCompletions, toleranceMode, guidanceLanguage, contraindications]);
 
-    const persistTimer = setTimeout(() => {
-      void supabase.from("user_recovery_program_state").upsert(
-        {
-          user_id: userId,
-          category: selectedCategory,
-          selected_day: selectedDay,
-          timezone,
-          completed_task_keys: completedTaskKeys,
-          day_completions: dayCompletions,
-          current_day: selectedDay,
-          streak,
-          last_completed_date: lastCompletedDate,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "user_id,category" }
-      );
-    }, hasRemoteState ? 450 : 900);
+  useEffect(() => {
+    if (!selectedCategory) return;
 
-    return () => clearTimeout(persistTimer);
-  }, [
-    selectedCategory,
-    userId,
-    selectedDay,
-    timezone,
-    completedTaskKeys,
-    dayCompletions,
-    streak,
-    lastCompletedDate,
-    hasRemoteState,
-    toleranceMode,
-    guidanceLanguage,
-    contraindications,
-    weeklyPhotoDoneByWeek,
-  ]);
+    const loadOwnedProducts = async () => {
+      const { data } = await supabase
+        .from("user_products")
+        .select("product_id")
+        .eq("user_id", userId);
+
+      const rows = (data || []) as ProductRow[];
+      const next: Record<string, boolean> = {};
+      rows.forEach((row) => {
+        next[row.product_id] = true;
+      });
+      setOwnedProducts(next);
+    };
+
+    void loadOwnedProducts();
+  }, [selectedCategory, userId]);
 
   useEffect(() => {
     const timer = setInterval(() => {
       setTaskRuntime((prev) => {
-        const next: Record<string, TaskRuntime> = { ...prev };
         let changed = false;
+        const next: Record<string, TaskRuntime> = { ...prev };
         Object.keys(next).forEach((taskKey) => {
           const runtime = next[taskKey];
           if (!runtime.running) return;
@@ -313,441 +273,475 @@ export default function TreatmentPlan({ categoryLabel, phaseName, dayNumber, cat
         return changed ? next : prev;
       });
     }, 1000);
+
     return () => clearInterval(timer);
   }, []);
 
   const template = selectedCategory ? getProtocolTemplate(selectedCategory) : null;
   const totalDays = template ? getProtocolDurationDays(template) : 30;
 
-  const phaseRanges = useMemo(() => {
-    if (!template) return [] as Array<{ index: number; name: string; startDay: number; endDay: number; tasks: ProtocolTask[] }>;
-    let cursor = 1;
-    return template.phases.map((phase, index) => {
-      const startDay = cursor;
-      const endDay = cursor + phase.duration_days - 1;
-      cursor = endDay + 1;
-      return { index, name: phase.name, startDay, endDay, tasks: phase.tasks };
-    });
-  }, [template]);
+  const completedIds = useMemo(() => Object.keys(completedTaskKeys), [completedTaskKeys]);
+  const ownedProductIds = useMemo(() => Object.keys(ownedProducts).filter((id) => ownedProducts[id]), [ownedProducts]);
 
-  const activePhase = phaseRanges.find((phase) => selectedDay >= phase.startDay && selectedDay <= phase.endDay) || phaseRanges[0];
-
-  const selectedWeek = Math.ceil(selectedDay / 7);
-  const weekStart = (selectedWeek - 1) * 7 + 1;
-  const weekEnd = Math.min(totalDays, selectedWeek * 7);
-  const completedDaysThisWeek = useMemo(() => {
-    if (!selectedCategory) return 0;
-    let total = 0;
-    for (let day = weekStart; day <= weekEnd; day += 1) {
-      if (dayCompletions[`${selectedCategory}:${day}`]) total += 1;
-    }
-    return total;
-  }, [dayCompletions, selectedCategory, weekStart, weekEnd]);
-
-  const weekDayCount = Math.max(1, weekEnd - weekStart + 1);
-  const weeklyAdherencePct = Math.round((completedDaysThisWeek / weekDayCount) * 100);
-  const weeklyPhotoKey = `week-${selectedWeek}`;
-  const weeklyPhotoDone = Boolean(weeklyPhotoDoneByWeek[weeklyPhotoKey]);
-
-  const confidencePrompt =
-    weeklyAdherencePct >= 80
-      ? "Excellent consistency. Keep this pace and compare photos to reinforce progress confidence."
-      : weeklyAdherencePct >= 50
-        ? "Good momentum. Focus on one missed slot pattern and close it this week."
-        : "Low consistency this week. Use Beginner mode and complete Recovery Lite today to restart cleanly.";
-
-  const dailyMeta = useMemo(() => {
+  const execution = useMemo(() => {
     if (!selectedCategory) return null;
-    return generateDailyProtocolMeta(selectedCategory, selectedDay);
-  }, [selectedCategory, selectedDay]);
+    return generateDailyExecutionPayload(
+      selectedCategory,
+      selectedDay,
+      {
+        toleranceMode,
+        contraindications,
+        guidanceLanguage,
+      },
+      {
+        completedTaskIds: completedIds,
+        ownedProductIds,
+      }
+    );
+  }, [selectedCategory, selectedDay, toleranceMode, contraindications, guidanceLanguage, completedIds, ownedProductIds]);
 
-  const todayKey = toDateKey();
-  const missedDays = useMemo(() => {
-    if (!lastCompletedDate) return 0;
-    return Math.max(0, dayDiff(lastCompletedDate, todayKey) - 1);
-  }, [lastCompletedDate, todayKey]);
+  const now = new Date(Date.now() + serverOffsetMs);
+  const nowTzMinutes = nowMinutesInTimezone(now, timezone);
 
-  const dayTasks = useMemo(() => {
-    if (!selectedCategory) return [] as Array<ProtocolTask & { taskKey: string }>;
-    return generateDailyProtocolTasks(selectedCategory, selectedDay, {
-      toleranceMode,
-      contraindications,
-      missedYesterday: missedDays >= 1,
-      guidanceLanguage,
-      completedDaysThisWeek,
-      weeklyPhotoDone,
-    }).map((task) => ({ ...task, taskKey: `${selectedCategory}:${selectedDay}:${task.id}` }));
-  }, [selectedCategory, selectedDay, toleranceMode, contraindications, missedDays, guidanceLanguage, completedDaysThisWeek, weeklyPhotoDone]);
+  const taskGroups = execution?.tasks || { morning: [], afternoon: [], night: [] };
+  const allTasks = [...taskGroups.morning, ...taskGroups.afternoon, ...taskGroups.night];
+  const allDone = allTasks.length > 0 && allTasks.every((task) => Boolean(completedTaskKeys[task.id]));
 
-  const groupedTasks = {
-    morning: dayTasks.filter((task) => task.slot === "morning"),
-    afternoon: dayTasks.filter((task) => task.slot === "lifestyle"),
-    night: dayTasks.filter((task) => task.slot === "night" || task.slot === "weekly"),
+  const taskState = (task: DailyExecutionTask) => {
+    const runtime = taskRuntime[task.id] || { running: false, remainingSec: task.durationMin * 60, startedAt: null };
+    return taskWindowState(task, nowTzMinutes, runtime, Boolean(completedTaskKeys[task.id]));
   };
 
-  const allDone = dayTasks.length > 0 && dayTasks.every((task) => Boolean(completedTaskKeys[task.taskKey]));
+  const setProductOwnership = async (productId: string, hasProduct: boolean) => {
+    setOwnedProducts((prev) => ({ ...prev, [productId]: hasProduct }));
 
-  const transformationPct = Math.max(0, Math.min(100, Math.round((Object.keys(dayCompletions).length / totalDays) * 100)));
+    if (hasProduct) {
+      await supabase.from("user_products").upsert(
+        {
+          user_id: userId,
+          product_id: productId,
+          purchased_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id,product_id" }
+      );
+      return;
+    }
 
-  const handleMarkComplete = (taskKey: string) => {
-    if (!selectedCategory) return;
-    if (completedTaskKeys[taskKey]) return;
-
-    setCompletedTaskKeys((prev) => ({ ...prev, [taskKey]: new Date().toISOString() }));
-
-    void awardAlphaSikka("treatment_task_completed", `treatment-task:${taskKey}`, {
-      category: selectedCategory,
-      day: selectedDay,
-      taskKey,
-    });
-
-    void emitNotification("routine_completed", `treatment_task_completed:${taskKey}`, {
-      category: selectedCategory,
-      day: selectedDay,
-      taskKey,
-    });
+    await supabase.from("user_products").delete().eq("user_id", userId).eq("product_id", productId);
   };
 
-  const toggleTimer = (taskKey: string, defaultSeconds: number) => {
+  const toggleTaskTimer = (task: DailyExecutionTask) => {
+    const state = taskState(task);
+    if (state.code === "locked" || state.code === "missed" || state.code === "completed") return;
+
     setTaskRuntime((prev) => {
-      const existing = prev[taskKey] || { running: false, remainingSec: defaultSeconds };
+      const existing = prev[task.id] || { running: false, remainingSec: task.durationMin * 60, startedAt: null };
       return {
         ...prev,
-        [taskKey]: { ...existing, running: !existing.running },
+        [task.id]: {
+          ...existing,
+          running: !existing.running,
+          startedAt: existing.startedAt || new Date(Date.now() + serverOffsetMs).toISOString(),
+        },
       };
     });
   };
 
-  const resetTimer = (taskKey: string, defaultSeconds: number) => {
+  const resetTaskTimer = (task: DailyExecutionTask) => {
     setTaskRuntime((prev) => ({
       ...prev,
-      [taskKey]: { running: false, remainingSec: defaultSeconds },
+      [task.id]: { running: false, remainingSec: task.durationMin * 60, startedAt: null },
     }));
   };
 
-  const completeDay = () => {
-    if (!allDone || !selectedCategory) return;
+  const completeTask = async (task: DailyExecutionTask, asRecovery = false) => {
+    if (completedTaskKeys[task.id]) return;
 
-    const completedOn = new Date().toISOString();
-    setDayCompletions((prev) => ({ ...prev, [`${selectedCategory}:${selectedDay}`]: new Date().toISOString() }));
+    const runtime = taskRuntime[task.id] || { running: false, remainingSec: task.durationMin * 60, startedAt: null };
+    const state = taskState(task);
 
-    let nextStreak = 1;
-    if (lastCompletedDate) {
-      const diff = dayDiff(lastCompletedDate, todayKey);
-      nextStreak = diff <= 1 ? streak + 1 : 1;
-      setStreak(nextStreak);
-    } else {
-      setStreak(1);
+    const timerCompleted = runtime.startedAt != null && runtime.remainingSec === 0;
+    const withinWindow = state.inWindow;
+
+    if (!asRecovery) {
+      const strictAllowed = (state.code === "ready_complete") && timerCompleted && withinWindow;
+      if (!strictAllowed) return;
     }
-    setLastCompletedDate(todayKey);
 
-    const dayReference = `treatment-day:${selectedCategory}:${selectedDay}`;
-    void awardAlphaSikka("treatment_day_completed", dayReference, {
-      category: selectedCategory,
-      day: selectedDay,
-      completedAt: completedOn,
+    const completedAt = new Date(Date.now() + serverOffsetMs).toISOString();
+    setCompletedTaskKeys((prev) => ({ ...prev, [task.id]: completedAt }));
+
+    if (asRecovery) return;
+
+    await awardTaskReward(`daily-execution:${task.id}`, {
+      timerCompleted,
+      withinWindow,
+      cooldownLock: true,
+      completedOnce: true,
+      isRecovery: false,
+      completedAt,
+      timezone,
+    });
+  };
+
+  const completeDay = async () => {
+    if (!selectedCategory || !execution || !allDone) return;
+
+    const dayKey = `${selectedCategory}:${execution.day}`;
+    if (dayCompletions[dayKey]) return;
+
+    const completedAt = new Date(Date.now() + serverOffsetMs).toISOString();
+    setDayCompletions((prev) => ({ ...prev, [dayKey]: completedAt }));
+
+    await awardDayReward(`daily-execution-day:${dayKey}`, {
+      allTasksVerified: true,
+      cooldownLock: true,
+      completedOnce: true,
+      completedAt,
+      adherenceScore: execution.adherenceScore,
     });
 
-    void emitNotification("challenge_milestone", `treatment_day_completed:${selectedCategory}:${selectedDay}`, {
-      category: selectedCategory,
-      day: selectedDay,
-      streak: nextStreak,
-      pointsEarned: 5,
-    });
-
-    if (selectedDay < totalDays) {
+    if (mode === "full" && selectedDay < totalDays) {
       setSelectedDay(selectedDay + 1);
     }
   };
 
-  const resetProgram = () => {
-    setSelectedDay(1);
-    setCompletedTaskKeys({});
-    setDayCompletions({});
-    setTaskRuntime({});
-    setStreak(0);
-    setLastCompletedDate(null);
-  };
-
-  if (!selectedCategory || !template || phaseRanges.length === 0) {
+  if (!selectedCategory || !template || !execution) {
     return (
-      <section className="af-card rounded-2xl p-6">
-        <h3 className="text-lg font-bold text-[#1F3D2B]">Category Treatment Plan</h3>
-        <p className="mt-2 text-sm text-[#6B665D]">Complete analyzer and assessment to generate your recovery program.</p>
+      <section className="af-card rounded-2xl p-8 bg-white shadow-xl/5 border-none">
+        <h3 className="text-xl font-bold text-clinical-heading">Clinical Execution Engine</h3>
+        <p className="mt-2 text-md text-clinical-body opacity-70">Please complete the AI Analyzer or Assessment to generate your specialized recovery routine.</p>
+        <div className="mt-6 flex gap-3">
+          <Link href="/image-analyzer" className="af-btn-primary px-6 py-3 text-sm">Start Scan</Link>
+          <Link href="/assessment" className="af-btn-soft px-6 py-3 text-sm">Start Assessment</Link>
+        </div>
       </section>
     );
   }
 
+  const progressPct = Math.max(0, Math.min(100, Math.round((Object.keys(dayCompletions).length / Math.max(1, totalDays)) * 100)));
+
   return (
-    <section className="af-card rounded-2xl p-6">
-      <p className="text-[11px] font-bold uppercase tracking-wider text-[#8C6A5A]">Category Treatment Plan</p>
-      <h3 className="mt-1 text-lg font-bold text-[#1F3D2B]">Recovery Program Engine · {categories.find((c) => c.id === selectedCategory)?.label || categoryLabel}</h3>
-      <p className="mt-1 text-xs text-[#6B665D]">Current phase: {activePhase?.name || phaseName} · Day {selectedDay} / {totalDays}</p>
-
-      <div className="mt-3 overflow-x-auto">
-        <div className="flex gap-2 pb-1">
-          {validCategories.map((cat) => (
-            <button
-              key={cat}
-              type="button"
-              onClick={() => {
-                setSelectedCategory(cat);
-                onCategoryChange?.(cat);
-              }}
-              className={`whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold transition ${cat === selectedCategory ? "border-[#2F6F57] bg-[#E8F4EE] text-[#1F3D2B]" : "border-[#D7D1C6] bg-white text-[#6B665D]"}`}
-            >
-              {categories.find((c) => c.id === cat)?.label || cat}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-4 rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm font-semibold text-[#1F3D2B]">30 Day Recovery Program</p>
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="text-xs text-[#6B665D]">Timezone</label>
-            <select
-              value={timezone}
-              onChange={(e) => setTimezone(e.target.value)}
-              className="rounded-md border border-[#D7D1C6] bg-white px-2 py-1 text-xs"
-            >
-              {TIMEZONES.map((tz) => (
-                <option key={tz} value={tz}>{tz}</option>
-              ))}
-            </select>
-
-            <label className="ml-2 text-xs text-[#6B665D]">Language</label>
-            <select
-              value={guidanceLanguage}
-              onChange={(e) => setGuidanceLanguage(e.target.value as ProtocolGuidanceLanguage)}
-              className="rounded-md border border-[#D7D1C6] bg-white px-2 py-1 text-xs"
-            >
-              {LANGUAGE_CHOICES.map((item) => (
-                <option key={item.value} value={item.value}>{item.label}</option>
-              ))}
-            </select>
-
-            <label className="ml-2 text-xs text-[#6B665D]">Mode</label>
-            <select
-              value={toleranceMode}
-              onChange={(e) => setToleranceMode(e.target.value as ProtocolToleranceMode)}
-              className="rounded-md border border-[#D7D1C6] bg-white px-2 py-1 text-xs"
-            >
-              <option value="beginner">Beginner</option>
-              <option value="moderate">Moderate</option>
-              <option value="aggressive">Aggressive</option>
-            </select>
+    <section className="af-card rounded-[2rem] p-8 bg-white border-none shadow-sm" id="daily-execution-engine">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#8C6A5A]">Daily Protocol</p>
+          <h3 className="mt-1 text-2xl font-bold text-clinical-heading tracking-tight">
+            {mode === "mission" ? "Mission Control" : "Recovery Planner"} · {categories.find((c) => c.id === selectedCategory)?.label || categoryLabel}
+          </h3>
+          <div className="mt-2 flex items-center gap-3">
+            <span className="flex items-center gap-1.5 px-3 py-1 bg-[#F8F7F4] rounded-full text-[11px] font-bold text-[#6B665D]">
+              DAY {execution.day} / {totalDays}
+            </span>
+            <span className="flex items-center gap-1.5 px-3 py-1 bg-[#E8F4EE] rounded-full text-[11px] font-bold text-[#2F6F57]">
+              PHASE {execution.phase}: {phaseName}
+            </span>
           </div>
         </div>
-
-        <div className="mt-3 flex flex-wrap gap-3 text-xs text-[#6B665D]">
-          <label className="inline-flex items-center gap-1">
-            <input
-              type="checkbox"
-              checked={Boolean(contraindications.sensitiveSkin)}
-              onChange={(e) => setContraindications((prev) => ({ ...prev, sensitiveSkin: e.target.checked }))}
-            />
-            Sensitive skin
-          </label>
-          <label className="inline-flex items-center gap-1">
-            <input
-              type="checkbox"
-              checked={Boolean(contraindications.activeIrritation)}
-              onChange={(e) => setContraindications((prev) => ({ ...prev, activeIrritation: e.target.checked }))}
-            />
-            Active irritation
-          </label>
-          <label className="inline-flex items-center gap-1">
-            <input
-              type="checkbox"
-              checked={Boolean(contraindications.shavedToday)}
-              onChange={(e) => setContraindications((prev) => ({ ...prev, shavedToday: e.target.checked }))}
-            />
-            Shaved today
-          </label>
-          <label className="inline-flex items-center gap-1">
-            <input
-              type="checkbox"
-              checked={Boolean(contraindications.severeDandruff)}
-              onChange={(e) => setContraindications((prev) => ({ ...prev, severeDandruff: e.target.checked }))}
-            />
-            Severe dandruff
-          </label>
-        </div>
-
-        <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-[#E7E1D7]">
-          <div className="h-full rounded-full bg-gradient-to-r from-[#8C6A5A] to-[#2F6F57]" style={{ width: `${transformationPct}%` }} />
-        </div>
-        <p className="mt-1 text-xs text-[#6B665D]">Transformation progress: {transformationPct}% · Streak: {streak} days</p>
-
-        {dailyMeta ? (
-          <div className="mt-3 rounded-lg border border-[#D7D1C6] bg-white px-3 py-2 text-xs">
-            <p className="font-semibold text-[#1F3D2B]">Daily Clinical Objective</p>
-            <p className="mt-1 text-[#6B665D]">Goal today: {dailyMeta.dailyGoal}</p>
-            <p className="mt-1 text-[#2F6F57]">Expected improvement: {dailyMeta.expectedResult}</p>
-          </div>
-        ) : null}
-
-        <div className="mt-3 rounded-lg border border-[#D7D1C6] bg-white px-3 py-2 text-xs">
-          <p className="font-semibold text-[#1F3D2B]">Weekly confidence tracker (Week {selectedWeek})</p>
-          <p className="mt-1 text-[#6B665D]">Adherence: {completedDaysThisWeek}/{weekDayCount} days ({weeklyAdherencePct}%). {confidencePrompt}</p>
-          <label className="mt-2 inline-flex items-center gap-1 text-[#6B665D]">
-            <input
-              type="checkbox"
-              checked={weeklyPhotoDone}
-              onChange={(e) => {
-                const checked = e.target.checked;
-                setWeeklyPhotoDoneByWeek((prev) => ({ ...prev, [weeklyPhotoKey]: checked }));
-              }}
-            />
-            Weekly comparison photo completed
-          </label>
-        </div>
-
-        {missedDays >= 3 ? (
-          <div className={`mt-3 rounded-lg border px-3 py-2 text-xs ${missedDays >= 5 ? "border-red-300 bg-red-50 text-red-700" : "border-amber-300 bg-amber-50 text-amber-800"}`}>
-            <p className="inline-flex items-center gap-1 font-semibold"><TriangleAlert className="h-3.5 w-3.5" /> Consistency warning</p>
-            <p className="mt-1">You missed {missedDays} day(s). {missedDays >= 5 ? "Program reset is recommended (small penalty: -10 A$)." : "Complete today to protect streak."}</p>
-            {missedDays >= 5 ? (
-              <button type="button" onClick={resetProgram} className="mt-2 rounded-md border border-red-300 bg-white px-2 py-1 text-xs font-semibold text-red-700">Reset Program to Day 1</button>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
-
-      <div className="mt-4 grid gap-3 lg:grid-cols-[1.1fr_1.9fr]">
-        <div className="space-y-2">
-          {phaseRanges.map((phase) => (
-            <div key={phase.index} className="rounded-xl border border-[#E2DDD3] bg-white">
+        
+        {mode === "full" ? (
+          <div className="flex flex-wrap gap-2">
+            {validCategories.map((cat) => (
               <button
+                key={cat}
                 type="button"
-                onClick={() => setExpandedPhaseIndex(expandedPhaseIndex === phase.index ? -1 : phase.index)}
-                className="flex w-full items-center justify-between px-3 py-2 text-left"
+                onClick={() => {
+                  setSelectedCategory(cat);
+                  onCategoryChange?.(cat);
+                }}
+                className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${cat === selectedCategory ? "bg-[#1F3D2B] text-white shadow-lg" : "bg-[#F8F7F4] text-[#6B665D] hover:bg-[#E2DDD3]"}`}
               >
-                <div>
-                  <p className="text-xs font-bold text-[#2F6F57]">Day {phase.startDay}-{phase.endDay}</p>
-                  <p className="text-sm font-semibold text-[#1F3D2B]">{phase.name}</p>
-                </div>
-                <ChevronDown className={`h-4 w-4 text-[#6B665D] transition ${expandedPhaseIndex === phase.index ? "rotate-180" : ""}`} />
+                {categories.find((c) => c.id === cat)?.label || cat}
               </button>
+            ))}
+          </div>
+        ) : (
+          <Link href="/recovery-program" className="group flex items-center gap-2 text-xs font-bold text-[#1F3D2B] hover:text-[#2F6F57] transition-colors">
+            FULL PROGRAM <RotateCcw className="h-3.5 w-3.5 group-hover:rotate-180 transition-transform duration-500" />
+          </Link>
+        )}
+      </div>
 
-              {expandedPhaseIndex === phase.index ? (
-                <div className="border-t border-[#EDE7DC] px-3 py-2">
-                  <div className="grid grid-cols-4 gap-1 text-xs">
-                    {Array.from({ length: phase.endDay - phase.startDay + 1 }).map((_, i) => {
-                      const day = phase.startDay + i;
-                      const dayKey = `${selectedCategory}:${day}`;
-                      const done = Boolean(dayCompletions[dayKey]);
-                      return (
-                        <button
-                          key={day}
-                          type="button"
-                          onClick={() => setSelectedDay(day)}
-                          className={`rounded-md border px-2 py-1 ${selectedDay === day ? "border-[#2F6F57] bg-[#E8F4EE] text-[#1F3D2B]" : done ? "border-green-300 bg-green-50 text-green-700" : "border-[#D7D1C6] bg-white text-[#6B665D]"}`}
-                        >
-                          Day {day}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ) : null}
+      <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="rounded-2xl bg-[#F8F7F4] p-5 flex flex-col gap-1.5">
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-[#1F3D2B]" />
+            <p className="text-[12px] font-bold text-[#1F3D2B] uppercase tracking-wider">Objectives Today</p>
+          </div>
+          <p className="text-md font-bold text-clinical-heading leading-snug">{execution.dailyGoal}</p>
+          <p className="text-xs text-clinical-body opacity-60 italic">{execution.expectedOutcome}</p>
+        </div>
+        
+        <div className="rounded-2xl bg-[#F8F7F4] p-5 flex flex-col justify-center">
+           <div className="flex justify-between items-end mb-2">
+              <p className="text-[11px] font-bold text-[#1F3D2B] uppercase tracking-wider">Overall Consistency</p>
+              <span className="text-lg font-bold text-clinical-heading">{progressPct}%</span>
+           </div>
+           <div className="h-2 overflow-hidden rounded-full bg-[#E2DDD3]">
+             <div 
+               className="h-full rounded-full bg-[#2F6F57] transition-all duration-1000" 
+               style={{ width: `${progressPct}%`, transitionDelay: '0.2s' }} 
+             />
+           </div>
+           <p className="mt-2 text-[10px] text-[#8C6A5A] uppercase font-bold tracking-widest">Adherence today: {execution.adherenceScore}%</p>
+        </div>
+      </div>
+
+      <div className="mt-12 space-y-12">
+        {([
+          { key: "morning", label: "Sunrise Routine", time: "6:00 AM - 10:00 AM", tasks: taskGroups.morning, icon: <Clock3 className="h-4 w-4" /> },
+          { key: "afternoon", label: "Midday Care", time: "12:00 PM - 3:00 PM", tasks: taskGroups.afternoon, icon: <Clock3 className="h-4 w-4" /> },
+          { key: "night", label: "Night Ritual", time: "8:00 PM - 11:00 PM", tasks: taskGroups.night, icon: <Clock3 className="h-4 w-4" /> },
+        ] as const).map((group) => (
+          <div key={group.key} className="relative">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-[#F8F7F4] rounded-lg text-[#1F3D2B]">
+                {group.icon}
+              </div>
+              <div>
+                 <h4 className="text-sm font-bold uppercase tracking-widest text-[#1F3D2B]">{group.label}</h4>
+                 <p className="text-[10px] font-bold text-[#8C6A5A] opacity-60">{group.time}</p>
+              </div>
             </div>
-          ))}
-        </div>
 
-        <div className="rounded-xl border border-[#E2DDD3] bg-white p-4">
-          <div className="flex items-center justify-between">
-            <h4 className="text-base font-bold text-[#1F3D2B]">Day {selectedDay} Protocol</h4>
-            <span className="text-xs font-semibold text-[#2F6F57]">Daily completion: +5 A$</span>
-          </div>
-
-          <div className="mt-3 space-y-4">
-            {(["morning", "afternoon", "night"] as const).map((slotKey) => {
-              const slotTasks = groupedTasks[slotKey];
-              const slotTitle = slotKey === "morning" ? "Morning" : slotKey === "afternoon" ? "Afternoon" : "Night";
-
-              return (
-                <div key={slotKey}>
-                  <p className="text-xs font-bold uppercase tracking-wider text-[#8C6A5A]">{slotTitle}</p>
-                  <div className="mt-2 space-y-2">
-                    {slotTasks.length === 0 ? (
-                      <p className="text-xs text-[#8C877D]">No required task in this slot today.</p>
-                    ) : (
-                      slotTasks.map((task) => {
-                        const detail = taskDetailFor(selectedCategory, task);
-                        const runtime = taskRuntime[task.taskKey] || { running: false, remainingSec: detail.durationMin * 60 };
-                        const completed = Boolean(completedTaskKeys[task.taskKey]);
-
-                        return (
-                          <div key={task.taskKey} className="rounded-lg border border-[#E2DDD3] bg-[#F8F6F3] p-3">
-                            <div className="flex items-start justify-between gap-2">
-                              <div>
-                                <p className="text-sm font-semibold text-[#1F3D2B]">{task.label}</p>
-                                <p className="mt-0.5 text-[11px] text-[#8C6A5A]">Goal: {detail.goal}</p>
-                                <p className="mt-0.5 text-xs text-[#6B665D]">{detail.instruction}</p>
-                                <p className="mt-1 text-[11px] text-[#2F6F57]">Why it helps: {detail.whyItHelps}</p>
-                                <p className="mt-1 text-[11px] text-[#6B665D]">Ingredient: {detail.ingredient}</p>
-                                <p className="mt-1 text-[11px] text-[#2F6F57]">Expected: {detail.expectedImprovement}</p>
-                                <p className="mt-1 text-[11px] text-[#8C877D]">Suggested: {detail.productSuggestion}</p>
-                                {detail.caution ? <p className="mt-1 text-[11px] text-amber-700">Note: {detail.caution}</p> : null}
-                              </div>
-                              {completed ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : null}
-                            </div>
-
-                            <div className="mt-2 grid gap-2 text-xs md:grid-cols-2">
-                              <p className="inline-flex items-center gap-1 text-[#6B665D]"><Clock3 className="h-3.5 w-3.5" /> {detail.timeWindow} · {detail.durationMin} min</p>
-                              <p className="inline-flex items-center gap-1 text-[#6B665D]"><Bell className="h-3.5 w-3.5" /> {reminderSchedule(task.slot, timezone)}</p>
-                            </div>
-
-                            <div className="mt-2 flex flex-wrap items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => toggleTimer(task.taskKey, detail.durationMin * 60)}
-                                className="af-btn-soft inline-flex items-center gap-1 px-2.5 py-1 text-xs"
-                              >
-                                {runtime.running ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />} {runtime.running ? "Pause" : "Start"}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => resetTimer(task.taskKey, detail.durationMin * 60)}
-                                className="af-btn-soft inline-flex items-center gap-1 px-2.5 py-1 text-xs"
-                              >
-                                <RotateCcw className="h-3.5 w-3.5" /> Reset
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleMarkComplete(task.taskKey)}
-                                disabled={completed}
-                                className="af-btn-primary inline-flex items-center gap-1 px-2.5 py-1 text-xs disabled:opacity-60"
-                              >
-                                <Sparkles className="h-3.5 w-3.5" /> {completed ? "Completed" : `Mark Complete (+${detail.rewardPoints} A$)`}
-                              </button>
-                              <span className="text-xs font-semibold text-[#2F6F57]">{Math.floor(runtime.remainingSec / 60)}:{String(runtime.remainingSec % 60).padStart(2, "0")}</span>
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {group.tasks.length === 0 ? (
+                <div className="col-span-full border-2 border-dashed border-[#E2DDD3] rounded-[1.5rem] p-8 text-center bg-[#FCFAF9]">
+                   <p className="text-sm text-[#8C6A5A] font-medium italic">No mandatory clinical tasks scheduled for this period.</p>
                 </div>
-              );
-            })}
-          </div>
+              ) : (
+                group.tasks.map((task) => {
+                  const runtime = taskRuntime[task.id] || { running: false, remainingSec: task.durationMin * 60, startedAt: null };
+                  const state = taskState(task);
+                  const completed = Boolean(completedTaskKeys[task.id]);
+                  const userHasProduct = ownedProducts[task.product.id] || task.userHasProduct;
 
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#E2DDD3] bg-[#FCFAF6] p-3">
-            <p className="text-xs text-[#6B665D]">If skipped repeatedly: 3 missed days warning · 5 missed days reset recommendation.</p>
-            <button
-              type="button"
-              onClick={completeDay}
-              disabled={!allDone}
-              className="af-btn-primary px-3 py-1.5 text-xs disabled:opacity-60"
-            >
-              Complete Day (+5 A$)
-            </button>
+                  return (
+                    <div 
+                      key={task.id} 
+                      className={`relative overflow-hidden rounded-[1.5rem] bg-white transition-all duration-300 ${completed ? 'completion-glow ring-2 ring-[#2F6F57]/20 shadow-xl' : 'shadow-md hover:shadow-lg hover:-translate-y-1'}`}
+                    >
+                      {/* Progress background indicator */}
+                      {state.code === "in_progress" && (
+                         <div className="absolute top-0 left-0 w-full h-1 bg-[#E2DDD3]">
+                            <div className="h-full bg-[#2F6F57] animate-progress" style={{ "--progress-target": "100%" } as any} />
+                         </div>
+                      )}
+
+                      <div className="p-6">
+                        {/* Header */}
+                        <div className="flex items-start justify-between gap-4 mb-5">
+                          <div>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-[#8C6A5A] px-2 py-0.5 bg-[#F8F7F4] rounded-md">
+                              {task.timeWindow.start}
+                            </span>
+                            <h5 className="mt-2 text-lg font-bold text-clinical-heading leading-tight">{task.title}</h5>
+                          </div>
+                          
+                          <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${
+                            completed ? "bg-[#E8F4EE] text-[#2F6F57]" : 
+                            state.code === "missed" ? "bg-red-50 text-red-600" :
+                            state.code === "locked" ? "bg-gray-100 text-gray-500" :
+                            "bg-amber-50 text-amber-600"
+                          }`}>
+                            {completed ? "Completed" : state.code.replace("_", " ")}
+                          </div>
+                        </div>
+
+                        {/* Body - Body: clean sans-serif */}
+                        <div className="space-y-4 text-clinical-body">
+                          <div>
+                            <p className="text-xs font-bold text-[#1F3D2B] mb-1.5 flex items-center gap-1.5">
+                               <CheckCircle2 className="h-3.5 w-3.5 text-[#2F6F57]" /> Goal
+                            </p>
+                            <p className="text-sm font-bold text-[#1F3D2B]">{task.goal}</p>
+                          </div>
+
+                          <div className="space-y-2">
+                             <p className="text-[11px] font-bold text-[#8C6A5A] uppercase tracking-wider">Instructions</p>
+                             <ul className="space-y-2">
+                               {task.howToSteps.map((step, idx) => (
+                                 <li key={idx} className="flex gap-3 text-sm">
+                                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#1F3D2B] text-white text-[10px] flex items-center justify-center font-bold">
+                                      {idx + 1}
+                                    </span>
+                                    <span className="leading-snug">{step}</span>
+                                 </li>
+                               ))}
+                             </ul>
+                          </div>
+
+                          {task.whyItHelps && (
+                            <div className="pt-2">
+                               <p className="text-[11px] text-[#6B665D] leading-relaxed italic border-l-2 border-[#E2DDD3] pl-3">
+                                 <span className="font-bold text-[#1F3D2B] not-italic mr-1">Clinical Insight:</span> {task.whyItHelps}
+                               </p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Product Section */}
+                        <div className="mt-8 border-t border-[#F1ECE3] pt-6">
+                            <div className="flex items-center gap-4">
+                               <div className="w-14 h-14 bg-[#F8F7F4] rounded-xl flex items-center justify-center text-[#8C6A5A] shadow-inner">
+                                  <ShoppingBag className="h-6 w-6 opacity-40" />
+                               </div>
+                               <div className="flex-grow">
+                                  <p className="text-[10px] font-bold text-[#8C6A5A] uppercase tracking-widest">{task.product.ingredient}</p>
+                                  <p className="text-sm font-bold text-clinical-heading">{task.product.name}</p>
+                               </div>
+                            </div>
+                            
+                            {!userHasProduct ? (
+                              <div className="mt-4 flex flex-wrap gap-2">
+                                <Link href={`/shop?product=${encodeURIComponent(task.product.id)}`} className="af-btn-primary flex-grow text-center px-4 py-2.5 text-[11px] uppercase tracking-wider">
+                                  Buy Solution
+                                </Link>
+                                <button
+                                  type="button"
+                                  className="af-btn-soft flex-grow px-4 py-2.5 text-[11px] uppercase tracking-wider"
+                                  onClick={() => void setProductOwnership(task.product.id, true)}
+                                >
+                                  I Have This
+                                </button>
+                                <button
+                                  type="button"
+                                  className="w-full text-[10px] font-bold text-[#8C6A5A] uppercase tracking-widest mt-2 hover:text-[#1F3D2B] transition-colors underline underline-offset-4"
+                                  onClick={() => setShowHomeAlternative((prev) => ({ ...prev, [task.id]: !prev[task.id] }))}
+                                >
+                                  {showHomeAlternative[task.id] ? "Hide Alternative" : "View Home Remedy"}
+                                </button>
+                                {showHomeAlternative[task.id] && (
+                                   <div className="w-full mt-3 p-4 bg-[#FFFBF0] rounded-xl border border-amber-100 animate-fadeInUp">
+                                      <p className="text-[10px] font-black text-amber-800 uppercase tracking-widest mb-2">Home Remedy Steps</p>
+                                      <ul className="space-y-1.5">
+                                        {task.fallbackHomeRemedy.map((item, i) => (
+                                          <li key={i} className="text-[11px] text-amber-900 flex items-start gap-2">
+                                            <span className="mt-1 w-1 h-1 rounded-full bg-amber-500 flex-shrink-0" /> {item}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                   </div>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="mt-4 px-4 py-2.5 bg-[#F8F7F4] rounded-xl flex items-center justify-center gap-2">
+                                 <CheckCircle2 className="h-3.5 w-3.5 text-[#2F6F57]" />
+                                 <span className="text-[11px] font-black text-[#1F3D2B] uppercase tracking-widest">In Your Kit</span>
+                              </div>
+                            )}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="mt-6 flex gap-3">
+                          {state.code === "locked" ? (
+                            <div className="flex-grow p-3 bg-[#F8F7F4] rounded-xl text-center border border-[#E2DDD3]">
+                               <p className="text-[10px] font-bold text-[#8C6A5A] uppercase">Unlocks in</p>
+                               <p className="text-md font-black text-clinical-heading tracking-widest">{formatCountdown(state.countdownSec)}</p>
+                            </div>
+                          ) : (
+                            <>
+                              {!completed && state.code !== "missed" && (
+                                <button
+                                  type="button"
+                                  onClick={() => toggleTaskTimer(task)}
+                                  className={`flex-grow flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-bold text-xs transition-all ${
+                                    runtime.running ? "bg-[#1F3D2B] text-white shadow-lg ring-4 ring-[#1F3D2B]/10" : "bg-white border-2 border-[#1F3D2B] text-[#1F3D2B]"
+                                  }`}
+                                >
+                                  {runtime.running ? (
+                                    <>
+                                      <span className="relative flex h-2 w-2">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                                      </span>
+                                      {formatCountdown(runtime.remainingSec)}
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Play className="h-4 w-4" fill="currentColor" /> {runtime.startedAt ? "RESUME" : "START SESSION"}
+                                    </>
+                                  )}
+                                </button>
+                              )}
+
+                              {state.code === "missed" && !completed && (
+                                <button
+                                  type="button"
+                                  onClick={() => void completeTask(task, true)}
+                                  className="flex-grow bg-[#F8F7F4] text-[#1F3D2B] font-bold py-3.5 rounded-xl text-xs hover:bg-[#E2DDD3] transition-colors"
+                                >
+                                  RECOVERY ACTION
+                                </button>
+                              )}
+
+                              {completed ? (
+                                <div className="flex-grow p-4 bg-[#E8F4EE] rounded-2xl flex flex-col items-center justify-center gap-1">
+                                   <div className="flex items-center gap-2">
+                                      <CheckCircle2 className="h-5 w-5 text-[#2F6F57]" />
+                                      <span className="text-sm font-black text-[#1F3D2B] uppercase tracking-tighter">Verified Session</span>
+                                   </div>
+                                   <p className="text-[9px] font-bold text-[#2F6F57]/60 tracking-widest">+{task.reward} ALPHA SIKKA EARNED</p>
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => void completeTask(task, false)}
+                                  disabled={state.code !== "ready_complete"}
+                                  className={`aspect-square px-4 rounded-xl font-bold transition-all ${
+                                    state.code === "ready_complete" ? "bg-[#2F6F57] text-white shadow-lg" : "bg-[#F8F7F4] text-gray-400 opacity-50 border border-[#E2DDD3]"
+                                  }`}
+                                  title="Complete Task"
+                                >
+                                  {completed ? <CheckCircle2 className="h-6 w-6" /> : <CheckCircle2 className="h-6 w-6" />}
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                        
+                        {state.code === "ready_complete" && !completed && (
+                           <div className="mt-3 flex items-center justify-center gap-2 animate-pulse">
+                              <TriangleAlert className="h-3 w-3 text-[#2F6F57]" />
+                              <span className="text-[10px] font-black text-[#2F6F57] uppercase tracking-widest">Ready for verification</span>
+                           </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
+        ))}
+      </div>
+
+      <div className="mt-16 flex flex-col items-center gap-6 p-8 bg-[#1F3D2B] rounded-[2rem] text-white overflow-hidden relative">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full -ml-24 -mb-24" />
+        
+        <div className="text-center relative z-10">
+          <p className="text-[11px] font-black uppercase tracking-[0.3em] opacity-60 mb-2">Completion Milestone</p>
+          <h4 className="text-2xl font-bold tracking-tight mb-2">Finalize Daily Protocol</h4>
+          <p className="text-sm opacity-80 max-w-sm mx-auto">Verify all tasks above to secure your daily discipline bonus and update your recovery progression.</p>
         </div>
+
+        <button
+          type="button"
+          onClick={() => void completeDay()}
+          disabled={!allDone || Boolean(dayCompletions[`${selectedCategory}:${execution.day}`])}
+          className={`relative z-10 w-full max-w-xs group flex items-center justify-center gap-3 px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-[0.15em] transition-all ${
+            allDone && !dayCompletions[`${selectedCategory}:${execution.day}`]
+              ? "bg-white text-[#1F3D2B] shadow-2xl hover:scale-105 active:scale-95"
+              : "bg-white/10 text-white/40 cursor-not-allowed border border-white/10"
+          }`}
+        >
+          {dayCompletions[`${selectedCategory}:${execution.day}`] ? (
+            <>Verified <CheckCircle2 className="h-5 w-5" /></>
+          ) : (
+            <>Verify Protocol <span className="px-2 py-0.5 bg-[#2F6F57] text-white rounded-md text-[9px]">+5 A$</span></>
+          )}
+        </button>
       </div>
     </section>
   );

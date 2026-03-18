@@ -20,7 +20,6 @@ import {
   AIInsightEngine,
   BeforeAfterTimeline,
   DashboardHero,
-  ProtocolChecklist,
   ProgressVisualization,
   RecoveryProgramNavigator,
   RewardProgress,
@@ -216,13 +215,11 @@ export default function DashboardPage() {
   const [routineDraftDirty, setRoutineDraftDirty] = useState(false);
   const [activeCategory, setActiveCategory] = useState<CategoryId | null>(null);
   const [progressSummary, setProgressSummary] = useState<ProgressSummary | null>(null);
-  const [todayProtocolTasks, setTodayProtocolTasks] = useState<ProtocolTask[]>([]);
   const [phaseName, setPhaseName] = useState<string>("Stabilization");
   const [programDay, setProgramDay] = useState<number>(1);
   const [dailyGoal, setDailyGoal] = useState<string>("Daily recovery objective");
   const [expectedResult, setExpectedResult] = useState<string>("Improved symptom control with consistency.");
   const [nowTick, setNowTick] = useState<Date>(new Date());
-  const [showProgramDetails, setShowProgramDetails] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -357,7 +354,7 @@ export default function DashboardPage() {
         setExpectedResult(dailyMeta.expectedResult);
       }
 
-      setTodayProtocolTasks(generateDailyProtocolTasks(selectedCategory, dayNumber));
+      generateDailyProtocolTasks(selectedCategory, dayNumber);
     };
 
     void loadClinicalPanel();
@@ -823,53 +820,21 @@ export default function DashboardPage() {
             dayNumber={programDay}
             totalDays={30}
             activePhase={programDay <= 7 ? "Reset" : programDay <= 14 ? "Repair" : "Stabilize"}
-            onSelectPhase={() => setShowProgramDetails(true)}
-            onViewFullProgram={() => setShowProgramDetails((prev) => !prev)}
+            onViewFullProgram={() => {
+              window.location.href = "/recovery-program";
+            }}
           />
-          {showProgramDetails ? (
-            <TreatmentPlan
-              categoryLabel={categoryLabel}
-              phaseName={phaseName}
-              dayNumber={programDay}
-              category={activeCategory}
-              availableCategories={treatmentCategories}
-              userId={user.id}
-              onCategoryChange={setActiveCategory}
-            />
-          ) : null}
         </section>
 
-        <ProtocolChecklist
-          tasks={todayProtocolTasks}
-          routine={todayRoutine}
-          amDisabled={!unlockState.amUnlocked && !todayRoutine?.am_done}
-          pmDisabled={!unlockState.pmUnlocked && !todayRoutine?.pm_done}
-          amHint={todayRoutine?.am_done ? "" : unlockState.amUnlocked ? "+3 A$ on completion" : `Locked until ${formatHour(MORNING_UNLOCK_HOUR)}`}
-          pmHint={todayRoutine?.pm_done ? "" : unlockState.pmUnlocked ? "+3 A$ on completion" : `Locked until ${formatHour(NIGHT_UNLOCK_HOUR)}`}
-          hydrationDraft={draftHydrationMl}
-          sleepDraft={draftSleepHours}
-          dayNumber={programDay}
+        <TreatmentPlan
+          categoryLabel={categoryLabel}
           phaseName={phaseName}
-          dailyGoal={dailyGoal}
-          expectedResult={expectedResult}
-          onToggleAm={() => saveTodayRoutine({ am_done: !todayRoutine?.am_done })}
-          onTogglePm={() => saveTodayRoutine({ pm_done: !todayRoutine?.pm_done })}
-          onHydrationDraftChange={(value) => {
-            setDraftHydrationMl(value);
-            setRoutineDraftDirty(true);
-          }}
-          onSleepDraftChange={(value) => {
-            setDraftSleepHours(value);
-            setRoutineDraftDirty(true);
-          }}
-          onSaveMetrics={saveMetricDraft}
-          onResetDraft={() => {
-            setDraftSleepHours(todayRoutine?.sleep_hours == null ? "" : String(todayRoutine.sleep_hours));
-            setDraftHydrationMl(todayRoutine?.hydration_ml == null ? "" : String(todayRoutine.hydration_ml));
-            setRoutineDraftDirty(false);
-          }}
-          canSaveDraft={routineDraftDirty}
-          saving={savingRoutine}
+          dayNumber={programDay}
+          category={activeCategory}
+          availableCategories={treatmentCategories}
+          userId={user.id}
+          onCategoryChange={setActiveCategory}
+          mode="mission"
         />
 
         <section className="af-card rounded-2xl p-6">

@@ -26,6 +26,20 @@ export type ProtocolTask = {
   reward?: number;
   caution?: string;
   durationMin?: number;
+  timeWindow?: { start: string; end: string };
+  howToSteps?: string[];
+  product?: {
+    id: string;
+    name: string;
+    ingredient: string;
+    required: boolean;
+  };
+  userHasProduct?: boolean;
+  fallbackHomeRemedy?: string[];
+  unlockCondition?: {
+    type: "time" | "dependency";
+    value: string;
+  };
 };
 
 export type ProtocolPhase = {
@@ -75,6 +89,48 @@ export type DailyProtocolMeta = {
   phaseName: "Reset" | "Repair" | "Stabilize";
   dailyGoal: string;
   expectedResult: string;
+};
+
+export type DailyExecutionTask = {
+  id: string;
+  title: string;
+  timeWindow: { start: string; end: string };
+  durationMin: number;
+  goal: string;
+  whyItHelps: string;
+  howToSteps: string[];
+  product: {
+    id: string;
+    name: string;
+    ingredient: string;
+    required: boolean;
+  };
+  userHasProduct: boolean;
+  fallbackHomeRemedy: string[];
+  reward: number;
+  caution: string;
+  unlockCondition: {
+    type: "time" | "dependency";
+    value: string;
+  };
+};
+
+export type DailyExecutionPayload = {
+  day: number;
+  phase: "Reset" | "Repair" | "Stabilize";
+  dailyGoal: string;
+  expectedOutcome: string;
+  tasks: {
+    morning: DailyExecutionTask[];
+    afternoon: DailyExecutionTask[];
+    night: DailyExecutionTask[];
+  };
+  completionStatus: {
+    total: number;
+    completed: number;
+    pending: number;
+  };
+  adherenceScore: number;
 };
 
 type CategoryGuidance = {
@@ -765,6 +821,134 @@ export function generateDailyProtocolTasks(category: CategoryId, dayNumber: numb
 
 export function getProtocolDurationDays(template: ProtocolTemplate) {
   return template.phases.reduce((sum, phase) => sum + phase.duration_days, 0);
+}
+
+function slotWindow(slot: ProtocolTask["slot"]) {
+  if (slot === "morning") return { start: "06:00", end: "11:30" };
+  if (slot === "lifestyle") return { start: "12:00", end: "17:30" };
+  if (slot === "night") return { start: "19:00", end: "23:30" };
+  return { start: "09:00", end: "22:00" };
+}
+
+function sanitizeProductId(label: string) {
+  return label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+}
+
+function splitHowToSteps(howTo?: string) {
+  if (!howTo) return ["Follow the task steps gently and consistently."];
+  return howTo
+    .split(/[.\n]+/)
+    .map((step) => step.trim())
+    .filter(Boolean)
+    .map((step, index) => `${index + 1}. ${step}`)
+    .slice(0, 5);
+}
+
+function fallbackByCategory(category: CategoryId): string[] {
+  const map: Record<string, string[]> = {
+    acne: ["Use chilled clean water compress for 2 minutes", "Apply pure aloe gel on inflamed zones", "Avoid picking and reduce high-glycemic snacks"],
+    dark_circles: ["Use cold spoon compress under eyes", "Sleep before 11 PM consistently", "Drink 2.5L water across day"],
+    hair_loss: ["5-minute scalp fingertip massage", "Protein-rich breakfast daily", "Avoid tight hairstyles and harsh heat"],
+    scalp_health: ["Use lukewarm water only", "Keep scalp dry after sweat", "Avoid fragranced scalp styling products"],
+    beard_growth: ["Warm towel compress before massage", "Daily beard-area cleanse", "Avoid aggressive over-trimming"],
+    body_acne: ["Shower after sweating", "Wear breathable cotton fabrics", "Avoid occlusive body lotions on acne-prone zones"],
+    lip_care: ["Apply plain petroleum jelly overnight", "Hydrate regularly", "Avoid licking lips"],
+    anti_aging: ["Use sunscreen daily", "Keep gentle cleanse + moisturizer rhythm", "Prioritize sleep and hydration"],
+  };
+  return map[category] || ["Keep routine simple, consistent, and gentle."];
+}
+
+function normalizePhaseName(name: ProtocolPhase["name"]): DailyProtocolMeta["phaseName"] {
+  if (name === "Reset") return "Reset";
+  if (name === "Repair" || name === "Correction") return "Repair";
+  return "Stabilize";
+}
+
+function mapProtocolTaskToExecutionTask(
+  category: CategoryId,
+  task: ProtocolTask,
+  dayNumber: number,
+  ownedProductIds: Set<string>
+): DailyExecutionTask {
+  const label = task.title || task.label;
+  const productName = task.recommendedProduct || `${label} support product`;
+  const productId = sanitizeProductId(`${category}-${task.id}-${productName}`);
+  const ingredient = task.ingredient || inferIngredient({
+    label,
+    howTo: task.howTo || "",
+    whyItHelps: task.whyItHelps || task.why || "",
+    product: productName,
+  });
+
+  const window = task.timeWindow || slotWindow(task.slot);
+  const required = task.slot !== "lifestyle";
+
+  return {
+    id: `${category}:${dayNumber}:${task.id}`,
+    title: label,
+    timeWindow: window,
+    durationMin: Math.max(1, Number(task.durationMin || (task.slot === "lifestyle" ? 5 : 3))),
+    goal: task.goal || "Daily recovery objective",
+    whyItHelps: task.whyItHelps || task.why || "Supports recovery consistency and reduces symptom volatility.",
+    howToSteps: task.howToSteps?.length ? task.howToSteps : splitHowToSteps(task.howTo),
+    product: {
+      id: productId,
+      name: productName,
+      ingredient,
+      required,
+    },
+    userHasProduct: ownedProductIds.has(productId),
+    fallbackHomeRemedy: task.fallbackHomeRemedy?.length ? task.fallbackHomeRemedy : fallbackByCategory(category),
+    reward: Number.isFinite(Number(task.reward)) ? Number(task.reward) : task.slot === "weekly" ? 4 : 2,
+    caution: task.caution || "Patch test and stop if irritation worsens.",
+    unlockCondition: task.unlockCondition || { type: "time", value: `${window.start}-${window.end}` },
+  };
+}
+
+export function generateDailyExecutionPayload(
+  category: CategoryId,
+  dayNumber: number,
+  options: DailyProtocolOptions = {},
+  context: {
+    completedTaskIds?: string[];
+    ownedProductIds?: string[];
+  } = {}
+): DailyExecutionPayload | null {
+  const template = getProtocolTemplate(category);
+  if (!template) return null;
+
+  const normalizedDay = Math.max(1, Math.min(30, dayNumber));
+  const phase = normalizePhaseName(getCurrentProtocolPhase(template, normalizedDay).name);
+  const meta = generateDailyProtocolMeta(category, normalizedDay);
+  const protocolTasks = generateDailyProtocolTasks(category, normalizedDay, options);
+
+  const completed = new Set(context.completedTaskIds || []);
+  const ownedProducts = new Set(context.ownedProductIds || []);
+
+  const executionTasks = protocolTasks.map((task) => mapProtocolTaskToExecutionTask(category, task, normalizedDay, ownedProducts));
+
+  const grouped = {
+    morning: executionTasks.filter((task, index) => protocolTasks[index]?.slot === "morning"),
+    afternoon: executionTasks.filter((task, index) => protocolTasks[index]?.slot === "lifestyle"),
+    night: executionTasks.filter((task, index) => protocolTasks[index]?.slot === "night" || protocolTasks[index]?.slot === "weekly"),
+  };
+
+  const total = executionTasks.length;
+  const done = executionTasks.reduce((sum, task) => sum + (completed.has(task.id) ? 1 : 0), 0);
+
+  return {
+    day: normalizedDay,
+    phase,
+    dailyGoal: meta?.dailyGoal || DAY_FOCUS[normalizedDay - 1] || "Daily recovery objective",
+    expectedOutcome: meta?.expectedResult || DAY_EXPECTED_OUTCOME[normalizedDay - 1] || "Improved symptom control with consistency.",
+    tasks: grouped,
+    completionStatus: {
+      total,
+      completed: done,
+      pending: Math.max(0, total - done),
+    },
+    adherenceScore: total > 0 ? Math.round((done / total) * 100) : 0,
+  };
 }
 
 export { protocolTemplates };
