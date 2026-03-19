@@ -17,8 +17,8 @@ export default function CartPage() {
           <div className="w-14 h-14 rounded-2xl bg-blue-500/15 text-blue-300 mx-auto mb-4 flex items-center justify-center">
             <ShoppingBag className="w-7 h-7" />
           </div>
-          <h1 className="text-2xl font-bold mb-2">Checkout Coming Soon</h1>
-          <p className="text-gray-400 mb-6">Your cart integration point is ready. Connect payment and order APIs to complete this flow.</p>
+          <h1 className="text-clinical-heading text-2xl font-extrabold tracking-tight mb-2">Checkout Coming Soon</h1>
+          <p className="mb-6 text-zinc-300">Your cart integration point is ready. Connect payment and order APIs to complete this flow.</p>
           <button onClick={() => router.push("/result")} className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-sm font-semibold">
             Return to Report
           </button>

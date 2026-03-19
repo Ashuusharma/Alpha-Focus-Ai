@@ -43,27 +43,27 @@ export default function DashboardHero({
             </span>
           </div>
 
-          <h1 className="mt-6 text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
+          <h1 className="text-clinical-heading mt-6 text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
             Welcome back,<br /><span className="text-[#ffffff]">{userName}</span>
           </h1>
-          <p className="mt-4 max-w-xl text-lg text-white/70 leading-relaxed">
+          <p className="mt-4 max-w-xl text-lg text-white/85 leading-relaxed">
             {categoryLabel} Recovery Program · {dayLabel}. You are on a {recoveryTrend.toLowerCase()} trajectory. Stay consistent today.
           </p>
 
           <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
             <div className="rounded-2xl bg-white/5 p-4 backdrop-blur-sm">
               <Activity className="mb-2 h-5 w-5 text-[#ffffff]" />
-              <p className="text-[10px] font-bold uppercase tracking-widest text-white/50">Confidence</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-white/70">Confidence</p>
               <p className="mt-1 text-2xl font-bold">{confidenceScore}/100</p>
             </div>
             <div className="rounded-2xl bg-white/5 p-4 backdrop-blur-sm">
               <Sparkles className="mb-2 h-5 w-5 text-[#2F6F57]" />
-              <p className="text-[10px] font-bold uppercase tracking-widest text-white/50">Alpha Sikka</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-white/70">Alpha Sikka</p>
               <p className="mt-1 text-2xl font-bold">{alphaBalance}</p>
             </div>
             <div className="col-span-2 rounded-2xl bg-white/5 p-4 backdrop-blur-sm">
               <Target className="mb-2 h-5 w-5 text-orange-400" />
-              <p className="text-[10px] font-bold uppercase tracking-widest text-white/50">Next Milestone</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-white/70">Next Milestone</p>
               <p className="mt-1 text-sm font-bold leading-tight">{nextMilestone}</p>
             </div>
           </div>
@@ -96,7 +96,7 @@ export default function DashboardHero({
             </svg>
             <div className="text-center mt-2">
               <span className="block text-4xl font-black tabular-nums">{transformationProgress}%</span>
-              <span className="mt-1 block text-[9px] font-bold uppercase tracking-widest text-white/50">Recovery Score</span>
+              <span className="mt-1 block text-[9px] font-bold uppercase tracking-widest text-white/70">Recovery Score</span>
             </div>
           </div>
         </div>

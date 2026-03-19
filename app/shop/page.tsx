@@ -54,8 +54,8 @@ return (
            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-green-500/10 blur-[80px] pointer-events-none -translate-y-1/2 translate-x-1/2" />
            <div className="relative z-10 max-w-2xl">
               <span className="text-xs font-bold text-green-400 uppercase tracking-widest bg-green-500/10 px-3 py-1 rounded inline-block mb-3 border border-green-500/20">Protocol Dispensary</span>
-              <h1 className="text-4xl sm:text-5xl font-bold text-white font-playfair leading-tight mb-4">Clinical Apothecary</h1>
-              <p className="text-zinc-400 text-sm leading-relaxed">
+              <h1 className="text-clinical-heading text-4xl sm:text-5xl font-extrabold text-white leading-tight tracking-tight mb-4">Clinical Apothecary</h1>
+              <p className="text-zinc-300 text-sm leading-relaxed">
                 Dermatologist-approved formulations targeted to your specific protocol signals.
                 Every product is vetted for strict adherence to clinical standards and zero-interference.
               </p>
@@ -63,7 +63,7 @@ return (
            
            <div className="relative z-10 w-full md:w-auto">
               <div className="relative flex-1 md:w-80">
-                <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+                <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
                 <input 
                   type="text" 
                   placeholder="Query protocol treatments..." 
@@ -99,7 +99,7 @@ return (
               <div className="mb-6">
                 <p className="text-xs font-bold text-green-400 uppercase tracking-widest mb-1 flex items-center gap-2"><Sparkles className="w-3.5 h-3.5" /> High Urgency</p>
                 <h2 className="text-2xl font-bold text-white mb-2">Protocol Prescriptions</h2>
-                <p className="text-sm text-zinc-500">Foundation components mathematically mapped to your current recovery phase.</p>
+                <p className="text-sm text-zinc-300">Foundation components mathematically mapped to your current recovery phase.</p>
               </div>
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {(protocolProducts.length > 0 ? protocolProducts : filteredProducts).map((product) => (
@@ -113,7 +113,7 @@ return (
                 <div className="mb-6">
                   <p className="text-xs font-bold text-blue-400 uppercase tracking-widest mb-1 shadow-blue">Optimization Layer</p>
                   <h2 className="text-2xl font-bold text-white mb-2">Advanced Modules</h2>
-                  <p className="text-sm text-zinc-500">Optional high-impact add-ons for targeted symptom resolution and accelerated timelines.</p>
+                  <p className="text-sm text-zinc-300">Optional high-impact add-ons for targeted symptom resolution and accelerated timelines.</p>
                 </div>
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {advancedProducts.map((product) => (
@@ -126,10 +126,10 @@ return (
         ) : (
           <div className="flex flex-col items-center justify-center rounded-3xl bg-black/20 border border-white/5 backdrop-blur-sm py-24 text-center">
             <div className="mb-6 rounded-2xl bg-white/5 border border-white/10 p-5 shadow-inner">
-              <Sparkles className="h-10 w-10 text-zinc-500" />
+              <Sparkles className="h-10 w-10 text-zinc-400" />
             </div>
             <h3 className="text-xl font-bold text-white mb-2">No formulations isolated</h3>
-            <p className="max-w-md text-sm text-zinc-500">
+            <p className="max-w-md text-sm text-zinc-300">
               The query matrix returned zero compatible matches within the current clinical restrictions.
             </p>
             <button 

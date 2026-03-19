@@ -87,17 +87,17 @@ return (
                 </div>
               </div>
             </div>
-            <h1 className="text-3xl font-bold text-white tracking-tight mb-2 font-playfair">
+            <h1 className="text-clinical-heading text-3xl font-extrabold text-white tracking-tight mb-2">
               System Access
             </h1>
-            <p className="text-zinc-400 text-sm text-center max-w-[280px] leading-relaxed">
+            <p className="text-zinc-300 text-sm text-center max-w-[280px] leading-relaxed">
               Authenticate to initialize your tailored clinical & recovery protocol.
             </p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-zinc-400 tracking-wider uppercase ml-1">Identity</label>
+              <label className="block text-xs font-semibold text-zinc-300 tracking-wider uppercase ml-1">Identity</label>
               <div className="relative">
                 <input
                   type="text"
@@ -116,7 +116,7 @@ return (
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-zinc-400 tracking-wider uppercase ml-1">Range</label>
+                <label className="block text-xs font-semibold text-zinc-300 tracking-wider uppercase ml-1">Range</label>
                 <div className="relative">
                   <select
                     value={ageRange}
@@ -127,7 +127,7 @@ return (
                     disabled={loading}
                     className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-green-500/50 transition-all appearance-none cursor-pointer hover:border-white/20"
                   >
-                    <option value="" className="bg-[#0a1a1f] text-zinc-500">Age</option>
+                    <option value="" className="bg-[#0a1a1f] text-zinc-300">Age</option>
                     <option value="18-24" className="bg-[#0a1a1f]">18-24</option>
                     <option value="25-34" className="bg-[#0a1a1f]">25-34</option>
                     <option value="35-44" className="bg-[#0a1a1f]">35-44</option>
@@ -140,7 +140,7 @@ return (
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-zinc-400 tracking-wider uppercase ml-1">Primary Focus</label>
+                <label className="block text-xs font-semibold text-zinc-300 tracking-wider uppercase ml-1">Primary Focus</label>
                 <div className="relative">
                   <select
                     value={primaryConcern}
@@ -151,7 +151,7 @@ return (
                     disabled={loading}
                     className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-green-500/50 transition-all appearance-none cursor-pointer hover:border-white/20"
                   >
-                    <option value="" className="bg-[#0a1a1f] text-zinc-500">Target</option>
+                    <option value="" className="bg-[#0a1a1f] text-zinc-300">Target</option>
                     <option value="hair_loss" className="bg-[#0a1a1f]">Hair Loss</option>
                     <option value="acne" className="bg-[#0a1a1f]">Acne</option>
                     <option value="scalp_health" className="bg-[#0a1a1f]">Scalp Health</option>
@@ -176,7 +176,7 @@ return (
                 />
                 <svg className="absolute w-2.5 h-2.5 pointer-events-none text-black opacity-0 peer-checked:opacity-100 transition-opacity" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 5L4.5 8.5L13 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </div>
-              <span className="text-xs text-zinc-400 group-hover:text-zinc-300 transition-colors leading-relaxed">
+              <span className="text-xs text-zinc-300 group-hover:text-white transition-colors leading-relaxed">
                 I authorize continuous data telemetry and biometric tracking for absolute protocol personalization.
               </span>
             </label>
@@ -210,10 +210,10 @@ return (
             </button>
           </form>
 
-          <div className="mt-8 flex items-center gap-4 text-xs text-zinc-600 justify-center border-t border-white/5 pt-6">
-            <span className="hover:text-zinc-400 cursor-pointer transition-colors">Secured Connection</span>
+          <div className="mt-8 flex items-center gap-4 text-xs text-zinc-500 justify-center border-t border-white/5 pt-6">
+            <span className="hover:text-zinc-300 cursor-pointer transition-colors">Secured Connection</span>
             <div className="w-1 h-1 rounded-full bg-green-500/50" />
-            <span className="hover:text-zinc-400 cursor-pointer transition-colors">v.2.0.4 Alpha</span>
+            <span className="hover:text-zinc-300 cursor-pointer transition-colors">v.2.0.4 Alpha</span>
           </div>
         </div>
       </motion.div>

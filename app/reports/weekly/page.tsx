@@ -62,8 +62,8 @@ export default function WeeklyReportPage() {
         <button onClick={() => router.back()} className="mb-5 inline-flex items-center gap-2 text-gray-300 hover:text-white">
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
-        <h1 className="text-3xl font-bold mb-2">Weekly AI Report</h1>
-        <p className="text-gray-400 mb-6">Generated from your current lifestyle logs and consistency trend.</p>
+        <h1 className="text-clinical-heading text-3xl font-extrabold tracking-tight mb-2">Weekly AI Report</h1>
+        <p className="mb-6 text-zinc-300">Generated from your current lifestyle logs and consistency trend.</p>
         <WeeklyReport summary={summary} />
       </div>
     </div>

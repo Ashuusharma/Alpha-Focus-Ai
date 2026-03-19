@@ -342,8 +342,8 @@ if (loading) {
         <div className="max-w-3xl mx-auto px-6 py-4 space-y-4">
           <div className="flex items-start justify-between">
             <div className="space-y-1">
-              <h1 className="text-xl font-bold text-white font-playfair tracking-wide text-shadow-glow">Clinical Assessment - {getCategoryLabel(activeCategory)}</h1>
-              <p className="text-xs text-zinc-500">Category-locked protocol scoring with weighted domain inputs.</p>
+              <h1 className="text-clinical-heading text-xl font-extrabold text-white tracking-tight text-shadow-glow">Clinical Assessment - {getCategoryLabel(activeCategory)}</h1>
+              <p className="text-xs text-zinc-300">Category-locked protocol scoring with weighted domain inputs.</p>
             </div>
             <div className="flex flex-col items-end">
                <span className="text-xs font-bold text-green-400 bg-green-500/10 px-2 py-1 rounded-md border border-green-500/20">{answeredCount}/{categoryQuestions.length} answered</span>
@@ -358,7 +358,7 @@ if (loading) {
           <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Recovery Track</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Recovery Track</p>
                 <p className="mt-1 text-sm font-semibold text-white">{selectedLevelMeta.label}</p>
                 <p className="mt-1 max-w-xl text-xs leading-relaxed text-zinc-400">{selectedLevelMeta.description} This selection is saved to your profile and used by the 30-day planner after assessment.</p>
               </div>
@@ -383,7 +383,7 @@ if (loading) {
           </div>
           
           {flowDiagnosticSource && (
-            <p className="text-[10px] uppercase tracking-wider text-zinc-600">
+            <p className="text-[10px] uppercase tracking-wider text-zinc-400">
               Diagnostic mode: <span className="text-green-500/70">{flowDiagnosticSource === "db_scan" ? "DB scan validated" : "Session fallback"}</span>
             </p>
           )}
@@ -424,7 +424,7 @@ if (loading) {
               </div>
 
               <div className="space-y-4">
-                <div className="flex items-center justify-between text-[11px] uppercase tracking-wider text-zinc-500">
+                <div className="flex items-center justify-between text-[11px] uppercase tracking-wider text-zinc-400">
                   <span>Question {activeQuestionIndex + 1} of {categoryQuestions.length}</span>
                   <span>{Math.max(0, categoryQuestions.length - (activeQuestionIndex + 1))} remaining</span>
                 </div>
@@ -456,7 +456,7 @@ if (loading) {
                       <div className="relative z-10 flex items-center justify-between gap-3">
                         <span className={`text-sm font-medium transition-colors ${selected ? "text-green-400" : "text-zinc-300 group-hover:text-white"}`}>{option.label}</span>
                         <div className="flex items-center gap-3">
-                           <span className={`text-[10px] font-mono px-2 py-1 rounded ${selected ? "bg-green-500/20 text-green-400" : "bg-white/5 text-zinc-500"}`}>SC {option.score}</span>
+                           <span className={`text-[10px] font-mono px-2 py-1 rounded ${selected ? "bg-green-500/20 text-green-400" : "bg-white/5 text-zinc-300"}`}>SC {option.score}</span>
                            <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${selected ? "border-green-400" : "border-zinc-600"}`}>
                              {selected && <div className="w-2 h-2 bg-green-400 rounded-full" />}
                            </div>

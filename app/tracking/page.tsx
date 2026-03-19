@@ -46,8 +46,8 @@ export default function TrackingPage() {
         </button>
 
         <div className="mb-6">
-          <h1 className="text-3xl font-bold">Lifestyle Tracking</h1>
-          <p className="text-gray-400 mt-1">Track sleep, hydration, mood, and environment in one place.</p>
+          <h1 className="text-clinical-heading text-3xl font-extrabold tracking-tight">Lifestyle Tracking</h1>
+          <p className="mt-1 text-zinc-300">Track sleep, hydration, mood, and environment in one place.</p>
         </div>
 
         {status === "denied" && (

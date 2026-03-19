@@ -438,7 +438,7 @@ export default function AlphaCreditsPage() {
         <div className="relative z-10 flex-1 space-y-4">
            <p className="text-xs font-semibold uppercase tracking-widest text-[#2F6F57]">Alpha Sikka Dashboard</p>
           <div className="flex items-baseline gap-4">
-             <h1 className="text-6xl font-bold text-[#1F3D2B] font-playfair">{formatAmount(snapshot.model.currentBalance)} <span className="text-3xl text-[#6B665D]">A$</span></h1>
+             <h1 className="text-clinical-heading text-6xl font-extrabold tracking-tight text-[#1F3D2B]">{formatAmount(snapshot.model.currentBalance)} <span className="text-3xl text-[#6B665D]">A$</span></h1>
           </div>
           <div className="flex items-center gap-3">
              <span className="text-sm text-[#6B665D]">Tier: <strong className="text-[#1F3D2B]">{snapshot.tier.label}</strong></span>

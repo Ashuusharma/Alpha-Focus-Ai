@@ -1,6 +1,6 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import { Inter } from "next/font/google";
 
 import CartDrawer from "./result/_components/CartDrawer";
 import ProductComparison from "./result/_components/ProductComparison";
@@ -8,32 +8,23 @@ import { ToastProvider } from "./toast/ToastContext";
 import ToastContainer from "./toast/ToastContainer";
 import { ThemeProvider } from "@/lib/themeContext";
 import { LanguageProvider as LegacyLangProvider } from "../lib/languageContext";
-import I18nProvider from "./_components/I18nProvider"; 
+import I18nProvider from "./_components/I18nProvider";
 import RouteTransition from "./_components/RouteTransition";
 import MainNavbar from "@/components/layout/MainNavbar";
 import AuthProvider from "@/contexts/AuthProvider";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import CoreUserHydrator from "@/components/providers/CoreUserHydrator";
+
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const playfair = Playfair_Display({
-  subsets: ["latin"],
-  variable: "--font-playfair"
-});
 
 export const metadata: Metadata = {
   title: "Alpha Focus",
   description: "Alpha Focus — Premium grooming intelligence platform",
   manifest: "/manifest.webmanifest",
   icons: {
-    icon: [
-      { url: "/favicon.ico" },
-    ],
-    shortcut: [
-      { url: "/favicon.ico" },
-    ],
-    apple: [
-      { url: "/favicon.ico" },
-    ],
+    icon: [{ url: "/favicon.ico" }],
+    shortcut: [{ url: "/favicon.ico" }],
+    apple: [{ url: "/favicon.ico" }],
   },
 };
 
@@ -53,7 +44,6 @@ export default function RootLayout({
           name="viewport"
           content="width=device-width, initial-scale=1, maximum-scale=1"
         />
-        {/* Theme Script - prevents flash */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -77,7 +67,7 @@ export default function RootLayout({
         />
       </head>
 
-      <body className={`${inter.variable} ${playfair.variable}`}>
+      <body className={inter.variable}>
         <I18nProvider>
           <AuthProvider>
             <CoreUserHydrator />
@@ -85,20 +75,13 @@ export default function RootLayout({
               <LegacyLangProvider>
                 <ToastProvider>
                   <MainNavbar />
-
-              {/* MAIN CONTENT */}
                   <main className="pt-0 pb-24 md:pb-0">
                     <ProtectedRoute>
                       <RouteTransition>{children}</RouteTransition>
                     </ProtectedRoute>
                   </main>
-
-              {/* GLOBAL CART — ALWAYS MOUNTED */}
                   <CartDrawer />
-              
-              {/* GLOBAL PRODUCT COMPARISON */}
                   <ProductComparison />
-              
                   <ToastContainer />
                 </ToastProvider>
               </LegacyLangProvider>

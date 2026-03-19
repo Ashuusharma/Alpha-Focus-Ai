@@ -1017,8 +1017,8 @@ export default function TreatmentPlan({
 
         <div className="relative z-10 text-center">
           <p className="mb-2 text-[11px] font-black uppercase tracking-[0.3em] text-[#E8F4EE]">Completion Milestone</p>
-          <h4 className="mb-2 text-3xl font-black tracking-tight">Finalize Daily Protocol</h4>
-          <p className="mx-auto max-w-sm text-sm text-white/70 leading-relaxed">All verified tasks sync into your recovery log instantly. Complete the day only after every active window task is properly verified.</p>
+          <h4 className="text-clinical-heading mb-2 text-3xl font-black tracking-tight">Finalize Daily Protocol</h4>
+          <p className="mx-auto max-w-sm text-sm text-white/85 leading-relaxed">All verified tasks sync into your recovery log instantly. Complete the day only after every active window task is properly verified.</p>
         </div>
 
         <button

@@ -167,7 +167,7 @@ if (view === "list") {
               <p className="text-xs font-bold text-green-400 uppercase tracking-widest flex items-center gap-2 mb-2">
                 <Trophy className="w-4 h-4" /> Clinical Programs
               </p>
-              <h1 className="text-4xl lg:text-5xl font-bold text-white font-playfair tracking-wide text-shadow-glow">
+              <h1 className="text-clinical-heading text-4xl lg:text-5xl font-extrabold text-white tracking-tight text-shadow-glow">
                 Discipline Accelerators
               </h1>
               <p className="text-zinc-400 mt-3 max-w-xl text-sm leading-relaxed">
@@ -190,11 +190,11 @@ if (view === "list") {
                   <div className="flex items-center gap-4 border-l border-white/10 pl-4">
                      <div className="text-center">
                        <p className="text-lg font-bold text-orange-400 flex items-center gap-1"><Flame className="w-4 h-4"/>{progress.streak}</p>
-                       <p className="text-[10px] text-zinc-500">Streak</p>
+                       <p className="text-[10px] text-zinc-400">Streak</p>
                      </div>
                      <div className="text-center">
                        <p className="text-lg font-bold text-yellow-400">{progress.totalXP}</p>
-                       <p className="text-[10px] text-zinc-500">A$</p>
+                       <p className="text-[10px] text-zinc-400">A$</p>
                      </div>
                   </div>
                </div>
@@ -235,9 +235,9 @@ if (view === "list") {
                           )}
                         </div>
                         <p className="text-xs text-zinc-400 mb-3">{challenge.subtitle}</p>
-                        <p className="text-xs text-zinc-500 line-clamp-2 leading-relaxed mb-4">{challenge.description}</p>
+                        <p className="text-xs text-zinc-300 line-clamp-2 leading-relaxed mb-4">{challenge.description}</p>
                         
-                        <div className="flex flex-wrap gap-2 text-[10px] font-medium uppercase tracking-wider text-zinc-500">
+                        <div className="flex flex-wrap gap-2 text-[10px] font-medium uppercase tracking-wider text-zinc-300">
                           <span className="px-2 py-1 rounded bg-white/5 border border-white/5">{challenge.duration}</span>
                           <span className="px-2 py-1 rounded bg-white/5 border border-white/5">{challenge.totalDays} Days</span>
                           <span className="px-2 py-1 rounded border border-yellow-500/20 text-yellow-400 bg-yellow-500/10 flex items-center gap-1">
@@ -252,7 +252,7 @@ if (view === "list") {
                     {savedProgress && (
                       <div className="mt-6 pt-4 border-t border-white/5">
                         <div className="flex justify-between text-xs mb-2">
-                           <span className="text-zinc-500 font-medium">Completion</span>
+                           <span className="text-zinc-300 font-medium">Completion</span>
                            <span className="text-green-400 font-bold">{pct}%</span>
                         </div>
                         <div className="h-1.5 bg-black/40 rounded-full overflow-hidden border border-white/5">
@@ -340,7 +340,7 @@ if (view === "list") {
                        Resume Program
                      </button>
                    ) : (
-                     <button onClick={pauseActiveChallenge} className="w-full bg-black/40 hover:bg-white/5 text-zinc-400 border border-white/5 py-4 rounded-xl font-semibold transition-all">
+                     <button onClick={pauseActiveChallenge} className="w-full bg-black/40 hover:bg-white/5 text-zinc-300 border border-white/5 py-4 rounded-xl font-semibold transition-all">
                        Pause Protocol
                      </button>
                    )}
@@ -376,7 +376,7 @@ if (view === "list") {
                 <div className="flex-1 space-y-4">
                    <div className="mb-6">
                       <h3 className="text-xl font-bold text-white">{selectedChallenge.weeks[activeWeek].theme}</h3>
-                      <p className="text-xs text-zinc-500 mt-1 uppercase tracking-widest">Tasks to complete this phase</p>
+                     <p className="text-xs text-zinc-300 mt-1 uppercase tracking-widest">Tasks to complete this phase</p>
                    </div>
                    
                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -405,7 +405,7 @@ if (view === "list") {
                                   </div>
                                   <div className="flex-1">
                                      <div className="flex justify-between items-center mb-1">
-                                        <span className={`text-[10px] font-bold uppercase tracking-widest ${isDone? "text-green-400" : "text-zinc-500"}`}>Day {task.day}</span>
+                                       <span className={`text-[10px] font-bold uppercase tracking-widest ${isDone? "text-green-400" : "text-zinc-300"}`}>Day {task.day}</span>
                                         <span className="text-[10px] font-mono text-yellow-500 bg-yellow-500/10 px-1.5 rounded opacity-70">+10 A$</span>
                                      </div>
                                      <p className={`text-sm font-medium ${isDone ? "text-white" : "text-zinc-300"}`}>{task.title}</p>
