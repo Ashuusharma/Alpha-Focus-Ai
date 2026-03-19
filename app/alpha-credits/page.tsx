@@ -179,7 +179,7 @@ export default function AlphaCreditsPage() {
   const rewardRingOffset = circumference - (rewardProgress.percent / 100) * circumference;
 
   return (
-    <div className="af-page w-full animate-in space-y-10 pb-16 fade-in duration-700">
+    <div className="af-page w-full max-w-6xl mx-auto animate-in space-y-10 pb-16 fade-in duration-700">
       
       {/* Messages */}
       <AnimatePresence>
