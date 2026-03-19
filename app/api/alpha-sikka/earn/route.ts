@@ -11,6 +11,7 @@ import {
   getAlphaSikkaActivityDate,
   type AlphaSikkaAction,
 } from "@/lib/server/alphaSikkaServer";
+import { ALPHA_CORE_DAILY_ACTIONS, ALPHA_REWARD_SYSTEM } from "@/lib/alphaRewardSystem";
 import { invalidateRequestCache, invalidateRequestCachePrefix } from "@/lib/server/requestCache";
 
 export const runtime = "nodejs";
@@ -36,6 +37,16 @@ type StreakRpcRow = {
   current_streak: number;
   longest_streak: number;
   bonus_awarded: number;
+};
+
+type StreakStateRow = {
+  current_streak: number;
+  longest_streak: number;
+  last_activity_date: string | null;
+};
+
+type ActionRow = {
+  action_code: string | null;
 };
 
 function getSupabaseConfig() {
@@ -115,6 +126,7 @@ async function callProcessTransactionRpc(input: {
   serviceKey: string;
   userId: string;
   amount: number;
+  type?: "earn" | "spend";
   category: string;
   description: string;
   referenceId?: string;
@@ -128,7 +140,7 @@ async function callProcessTransactionRpc(input: {
     body: JSON.stringify({
       p_user_id: input.userId,
       p_amount: input.amount,
-      p_type: "earn",
+      p_type: input.type || "earn",
       p_category: input.category,
       p_description: input.description,
       p_reference_id: input.referenceId || null,
@@ -172,6 +184,48 @@ async function updateStreakRpc(baseUrl: string, serviceKey: string, userId: stri
   return payload;
 }
 
+async function fetchStreakState(baseUrl: string, serviceKey: string, userId: string) {
+  const url = new URL(`${baseUrl}/rest/v1/user_streaks`);
+  url.searchParams.set("select", "current_streak,longest_streak,last_activity_date");
+  url.searchParams.set("user_id", `eq.${userId}`);
+  url.searchParams.set("limit", "1");
+
+  const response = await fetch(url.toString(), {
+    method: "GET",
+    headers: buildAuthHeaders(serviceKey),
+    cache: "no-store",
+  });
+
+  if (!response.ok) return null;
+  const rows = (await response.json()) as StreakStateRow[];
+  return rows[0] || null;
+}
+
+async function fetchCompletedDailyActions(baseUrl: string, serviceKey: string, userId: string, activityDate: string) {
+  const url = new URL(`${baseUrl}/rest/v1/alpha_sikka_transactions`);
+  url.searchParams.set("select", "action_code");
+  url.searchParams.set("user_id", `eq.${userId}`);
+  url.searchParams.set("activity_date", `eq.${activityDate}`);
+  url.searchParams.set("amount", "gt.0");
+
+  const response = await fetch(url.toString(), {
+    method: "GET",
+    headers: buildAuthHeaders(serviceKey),
+    cache: "no-store",
+  });
+
+  if (!response.ok) return new Set<string>();
+  const rows = (await response.json()) as ActionRow[];
+  return new Set(rows.map((row) => row.action_code).filter((value): value is string => Boolean(value)));
+}
+
+function getDateDiffDays(previousDate: string, nextDate: string) {
+  const previous = new Date(`${previousDate}T00:00:00Z`).getTime();
+  const next = new Date(`${nextDate}T00:00:00Z`).getTime();
+  if (!Number.isFinite(previous) || !Number.isFinite(next)) return 0;
+  return Math.floor((next - previous) / 86_400_000);
+}
+
 export async function POST(request: NextRequest) {
   try {
     const authUser = await getSupabaseRequestUser(request);
@@ -209,6 +263,48 @@ export async function POST(request: NextRequest) {
     }
 
     let amount = computeAwardAmount(action, body.metadata);
+
+    let penaltyApplied = 0;
+
+    if (action === "daily_login") {
+      const streakState = await fetchStreakState(config.baseUrl, config.serviceKey, supabaseUserId);
+      const lastActivityDate = streakState?.last_activity_date;
+      if (lastActivityDate) {
+        const skippedDays = Math.max(0, getDateDiffDays(lastActivityDate, activityDate) - 1 - ALPHA_REWARD_SYSTEM.penalties.graceDays);
+        if (skippedDays > 0) {
+          const penalizedDays = Math.min(skippedDays, ALPHA_REWARD_SYSTEM.penalties.maxPenaltyDaysPerClaim);
+          const currentSummary = await fetchSummary(config.baseUrl, config.serviceKey, supabaseUserId);
+          const rawPenaltyAmount = penalizedDays * ALPHA_REWARD_SYSTEM.penalties.missed_day;
+          const penaltyAmount = Math.min(Number(currentSummary?.current_balance || 0), rawPenaltyAmount);
+          const penaltyReferenceId = `missed_day_penalty:${activityDate}`;
+          if (penaltyAmount > 0) {
+            const penaltyResponse = await callProcessTransactionRpc({
+              baseUrl: config.baseUrl,
+              serviceKey: config.serviceKey,
+              userId: supabaseUserId,
+              amount: penaltyAmount,
+              type: "spend",
+              category: "penalty",
+              description: penalizedDays === 1 ? "Missed day penalty" : `${penalizedDays} missed days penalty`,
+              referenceId: penaltyReferenceId,
+              metadata: {
+                skippedDays,
+                penalizedDays,
+                previousActivityDate: lastActivityDate,
+                graceDays: ALPHA_REWARD_SYSTEM.penalties.graceDays,
+                maxPenaltyDaysPerClaim: ALPHA_REWARD_SYSTEM.penalties.maxPenaltyDaysPerClaim,
+              },
+              actionCode: "missed_day_penalty",
+              activityDate,
+            });
+
+            if (penaltyResponse.ok) {
+              penaltyApplied = penaltyAmount;
+            }
+          }
+        }
+      }
+    }
 
     if (action === "treatment_task_completed") {
       const timerCompleted = body.metadata?.timerCompleted === true;
@@ -268,9 +364,40 @@ export async function POST(request: NextRequest) {
     }
 
     let streakBonus = 0;
+    let taskBonus = 0;
     if (rule.category === "discipline") {
+      const completedDailyActions = await fetchCompletedDailyActions(config.baseUrl, config.serviceKey, supabaseUserId, activityDate);
+      const completedCoreDailyCount = ALPHA_CORE_DAILY_ACTIONS.filter((item) => completedDailyActions.has(item)).length;
+
+      if (completedCoreDailyCount >= ALPHA_REWARD_SYSTEM.taskBonus.threshold) {
+        const bonusResponse = await callProcessTransactionRpc({
+          baseUrl: config.baseUrl,
+          serviceKey: config.serviceKey,
+          userId: supabaseUserId,
+          amount: ALPHA_REWARD_SYSTEM.taskBonus.amount,
+          category: "discipline",
+          description: "3-task daily bonus",
+          referenceId: `${ALPHA_REWARD_SYSTEM.taskBonus.actionCode}:${activityDate}`,
+          metadata: {
+            completedTasksToday: completedCoreDailyCount,
+            trigger: action,
+          },
+          actionCode: ALPHA_REWARD_SYSTEM.taskBonus.actionCode,
+          activityDate,
+        });
+
+        if (bonusResponse.ok) {
+          taskBonus = ALPHA_REWARD_SYSTEM.taskBonus.amount;
+        }
+      }
+
       const streak = await updateStreakRpc(config.baseUrl, config.serviceKey, supabaseUserId);
-      const computedBonus = Number(streak?.bonus_awarded || 0);
+      const currentStreak = Number(streak?.current_streak || 0);
+      const computedBonus = currentStreak === 30
+        ? ALPHA_REWARD_SYSTEM.streakBonus[30]
+        : currentStreak === 7
+          ? ALPHA_REWARD_SYSTEM.streakBonus[7]
+          : 0;
       if (computedBonus > 0) {
         streakBonus = computedBonus;
         const streakReferenceId = `streak_bonus:${supabaseUserId}:${activityDate}:${computedBonus}`;
@@ -280,13 +407,13 @@ export async function POST(request: NextRequest) {
           userId: supabaseUserId,
           amount: computedBonus,
           category: "milestone",
-          description: computedBonus === 75 ? "30-day streak milestone" : "7-day streak milestone",
+          description: computedBonus === ALPHA_REWARD_SYSTEM.streakBonus[30] ? "30-day streak milestone" : "7-day streak milestone",
           referenceId: streakReferenceId,
           metadata: {
-            milestone: computedBonus === 75 ? 30 : 7,
+            milestone: computedBonus === ALPHA_REWARD_SYSTEM.streakBonus[30] ? 30 : 7,
             trigger: action,
           },
-          actionCode: computedBonus === 75 ? "streak_30" : "streak_7",
+          actionCode: computedBonus === ALPHA_REWARD_SYSTEM.streakBonus[30] ? "streak_30" : "streak_7",
           activityDate,
         });
 
@@ -309,6 +436,8 @@ export async function POST(request: NextRequest) {
       ok: true,
       awarded: amount,
       category: rule.category,
+      penaltyApplied,
+      taskBonus,
       summary: {
         currentBalance: Number(summary?.current_balance || 0),
         lifetimeEarned,
@@ -317,7 +446,7 @@ export async function POST(request: NextRequest) {
       },
       recent,
       streakBonus,
-      toast: `+${amount + streakBonus} A$ earned`,
+      toast: `${amount + taskBonus + streakBonus - penaltyApplied >= 0 ? "+" : "-"}${Math.abs(amount + taskBonus + streakBonus - penaltyApplied)} A$ ${penaltyApplied > 0 ? "net" : "earned"}`,
     });
   } catch (error) {
     return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "alpha_sikka_earn_failed" }, { status: 500 });

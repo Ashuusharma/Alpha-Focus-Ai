@@ -17,16 +17,21 @@ import {
   ShoppingCart,
   User,
   X, // Added X icon
-  Zap
+  Zap,
+  ArrowRight
 } from "lucide-react";
 import { useMounted } from "@/app/hooks/useMounted";
 import { useLocation } from "@/app/hooks/useLocation";
+import { RewardUnlockModal, type RewardUnlockModalData } from "@/app/alpha-credits/_components/RewardUnlockModal";
 import { useCartStore } from "@/lib/cartStore";
 import { BRAND_LOGO_FALLBACK, BRAND_LOGO_LEGACY_FALLBACK, BRAND_LOGO_PRIMARY } from "@/lib/branding";
+import { buildRewardProductHref, getRewardFeaturedProduct } from "@/lib/alphaRewardCommerce";
 import AuthModal from "@/components/AuthModal";
 import { AuthContext } from "@/contexts/AuthProvider";
 import { getSupabaseAuthHeaders } from "@/lib/auth/clientAuthHeaders";
-import { useUserStore } from "@/stores/useUserStore";
+import { getRewardCountdownLabel } from "@/lib/rewardUnlockService";
+import { trackRewardEvent } from "@/lib/rewardTracking";
+import { useRewardStore } from "@/stores/useRewardStore";
 
 const LINKS = [
   { label: "Home", href: "/dashboard" },
@@ -87,8 +92,9 @@ export default function MainNavbar() {
   const openCart = useCartStore((state) => state.openCart);
   const { displayLabel, status: locationStatus, refreshLocation } = useLocation();
   const { user, profile, signOut } = useContext(AuthContext);
-  const alphaStreak = useUserStore((state) => state.alphaStreak as Record<string, unknown> | null);
-
+  const activeReward = useRewardStore((state) => state.activeReward);
+  const isExpiringSoon = useRewardStore((state) => state.isExpiringSoon);
+  const initializeRewardStore = useRewardStore((state) => state.initialize);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -99,6 +105,7 @@ export default function MainNavbar() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false); // Added mobile menu state
   const [logoSrc, setLogoSrc] = useState<string>(LOGO_SOURCES[0]);
+  const [rewardModal, setRewardModal] = useState<RewardUnlockModalData | null>(null);
 
   const userDisplayName =
     profile?.full_name?.trim() ||
@@ -212,6 +219,8 @@ export default function MainNavbar() {
     setMountedDom(true);
   }, []);
 
+  useEffect(() => initializeRewardStore(), [initializeRewardStore]);
+
   // Lock body scroll when mobile menu is open
   useEffect(() => {
     if (mobileMenuOpen) {
@@ -230,11 +239,50 @@ export default function MainNavbar() {
         ? "Enable location"
         : displayLabel;
 
-  const streakDays = Number(alphaStreak?.current_streak || 0);
-
   useEffect(() => {
     void refreshNotifications();
   }, [user?.id]);
+
+  useEffect(() => {
+    if (!mountedDom) return;
+
+    const maybeOpenReward = () => {
+      if (!activeReward) return;
+
+      const sessionKey = `navbar-reward-modal:${activeReward.id}`;
+      if (window.sessionStorage.getItem(sessionKey)) return;
+
+      const featuredProduct = getRewardFeaturedProduct(activeReward.discountPercent);
+      window.sessionStorage.setItem(sessionKey, "1");
+      setRewardModal({
+        discountPercent: activeReward.discountPercent,
+        title: `You unlocked ${activeReward.discountPercent}% OFF`,
+        body: featuredProduct
+          ? `${featuredProduct.name} is ready as your highest-conversion next move.`
+          : "Your active reward is ready to use now.",
+        href: buildRewardProductHref(activeReward.discountPercent),
+        ctaLabel: "Use Reward Now",
+        expiresAt: activeReward.expiresAt,
+        productName: featuredProduct?.name || null,
+      });
+    };
+
+    maybeOpenReward();
+
+    const handleRewardEvent = (event: Event) => {
+      const customEvent = event as CustomEvent<{ type?: string }>;
+      if (customEvent.detail?.type === "created") {
+        maybeOpenReward();
+      }
+    };
+
+    window.addEventListener("alpha-reward-unlock", handleRewardEvent);
+    window.addEventListener("focus", maybeOpenReward);
+    return () => {
+      window.removeEventListener("alpha-reward-unlock", handleRewardEvent);
+      window.removeEventListener("focus", maybeOpenReward);
+    };
+  }, [activeReward, mountedDom]);
 
   useEffect(() => {
     if (!user) return;
@@ -578,10 +626,6 @@ export default function MainNavbar() {
               </span>
             )}
 
-            <span className="hidden lg:flex items-center rounded-full border border-[#E2DDD3] bg-white/50 px-2.5 py-1 text-[11px] font-semibold text-[#8C6A5A] whitespace-nowrap">
-              🔥 {streakDays} Day Streak
-            </span>
-
             {!user ? (
               <button
                 type="button"
@@ -610,6 +654,26 @@ export default function MainNavbar() {
           </div>
         </div>
       </header>
+
+      {activeReward && pathname && (pathname.startsWith("/dashboard") || pathname.startsWith("/shop") || pathname.startsWith("/product")) && (
+        <div className={`sticky top-20 z-40 flex items-center justify-center gap-2 lg:gap-3 border-b px-3 py-2.5 text-center text-xs font-semibold shadow-sm transition-colors ${
+          isExpiringSoon 
+            ? "border-[#E85D4E]/30 bg-[#FFF5F3] text-[#A63C31]" 
+            : "border-[#C8DACF] bg-[#E8EFEA] text-[#1F3D2B]"
+        }`}>
+          {isExpiringSoon && <span className="inline-flex h-2 w-2 rounded-full bg-[#E85D4E] animate-pulse" />}
+          <span>
+            You have {activeReward.discountPercent}% OFF
+            {isExpiringSoon && <span className="hidden sm:inline"> • Expiring {getRewardCountdownLabel(activeReward.expiresAt)}</span>}
+          </span>
+          <Link 
+            href="/checkout" 
+            className="group ml-2 inline-flex items-center gap-1 uppercase tracking-widest font-black underline decoration-transparent transition-all hover:decoration-current"
+          >
+            Use now <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+          </Link>
+        </div>
+      )}
 
       {/* Mobile Drawer Portal */}
       {mobileMenuOpen && createPortal(
@@ -788,6 +852,20 @@ export default function MainNavbar() {
           </div>,
           document.body
         )}
+
+      <RewardUnlockModal
+        data={rewardModal}
+        onClose={() => setRewardModal(null)}
+        onPrimaryClick={() => {
+          if (!rewardModal) return;
+          trackRewardEvent("product_clicked_from_reward", {
+            discountPercent: rewardModal.discountPercent,
+            href: rewardModal.href,
+            productName: rewardModal.productName || null,
+            source: "navbar_global_modal",
+          });
+        }}
+      />
 
       <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
     </>

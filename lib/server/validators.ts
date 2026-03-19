@@ -92,6 +92,8 @@ export const alphaSikkaEarnSchema = z.object({
     "hydration_goal",
     "sleep_goal",
     "full_day_completed",
+    "daily_three_completed_bonus",
+    "missed_day_penalty",
     "treatment_task_completed",
     "treatment_day_completed",
     "improve_alpha_5",
@@ -126,7 +128,7 @@ export const alphaSikkaSummarySchema = z.object({
 export const alphaSikkaSpendSchema = z.object({
   amount: z.number().positive(),
   cartTotal: z.number().int().positive().optional(),
-  category: z.enum(["redemption", "engagement", "challenge", "discipline", "improvement", "milestone"]).optional(),
+  category: z.enum(["redemption", "engagement", "challenge", "discipline", "improvement", "milestone", "penalty"]).optional(),
   description: z.string().min(2).max(140),
   referenceId: z.string().min(1).max(120).optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),

@@ -1,3 +1,5 @@
+import { ALPHA_REWARD_SYSTEM } from "@/lib/alphaRewardSystem";
+
 export type AlphaSikkaAction =
   | "daily_login"
   | "log_am_routine"
@@ -5,6 +7,8 @@ export type AlphaSikkaAction =
   | "hydration_goal"
   | "sleep_goal"
   | "full_day_completed"
+  | "daily_three_completed_bonus"
+  | "missed_day_penalty"
   | "treatment_task_completed"
   | "treatment_day_completed"
   | "improve_alpha_5"
@@ -33,7 +37,8 @@ export type AlphaSikkaCategory =
   | "challenge"
   | "milestone"
   | "engagement"
-  | "redemption";
+  | "redemption"
+  | "penalty";
 
 type Rule = {
   category: AlphaSikkaCategory;
@@ -43,12 +48,14 @@ type Rule = {
 };
 
 export const ALPHA_SIKKA_RULES: Record<AlphaSikkaAction, Rule> = {
-  daily_login: { category: "discipline", amount: 1, frequency: "daily", description: "Daily login" },
-  log_am_routine: { category: "discipline", amount: 2, frequency: "daily", description: "AM routine completed" },
-  log_pm_routine: { category: "discipline", amount: 2, frequency: "daily", description: "PM routine completed" },
-  hydration_goal: { category: "discipline", amount: 3, frequency: "daily", description: "Hydration goal met" },
+  daily_login: { category: "discipline", amount: ALPHA_REWARD_SYSTEM.daily.daily_login, frequency: "daily", description: "Daily login" },
+  log_am_routine: { category: "discipline", amount: ALPHA_REWARD_SYSTEM.daily.log_am_routine, frequency: "daily", description: "AM routine completed" },
+  log_pm_routine: { category: "discipline", amount: ALPHA_REWARD_SYSTEM.daily.log_pm_routine, frequency: "daily", description: "PM routine completed" },
+  hydration_goal: { category: "discipline", amount: ALPHA_REWARD_SYSTEM.daily.hydration_goal, frequency: "daily", description: "Hydration goal met" },
   sleep_goal: { category: "discipline", amount: 2, frequency: "daily", description: "Sleep goal met" },
   full_day_completed: { category: "discipline", amount: 5, frequency: "daily", description: "Full day completed" },
+  daily_three_completed_bonus: { category: "discipline", amount: ALPHA_REWARD_SYSTEM.taskBonus.amount, frequency: "daily", description: "3-task daily bonus" },
+  missed_day_penalty: { category: "penalty", amount: ALPHA_REWARD_SYSTEM.penalties.missed_day, frequency: "event", description: "Missed day penalty" },
   treatment_task_completed: { category: "challenge", amount: 2, frequency: "event", description: "Recovery task completed" },
   treatment_day_completed: { category: "challenge", amount: 5, frequency: "event", description: "Recovery day completed" },
 
@@ -62,9 +69,9 @@ export const ALPHA_SIKKA_RULES: Record<AlphaSikkaAction, Rule> = {
   challenge_90_complete: { category: "challenge", amount: 400, frequency: "once", description: "90-Day Mastery completed" },
   challenge_weekly_milestone: { category: "challenge", amount: 20, frequency: "weekly", description: "Challenge weekly milestone" },
 
-  streak_7: { category: "milestone", amount: 15, frequency: "once", description: "7-day streak milestone" },
+  streak_7: { category: "milestone", amount: ALPHA_REWARD_SYSTEM.streakBonus[7], frequency: "once", description: "7-day streak milestone" },
   streak_14: { category: "milestone", amount: 50, frequency: "once", description: "14-day streak milestone" },
-  streak_30: { category: "milestone", amount: 75, frequency: "once", description: "30-day streak milestone" },
+  streak_30: { category: "milestone", amount: ALPHA_REWARD_SYSTEM.streakBonus[30], frequency: "once", description: "30-day streak milestone" },
   streak_60: { category: "milestone", amount: 250, frequency: "once", description: "60-day streak milestone" },
   streak_90: { category: "milestone", amount: 400, frequency: "once", description: "90-day streak milestone" },
 

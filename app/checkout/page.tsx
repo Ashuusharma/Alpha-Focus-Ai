@@ -6,8 +6,10 @@ import Link from "next/link";
 import { ChevronRight, CreditCard, Lock, ShieldCheck } from "lucide-react";
 import { Coupon } from "@/lib/creditService";
 import { applyCouponToSubtotal, getAvailableCoupons, getBestAvailableCoupon, markCouponApplied, markCouponRedeemed } from "@/lib/couponService";
+import { consumeActiveRewardUnlock, getRewardCountdownLabel } from "@/lib/rewardUnlockService";
 import { useCartStore } from "@/lib/cartStore";
 import { formatINR } from "@/lib/currency";
+import { useRewardStore } from "@/stores/useRewardStore";
 
 const STEPS = [
   { id: 1, label: "Information" },
@@ -17,6 +19,11 @@ const STEPS = [
 
 export default function CheckoutPage() {
   const { items } = useCartStore();
+   const activeReward = useRewardStore((state) => state.activeReward);
+   const timeRemaining = useRewardStore((state) => state.timeRemaining);
+   const isExpiringSoon = useRewardStore((state) => state.isExpiringSoon);
+   const initializeRewardStore = useRewardStore((state) => state.initialize);
+   const syncReward = useRewardStore((state) => state.syncReward);
    const [currentStep, setCurrentStep] = useState(1);
    const [availableCoupons, setAvailableCoupons] = useState<Coupon[]>([]);
    const [activeCoupon, setActiveCoupon] = useState<Coupon | null>(null);
@@ -34,7 +41,17 @@ export default function CheckoutPage() {
       setAvailableCoupons(getAvailableCoupons());
    }, []);
 
+   useEffect(() => initializeRewardStore(), [initializeRewardStore]);
+
    useEffect(() => {
+      if (activeReward && timeRemaining > 0) {
+         const rewardDiscount = Math.round(subtotal * (activeReward.discountPercent / 100));
+         setActiveCoupon(null);
+         setDiscount(rewardDiscount);
+         setCouponMessage(`Reward auto-applied: ${activeReward.discountPercent}% off`);
+         return;
+      }
+
       if (!activeCoupon) {
          setDiscount(0);
          return;
@@ -48,12 +65,17 @@ export default function CheckoutPage() {
       }
       setDiscount(result.discount);
       setCouponMessage(`${activeCoupon.discountPercent}% coupon applied`);
-   }, [activeCoupon, subtotal]);
+   }, [activeCoupon, activeReward, subtotal, timeRemaining]);
 
   const handleNext = () => setCurrentStep((prev) => Math.min(3, prev + 1));
   const handleBack = () => setCurrentStep((prev) => Math.max(1, prev - 1));
 
    const handleApplyBestCoupon = () => {
+      if (activeReward) {
+         setCouponMessage(`Active reward already applied: ${activeReward.discountPercent}% off`);
+         return;
+      }
+
       const coupons = getAvailableCoupons();
       setAvailableCoupons(coupons);
       const best = getBestAvailableCoupon(subtotal);
@@ -69,8 +91,16 @@ export default function CheckoutPage() {
    };
 
    const handlePay = () => {
-      if (activeCoupon) {
-         markCouponRedeemed(activeCoupon.code, `order_${Date.now()}`, discount);
+      const orderId = `order_${Date.now()}`;
+      if (activeReward) {
+         consumeActiveRewardUnlock({
+            orderId,
+            productId: items[0]?.id || null,
+            discountApplied: discount,
+         });
+         syncReward();
+      } else if (activeCoupon) {
+         markCouponRedeemed(activeCoupon.code, orderId, discount);
          setAvailableCoupons(getAvailableCoupons());
       }
       setActiveCoupon(null);
@@ -259,16 +289,22 @@ export default function CheckoutPage() {
 
                         <div className="mt-4 rounded-xl border border-[#E2DDD4] bg-[#F4EFE6] p-3 space-y-2">
                            <div className="flex items-center justify-between text-sm text-[#1F3D2B]">
-                              <span>Alpha Credits coupon</span>
+                              <span>{activeReward ? "Active reward" : "Alpha Credits coupon"}</span>
                               <button
                                  type="button"
                                  onClick={handleApplyBestCoupon}
                                  className="text-[#2F6F57] font-semibold hover:text-[#1F3D2B]"
                               >
-                                 Apply best
+                                 {activeReward ? "Auto applied" : "Apply best"}
                               </button>
                            </div>
-                           {activeCoupon ? (
+                           {activeReward ? (
+                              <div className="text-sm text-[#1F3D2B]">
+                                 <p className="font-semibold">{activeReward.discountPercent}% reward applied automatically</p>
+                                 <p className="text-xs text-[#6B665D]">{getRewardCountdownLabel(activeReward.expiresAt)} · expires {new Date(activeReward.expiresAt).toLocaleString()}</p>
+                                 {isExpiringSoon && <p className="mt-1 text-xs font-semibold text-[#C94F3D]">Expiring soon. Finish payment in the next 2 hours.</p>}
+                              </div>
+                           ) : activeCoupon ? (
                               <div className="text-sm text-[#1F3D2B]">
                                  <p className="font-semibold">{activeCoupon.discountPercent}% off applied</p>
                                  <p className="text-xs text-[#6B665D]">Code {activeCoupon.code} · expires {new Date(activeCoupon.expiresAt).toLocaleDateString()}</p>
@@ -290,7 +326,7 @@ export default function CheckoutPage() {
                    </div>
                             {discount > 0 && (
                                <div className="flex justify-between text-sm text-[#2F6F57]">
-                                  <span>Coupon {activeCoupon ? `(${activeCoupon.discountPercent}%)` : ""}</span>
+                                  <span>{activeReward ? `Reward (${activeReward.discountPercent}%)` : `Coupon ${activeCoupon ? `(${activeCoupon.discountPercent}%)` : ""}`}</span>
                                   <span>- {formatINR(discount)}</span>
                                </div>
                             )}

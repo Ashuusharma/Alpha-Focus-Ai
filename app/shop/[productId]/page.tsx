@@ -4,18 +4,22 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, Check, Minus, Plus, ShoppingCart, Star } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { PRODUCT_CATALOG_DATA } from "@/lib/productCatalogData";
+import { trackRewardEvent } from "@/lib/rewardTracking";
 import { useCartStore } from "@/lib/cartStore";
 
 export default function ProductDetailPage() {
   const router = useRouter();
   const params = useParams<{ productId: string }>();
+  const searchParams = useSearchParams();
   const productId = params?.productId;
   const [quantity, setQuantity] = useState(1);
   const { addItem, openCart } = useCartStore();
 
   const decodedId = decodeURIComponent(Array.isArray(productId) ? productId[0] : productId || "");
+  const rewardDiscount = Number(searchParams?.get("reward") || 0);
+  const rewardSource = searchParams?.get("source") || null;
   
   const product = PRODUCT_CATALOG_DATA.find(
     (p) => (p.sku && p.sku === decodedId) || p.name === decodedId
@@ -39,6 +43,15 @@ export default function ProductDetailPage() {
     setImageSrc(product.imageUrl || fallbackImage);
   }, [product.imageUrl]);
 
+  useEffect(() => {
+    if (rewardSource !== "alpha-wallet" || rewardDiscount <= 0) return;
+    trackRewardEvent("product_clicked_from_reward", {
+      productId: product.sku || product.name,
+      discountPercent: rewardDiscount,
+      source: rewardSource,
+    });
+  }, [product.name, product.sku, rewardDiscount, rewardSource]);
+
   const handleAddToCart = () => {
     addItem({
       id: product.sku || product.name,
@@ -60,6 +73,14 @@ export default function ProductDetailPage() {
           <ArrowLeft className="h-4 w-4" />
           Back to Apothecary
         </Link>
+
+        {rewardSource === "alpha-wallet" && rewardDiscount > 0 && (
+          <div className="mb-8 rounded-2xl border border-[#C8DACF] bg-[#E8EFEA] px-5 py-4 text-sm text-[#1F3D2B] shadow-sm">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-[#2F6F57]">Alpha Wallet Unlock</p>
+            <p className="mt-1 font-semibold">This product is the recommended conversion target for your {rewardDiscount}% reward tier.</p>
+            <p className="mt-1 text-[#4A453E]">Add it now and move straight into checkout while the reward momentum is active.</p>
+          </div>
+        )}
         
         <div className="grid gap-12 lg:grid-cols-2">
           {/* Product Image */}

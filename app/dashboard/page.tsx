@@ -6,6 +6,10 @@ import { useUserStore } from "@/stores/useUserStore";
 import { hydrateUserData } from "@/lib/hydrateUserData";
 import { supabase } from "@/lib/supabaseClient";
 import { calculateProgressMetricsForCategory } from "@/lib/calculateProgressMetrics";
+import { useToast } from "@/app/toast/ToastContext";
+import { getRewardCatalog } from "@/lib/couponService";
+import { getRewardFeaturedProduct } from "@/lib/alphaRewardCommerce";
+import { createRewardUnlock } from "@/lib/rewardUnlockService";
 import {
   generateDailyProtocolMeta,
   generateDailyProtocolTasks,
@@ -65,6 +69,19 @@ type AIInsight = {
   actions?: string[];
   expectedOutcome?: string;
   impact: "high" | "medium" | "low";
+};
+
+type AlphaSikkaAwardResponse = {
+  ok?: boolean;
+  awarded?: number;
+  taskBonus?: number;
+  streakBonus?: number;
+  penaltyApplied?: number;
+  toast?: string;
+  summary?: {
+    currentBalance?: number;
+  };
+  error?: string;
 };
 
 const MORNING_UNLOCK_HOUR = 5;
@@ -133,13 +150,16 @@ function calculateRoutineStreakDays(routineRows: Array<Record<string, unknown>>,
 
 async function awardAlphaSikka(action: string, referenceId: string, metadata?: Record<string, unknown>) {
   try {
-    await fetch("/api/alpha-sikka/earn", {
+    const response = await fetch("/api/alpha-sikka/earn", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action, referenceId, metadata }),
     });
+
+    return (await response.json().catch(() => null)) as AlphaSikkaAwardResponse | null;
   } catch {
     // Reward write is best-effort and should never block routine save UX.
+    return null;
   }
 }
 
@@ -199,6 +219,7 @@ function pickCategoryFromRecord(row: Record<string, unknown>): CategoryId | null
 
 export default function DashboardPage() {
   const { user, loading } = useContext(AuthContext);
+  const { showToast } = useToast();
   const storeLoading = useUserStore((state) => state.loading);
   const profile = useUserStore((state) => state.profile);
   const alphaSummary = useUserStore((state) => state.alphaSummary as Record<string, unknown> | null);
@@ -220,6 +241,7 @@ export default function DashboardPage() {
   const [dailyGoal, setDailyGoal] = useState<string>("Daily recovery objective");
   const [expectedResult, setExpectedResult] = useState<string>("Improved symptom control with consistency.");
   const [nowTick, setNowTick] = useState<Date>(new Date());
+  const rewardCatalog = useMemo(() => getRewardCatalog(), []);
 
   useEffect(() => {
     if (!user) return;
@@ -462,34 +484,36 @@ export default function DashboardPage() {
     const settled = persisted || { ...previous, ...updates };
     const dayRef = normalizeDateKey(settled.log_date || todayDateKey());
 
-    const awardJobs: Array<Promise<void>> = [];
+    const rewardJobs: Array<Promise<AlphaSikkaAwardResponse | null>> = [];
+    const notificationJobs: Array<Promise<void>> = [];
+    const startingBalance = Number(alphaSummary?.current_balance ?? 0);
 
     if (!previous.am_done && settled.am_done) {
-      awardJobs.push(awardAlphaSikka("log_am_routine", `routine:${dayRef}:am`, { log_date: dayRef }));
-      awardJobs.push(emitNotification("routine_completed", `routine_completed:${dayRef}:am`, { phase: "am", logDate: dayRef }));
+      rewardJobs.push(awardAlphaSikka("log_am_routine", `routine:${dayRef}:am`, { log_date: dayRef }));
+      notificationJobs.push(emitNotification("routine_completed", `routine_completed:${dayRef}:am`, { phase: "am", logDate: dayRef }));
     }
 
     if (!previous.pm_done && settled.pm_done) {
-      awardJobs.push(awardAlphaSikka("log_pm_routine", `routine:${dayRef}:pm`, { log_date: dayRef }));
-      awardJobs.push(emitNotification("routine_completed", `routine_completed:${dayRef}:pm`, { phase: "pm", logDate: dayRef }));
+      rewardJobs.push(awardAlphaSikka("log_pm_routine", `routine:${dayRef}:pm`, { log_date: dayRef }));
+      notificationJobs.push(emitNotification("routine_completed", `routine_completed:${dayRef}:pm`, { phase: "pm", logDate: dayRef }));
     }
 
     const prevHydrationGoal = (previous.hydration_ml || 0) >= 2500;
     const nextHydrationGoal = (settled.hydration_ml || 0) >= 2500;
     if (!prevHydrationGoal && nextHydrationGoal) {
-      awardJobs.push(awardAlphaSikka("hydration_goal", `routine:${dayRef}:hydration_goal`, { hydration_ml: settled.hydration_ml || 0 }));
+      rewardJobs.push(awardAlphaSikka("hydration_goal", `routine:${dayRef}:hydration_goal`, { hydration_ml: settled.hydration_ml || 0 }));
     }
 
     const prevSleepGoal = (previous.sleep_hours || 0) >= 7;
     const nextSleepGoal = (settled.sleep_hours || 0) >= 7;
     if (!prevSleepGoal && nextSleepGoal) {
-      awardJobs.push(awardAlphaSikka("sleep_goal", `routine:${dayRef}:sleep_goal`, { sleep_hours: settled.sleep_hours || 0 }));
+      rewardJobs.push(awardAlphaSikka("sleep_goal", `routine:${dayRef}:sleep_goal`, { sleep_hours: settled.sleep_hours || 0 }));
     }
 
     const prevFullDay = Boolean(previous.am_done) && Boolean(previous.pm_done) && prevHydrationGoal && prevSleepGoal;
     const nextFullDay = Boolean(settled.am_done) && Boolean(settled.pm_done) && nextHydrationGoal && nextSleepGoal;
     if (!prevFullDay && nextFullDay) {
-      awardJobs.push(
+      rewardJobs.push(
         awardAlphaSikka("full_day_completed", `routine:${dayRef}:full_day`, {
           am_done: Boolean(settled.am_done),
           pm_done: Boolean(settled.pm_done),
@@ -497,7 +521,7 @@ export default function DashboardPage() {
           sleep_hours: settled.sleep_hours || 0,
         })
       );
-      awardJobs.push(
+      notificationJobs.push(
         emitNotification("streak_milestone", `full_day_completed:${dayRef}`, {
           logDate: dayRef,
           consistencyScore: (Boolean(settled.am_done) ? 1 : 0) + (Boolean(settled.pm_done) ? 1 : 0),
@@ -505,8 +529,52 @@ export default function DashboardPage() {
       );
     }
 
-    if (awardJobs.length) {
-      void Promise.all(awardJobs).then(() => hydrateUserData(user.id, { force: true, silent: true }));
+    if (notificationJobs.length) {
+      void Promise.all(notificationJobs);
+    }
+
+    if (rewardJobs.length) {
+      void Promise.allSettled(rewardJobs).then((results) => {
+        const payloads = results
+          .filter((result): result is PromiseFulfilledResult<AlphaSikkaAwardResponse | null> => result.status === "fulfilled")
+          .map((result) => result.value)
+          .filter((payload): payload is AlphaSikkaAwardResponse => Boolean(payload?.ok));
+
+        const totalAwarded = payloads.reduce((sum, payload) => sum + Number(payload.awarded || 0) + Number(payload.taskBonus || 0) + Number(payload.streakBonus || 0), 0);
+        const totalPenalty = payloads.reduce((sum, payload) => sum + Number(payload.penaltyApplied || 0), 0);
+        const latestBalance = payloads.reduce((current, payload) => {
+          const nextBalance = Number(payload.summary?.currentBalance || 0);
+          return nextBalance > 0 ? nextBalance : current;
+        }, startingBalance);
+        const unlockedReward = [...rewardCatalog]
+          .filter((reward) => startingBalance < reward.cost && latestBalance >= reward.cost)
+          .sort((left, right) => right.cost - left.cost)[0];
+
+        if (unlockedReward) {
+          const featuredProduct = getRewardFeaturedProduct(unlockedReward.discountPercent);
+          createRewardUnlock({
+            discountPercent: unlockedReward.discountPercent,
+            productId: featuredProduct?.sku || null,
+            rewardId: unlockedReward.id,
+            source: "reward_unlock",
+          });
+          showToast(
+            featuredProduct
+              ? `Unlocked ${unlockedReward.discountPercent}% OFF. ${featuredProduct.name} is now your best conversion move.`
+              : `Unlocked ${unlockedReward.discountPercent}% OFF. Your next product reward is ready.`,
+            "success",
+            6500
+          );
+        } else if (totalAwarded > 0 || totalPenalty > 0) {
+          const net = totalAwarded - totalPenalty;
+          const rewardMessage = net >= 0
+            ? `+${net} A$ synced${totalPenalty > 0 ? ` after ${totalPenalty} A$ penalty` : ""}`
+            : `${Math.abs(net)} A$ deducted after missed-day penalty`;
+          showToast(rewardMessage, net >= 0 ? "success" : "info", 5000);
+        }
+
+        void hydrateUserData(user.id, { force: true, silent: true });
+      });
     }
 
     setSavingRoutine(false);

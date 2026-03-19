@@ -124,9 +124,9 @@ begin
   end if;
 
   if v_current = 7 then
-    v_bonus := 15;
+    v_bonus := 10;
   elsif v_current = 30 then
-    v_bonus := 75;
+    v_bonus := 50;
   end if;
 
   return query

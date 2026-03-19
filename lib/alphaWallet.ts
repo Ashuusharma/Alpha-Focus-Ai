@@ -1,5 +1,6 @@
 import { CreditActionCode } from "@/lib/creditService";
 import { getTierForLifetime } from "@/lib/rewardTierService";
+import { ALPHA_CORE_DAILY_ACTIONS, ALPHA_REWARD_SYSTEM } from "@/lib/alphaRewardSystem";
 
 export const ALPHA_WALLET_TIMEZONE = "Asia/Kolkata";
 export const ALPHA_DAILY_CAP = 20;
@@ -16,7 +17,7 @@ export type AlphaWalletMissionDefinition = {
 };
 
 export type AlphaWalletMission = AlphaWalletMissionDefinition & {
-  status: "locked" | "available" | "completed";
+  status: "locked" | "available" | "completed" | "missed";
   isExpired: boolean;
 };
 
@@ -59,7 +60,7 @@ export const ALPHA_WALLET_MISSIONS: AlphaWalletMissionDefinition[] = [
     id: "daily_login",
     title: "Open command center",
     description: "Sign in and activate the day before the first mission window closes.",
-    reward: 1,
+    reward: ALPHA_REWARD_SYSTEM.daily.daily_login,
     type: "habit",
     timeWindow: { start: "05:30", end: "11:30" },
   },
@@ -67,7 +68,7 @@ export const ALPHA_WALLET_MISSIONS: AlphaWalletMissionDefinition[] = [
     id: "log_am_routine",
     title: "Finish AM protocol",
     description: "Complete the morning routine window with a verified routine log.",
-    reward: 2,
+    reward: ALPHA_REWARD_SYSTEM.daily.log_am_routine,
     type: "routine",
     timeWindow: { start: "06:00", end: "11:30" },
   },
@@ -75,7 +76,7 @@ export const ALPHA_WALLET_MISSIONS: AlphaWalletMissionDefinition[] = [
     id: "hydration_goal",
     title: "Close hydration target",
     description: "Hit the hydration threshold before the evening slowdown window.",
-    reward: 3,
+    reward: ALPHA_REWARD_SYSTEM.daily.hydration_goal,
     type: "habit",
     timeWindow: { start: "11:00", end: "18:30" },
   },
@@ -83,7 +84,7 @@ export const ALPHA_WALLET_MISSIONS: AlphaWalletMissionDefinition[] = [
     id: "log_pm_routine",
     title: "Finish PM protocol",
     description: "Complete the evening recovery routine within the active night window.",
-    reward: 2,
+    reward: ALPHA_REWARD_SYSTEM.daily.log_pm_routine,
     type: "routine",
     timeWindow: { start: "18:30", end: "22:45" },
   },
@@ -255,9 +256,12 @@ export function buildTodayMissions(
     const isCompleted = completed.has(mission.id);
     const isExpired = !isCompleted && totalMinutes > endMinutes;
 
-    let status: AlphaWalletMission["status"] = "locked";
-    if (isCompleted) status = "completed";
-    else if (totalMinutes >= startMinutes && totalMinutes <= endMinutes) status = "available";
+    const status = getMissionStatus({
+      startMinutes,
+      endMinutes,
+      isCompleted,
+      totalMinutes,
+    });
 
     return {
       ...mission,
@@ -265,6 +269,23 @@ export function buildTodayMissions(
       isExpired,
     };
   });
+}
+
+export function getMissionStatus(input: {
+  startMinutes: number;
+  endMinutes: number;
+  isCompleted: boolean;
+  totalMinutes: number;
+}): AlphaWalletMission["status"] {
+  if (input.isCompleted) return "completed";
+  if (input.totalMinutes < input.startMinutes) return "locked";
+  if (input.totalMinutes > input.endMinutes) return "missed";
+  return "available";
+}
+
+export function getCompletedCoreMissionCount(missions: AlphaWalletMission[]) {
+  const eligible = new Set<string>(ALPHA_CORE_DAILY_ACTIONS);
+  return missions.filter((mission) => eligible.has(mission.id) && mission.status === "completed").length;
 }
 
 export function getDailyDisciplineEarned(

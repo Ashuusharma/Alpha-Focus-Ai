@@ -1,5 +1,6 @@
 import { getActiveUserName, getScopedLocalItem, setScopedLocalItem } from "@/lib/userScopedStorage";
 import { RewardTier, RewardTierId, getEarningMultiplier, getTierForLifetime } from "@/lib/rewardTierService";
+import { ALPHA_REWARD_SYSTEM } from "@/lib/alphaRewardSystem";
 
 export type CreditActionCode =
   | "daily_login"
@@ -8,6 +9,8 @@ export type CreditActionCode =
   | "hydration_goal"
   | "sleep_goal"
   | "full_day_completed"
+  | "daily_three_completed_bonus"
+  | "missed_day_penalty"
   | "treatment_task_completed"
   | "treatment_day_completed"
   | "improve_alpha_5"
@@ -35,7 +38,7 @@ export interface CreditActionRule {
   label: string;
   amount: number;
   frequency: "daily" | "weekly" | "once" | "event";
-  category: "discipline" | "improvement" | "challenge" | "milestone" | "engagement" | "redemption";
+  category: "discipline" | "improvement" | "challenge" | "milestone" | "engagement" | "redemption" | "penalty";
   validator?: (metadata?: Record<string, unknown>) => { ok: boolean; reason?: string };
 }
 
@@ -109,12 +112,14 @@ const WEEKLY_CAP = 9999;
 const TRANSACTION_LIMIT = 120;
 
 const ACTION_RULES: Record<CreditActionCode, CreditActionRule> = {
-  daily_login: { code: "daily_login", label: "Daily login", amount: 1, frequency: "daily", category: "discipline" },
-  log_am_routine: { code: "log_am_routine", label: "AM routine completed", amount: 2, frequency: "daily", category: "discipline" },
-  log_pm_routine: { code: "log_pm_routine", label: "PM routine completed", amount: 2, frequency: "daily", category: "discipline" },
-  hydration_goal: { code: "hydration_goal", label: "Hydration goal met", amount: 3, frequency: "daily", category: "discipline" },
+  daily_login: { code: "daily_login", label: "Daily login", amount: ALPHA_REWARD_SYSTEM.daily.daily_login, frequency: "daily", category: "discipline" },
+  log_am_routine: { code: "log_am_routine", label: "AM routine completed", amount: ALPHA_REWARD_SYSTEM.daily.log_am_routine, frequency: "daily", category: "discipline" },
+  log_pm_routine: { code: "log_pm_routine", label: "PM routine completed", amount: ALPHA_REWARD_SYSTEM.daily.log_pm_routine, frequency: "daily", category: "discipline" },
+  hydration_goal: { code: "hydration_goal", label: "Hydration goal met", amount: ALPHA_REWARD_SYSTEM.daily.hydration_goal, frequency: "daily", category: "discipline" },
   sleep_goal: { code: "sleep_goal", label: "Sleep goal met", amount: 2, frequency: "daily", category: "discipline" },
   full_day_completed: { code: "full_day_completed", label: "Full day completed", amount: 5, frequency: "daily", category: "discipline" },
+  daily_three_completed_bonus: { code: "daily_three_completed_bonus", label: "3-task daily bonus", amount: ALPHA_REWARD_SYSTEM.taskBonus.amount, frequency: "daily", category: "discipline" },
+  missed_day_penalty: { code: "missed_day_penalty", label: "Missed day penalty", amount: ALPHA_REWARD_SYSTEM.penalties.missed_day, frequency: "event", category: "penalty" },
   treatment_task_completed: { code: "treatment_task_completed", label: "Recovery task completed", amount: 2, frequency: "event", category: "challenge" },
   treatment_day_completed: { code: "treatment_day_completed", label: "Recovery day completed", amount: 5, frequency: "event", category: "challenge" },
 
@@ -176,9 +181,9 @@ const ACTION_RULES: Record<CreditActionCode, CreditActionRule> = {
   challenge_90_complete: { code: "challenge_90_complete", label: "90-Day Mastery completed", amount: 400, frequency: "once", category: "challenge" },
   challenge_weekly_milestone: { code: "challenge_weekly_milestone", label: "Challenge weekly milestone", amount: 20, frequency: "weekly", category: "challenge" },
 
-  streak_7: { code: "streak_7", label: "7-day streak milestone", amount: 15, frequency: "once", category: "milestone" },
+  streak_7: { code: "streak_7", label: "7-day streak milestone", amount: ALPHA_REWARD_SYSTEM.streakBonus[7], frequency: "once", category: "milestone" },
   streak_14: { code: "streak_14", label: "14-day streak milestone", amount: 50, frequency: "once", category: "milestone" },
-  streak_30: { code: "streak_30", label: "30-day streak milestone", amount: 75, frequency: "once", category: "milestone" },
+  streak_30: { code: "streak_30", label: "30-day streak milestone", amount: ALPHA_REWARD_SYSTEM.streakBonus[30], frequency: "once", category: "milestone" },
   streak_60: { code: "streak_60", label: "60-day streak milestone", amount: 250, frequency: "once", category: "milestone" },
   streak_90: { code: "streak_90", label: "90-day streak milestone", amount: 400, frequency: "once", category: "milestone" },
 
