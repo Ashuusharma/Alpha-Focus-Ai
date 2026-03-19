@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { alphaSikkaSummarySchema } from "@/lib/server/validators";
-import { deriveTier } from "@/lib/server/alphaSikkaServer";
+import { getTierForLifetime } from "@/lib/rewardTierService";
 import { getSupabaseRequestUser } from "@/lib/server/supabaseRequestAuth";
 import { getOrSetRequestCache } from "@/lib/server/requestCache";
 
@@ -10,6 +10,12 @@ type SummaryRow = {
   current_balance: number;
   lifetime_earned: number;
   lifetime_spent: number;
+};
+
+type StreakRow = {
+  current_streak: number;
+  longest_streak: number;
+  last_activity_date: string | null;
 };
 
 function getSupabaseConfig() {
@@ -49,7 +55,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: "invalid_query" }, { status: 400 });
   }
 
-  const supabaseUserId = parsed.data.supabaseUserId || authUser.id;
+  if (parsed.data.supabaseUserId && parsed.data.supabaseUserId !== authUser.id) {
+    return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+  }
+
+  const supabaseUserId = authUser.id;
 
   const payload = await getOrSetRequestCache(`alpha-summary:${supabaseUserId}`, 15_000, async () => {
     const summaryUrl = new URL(`${config.baseUrl}/rest/v1/alpha_sikka_summary`);
@@ -71,10 +81,10 @@ export async function GET(request: NextRequest) {
     const row = rows[0] || { current_balance: 0, lifetime_earned: 0, lifetime_spent: 0 };
 
     const transactionsUrl = new URL(`${config.baseUrl}/rest/v1/alpha_sikka_transactions`);
-    transactionsUrl.searchParams.set("select", "id,amount,category,description,created_at");
+    transactionsUrl.searchParams.set("select", "id,amount,category,description,created_at,action_code,activity_date,metadata");
     transactionsUrl.searchParams.set("user_id", `eq.${supabaseUserId}`);
     transactionsUrl.searchParams.set("order", "created_at.desc");
-    transactionsUrl.searchParams.set("limit", "25");
+    transactionsUrl.searchParams.set("limit", "40");
 
     const txResponse = await fetch(transactionsUrl.toString(), {
       method: "GET",
@@ -84,15 +94,35 @@ export async function GET(request: NextRequest) {
 
     const transactions = txResponse.ok ? await txResponse.json() : [];
 
+    const streakUrl = new URL(`${config.baseUrl}/rest/v1/user_streaks`);
+    streakUrl.searchParams.set("select", "current_streak,longest_streak,last_activity_date");
+    streakUrl.searchParams.set("user_id", `eq.${supabaseUserId}`);
+    streakUrl.searchParams.set("limit", "1");
+
+    const streakResponse = await fetch(streakUrl.toString(), {
+      method: "GET",
+      headers: buildAuthHeaders(config.serviceKey),
+      cache: "no-store",
+    });
+
+    const streakRows = streakResponse.ok ? ((await streakResponse.json()) as StreakRow[]) : [];
+    const streak = streakRows[0] || { current_streak: 0, longest_streak: 0, last_activity_date: null };
+    const tierLevel = getTierForLifetime(Number(row.lifetime_earned || 0)).label;
+
     return {
       ok: true,
       summary: {
+        current_balance: Number(row.current_balance || 0),
+        lifetime_earned: Number(row.lifetime_earned || 0),
+        lifetime_spent: Number(row.lifetime_spent || 0),
+        tier_level: tierLevel,
         currentBalance: Number(row.current_balance || 0),
         lifetimeEarned: Number(row.lifetime_earned || 0),
         lifetimeSpent: Number(row.lifetime_spent || 0),
-        tierLevel: deriveTier(Number(row.lifetime_earned || 0)),
+        tierLevel,
       },
       transactions,
+      streak,
     };
   });
 

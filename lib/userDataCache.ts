@@ -8,6 +8,7 @@ const CACHE_TTL_MS = 20 * 1000;
 export type HydratedPayload = {
   profile: Record<string, unknown> | null;
   alphaSummary: Record<string, unknown> | null;
+  alphaStreak: Record<string, unknown> | null;
   alphaTransactions: Array<Record<string, unknown>>;
   assessments: Array<Record<string, unknown>>;
   reports: Array<Record<string, unknown>>;

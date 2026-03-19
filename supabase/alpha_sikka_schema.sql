@@ -8,6 +8,8 @@ create table if not exists public.alpha_sikka_transactions (
   user_id uuid not null references auth.users(id) on delete cascade,
   amount integer not null,
   category text not null check (category in ('discipline','improvement','challenge','milestone','engagement','redemption')),
+  action_code text,
+  activity_date date,
   description text not null,
   reference_id text,
   metadata jsonb default '{}'::jsonb,
@@ -20,6 +22,10 @@ create index if not exists idx_alpha_sikka_user_created
 create unique index if not exists idx_alpha_sikka_reference_unique
   on public.alpha_sikka_transactions (user_id, reference_id)
   where reference_id is not null;
+
+create unique index if not exists idx_alpha_sikka_user_action_date_unique
+  on public.alpha_sikka_transactions (user_id, action_code, activity_date)
+  where action_code is not null and activity_date is not null;
 
 alter table public.alpha_sikka_transactions enable row level security;
 

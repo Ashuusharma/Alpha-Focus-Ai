@@ -8,6 +8,7 @@ import {
   buildReferenceKey,
   computeAwardAmount,
   deriveTier,
+  getAlphaSikkaActivityDate,
   type AlphaSikkaAction,
 } from "@/lib/server/alphaSikkaServer";
 import { invalidateRequestCache, invalidateRequestCachePrefix } from "@/lib/server/requestCache";
@@ -57,15 +58,12 @@ function buildAuthHeaders(serviceKey: string) {
 }
 
 async function fetchDisciplineTodayTotal(baseUrl: string, serviceKey: string, userId: string) {
-  const dayKey = new Date().toISOString().slice(0, 10);
-  const start = `${dayKey}T00:00:00.000Z`;
-  const end = `${dayKey}T23:59:59.999Z`;
+  const dayKey = getAlphaSikkaActivityDate(new Date());
   const url = new URL(`${baseUrl}/rest/v1/alpha_sikka_transactions`);
   url.searchParams.set("select", "amount");
   url.searchParams.set("user_id", `eq.${userId}`);
   url.searchParams.set("category", "eq.discipline");
-  url.searchParams.set("created_at", `gte.${start}`);
-  url.searchParams.append("created_at", `lte.${end}`);
+  url.searchParams.set("activity_date", `eq.${dayKey}`);
 
   const response = await fetch(url.toString(), {
     method: "GET",
@@ -121,6 +119,8 @@ async function callProcessTransactionRpc(input: {
   description: string;
   referenceId?: string;
   metadata?: Record<string, unknown>;
+  actionCode?: string;
+  activityDate?: string;
 }) {
   const response = await fetch(`${input.baseUrl}/rest/v1/rpc/process_alpha_sikka_transaction`, {
     method: "POST",
@@ -133,6 +133,8 @@ async function callProcessTransactionRpc(input: {
       p_description: input.description,
       p_reference_id: input.referenceId || null,
       p_metadata: input.metadata || {},
+      p_action_code: input.actionCode || null,
+      p_activity_date: input.activityDate || null,
     }),
     cache: "no-store",
   });
@@ -199,6 +201,7 @@ export async function POST(request: NextRequest) {
     const rule = ALPHA_SIKKA_RULES[action];
 
     const supabaseUserId = authUser.id;
+    const activityDate = getAlphaSikkaActivityDate(new Date());
 
     const referenceId = buildReferenceKey(action, rule.frequency, body.referenceId);
     if (rule.frequency === "event" && !referenceId) {
@@ -249,6 +252,8 @@ export async function POST(request: NextRequest) {
       description: rule.description,
       referenceId: referenceId || undefined,
       metadata: body.metadata,
+      actionCode: action,
+      activityDate,
     });
 
     if (!insertResponse.ok) {
@@ -268,7 +273,7 @@ export async function POST(request: NextRequest) {
       const computedBonus = Number(streak?.bonus_awarded || 0);
       if (computedBonus > 0) {
         streakBonus = computedBonus;
-        const streakReferenceId = `streak_bonus:${supabaseUserId}:${new Date().toISOString().slice(0, 10)}:${computedBonus}`;
+        const streakReferenceId = `streak_bonus:${supabaseUserId}:${activityDate}:${computedBonus}`;
         const bonusResponse = await callProcessTransactionRpc({
           baseUrl: config.baseUrl,
           serviceKey: config.serviceKey,
@@ -281,6 +286,8 @@ export async function POST(request: NextRequest) {
             milestone: computedBonus === 75 ? 30 : 7,
             trigger: action,
           },
+          actionCode: computedBonus === 75 ? "streak_30" : "streak_7",
+          activityDate,
         });
 
         if (!bonusResponse.ok) {

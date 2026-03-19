@@ -1,6 +1,7 @@
 "use client";
 
 import { supabase } from "@/lib/supabaseClient";
+import { toAlphaWalletSummary } from "@/lib/alphaWallet";
 import { useUserStore } from "@/stores/useUserStore";
 import {
   applyCachedUserData,
@@ -54,9 +55,10 @@ export async function hydrateUserData(userId: string, options: HydrateOptions = 
 
   const request = (async () => {
     try {
-      const [profile, alpha, alphaTransactions, assessments, reports, routines, scans, clinicalScores, challenges, products] = await Promise.all([
+      const [profile, alpha, alphaStreak, alphaTransactions, assessments, reports, routines, scans, clinicalScores, challenges, products] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
         supabase.from("alpha_sikka_summary").select("*").eq("user_id", userId).maybeSingle(),
+        supabase.from("user_streaks").select("*").eq("user_id", userId).maybeSingle(),
         supabase.from("alpha_sikka_transactions").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(200),
         supabase.from("assessment_answers").select("*").eq("user_id", userId).order("completed_at", { ascending: false }),
         supabase.from("clinical_reports").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
@@ -69,7 +71,8 @@ export async function hydrateUserData(userId: string, options: HydrateOptions = 
 
       const payload: HydratedPayload = {
         profile: profile.data ?? null,
-        alphaSummary: alpha.data ?? null,
+        alphaSummary: alpha.data ? (toAlphaWalletSummary(alpha.data) as unknown as Record<string, unknown>) : null,
+        alphaStreak: alphaStreak.data ?? null,
         alphaTransactions: alphaTransactions.data ?? [],
         assessments: assessments.data ?? [],
         reports: reports.data ?? [],

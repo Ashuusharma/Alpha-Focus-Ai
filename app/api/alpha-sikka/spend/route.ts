@@ -83,6 +83,8 @@ async function callProcessTransactionRpc(input: {
   description: string;
   referenceId?: string;
   metadata?: Record<string, unknown>;
+  actionCode?: string;
+  activityDate?: string;
 }) {
   const response = await fetch(`${input.baseUrl}/rest/v1/rpc/process_alpha_sikka_transaction`, {
     method: "POST",
@@ -95,6 +97,8 @@ async function callProcessTransactionRpc(input: {
       p_description: input.description,
       p_reference_id: input.referenceId || null,
       p_metadata: input.metadata || {},
+      p_action_code: input.actionCode || null,
+      p_activity_date: input.activityDate || null,
     }),
     cache: "no-store",
   });

@@ -26,6 +26,7 @@ import { BRAND_LOGO_FALLBACK, BRAND_LOGO_LEGACY_FALLBACK, BRAND_LOGO_PRIMARY } f
 import AuthModal from "@/components/AuthModal";
 import { AuthContext } from "@/contexts/AuthProvider";
 import { getSupabaseAuthHeaders } from "@/lib/auth/clientAuthHeaders";
+import { useUserStore } from "@/stores/useUserStore";
 
 const LINKS = [
   { label: "Home", href: "/dashboard" },
@@ -86,6 +87,7 @@ export default function MainNavbar() {
   const openCart = useCartStore((state) => state.openCart);
   const { displayLabel, status: locationStatus, refreshLocation } = useLocation();
   const { user, profile, signOut } = useContext(AuthContext);
+  const alphaStreak = useUserStore((state) => state.alphaStreak as Record<string, unknown> | null);
 
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -97,7 +99,6 @@ export default function MainNavbar() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false); // Added mobile menu state
   const [logoSrc, setLogoSrc] = useState<string>(LOGO_SOURCES[0]);
-  const [streakDays, setStreakDays] = useState(0);
 
   const userDisplayName =
     profile?.full_name?.trim() ||
@@ -229,18 +230,7 @@ export default function MainNavbar() {
         ? "Enable location"
         : displayLabel;
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const raw = localStorage.getItem("challenge_progress");
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as Record<string, { streak?: number }>;
-      const highestStreak = Object.values(parsed || {}).reduce((max, item) => Math.max(max, Number(item?.streak || 0)), 0);
-      setStreakDays(highestStreak);
-    } catch {
-      setStreakDays(0);
-    }
-  }, [user?.id]);
+  const streakDays = Number(alphaStreak?.current_streak || 0);
 
   useEffect(() => {
     void refreshNotifications();

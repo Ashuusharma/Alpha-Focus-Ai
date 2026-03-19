@@ -5,6 +5,7 @@ import { create } from "zustand";
 
 export type Profile = Record<string, unknown>;
 export type AlphaSummary = Record<string, unknown>;
+export type AlphaStreak = Record<string, unknown>;
 export type AssessmentAnswer = Record<string, unknown>;
 export type ClinicalReport = Record<string, unknown>;
 export type RoutineLog = Record<string, unknown>;
@@ -18,6 +19,7 @@ interface UserState {
   user: User | null;
   profile: Profile | null;
   alphaSummary: AlphaSummary | null;
+  alphaStreak: AlphaStreak | null;
   assessments: AssessmentAnswer[];
   reports: ClinicalReport[];
   routines: RoutineLog[];
@@ -35,6 +37,7 @@ const initialState: Omit<UserState, "setUserData" | "reset"> = {
   user: null,
   profile: null,
   alphaSummary: null,
+  alphaStreak: null,
   assessments: [],
   reports: [],
   routines: [],

@@ -1,3 +1,11 @@
+alter table public.alpha_sikka_transactions
+  add column if not exists action_code text,
+  add column if not exists activity_date date;
+
+create unique index if not exists idx_alpha_sikka_user_action_date_unique
+  on public.alpha_sikka_transactions (user_id, action_code, activity_date)
+  where action_code is not null and activity_date is not null;
+
 create or replace function public.process_alpha_sikka_transaction(
   p_user_id uuid,
   p_amount integer,

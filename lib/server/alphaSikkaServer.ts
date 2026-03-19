@@ -76,6 +76,8 @@ export const ALPHA_SIKKA_RULES: Record<AlphaSikkaAction, Rule> = {
   purchase_cashback: { category: "engagement", amount: 0, frequency: "event", description: "Purchase cashback" },
 };
 
+export const ALPHA_SIKKA_TIMEZONE = "Asia/Kolkata";
+
 export function isUuid(value: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
@@ -89,8 +91,17 @@ export function getWeekKey(date = new Date()) {
   return `${target.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`;
 }
 
+export function getAlphaSikkaActivityDate(date = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: ALPHA_SIKKA_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
 export function buildReferenceKey(action: AlphaSikkaAction, frequency: Rule["frequency"], referenceId?: string) {
-  const dayKey = new Date().toISOString().slice(0, 10);
+  const dayKey = getAlphaSikkaActivityDate(new Date());
   const weekKey = getWeekKey(new Date());
 
   if (frequency === "daily") return referenceId || `${action}:${dayKey}`;
