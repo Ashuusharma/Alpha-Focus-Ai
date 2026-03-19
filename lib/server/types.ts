@@ -2,6 +2,7 @@ export type UserRecord = {
   id: string;
   name: string;
   city?: string;
+  recoveryProgramLevel?: "beginner" | "intermediate" | "advanced";
   location: {
     city?: string;
     climateEnabled: boolean;

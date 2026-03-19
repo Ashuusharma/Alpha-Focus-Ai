@@ -7,10 +7,12 @@ import { supabase } from "@/lib/supabaseClient";
 import { categories, CategoryId } from "@/lib/questions";
 import { recalculateClinicalScores } from "@/lib/recalculateClinicalScores";
 import { calculateProgressMetricsForCategory } from "@/lib/calculateProgressMetrics";
-import { productRecommendationLogic } from "@/lib/productRecommendationLogic";
+import { productRecommendationLogic, type ProductJustification } from "@/lib/productRecommendationLogic";
 import { getProgressTimeline, type ProgressTimeline } from "@/lib/progressTimeline";
-import { generateDailyProtocolTasks, getCurrentProtocolPhase, getProtocolTemplate, type ProtocolTask } from "@/lib/protocolTemplates";
+import { generateDailyProtocolTasks, getCurrentProtocolPhase, getProtocolTemplate, getRecoveryLevelDisplay, normalizeRecoveryLevel, type ProtocolTask } from "@/lib/protocolTemplates";
 import { resolveClinicalChildCategoryFromAny } from "@/lib/categorySync";
+import { getRecoveryProgramLevel } from "@/lib/userProfile";
+import EnhancedProductCard from "./_components/EnhancedProductCard";
 
 type SubscriptionPlan = "basic" | "plus" | "pro";
 
@@ -77,6 +79,44 @@ type ProgressRow = {
   trend_message: string;
 };
 
+type ResultProductCard = {
+  id: string;
+  name: string;
+  description: string;
+  usage: string;
+  frequency: string;
+  why: string;
+  price: number;
+  rating: number;
+  reviews: number;
+  badge?: "Best Seller" | "Recommended" | "New";
+  shopifyHandle?: string;
+  benefits?: string[];
+  ingredients?: string[];
+};
+
+function mapRecommendationToProductCard(
+  recommendation: ProductJustification,
+  index: number,
+  categoryId: CategoryId
+): ResultProductCard {
+  return {
+    id: recommendation.product_id || `${categoryId}-product-${index + 1}`,
+    name: recommendation.product_name,
+    description: recommendation.targets.join(" • ") || recommendation.product_type.replace(/_/g, " "),
+    usage: recommendation.usage_note,
+    frequency: recommendation.expected_timeline,
+    why: recommendation.why_recommended,
+    price: recommendation.price_inr || 2999,
+    rating: 4.8,
+    reviews: 120 + index * 34,
+    badge: index === 0 ? "Recommended" : "New",
+    shopifyHandle: recommendation.shopify_handle,
+    benefits: recommendation.benefits || recommendation.targets,
+    ingredients: recommendation.ingredient ? [recommendation.ingredient] : undefined,
+  };
+}
+
 function safeLabel(category: string) {
   return categories.find((item) => item.id === category)?.label || category.replace(/_/g, " ");
 }
@@ -109,6 +149,8 @@ export default function ResultPage() {
   const [protocolTasks, setProtocolTasks] = useState<ProtocolTask[]>([]);
   const [protocolPhaseName, setProtocolPhaseName] = useState<string>("Stabilization");
   const [protocolDayNumber, setProtocolDayNumber] = useState<number>(1);
+  const [programLevel, setProgramLevel] = useState<"beginner" | "intermediate" | "advanced">("intermediate");
+  const [recommendedProducts, setRecommendedProducts] = useState<ResultProductCard[]>([]);
 
   useEffect(() => {
     async function loadClinicalResult() {
@@ -119,8 +161,12 @@ export default function ResultPage() {
       }
 
       const queryCategory = params?.get("category");
+      const queryLevel = params?.get("level");
       const sessionCategory = typeof window !== "undefined" ? sessionStorage.getItem("analysisCategory") : null;
+      const sessionLevel = typeof window !== "undefined" ? sessionStorage.getItem("recoveryProgramLevel") : null;
       let category = resolveClinicalChildCategoryFromAny(queryCategory, sessionCategory as CategoryId | null);
+      const resolvedProgramLevel = normalizeRecoveryLevel(queryLevel || sessionLevel || getRecoveryProgramLevel());
+      setProgramLevel(resolvedProgramLevel);
 
       if (!category) {
         const { data: activeAnalysis } = await supabase
@@ -140,10 +186,20 @@ export default function ResultPage() {
       const categoryId = (categories.find((item) => item.id === category)?.id || category) as CategoryId;
 
       await recalculateClinicalScores(user.id, categoryId);
-      await Promise.allSettled([
+      const [, recommendationsResult] = await Promise.allSettled([
         calculateProgressMetricsForCategory(user.id, categoryId),
         productRecommendationLogic(user.id, categoryId),
       ]);
+
+      if (recommendationsResult.status === "fulfilled") {
+        setRecommendedProducts(
+          recommendationsResult.value.map((entry, index) =>
+            mapRecommendationToProductCard(entry, index, categoryId)
+          )
+        );
+      } else {
+        setRecommendedProducts([]);
+      }
 
       const timeline = await getProgressTimeline(user.id, categoryId);
       setTimelineData(timeline);
@@ -155,7 +211,7 @@ export default function ResultPage() {
       setProtocolDayNumber(derivedDayNumber);
 
       const template = getProtocolTemplate(categoryId);
-      const tasks = generateDailyProtocolTasks(categoryId, derivedDayNumber);
+      const tasks = generateDailyProtocolTasks(categoryId, derivedDayNumber, { toleranceMode: resolvedProgramLevel });
       setProtocolTasks(tasks);
       if (template) {
         setProtocolPhaseName(getCurrentProtocolPhase(template, derivedDayNumber).name);
@@ -289,6 +345,10 @@ export default function ResultPage() {
           <p className="text-[11px] font-bold uppercase tracking-wider text-[#8C6A5A]">Clinical Output</p>
           <h1 className="text-2xl md:text-3xl font-bold mt-1">Clinical Report - {safeLabel(clinical.category)}</h1>
           <p className="text-sm text-[#6B665D] mt-2">Deterministic protocol generated from latest valid scan + weighted category assessment.</p>
+          <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#DCCFBD] bg-[#F8F3EC] px-4 py-2 text-xs font-semibold text-[#6F5647]">
+            <span>Recovery Track</span>
+            <span className="rounded-full bg-white px-3 py-1 text-[#1F3D2B]">{getRecoveryLevelDisplay(programLevel).label}</span>
+          </div>
           <div className="mt-5 grid gap-3 md:grid-cols-3 text-sm">
             <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] px-4 py-3">
               <p className="text-xs text-[#6B665D] uppercase tracking-wider">Step 1</p>
@@ -435,6 +495,11 @@ export default function ResultPage() {
             <p className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] px-4 py-3"><strong>Why Recommended:</strong> {productLogic?.why_recommended}</p>
             <p className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] px-4 py-3"><strong>Target Symptom:</strong> {productLogic?.target_symptom}</p>
             <p className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] px-4 py-3"><strong>Timeline:</strong> {productLogic?.timeline_expectation}</p>
+          </div>
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            {recommendedProducts.map((product) => (
+              <EnhancedProductCard key={product.id} product={product} />
+            ))}
           </div>
         </section>
 

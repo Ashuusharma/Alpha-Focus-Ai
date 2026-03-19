@@ -1,13 +1,19 @@
 import { supabase } from "@/lib/supabaseClient";
 import { CategoryId } from "@/lib/questions";
+import { getClinicalDemoProducts } from "@/lib/clinicalProductCatalog";
 
 export type ProductJustification = {
+  product_id?: string;
   product_name: string;
   product_type: string;
   targets: string[];
   why_recommended: string;
   expected_timeline: string;
   usage_note: string;
+  shopify_handle?: string;
+  price_inr?: number;
+  ingredient?: string;
+  benefits?: string[];
 };
 
 function clamp(value: number, min = 0, max = 100) {
@@ -220,6 +226,23 @@ function antiAgingProducts(): ProductJustification[] {
 }
 
 function buildRecommendations(category: CategoryId, severity: number) {
+  const demoProducts = getClinicalDemoProducts(category);
+  if (demoProducts.length >= 2) {
+    return demoProducts.slice(0, 2).map((product, index) => ({
+      product_id: product.id,
+      product_name: product.name,
+      product_type: index === 0 ? "core" : "booster",
+      targets: product.benefits,
+      why_recommended: product.why,
+      expected_timeline: index === 0 ? (severity >= 70 ? "2-6 weeks for visible control, longer for deeper recovery" : "2-4 weeks for early visible support") : "4-8 weeks with consistent use",
+      usage_note: product.usage,
+      shopify_handle: product.shopifyHandle,
+      price_inr: product.priceInr,
+      ingredient: product.ingredient,
+      benefits: product.benefits,
+    }));
+  }
+
   switch (category) {
     case "acne":
       return acneProducts(severity);

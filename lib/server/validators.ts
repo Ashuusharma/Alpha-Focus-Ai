@@ -62,6 +62,7 @@ export const userSyncSchema = z.object({
   }).optional(),
   xp: z.number().min(0).max(100000).optional(),
   level: z.number().min(1).max(100).optional(),
+  recoveryProgramLevel: z.enum(["beginner", "intermediate", "advanced"]).optional(),
 });
 
 export const loginSchema = z.object({

@@ -11,6 +11,8 @@ import { recalculateClinicalScores } from "@/lib/recalculateClinicalScores";
 import { categories, CategoryId, questions } from "@/lib/questions";
 import { getClinicalRelevance } from "@/lib/assessmentContentMap";
 import { getParentCategoryFromChild, resolveClinicalChildCategoryFromAny } from "@/lib/categorySync";
+import { getRecoveryLevelDisplay, normalizeRecoveryLevel, type ProtocolToleranceMode } from "@/lib/protocolTemplates";
+import { getRecoveryProgramLevel, saveRecoveryProgramLevel } from "@/lib/userProfile";
 
 const HOUR_24_MS = 24 * 60 * 60 * 1000;
 
@@ -85,6 +87,12 @@ function getRecentSessionParentCategory() {
   return value || null;
 }
 
+function getRecentSessionRecoveryLevel() {
+  if (typeof window === "undefined") return null;
+  const value = sessionStorage.getItem("recoveryProgramLevel");
+  return value ? normalizeRecoveryLevel(value) : null;
+}
+
 export default function AssessmentPage() {
   const router = useRouter();
   const params = useSearchParams();
@@ -98,6 +106,7 @@ export default function AssessmentPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [clinicalContextMessage, setClinicalContextMessage] = useState<string>("");
   const [flowDiagnosticSource, setFlowDiagnosticSource] = useState<"db_scan" | "session_fallback" | null>(null);
+  const [selectedProgramLevel, setSelectedProgramLevel] = useState<ProtocolToleranceMode>("intermediate");
 
   const categoryQuestions = useMemo(() => {
     if (!activeCategory) return [];
@@ -122,6 +131,7 @@ export default function AssessmentPage() {
       }
 
       const categoryFromQuery = params?.get("category");
+      const levelFromQuery = params?.get("level");
 
       const { data: activeAnalysis } = await supabase
         .from("user_active_analysis")
@@ -137,6 +147,7 @@ export default function AssessmentPage() {
       const parentCategory = selectedCategory
         ? getParentCategoryFromChild(selectedCategory)
         : (getRecentSessionParentCategory() || activeAnalysis?.parent_category || null);
+      const resolvedLevel = normalizeRecoveryLevel(levelFromQuery || getRecentSessionRecoveryLevel() || getRecoveryProgramLevel());
 
       if (!selectedCategory || !questions[selectedCategory]) {
         setBlockedMessage("Start from analyzer and select a valid category first.");
@@ -189,6 +200,7 @@ export default function AssessmentPage() {
         );
 
       setActiveCategory(selectedCategory);
+      setSelectedProgramLevel(resolvedLevel);
       setBlockedMessage(null);
       setLoading(false);
     }
@@ -197,6 +209,16 @@ export default function AssessmentPage() {
   }, [params, user]);
 
   const activeQuestion = categoryQuestions[activeQuestionIndex];
+  const selectedLevelMeta = getRecoveryLevelDisplay(selectedProgramLevel);
+
+  const handleSelectProgramLevel = (level: ProtocolToleranceMode) => {
+    const normalized = normalizeRecoveryLevel(level);
+    setSelectedProgramLevel(normalized);
+    saveRecoveryProgramLevel(normalized);
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("recoveryProgramLevel", normalized);
+    }
+  };
 
   const handleSelectAnswer = (label: string) => {
     if (!activeQuestion) return;
@@ -271,7 +293,11 @@ export default function AssessmentPage() {
       await recalculateClinicalScores(user.id, activeCategory);
 
       await hydrateUserData(user.id);
-      router.push(`/result?category=${activeCategory}`);
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("recoveryProgramLevel", selectedProgramLevel);
+      }
+      saveRecoveryProgramLevel(selectedProgramLevel);
+      router.push(`/result?category=${activeCategory}&level=${selectedProgramLevel}`);
     } catch (error) {
       console.error("Assessment submit failed", error);
       setBlockedMessage("Could not submit assessment. Please retry.");
@@ -327,6 +353,33 @@ if (loading) {
           <div className="rounded-xl border border-white/5 bg-white/5 backdrop-blur-sm px-4 py-3 text-xs text-zinc-300 flex items-center gap-3">
              <Activity className="w-4 h-4 text-blue-400" />
             {clinicalContextMessage || "We detected early signs. Let’s understand your daily behavior drivers."}
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Recovery Track</p>
+                <p className="mt-1 text-sm font-semibold text-white">{selectedLevelMeta.label}</p>
+                <p className="mt-1 max-w-xl text-xs leading-relaxed text-zinc-400">{selectedLevelMeta.description} This selection is saved to your profile and used by the 30-day planner after assessment.</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {(["beginner", "intermediate", "advanced"] as ProtocolToleranceMode[]).map((level) => {
+                  const option = getRecoveryLevelDisplay(level);
+                  const active = selectedProgramLevel === level;
+
+                  return (
+                    <button
+                      key={level}
+                      type="button"
+                      onClick={() => handleSelectProgramLevel(level)}
+                      className={`rounded-xl px-4 py-2 text-left transition-all ${active ? "bg-green-500 text-black shadow-[0_0_18px_rgba(74,222,128,0.25)]" : "bg-white/5 text-zinc-300 hover:bg-white/10"}`}
+                    >
+                      <span className="block text-[10px] font-black uppercase tracking-widest">{option.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
           
           {flowDiagnosticSource && (

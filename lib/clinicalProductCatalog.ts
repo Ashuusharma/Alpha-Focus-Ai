@@ -1,0 +1,309 @@
+import { CategoryId } from "@/lib/questions";
+import { ProtocolToleranceMode } from "@/lib/protocolTemplates";
+
+export type ClinicalDemoProduct = {
+  id: string;
+  category: CategoryId;
+  name: string;
+  ingredient: string;
+  description: string;
+  why: string;
+  usage: string;
+  priceInr: number;
+  benefits: string[];
+  shopifyHandle: string;
+  tierLabel: string;
+  suitableLevels: ProtocolToleranceMode[];
+  keywords: string[];
+};
+
+export const clinicalDemoProductCatalog: Record<CategoryId, ClinicalDemoProduct[]> = {
+  acne: [
+    {
+      id: "demo-acne-clear-serum",
+      category: "acne",
+      name: "Clear Reset Niacinamide Serum",
+      ingredient: "Niacinamide 5% + Zinc PCA",
+      description: "Daily balancing serum for oil-prone acne routines.",
+      why: "Supports oil control, visible redness reduction, and better barrier tolerance.",
+      usage: "Apply in the morning after cleansing and before moisturizer.",
+      priceInr: 649,
+      benefits: ["Oil balance", "Redness control", "Pore support"],
+      shopifyHandle: "clear-reset-niacinamide-serum",
+      tierLabel: "Core Protocol",
+      suitableLevels: ["beginner", "intermediate", "advanced"],
+      keywords: ["niacinamide", "balancing", "morning", "oil", "serum"],
+    },
+    {
+      id: "demo-acne-bha-gel",
+      category: "acne",
+      name: "Pore Control BHA Gel",
+      ingredient: "Salicylic Acid 2%",
+      description: "Night treatment gel for clogged pores and recurring breakouts.",
+      why: "Clears pore buildup and lowers breakout recurrence when used steadily.",
+      usage: "Use on alternate nights, then increase if tolerated.",
+      priceInr: 699,
+      benefits: ["Pore clearing", "Breakout control", "Texture support"],
+      shopifyHandle: "pore-control-bha-gel",
+      tierLabel: "Clinical Booster",
+      suitableLevels: ["intermediate", "advanced"],
+      keywords: ["salicylic", "bha", "night", "treatment", "active"],
+    },
+  ],
+  hair_loss: [
+    {
+      id: "demo-hair-growth-serum",
+      category: "hair_loss",
+      name: "Follicle Activate Growth Serum",
+      ingredient: "Growth Complex + Peptides",
+      description: "Scalp serum for thinning zones and daily density support.",
+      why: "Supports a consistent growth-focused routine on hairline and crown areas.",
+      usage: "Apply to dry scalp partitions each morning or night as directed.",
+      priceInr: 999,
+      benefits: ["Density support", "Scalp consistency", "Follicle care"],
+      shopifyHandle: "follicle-activate-growth-serum",
+      tierLabel: "Core Protocol",
+      suitableLevels: ["beginner", "intermediate", "advanced"],
+      keywords: ["growth", "serum", "follicle", "topical", "scalp"],
+    },
+    {
+      id: "demo-hair-keto-shampoo",
+      category: "hair_loss",
+      name: "Scalp Reset Therapy Shampoo",
+      ingredient: "Ketoconazole Support Blend",
+      description: "Support shampoo for buildup, flaking, and inflammatory scalp stress.",
+      why: "Keeps the scalp environment cleaner and more supportive for recovery routines.",
+      usage: "Use 2 to 3 times weekly based on oil and sweat load.",
+      priceInr: 749,
+      benefits: ["Buildup reduction", "Scalp comfort", "Wash-day support"],
+      shopifyHandle: "scalp-reset-therapy-shampoo",
+      tierLabel: "Clinical Booster",
+      suitableLevels: ["intermediate", "advanced"],
+      keywords: ["shampoo", "ketoconazole", "scalp", "cleanse", "wash"],
+    },
+  ],
+  scalp_health: [
+    {
+      id: "demo-scalp-balance-cleanser",
+      category: "scalp_health",
+      name: "Balance Scalp Cleanser",
+      ingredient: "Selenium Sulfide + Zinc",
+      description: "Targeted scalp cleanser for dandruff-prone wash days.",
+      why: "Helps reduce flakes and keeps oil-driven scalp irritation under better control.",
+      usage: "Massage into scalp and rinse thoroughly on scheduled wash days.",
+      priceInr: 699,
+      benefits: ["Flake control", "Oil balance", "Scalp reset"],
+      shopifyHandle: "balance-scalp-cleanser",
+      tierLabel: "Core Protocol",
+      suitableLevels: ["beginner", "intermediate", "advanced"],
+      keywords: ["cleanse", "shampoo", "dandruff", "scalp", "flakes"],
+    },
+    {
+      id: "demo-scalp-soothe-tonic",
+      category: "scalp_health",
+      name: "Calm Scalp Night Tonic",
+      ingredient: "Panthenol + Soothing Botanicals",
+      description: "Leave-on tonic for itch-prone or red scalp areas.",
+      why: "Supports comfort and reduces nighttime scratching triggers.",
+      usage: "Apply at night on itchy or inflamed scalp partitions.",
+      priceInr: 799,
+      benefits: ["Itch relief", "Barrier comfort", "Night support"],
+      shopifyHandle: "calm-scalp-night-tonic",
+      tierLabel: "Clinical Booster",
+      suitableLevels: ["intermediate", "advanced"],
+      keywords: ["tonic", "soothing", "night", "itch", "inflamed"],
+    },
+  ],
+  dark_circles: [
+    {
+      id: "demo-eye-caffeine-serum",
+      category: "dark_circles",
+      name: "AM De-Puff Caffeine Eye Serum",
+      ingredient: "Caffeine 5% + EGCG",
+      description: "Morning eye serum for puffiness and tired-looking under-eyes.",
+      why: "Supports a fresher under-eye look and better morning recovery presentation.",
+      usage: "Tap gently under the eyes each morning.",
+      priceInr: 799,
+      benefits: ["Puffiness control", "Morning brightness", "Light hydration"],
+      shopifyHandle: "am-de-puff-caffeine-eye-serum",
+      tierLabel: "Core Protocol",
+      suitableLevels: ["beginner", "intermediate", "advanced"],
+      keywords: ["caffeine", "eye", "morning", "puffiness", "serum"],
+    },
+    {
+      id: "demo-eye-retinoid-cream",
+      category: "dark_circles",
+      name: "Under-Eye Repair Retinoid Cream",
+      ingredient: "Low-Strength Retinoid + Ceramide",
+      description: "Night eye cream for texture and long-term under-eye support.",
+      why: "Supports smoother under-eye skin with gradual use.",
+      usage: "Use on alternate nights around the orbital bone.",
+      priceInr: 899,
+      benefits: ["Texture support", "Night repair", "Collagen support"],
+      shopifyHandle: "under-eye-repair-retinoid-cream",
+      tierLabel: "Clinical Booster",
+      suitableLevels: ["intermediate", "advanced"],
+      keywords: ["retinoid", "eye", "night", "repair", "cream"],
+    },
+  ],
+  beard_growth: [
+    {
+      id: "demo-beard-growth-serum",
+      category: "beard_growth",
+      name: "Beard Density Growth Serum",
+      ingredient: "Redensyl + Peptide Blend",
+      description: "Serum for patchy beard zones and density-focused routines.",
+      why: "Supports consistent beard-area care where density is visibly weaker.",
+      usage: "Apply daily to sparse zones and massage gently.",
+      priceInr: 749,
+      benefits: ["Patch support", "Density routine", "Skin-under-beard care"],
+      shopifyHandle: "beard-density-growth-serum",
+      tierLabel: "Core Protocol",
+      suitableLevels: ["beginner", "intermediate", "advanced"],
+      keywords: ["beard", "growth", "serum", "patchy", "density"],
+    },
+    {
+      id: "demo-beard-ingrown-gel",
+      category: "beard_growth",
+      name: "Ingrown Control Beard Gel",
+      ingredient: "PHA + Tea Tree Support",
+      description: "Post-shave support gel for ingrown-prone beard lines.",
+      why: "Helps reduce follicle blockage and shaving-related irritation.",
+      usage: "Use 2 to 3 nights per week on ingrown-prone zones.",
+      priceInr: 649,
+      benefits: ["Ingrown support", "Post-shave calm", "Texture reset"],
+      shopifyHandle: "ingrown-control-beard-gel",
+      tierLabel: "Clinical Booster",
+      suitableLevels: ["intermediate", "advanced"],
+      keywords: ["ingrown", "shave", "gel", "beard", "night"],
+    },
+  ],
+  body_acne: [
+    {
+      id: "demo-body-bha-cleanser",
+      category: "body_acne",
+      name: "Body Clear BHA Cleanser",
+      ingredient: "Salicylic Acid 2%",
+      description: "Body wash for workout-related congestion on chest, shoulders, and back.",
+      why: "Supports pore clearing in sweat-heavy body zones.",
+      usage: "Use during shower after sweating or workouts.",
+      priceInr: 699,
+      benefits: ["Body congestion control", "Post-workout support", "Pore clearing"],
+      shopifyHandle: "body-clear-bha-cleanser",
+      tierLabel: "Core Protocol",
+      suitableLevels: ["beginner", "intermediate", "advanced"],
+      keywords: ["body", "cleanser", "bha", "shower", "post-workout"],
+    },
+    {
+      id: "demo-body-repair-lotion",
+      category: "body_acne",
+      name: "Body Barrier Repair Lotion",
+      ingredient: "Ceramide + Panthenol",
+      description: "Light lotion for active-wash days to reduce over-drying.",
+      why: "Helps keep body skin calm enough to tolerate regular acne care.",
+      usage: "Apply after cleansing on dry or irritated zones.",
+      priceInr: 799,
+      benefits: ["Barrier support", "Dryness control", "Routine sustainability"],
+      shopifyHandle: "body-barrier-repair-lotion",
+      tierLabel: "Clinical Booster",
+      suitableLevels: ["intermediate", "advanced"],
+      keywords: ["body", "moisturizer", "repair", "lotion", "barrier"],
+    },
+  ],
+  lip_care: [
+    {
+      id: "demo-lip-spf-balm",
+      category: "lip_care",
+      name: "Daily Shield SPF Lip Balm",
+      ingredient: "SPF 30 + Vitamin E",
+      description: "Day balm for sun, dryness, and repeat reapplication.",
+      why: "Protects against UV-linked lip darkening and daytime moisture loss.",
+      usage: "Apply every morning and reapply outdoors.",
+      priceInr: 349,
+      benefits: ["UV protection", "Day hydration", "Pigmentation support"],
+      shopifyHandle: "daily-shield-spf-lip-balm",
+      tierLabel: "Core Protocol",
+      suitableLevels: ["beginner", "intermediate", "advanced"],
+      keywords: ["lip", "spf", "day", "balm", "sun"],
+    },
+    {
+      id: "demo-lip-repair-ointment",
+      category: "lip_care",
+      name: "Night Repair Lip Ointment",
+      ingredient: "Petrolatum + Panthenol",
+      description: "Occlusive night repair for cracked or peeling lips.",
+      why: "Supports overnight healing and reduces morning tightness.",
+      usage: "Use a thick layer before sleep.",
+      priceInr: 399,
+      benefits: ["Crack repair", "Occlusive seal", "Night recovery"],
+      shopifyHandle: "night-repair-lip-ointment",
+      tierLabel: "Clinical Booster",
+      suitableLevels: ["beginner", "intermediate", "advanced"],
+      keywords: ["lip", "night", "ointment", "repair", "crack"],
+    },
+  ],
+  anti_aging: [
+    {
+      id: "demo-antioxidant-c-serum",
+      category: "anti_aging",
+      name: "AM Antioxidant C Serum",
+      ingredient: "Vitamin C + Ferulic Support",
+      description: "Morning antioxidant serum for dullness and daily photoaging defense.",
+      why: "Supports brighter-looking skin and daily environmental defense.",
+      usage: "Apply in the morning before moisturizer and sunscreen.",
+      priceInr: 899,
+      benefits: ["Brightening", "Antioxidant defense", "AM support"],
+      shopifyHandle: "am-antioxidant-c-serum",
+      tierLabel: "Core Protocol",
+      suitableLevels: ["beginner", "intermediate", "advanced"],
+      keywords: ["vitamin c", "antioxidant", "morning", "serum", "brightening"],
+    },
+    {
+      id: "demo-retinoid-night-cream",
+      category: "anti_aging",
+      name: "Night Renew Retinoid Cream",
+      ingredient: "Retinoid + Peptides",
+      description: "Night cream for fine lines, texture, and long-term recovery structure.",
+      why: "Supports gradual texture improvement with structured nighttime use.",
+      usage: "Start 2 to 3 nights weekly and increase slowly.",
+      priceInr: 999,
+      benefits: ["Fine-line support", "Night renewal", "Texture care"],
+      shopifyHandle: "night-renew-retinoid-cream",
+      tierLabel: "Clinical Booster",
+      suitableLevels: ["intermediate", "advanced"],
+      keywords: ["retinoid", "night", "cream", "anti-aging", "texture"],
+    },
+  ],
+  hairCare: [],
+  skinCare: [],
+  beardCare: [],
+  bodyCare: [],
+  healthCare: [],
+  fitness: [],
+  fragrance: [],
+};
+
+clinicalDemoProductCatalog.hairCare = clinicalDemoProductCatalog.hair_loss;
+clinicalDemoProductCatalog.skinCare = clinicalDemoProductCatalog.acne;
+clinicalDemoProductCatalog.beardCare = clinicalDemoProductCatalog.beard_growth;
+clinicalDemoProductCatalog.bodyCare = clinicalDemoProductCatalog.body_acne;
+clinicalDemoProductCatalog.healthCare = clinicalDemoProductCatalog.dark_circles;
+clinicalDemoProductCatalog.fitness = clinicalDemoProductCatalog.anti_aging;
+clinicalDemoProductCatalog.fragrance = clinicalDemoProductCatalog.lip_care;
+
+export function getClinicalDemoProducts(category: CategoryId) {
+  return clinicalDemoProductCatalog[category] || [];
+}
+
+export function pickClinicalDemoProduct(category: CategoryId, taskText: string, level: ProtocolToleranceMode) {
+  const products = getClinicalDemoProducts(category).filter((product) => product.suitableLevels.includes(level));
+  if (products.length === 0) return null;
+
+  const haystack = taskText.toLowerCase();
+  const scored = products.map((product) => ({
+    product,
+    score: product.keywords.reduce((sum, keyword) => sum + (haystack.includes(keyword.toLowerCase()) ? 1 : 0), 0),
+  }));
+  scored.sort((left, right) => right.score - left.score);
+  return scored[0]?.product || products[0] || null;
+}

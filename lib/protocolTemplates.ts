@@ -1,4 +1,5 @@
 import { CategoryId } from "@/lib/questions";
+import { pickClinicalDemoProduct } from "@/lib/clinicalProductCatalog";
 
 export type ClinicalCategoryId =
   | "scalp_health"
@@ -53,7 +54,7 @@ export type ProtocolTemplate = {
   phases: ProtocolPhase[];
 };
 
-export type ProtocolToleranceMode = "beginner" | "moderate" | "aggressive";
+export type ProtocolToleranceMode = "beginner" | "intermediate" | "advanced";
 
 export type ProtocolContraindications = {
   sensitiveSkin?: boolean;
@@ -138,6 +139,345 @@ type CategoryGuidance = {
   night: GuidedAction[];
   lifestyle: GuidedAction[];
   weekly: GuidedAction[];
+};
+
+type DailyWindow = { start: string; end: string };
+
+type IndianMealRotation = {
+  breakfast: string[];
+  lunch: string[];
+  dinner: string[];
+  fruits: string[];
+};
+
+type CategoryRecoveryProfile = {
+  issueSummary: string;
+  commonReasons: string[];
+  homeCarePrinciples: string[];
+  foodsToPrefer: string[];
+  foodsToLimit: string[];
+  indianMeals: IndianMealRotation;
+  benefitSummary: string;
+  whenToEscalate: string[];
+};
+
+const LEVEL_DISPLAY: Record<ProtocolToleranceMode, { label: string; description: string }> = {
+  beginner: {
+    label: "Beginner",
+    description: "Lower-friction consistency mode with fewer steps and easier recovery windows.",
+  },
+  intermediate: {
+    label: "Intermediate",
+    description: "Balanced 30-day structure with full morning, daytime, and night guidance.",
+  },
+  advanced: {
+    label: "Advanced",
+    description: "Higher-accountability mode with tighter timing and stronger adherence checks.",
+  },
+};
+
+const LEVEL_SLOT_WINDOWS: Record<ProtocolToleranceMode, Record<"morning" | "lifestyle" | "night" | "weekly", DailyWindow>> = {
+  beginner: {
+    morning: { start: "06:45", end: "09:15" },
+    lifestyle: { start: "12:45", end: "15:30" },
+    night: { start: "20:15", end: "22:15" },
+    weekly: { start: "10:00", end: "20:30" },
+  },
+  intermediate: {
+    morning: { start: "06:15", end: "08:45" },
+    lifestyle: { start: "12:30", end: "16:00" },
+    night: { start: "20:00", end: "22:30" },
+    weekly: { start: "09:00", end: "20:30" },
+  },
+  advanced: {
+    morning: { start: "05:45", end: "08:30" },
+    lifestyle: { start: "12:15", end: "16:30" },
+    night: { start: "19:45", end: "22:45" },
+    weekly: { start: "08:30", end: "20:30" },
+  },
+};
+
+const CATEGORY_RECOVERY_PROFILES: Record<ClinicalCategoryId, CategoryRecoveryProfile> = {
+  acne: {
+    issueSummary: "Acne recovery usually improves when excess oil, clogged pores, picking, and irritation are controlled consistently for several weeks.",
+    commonReasons: [
+      "Excess sebum and clogged follicles create repeated breakouts.",
+      "Stress can worsen flare intensity even when it does not directly cause acne.",
+      "Picking, harsh scrubbing, and inconsistent sunscreen deepen marks and prolong healing.",
+    ],
+    homeCarePrinciples: [
+      "Keep cleansing gentle and avoid over-washing.",
+      "Use non-comedogenic moisturizer and sunscreen daily.",
+      "Do not squeeze lesions or layer too many strong actives together.",
+    ],
+    foodsToPrefer: [
+      "Low-glycemic meals built around dal, chana, rajma, oats, or eggs.",
+      "Vitamin C fruits like amla, orange, guava, or kiwi.",
+      "High-fiber vegetables such as lauki, tinda, bhindi, spinach, and cucumber.",
+    ],
+    foodsToLimit: [
+      "Repeated sugary drinks and dessert-heavy snacking.",
+      "Late-night fried fast food if it repeatedly matches flare days.",
+      "Any self-identified trigger foods tracked in the app.",
+    ],
+    indianMeals: {
+      breakfast: ["Oats with chia and fruit", "Moong chilla with curd if tolerated", "Egg bhurji with roti and cucumber"],
+      lunch: ["Dal, brown rice, salad, and sabzi", "Rajma with mixed salad", "Grilled paneer or chicken with roti and vegetables"],
+      dinner: ["Khichdi with veg and curd if tolerated", "Millet roti with palak dal", "Light chicken stew with sauteed vegetables"],
+      fruits: ["Guava", "Orange", "Papaya", "Apple"],
+    },
+    benefitSummary: "This plan aims to reduce new breakouts, calm inflammation, and lower the chance of post-acne marks through consistency rather than over-treatment.",
+    whenToEscalate: [
+      "Painful nodules, cysts, or scarring are increasing.",
+      "No improvement after 8 to 12 weeks of consistent care.",
+      "Irritation becomes severe after starting active treatments.",
+    ],
+  },
+  hair_loss: {
+    issueSummary: "Hair loss guidance should separate stress-linked shedding from progressive pattern loss and then support scalp health, nutrition, and early treatment review.",
+    commonReasons: [
+      "Genetic pattern hair loss can progress without early intervention.",
+      "Stress, illness, low protein intake, and poor nutrition can increase shedding.",
+      "Tight styles, harsh products, and heat damage can worsen breakage and visible thinning.",
+    ],
+    homeCarePrinciples: [
+      "Be consistent with any dermatologist-approved topical rather than changing products too quickly.",
+      "Use gentle scalp cleansing and avoid aggressive rubbing.",
+      "Track shedding, sleep, protein intake, and stress together.",
+    ],
+    foodsToPrefer: [
+      "Protein-rich meals with eggs, paneer, fish, chicken, tofu, or dal.",
+      "Iron-supporting foods such as spinach, lentils, beans, and sesame with citrus.",
+      "Nuts and seeds like almonds, walnuts, pumpkin seeds, and flax.",
+    ],
+    foodsToLimit: [
+      "Crash dieting and low-protein meal patterns.",
+      "Smoking and frequent dehydration.",
+      "Repeated heat styling and tight hairstyles.",
+    ],
+    indianMeals: {
+      breakfast: ["Eggs with multigrain toast", "Besan chilla with paneer", "Greek yogurt bowl with seeds"],
+      lunch: ["Palak dal with roti and salad", "Chicken curry with rice and veg", "Rajma chawal with cucumber salad"],
+      dinner: ["Paneer bhurji with millet roti", "Fish curry with rice and beans", "Soy or dal khichdi with vegetables"],
+      fruits: ["Guava", "Pomegranate", "Orange", "Banana"],
+    },
+    benefitSummary: "This plan focuses on protecting existing follicles, reducing shedding triggers, and improving adherence to supportive scalp and nutrition habits.",
+    whenToEscalate: [
+      "Rapid thinning, bald patches, or scalp pain appears.",
+      "You suspect a drug, illness, or thyroid issue is involved.",
+      "Shedding remains high for several months.",
+    ],
+  },
+  scalp_health: {
+    issueSummary: "Scalp recovery usually improves when dandruff, oil, irritation, and scratching are controlled with regular targeted cleansing and barrier-friendly habits.",
+    commonReasons: [
+      "Dandruff and seborrheic scalp patterns can flare with yeast, oil, and irritation.",
+      "Stress and cold weather can worsen flaking and itch.",
+      "Heavy styling buildup and scratching weaken scalp comfort and barrier quality.",
+    ],
+    homeCarePrinciples: [
+      "Wash with the correct anti-dandruff active on a steady schedule.",
+      "Keep scalp dry after sweating and avoid very hot water.",
+      "Do not scratch or pick flakes aggressively.",
+    ],
+    foodsToPrefer: [
+      "Hydrating meals with vegetables, dal, and whole grains.",
+      "Omega-support foods like walnuts, flax, and fatty fish when used.",
+      "Fruit and fluid intake spread through the day.",
+    ],
+    foodsToLimit: [
+      "Heavy fragranced styling products and thick scalp oils if they worsen flakes.",
+      "Very hot showers on flare days.",
+      "Skipping wash days after heavy sweating.",
+    ],
+    indianMeals: {
+      breakfast: ["Poha with peanuts and fruit", "Idli with sambar", "Oats upma with seeds"],
+      lunch: ["Dal with sabzi and roti", "Curd rice if tolerated and not greasy", "Fish with rice and greens"],
+      dinner: ["Vegetable khichdi", "Roti with lauki and dal", "Light chicken and veg soup"],
+      fruits: ["Apple", "Papaya", "Orange", "Pear"],
+    },
+    benefitSummary: "The goal is to reduce flakes, itch, and redness while building a scalp routine that stays comfortable enough to continue.",
+    whenToEscalate: [
+      "Scalp is very red, swollen, painful, or oozing.",
+      "Symptoms persist after one month of anti-dandruff care.",
+      "You develop patchy hair loss or rash beyond the scalp.",
+    ],
+  },
+  dark_circles: {
+    issueSummary: "Under-eye darkness usually needs sleep quality, hydration, pigmentation control, and rubbing or puffiness triggers managed together.",
+    commonReasons: [
+      "Sleep loss and screen-heavy nights worsen puffiness and dullness.",
+      "Pigmentation, allergies, rubbing, and dehydration can all contribute.",
+      "High-salt late dinners can increase morning under-eye puffiness.",
+    ],
+    homeCarePrinciples: [
+      "Protect the under-eye area with sunscreen and gentle products.",
+      "Keep bedtime and wake time stable.",
+      "Reduce rubbing and track allergy-related symptoms.",
+    ],
+    foodsToPrefer: [
+      "Hydration-focused intake with water, coconut water, and soups if suitable.",
+      "Iron and B12-supporting foods like eggs, spinach, beans, and lean meats.",
+      "Water-rich fruit such as watermelon, orange, mosambi, and cucumber.",
+    ],
+    foodsToLimit: [
+      "Very salty packaged snacks at night.",
+      "Late caffeine close to bedtime.",
+      "Nighttime phone use that delays sleep.",
+    ],
+    indianMeals: {
+      breakfast: ["Vegetable omelette with toast", "Moong sprouts chaat", "Daliya with nuts and fruit"],
+      lunch: ["Palak dal with rice", "Chicken or paneer with roti and salad", "Chole with salad and curd if tolerated"],
+      dinner: ["Light dal soup with roti", "Vegetable pulao with raita if tolerated", "Grilled fish or paneer with vegetables"],
+      fruits: ["Mosambi", "Orange", "Watermelon", "Pomegranate"],
+    },
+    benefitSummary: "The routine is built to improve puffiness control, sleep-linked recovery, and long-term under-eye brightness support.",
+    whenToEscalate: [
+      "Dark circles are worsening with swelling, pain, or sudden asymmetry.",
+      "Chronic allergy symptoms or severe sleep issues remain uncontrolled.",
+      "Home care brings no visible change after several weeks.",
+    ],
+  },
+  beard_growth: {
+    issueSummary: "Beard progress depends heavily on genetics, but better cleansing, lower irritation, good trimming habits, and steady growth-support routines improve visible density and comfort.",
+    commonReasons: [
+      "Patchiness can be genetic and slow to change.",
+      "Ingrown hairs, close shaving, and dirty tools disrupt healthy growth appearance.",
+      "Sleep, protein intake, and hydration affect skin and hair quality under the beard.",
+    ],
+    homeCarePrinciples: [
+      "Keep the beard zone clean and avoid repeated aggressive trimming.",
+      "Shave with the grain and reduce friction on ingrown-prone areas.",
+      "Treat the skin under the beard, not just the beard hair.",
+    ],
+    foodsToPrefer: [
+      "Protein in each main meal.",
+      "Zinc and selenium sources such as seeds, eggs, dal, fish, and nuts.",
+      "Hydrating fruits and vegetables for skin quality support.",
+    ],
+    foodsToLimit: [
+      "Against-the-grain shaving when irritation is active.",
+      "Dirty trimmers, picking ingrowns, or strong aftershaves.",
+      "Skipping moisturizer under a coarse beard.",
+    ],
+    indianMeals: {
+      breakfast: ["Egg bhurji with roti", "Besan chilla with mint chutney", "Sprouts bowl with fruit"],
+      lunch: ["Dal, roti, salad, and sabzi", "Chicken with rice and veg", "Paneer tikka bowl with salad"],
+      dinner: ["Light khichdi with curd if tolerated", "Fish with vegetables", "Soya chunks with roti and greens"],
+      fruits: ["Banana", "Guava", "Apple", "Papaya"],
+    },
+    benefitSummary: "The aim is to make beard growth look denser, reduce ingrowns, and keep the skin under the beard calm enough for consistent progress.",
+    whenToEscalate: [
+      "Painful ingrowns, pustules, or dark marks keep recurring.",
+      "Severe patchiness is associated with sudden loss elsewhere.",
+      "Inflammation persists despite gentler shaving technique.",
+    ],
+  },
+  body_acne: {
+    issueSummary: "Body acne recovery improves when sweat, friction, clogged pores, and delayed cleansing after workouts are managed consistently.",
+    commonReasons: [
+      "Sweat and occlusive clothing trap heat and bacteria on the body.",
+      "Tight gym wear, backpacks, and repeated friction worsen inflamed follicles.",
+      "Delayed showers and reusing gear increase flare risk.",
+    ],
+    homeCarePrinciples: [
+      "Shower soon after sweating.",
+      "Use breathable fabrics and clean workout gear.",
+      "Avoid squeezing body lesions to reduce marks.",
+    ],
+    foodsToPrefer: [
+      "Whole-food meals with fiber, vegetables, and steady hydration.",
+      "Balanced protein intake across the day.",
+      "Fruit-based snacks instead of sugary packaged snacks.",
+    ],
+    foodsToLimit: [
+      "Lingering in sweaty clothes after training.",
+      "Heavy oily body products on acne-prone zones.",
+      "Repeated high-sugar snacking if it aligns with flares.",
+    ],
+    indianMeals: {
+      breakfast: ["Upma with vegetables", "Egg wrap with salad", "Daliya with seeds"],
+      lunch: ["Rajma chawal with salad", "Grilled chicken with roti and veg", "Dal with rice and cucumber"],
+      dinner: ["Vegetable soup with paneer", "Roti with mixed veg and dal", "Fish with rice and sauteed beans"],
+      fruits: ["Apple", "Orange", "Papaya", "Pear"],
+    },
+    benefitSummary: "The routine aims to reduce body breakouts, lower friction-related flares, and build a repeatable gym-to-shower recovery habit.",
+    whenToEscalate: [
+      "Painful boils, fever, or rapidly worsening lesions appear.",
+      "Large dark marks or scarring are increasing.",
+      "Truncal acne remains uncontrolled despite consistent wash and clothing changes.",
+    ],
+  },
+  lip_care: {
+    issueSummary: "Lip recovery depends on repairing the barrier, stopping lip licking, protecting from sun, and removing irritant products and habits.",
+    commonReasons: [
+      "Lip licking drives repeated drying and cracking.",
+      "Sun exposure and irritating flavors or toothpaste can worsen symptoms.",
+      "Low fluid intake and very spicy or acidic foods may sting cracked lips.",
+    ],
+    homeCarePrinciples: [
+      "Use bland fragrance-free balm frequently and a thicker layer at night.",
+      "Protect with SPF lip balm outdoors.",
+      "Do not peel flakes manually.",
+    ],
+    foodsToPrefer: [
+      "Steady hydration throughout the day.",
+      "Soft fruit and water-rich foods such as cucumber, melon, orange, and pear.",
+      "Balanced meals that reduce dehydration from long gaps without water.",
+    ],
+    foodsToLimit: [
+      "Lip licking or chewing.",
+      "Strong mint, cinnamon, or fragranced lip products.",
+      "Very spicy or acidic foods when lips are cracked and sore.",
+    ],
+    indianMeals: {
+      breakfast: ["Fruit and oats bowl", "Idli and coconut chutney", "Poha with fruit"],
+      lunch: ["Dal with rice and cucumber", "Curd rice if tolerated", "Veg khichdi with ghee"],
+      dinner: ["Soft roti with dal", "Light vegetable soup", "Paneer and rice bowl"],
+      fruits: ["Pear", "Papaya", "Watermelon", "Mosambi"],
+    },
+    benefitSummary: "The plan supports softer lips, fewer cracks, and lower pigmentation stress from sun and irritation.",
+    whenToEscalate: [
+      "Cracks bleed often or involve the mouth corners repeatedly.",
+      "Pain, swelling, or rash continues despite bland barrier care.",
+      "Pigmentation change is new and persistent.",
+    ],
+  },
+  anti_aging: {
+    issueSummary: "Healthy aging support relies on sun protection, gentle cleansing, steady hydration, adequate sleep, and gradual evidence-based active use.",
+    commonReasons: [
+      "Sun exposure is one of the biggest visible aging drivers.",
+      "Smoking and poor sleep worsen wrinkles and dullness.",
+      "Dryness and inconsistent care make texture and lines look worse.",
+    ],
+    homeCarePrinciples: [
+      "Protect from sun every day and avoid tanning habits.",
+      "Introduce retinoids gradually instead of chasing fast results.",
+      "Support recovery with moisturizer, sleep, and low-friction habits.",
+    ],
+    foodsToPrefer: [
+      "Protein plus colorful vegetables in major meals.",
+      "Vitamin C fruit and omega-rich foods.",
+      "Adequate daily fluids and lower alcohol exposure.",
+    ],
+    foodsToLimit: [
+      "Smoking and regular tanning.",
+      "Frequent dehydration and very poor sleep.",
+      "Over-exfoliation and too many new actives at once.",
+    ],
+    indianMeals: {
+      breakfast: ["Oats with fruit and nuts", "Eggs with toast and salad", "Moong chilla with veg"],
+      lunch: ["Dal, sabzi, roti, and salad", "Fish curry with rice", "Paneer bowl with vegetables"],
+      dinner: ["Light soup with protein", "Khichdi with vegetables", "Chicken or paneer with greens"],
+      fruits: ["Orange", "Kiwi", "Papaya", "Pomegranate"],
+    },
+    benefitSummary: "This program is built to protect current skin quality, improve texture gradually, and reduce rebound irritation from overdoing treatments.",
+    whenToEscalate: [
+      "Persistent irritation follows active products even after slower use.",
+      "Pigmented lesions or non-healing spots are changing in appearance.",
+      "You want prescription-strength anti-aging treatment planning.",
+    ],
+  },
 };
 
 const protocolTemplates: Record<ClinicalCategoryId, ProtocolTemplate> = {
@@ -484,6 +824,105 @@ const CATEGORY_GUIDANCE: Record<ClinicalCategoryId, CategoryGuidance> = {
   },
 };
 
+function pad2(value: number) {
+  return String(Math.max(0, value)).padStart(2, "0");
+}
+
+function formatHHMM(totalMinutes: number) {
+  const safe = Math.max(0, Math.min(23 * 60 + 59, totalMinutes));
+  const hours = Math.floor(safe / 60);
+  const minutes = safe % 60;
+  return `${pad2(hours)}:${pad2(minutes)}`;
+}
+
+function parseHHMM(value: string) {
+  const [hour, minute] = value.split(":").map((part) => Number(part || 0));
+  return Math.max(0, Math.min(23, hour)) * 60 + Math.max(0, Math.min(59, minute));
+}
+
+function getMealForDay(list: string[], dayNumber: number, offset = 0) {
+  return list[(dayNumber - 1 + offset) % list.length];
+}
+
+function buildEducationTasks(category: ClinicalCategoryId, dayNumber: number, level: ProtocolToleranceMode): ProtocolTask[] {
+  const profile = CATEGORY_RECOVERY_PROFILES[category];
+  const reasons = profile.commonReasons.join(" ");
+  const principle = profile.homeCarePrinciples[(dayNumber - 1) % profile.homeCarePrinciples.length];
+  const levelCopy = LEVEL_DISPLAY[level];
+
+  const tasks: ProtocolTask[] = [
+    {
+      id: `${category}-insight-${dayNumber}`,
+      title: "Why this issue happens",
+      label: "Why this issue happens",
+      slot: "lifestyle",
+      frequency: "daily",
+      howTo: `${profile.issueSummary} Common reasons: ${reasons} Today follow this principle at home: ${principle}`,
+      why: profile.benefitSummary,
+      whyItHelps: profile.benefitSummary,
+      ingredient: "Education",
+      goal: `Understand your ${levelCopy.label.toLowerCase()} recovery track before starting tasks.`,
+      expectedImprovement: "Better compliance because the user understands what is being treated and why.",
+      recommendedProduct: "Guided recovery explainer",
+      reward: 2,
+      durationMin: 4,
+    },
+    {
+      id: `${category}-food-plan-${dayNumber}`,
+      title: "Indian meal guidance",
+      label: "Indian meal guidance",
+      slot: "lifestyle",
+      frequency: "daily",
+      howTo: `Breakfast: ${getMealForDay(profile.indianMeals.breakfast, dayNumber)}. Lunch: ${getMealForDay(profile.indianMeals.lunch, dayNumber, 1)}. Dinner: ${getMealForDay(profile.indianMeals.dinner, dayNumber, 2)}. Fruit focus: ${getMealForDay(profile.indianMeals.fruits, dayNumber)}. Prioritize: ${profile.foodsToPrefer.join(" ")}`,
+      why: "Food quality supports recovery consistency when paired with the routine; it is support, not a guaranteed cure.",
+      whyItHelps: "Food quality supports recovery consistency when paired with the routine; it is support, not a guaranteed cure.",
+      ingredient: "Nutrition",
+      goal: "Match the routine with practical Indian meals for the next 24 hours.",
+      expectedImprovement: "More stable energy, hydration, and lower relapse from avoidable food triggers.",
+      recommendedProduct: "Meal guide",
+      reward: 2,
+      durationMin: 5,
+    },
+    {
+      id: `${category}-avoid-list-${dayNumber}`,
+      title: "Relapse prevention checklist",
+      label: "Relapse prevention checklist",
+      slot: "night",
+      frequency: "daily",
+      howTo: `Before sleep review what to avoid tomorrow: ${profile.foodsToLimit.join(" ")} Escalate for medical review if needed: ${profile.whenToEscalate.join(" ")}`,
+      why: "Avoiding common triggers lowers the chance that symptoms rebound while the 30-day routine is underway.",
+      whyItHelps: "Avoiding common triggers lowers the chance that symptoms rebound while the 30-day routine is underway.",
+      ingredient: "Prevention",
+      goal: "Protect today's progress and reduce next-day trigger exposure.",
+      expectedImprovement: "Fewer setbacks from friction, picking, missed sleep, or avoidable irritants.",
+      recommendedProduct: "Trigger checklist",
+      reward: 2,
+      durationMin: 4,
+    },
+  ];
+
+  if (dayNumber === 1) {
+    tasks.push({
+      id: `${category}-start-briefing`,
+      title: "30-day start briefing",
+      label: "30-day start briefing",
+      slot: "morning",
+      frequency: "daily",
+      howTo: `Start with the ${levelCopy.label.toLowerCase()} track. ${levelCopy.description} Follow time windows exactly in India Standard Time and do not jump ahead to stronger steps on Day 1.`,
+      why: "A clean start reduces routine fatigue and improves the chance that the user finishes the full 30-day protocol.",
+      whyItHelps: "A clean start reduces routine fatigue and improves the chance that the user finishes the full 30-day protocol.",
+      ingredient: "Structure",
+      goal: "Set the user up for a realistic 30-day start.",
+      expectedImprovement: "Higher completion odds through a structured start.",
+      recommendedProduct: "Program overview",
+      reward: 2,
+      durationMin: 4,
+    });
+  }
+
+  return tasks;
+}
+
 function buildSlotTasks(
   actions: GuidedAction[],
   slot: ProtocolTask["slot"],
@@ -569,7 +1008,7 @@ function applyToleranceTaskCount(base: { morning: number; night: number; lifesty
       lifestyle: base.lifestyle,
     };
   }
-  if (mode === "aggressive") {
+  if (mode === "advanced") {
     return {
       morning: base.morning + 1,
       night: base.night + 1,
@@ -577,6 +1016,17 @@ function applyToleranceTaskCount(base: { morning: number; night: number; lifesty
     };
   }
   return base;
+}
+
+export function getRecoveryLevelDisplay(level: ProtocolToleranceMode) {
+  return LEVEL_DISPLAY[level];
+}
+
+export function normalizeRecoveryLevel(level?: string | null): ProtocolToleranceMode {
+  if (level === "beginner") return "beginner";
+  if (level === "advanced" || level === "aggressive") return "advanced";
+  if (level === "intermediate" || level === "moderate") return "intermediate";
+  return "intermediate";
 }
 
 function applySafetyRules(tasks: ProtocolTask[], category: ClinicalCategoryId, options: DailyProtocolOptions, dayNumber: number) {
@@ -728,12 +1178,14 @@ export function generateDailyProtocolTasks(category: CategoryId, dayNumber: numb
         ? { morning: 2, night: 2, lifestyle: 1 }
         : { morning: 2, night: 1, lifestyle: 1 };
 
-  const slotCount = applyToleranceTaskCount(baseSlotCount, options.toleranceMode || "moderate");
+  const selectedLevel = normalizeRecoveryLevel(options.toleranceMode);
+  const slotCount = applyToleranceTaskCount(baseSlotCount, selectedLevel);
 
   let tasks = [
     ...buildSlotTasks(guidance.morning, "morning", slotCount.morning, category as ClinicalCategoryId, normalizedDay, phase.name, dayFocus),
     ...buildSlotTasks(guidance.night, "night", slotCount.night, category as ClinicalCategoryId, normalizedDay, phase.name, dayFocus),
     ...buildSlotTasks(guidance.lifestyle, "lifestyle", slotCount.lifestyle, category as ClinicalCategoryId, normalizedDay, phase.name, dayFocus),
+    ...buildEducationTasks(category as ClinicalCategoryId, normalizedDay, selectedLevel),
   ];
 
   if (normalizedDay % 7 === 0) {
@@ -823,11 +1275,27 @@ export function getProtocolDurationDays(template: ProtocolTemplate) {
   return template.phases.reduce((sum, phase) => sum + phase.duration_days, 0);
 }
 
-function slotWindow(slot: ProtocolTask["slot"]) {
-  if (slot === "morning") return { start: "06:00", end: "11:30" };
-  if (slot === "lifestyle") return { start: "12:00", end: "17:30" };
-  if (slot === "night") return { start: "19:00", end: "23:30" };
-  return { start: "09:00", end: "22:00" };
+function slotWindow(
+  slot: ProtocolTask["slot"],
+  level: ProtocolToleranceMode,
+  dayNumber: number,
+  taskIndexInSlot = 0,
+  slotTaskCount = 1
+) {
+  const bucket = slot === "weekly" ? "weekly" : slot;
+  const base = LEVEL_SLOT_WINDOWS[level][bucket];
+  const startMin = parseHHMM(base.start);
+  const endMin = parseHHMM(base.end);
+  const span = Math.max(45, endMin - startMin);
+  const segment = Math.max(35, Math.floor(span / Math.max(1, slotTaskCount)));
+  const dayOffset = ((dayNumber + taskIndexInSlot) % 3) * 10;
+  const segmentStart = Math.min(endMin - 30, startMin + taskIndexInSlot * segment + dayOffset);
+  const segmentEnd = Math.min(endMin, Math.max(segmentStart + 30, segmentStart + Math.min(75, segment - 5)));
+
+  return {
+    start: formatHHMM(segmentStart),
+    end: formatHHMM(segmentEnd),
+  };
 }
 
 function sanitizeProductId(label: string) {
@@ -868,19 +1336,27 @@ function mapProtocolTaskToExecutionTask(
   category: CategoryId,
   task: ProtocolTask,
   dayNumber: number,
-  ownedProductIds: Set<string>
+  ownedProductIds: Set<string>,
+  level: ProtocolToleranceMode,
+  taskIndexInSlot: number,
+  slotTaskCount: number
 ): DailyExecutionTask {
   const label = task.title || task.label;
-  const productName = task.recommendedProduct || `${label} support product`;
-  const productId = sanitizeProductId(`${category}-${task.id}-${productName}`);
-  const ingredient = task.ingredient || inferIngredient({
+  const matchedProduct = pickClinicalDemoProduct(
+    category,
+    `${label} ${task.recommendedProduct || ""} ${task.howTo || ""} ${task.whyItHelps || task.why || ""}`,
+    level
+  );
+  const productName = matchedProduct?.name || task.recommendedProduct || `${label} support product`;
+  const productId = matchedProduct?.id || sanitizeProductId(`${category}-${task.id}-${productName}`);
+  const ingredient = matchedProduct?.ingredient || task.ingredient || inferIngredient({
     label,
     howTo: task.howTo || "",
     whyItHelps: task.whyItHelps || task.why || "",
     product: productName,
   });
 
-  const window = task.timeWindow || slotWindow(task.slot);
+  const window = task.timeWindow || slotWindow(task.slot, level, dayNumber, taskIndexInSlot, slotTaskCount);
   const required = task.slot !== "lifestyle";
 
   return {
@@ -921,11 +1397,34 @@ export function generateDailyExecutionPayload(
   const phase = normalizePhaseName(getCurrentProtocolPhase(template, normalizedDay).name);
   const meta = generateDailyProtocolMeta(category, normalizedDay);
   const protocolTasks = generateDailyProtocolTasks(category, normalizedDay, options);
+  const selectedLevel = normalizeRecoveryLevel(options.toleranceMode);
 
   const completed = new Set(context.completedTaskIds || []);
   const ownedProducts = new Set(context.ownedProductIds || []);
 
-  const executionTasks = protocolTasks.map((task) => mapProtocolTaskToExecutionTask(category, task, normalizedDay, ownedProducts));
+  const slotCounts = protocolTasks.reduce(
+    (acc, task) => {
+      acc[task.slot] += 1;
+      return acc;
+    },
+    { morning: 0, lifestyle: 0, night: 0, weekly: 0 } as Record<ProtocolTask["slot"], number>
+  );
+  const slotIndexes = { morning: 0, lifestyle: 0, night: 0, weekly: 0 } as Record<ProtocolTask["slot"], number>;
+
+  const executionTasks = protocolTasks.map((task) => {
+    const taskIndexInSlot = slotIndexes[task.slot];
+    slotIndexes[task.slot] += 1;
+
+    return mapProtocolTaskToExecutionTask(
+      category,
+      task,
+      normalizedDay,
+      ownedProducts,
+      selectedLevel,
+      taskIndexInSlot,
+      slotCounts[task.slot]
+    );
+  });
 
   const grouped = {
     morning: executionTasks.filter((task, index) => protocolTasks[index]?.slot === "morning"),

@@ -10,11 +10,18 @@ export const runtime = "nodejs";
 function toUserRecord(payload: Record<string, unknown>): UserRecord {
   const profile = (payload.profile || {}) as Record<string, unknown>;
   const permissions = (payload.permissions || {}) as Record<string, unknown>;
+  const rawRecoveryProgramLevel = typeof payload.recoveryProgramLevel === "string" ? payload.recoveryProgramLevel : "intermediate";
+  const recoveryProgramLevel = rawRecoveryProgramLevel === "beginner"
+    ? "beginner"
+    : rawRecoveryProgramLevel === "advanced"
+      ? "advanced"
+      : "intermediate";
 
   return {
     id: String(profile.id || "guest"),
     name: String(profile.name || "Guest"),
     city: typeof profile.city === "string" ? profile.city : undefined,
+    recoveryProgramLevel,
     location: {
       city: typeof profile.city === "string" ? profile.city : undefined,
       climateEnabled: Boolean(permissions.location),

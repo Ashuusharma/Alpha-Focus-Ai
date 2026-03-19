@@ -9,6 +9,7 @@ export type RoutineReminder = {
 };
 
 const REMINDER_KEY = "oneman_routine_reminders";
+const INDIA_TIMEZONE = "Asia/Kolkata";
 
 const defaultReminders: RoutineReminder[] = [
   { type: "pm_routine", enabled: true, hour24: 21, minute: 0, label: "Time for your PM routine check-in." },
@@ -41,10 +42,26 @@ export async function ensureNotificationPermission() {
   return permission === "granted";
 }
 
+function getIndiaClock(now = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: INDIA_TIMEZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(now);
+
+  return {
+    hour24: Number(parts.find((part) => part.type === "hour")?.value || "0"),
+    minute: Number(parts.find((part) => part.type === "minute")?.value || "0"),
+  };
+}
+
 export function getDueReminder(reminders = loadRoutineReminders(), now = new Date()) {
+  const indiaClock = getIndiaClock(now);
+
   return reminders.find((reminder) => {
     if (!reminder.enabled) return false;
-    return reminder.hour24 === now.getHours() && reminder.minute === now.getMinutes();
+    return reminder.hour24 === indiaClock.hour24 && reminder.minute === indiaClock.minute;
   }) || null;
 }
 

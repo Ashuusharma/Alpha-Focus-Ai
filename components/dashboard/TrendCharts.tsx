@@ -37,9 +37,9 @@ function ChartCard({ title, children }: ChartCardProps) {
     <div className="rounded-[1.5rem] border-none bg-white p-6 shadow-sm hover:shadow-md transition-all duration-300">
       <div className="flex justify-between items-center mb-4">
         <p className="text-xs font-black uppercase tracking-widest text-[#1F3D2B]">{title}</p>
-        <span className="text-[10px] font-bold text-[#2F6F57] bg-[#E8F4EE] px-2 py-0.5 rounded-full">You improved 8% this week</span>
+        <span className="text-[10px] font-bold text-[#2F6F57] bg-[#E8F4EE] px-2 py-0.5 rounded-full">You improved +8% this week</span>
       </div>
-      <div className="h-48 w-full">{children}</div>
+      <div className="h-64 w-full">{children}</div>
     </div>
   );
 }
