@@ -57,13 +57,13 @@ export default function WeeklyReportPage() {
   }, [logs]);
 
   return (
-    <div className="min-h-screen bg-[#030917] text-white px-4 py-8">
+    <div className="af-page-shell report-page min-h-screen text-[#1F3D2B] px-4 py-8">
       <div className="max-w-5xl mx-auto">
-        <button onClick={() => router.back()} className="mb-5 inline-flex items-center gap-2 text-gray-300 hover:text-white">
+        <button onClick={() => router.back()} className="mb-5 inline-flex items-center gap-2 text-[#6B665D] hover:text-[#1F3D2B]">
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
         <h1 className="text-clinical-heading text-3xl font-extrabold tracking-tight mb-2">Weekly AI Report</h1>
-        <p className="mb-6 text-zinc-300">Generated from your current lifestyle logs and consistency trend.</p>
+        <p className="mb-6 text-[#6B665D]">Generated from your current lifestyle logs and consistency trend.</p>
         <WeeklyReport summary={summary} />
       </div>
     </div>

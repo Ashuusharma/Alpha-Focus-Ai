@@ -35,17 +35,17 @@ export default function SleepTracker() {
   };
 
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-white">
+    <section className="af-surface-card p-5 text-[#1F3D2B]">
       <h3 className="text-lg font-semibold mb-4">Sleep Tracker</h3>
-      <label className="text-sm text-gray-300">Hours Slept</label>
-      <input type="number" min={0} max={14} value={hours} onChange={(event) => setHours(Number(event.target.value))} className="mt-1 mb-3 w-full rounded-xl bg-[#0c1626] border border-white/10 px-3 py-2" />
-      <label className="text-sm text-gray-300">Bedtime</label>
-      <input type="time" value={bedtime} onChange={(event) => setBedtime(event.target.value)} className="mt-1 mb-3 w-full rounded-xl bg-[#0c1626] border border-white/10 px-3 py-2" />
-      <label className="text-sm text-gray-300">Sleep Quality (1–5)</label>
+      <label className="text-sm text-[#6B665D]">Hours Slept</label>
+      <input type="number" min={0} max={14} value={hours} onChange={(event) => setHours(Number(event.target.value))} className="af-input mt-1 mb-3 w-full rounded-xl px-3 py-2" />
+      <label className="text-sm text-[#6B665D]">Bedtime</label>
+      <input type="time" value={bedtime} onChange={(event) => setBedtime(event.target.value)} className="af-input mt-1 mb-3 w-full rounded-xl px-3 py-2" />
+      <label className="text-sm text-[#6B665D]">Sleep Quality (1–5)</label>
       <input type="range" min={1} max={5} value={quality} onChange={(event) => setQuality(Number(event.target.value))} className="w-full mt-2" />
-      <p className="text-sm text-blue-200 mt-1">Selected quality: {quality}/5</p>
-      <button onClick={saveLog} className="mt-4 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-sm font-semibold">Save Sleep Entry</button>
-      {savedAt && <p className="text-xs text-emerald-300 mt-2">Saved at {savedAt}</p>}
+      <p className="text-sm text-[#2F6F57] mt-1">Selected quality: {quality}/5</p>
+      <button onClick={saveLog} className="mt-4 px-4 py-2 rounded-xl bg-[#2F6F57] hover:bg-[#275c48] text-sm font-semibold text-white">Save Sleep Entry</button>
+      {savedAt && <p className="text-xs text-[#2F6F57] mt-2">Saved at {savedAt}</p>}
     </section>
   );
 }

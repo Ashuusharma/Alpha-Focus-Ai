@@ -34,16 +34,16 @@ export default function HydrationTracker() {
   };
 
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-white">
+    <section className="af-surface-card p-5 text-[#1F3D2B]">
       <h3 className="text-lg font-semibold mb-4">Hydration Tracker</h3>
-      <label className="text-sm text-gray-300">Water Intake (ml)</label>
-      <input type="number" min={0} value={intake} onChange={(event) => setIntake(Number(event.target.value))} className="mt-1 mb-3 w-full rounded-xl bg-[#0c1626] border border-white/10 px-3 py-2" />
-      <label className="text-sm text-gray-300">Daily Target (ml)</label>
-      <input type="number" min={500} value={target} onChange={(event) => setTarget(Number(event.target.value))} className="mt-1 mb-3 w-full rounded-xl bg-[#0c1626] border border-white/10 px-3 py-2" />
-      <div className="h-2 rounded-full bg-white/10 overflow-hidden"><div className="h-full bg-cyan-400" style={{ width: `${percent}%` }} /></div>
-      <p className="text-sm text-cyan-200 mt-2">Progress: {percent}%</p>
-      <button onClick={saveLog} className="mt-4 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-sm font-semibold">Save Hydration Entry</button>
-      {savedAt && <p className="text-xs text-emerald-300 mt-2">Saved at {savedAt}</p>}
+      <label className="text-sm text-[#6B665D]">Water Intake (ml)</label>
+      <input type="number" min={0} value={intake} onChange={(event) => setIntake(Number(event.target.value))} className="af-input mt-1 mb-3 w-full rounded-xl px-3 py-2" />
+      <label className="text-sm text-[#6B665D]">Daily Target (ml)</label>
+      <input type="number" min={500} value={target} onChange={(event) => setTarget(Number(event.target.value))} className="af-input mt-1 mb-3 w-full rounded-xl px-3 py-2" />
+      <div className="af-progress-track h-2"><div className="af-progress-fill" style={{ width: `${percent}%` }} /></div>
+      <p className="text-sm text-[#2F6F57] mt-2">Progress: {percent}%</p>
+      <button onClick={saveLog} className="mt-4 px-4 py-2 rounded-xl bg-[#2F6F57] hover:bg-[#275c48] text-sm font-semibold text-white">Save Hydration Entry</button>
+      {savedAt && <p className="text-xs text-[#2F6F57] mt-2">Saved at {savedAt}</p>}
     </section>
   );
 }

@@ -234,23 +234,23 @@ export default function Home() {
       </section>
 
       {/* 🟢 2. TRUST & AUTHORITY STRIP */}
-      <section className="py-6 bg-[#1F3D2B] border-y border-[#1A3324] overflow-hidden">
+      <section className="py-6 bg-[linear-gradient(180deg,#efe7da_0%,#e5dccd_100%)] border-y border-[#d9cfbf] overflow-hidden">
         <Container>
-          <div className="flex flex-wrap justify-center sm:justify-between items-center gap-6 lg:gap-8 text-white/90 text-sm font-semibold tracking-wide">
+          <div className="flex flex-wrap justify-center sm:justify-between items-center gap-6 lg:gap-8 text-[#1F3D2B] text-sm font-semibold tracking-wide">
             <span className="flex items-center gap-2 whitespace-nowrap">
-              <CheckCircle2 className="w-4 h-4 text-[#A9CBB7]" />
+              <CheckCircle2 className="w-4 h-4 text-[#2F6F57]" />
               Dermatology-Informed Framework
             </span>
             <span className="flex items-center gap-2 whitespace-nowrap">
-              <CheckCircle2 className="w-4 h-4 text-[#A9CBB7]" />
+              <CheckCircle2 className="w-4 h-4 text-[#2F6F57]" />
               Structured Clinical Protocols
             </span>
             <span className="hidden md:flex items-center gap-2 whitespace-nowrap">
-              <CheckCircle2 className="w-4 h-4 text-[#A9CBB7]" />
+              <CheckCircle2 className="w-4 h-4 text-[#2F6F57]" />
               AI-Driven Progress Tracking
             </span>
             <span className="flex items-center gap-2 whitespace-nowrap">
-              <Lock className="w-4 h-4 text-[#A9CBB7]" />
+              <Lock className="w-4 h-4 text-[#2F6F57]" />
               Data Privacy Protected
             </span>
           </div>
@@ -532,13 +532,13 @@ export default function Home() {
       </section>
 
       {/* 🟢 6. BEHAVIORAL LOOP SECTION (Engagement) */}
-      <section className="py-24 lg:py-32 bg-[#1F3D2B] text-white relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(47,111,87,0.4),transparent_70%)] opacity-50" />
+      <section className="py-24 lg:py-32 bg-[linear-gradient(180deg,#f5eee2_0%,#ebe1d2_100%)] text-[#1F3D2B] relative overflow-hidden border-y border-[#e0d5c4]">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(169,203,183,0.28),transparent_70%)] opacity-80" />
         
         <Container>
           <div className="text-center max-w-3xl mx-auto mb-20 relative z-10">
-            <h2 className="text-3xl lg:text-5xl font-bold mb-6">Built to Keep You Accountable</h2>
-            <p className="text-[#A9CBB7] text-lg lg:text-xl">
+            <h2 className="text-3xl lg:text-5xl font-bold mb-6 text-[#1F3D2B]">Built to Keep You Accountable</h2>
+            <p className="text-[#6B665D] text-lg lg:text-xl">
               Knowledge without execution is worthless. We engineered an entire behavioral ecosystem to guarantee you stick to the plan.
             </p>
           </div>
@@ -554,24 +554,24 @@ export default function Home() {
                  { name: "Reassessment", icon: Repeat }
                ].map((step, i, arr) => (
                  <div key={i} className="flex flex-col items-center text-center relative group">
-                   <div className="w-16 h-16 rounded-2xl bg-[#2F6F57] border border-[#A9CBB7]/30 flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(47,111,87,0.4)] group-hover:scale-110 group-hover:bg-[#A9CBB7] group-hover:text-[#1F3D2B] transition-all duration-300">
+                   <div className="w-16 h-16 rounded-2xl bg-[linear-gradient(180deg,#fffdf9_0%,#eee5d8_100%)] border border-[#d7ccbb] flex items-center justify-center mb-4 text-[#2F6F57] shadow-[0_18px_40px_rgba(120,97,67,0.12)] group-hover:scale-110 group-hover:bg-[#2F6F57] group-hover:text-white transition-all duration-300">
                      <step.icon className="w-7 h-7" />
                    </div>
-                   <h4 className="font-bold text-sm uppercase tracking-wide">{step.name}</h4>
+                   <h4 className="font-bold text-sm uppercase tracking-wide text-[#1F3D2B]">{step.name}</h4>
                    {i !== arr.length - 1 && (
-                     <div className="hidden lg:block absolute top-[2rem] right-[-30%] w-[60%] h-[2px] bg-gradient-to-r from-[#A9CBB7]/50 to-transparent" />
+                     <div className="hidden lg:block absolute top-[2rem] right-[-30%] w-[60%] h-[2px] bg-gradient-to-r from-[#c4b59d] to-transparent" />
                    )}
                  </div>
                ))}
              </div>
              
-             <div className="mt-20 bg-white/5 border border-white/10 rounded-3xl p-8 lg:p-10 backdrop-blur-sm text-center max-w-3xl mx-auto shadow-2xl">
-               <p className="text-[#A9CBB7] mb-3 font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2">
+             <div className="mt-20 bg-[rgba(255,250,243,0.86)] border border-[#d8ccba] rounded-3xl p-8 lg:p-10 backdrop-blur-sm text-center max-w-3xl mx-auto shadow-[0_22px_60px_rgba(120,97,67,0.12)]">
+               <p className="text-[#8C6A5A] mb-3 font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2">
                  <Star className="w-4 h-4 text-yellow-400" />
                  The Alpha Sikka Economy
                </p>
-               <p className="text-lg lg:text-xl leading-relaxed text-white/90">
-                 Every time you log a routine or improve a metric, you earn <strong className="text-white">Alpha Sikka</strong>. Use these proprietary credits to unlock premium clinical products and advanced analysis. Good habits literally fund your transformation.
+               <p className="text-lg lg:text-xl leading-relaxed text-[#5F5A51]">
+                 Every time you log a routine or improve a metric, you earn <strong className="text-[#1F3D2B]">Alpha Sikka</strong>. Use these proprietary credits to unlock premium clinical products and advanced analysis. Good habits literally fund your transformation.
                </p>
              </div>
           </div>
@@ -617,17 +617,17 @@ export default function Home() {
                     <p className="font-extrabold text-4xl text-[#1F3D2B] mb-2 font-mono tracking-tight">12M+</p>
                     <p className="text-xs text-[#6B665D] font-bold uppercase tracking-widest leading-relaxed">Data Points<br/>Trained</p>
                   </div>
-                  <div className="bg-[#1F3D2B] p-8 rounded-3xl text-white shadow-[0_20px_50px_rgba(31,61,43,0.15)] hover:-translate-y-1 transition-transform">
-                    <UserCheck className="w-10 h-10 text-[#A9CBB7] mb-6" />
+                  <div className="bg-[linear-gradient(180deg,#fffdf9_0%,#f0e7da_100%)] p-8 rounded-3xl border border-[#e2d8c9] text-[#1F3D2B] shadow-[0_20px_50px_rgba(120,97,67,0.1)] hover:-translate-y-1 transition-transform">
+                    <UserCheck className="w-10 h-10 text-[#2F6F57] mb-6" />
                     <p className="font-extrabold text-4xl mb-2 font-mono tracking-tight">94%</p>
-                    <p className="text-xs text-[#A9CBB7] font-bold uppercase tracking-widest leading-relaxed">Protocol<br/>Completion</p>
+                    <p className="text-xs text-[#6B665D] font-bold uppercase tracking-widest leading-relaxed">Protocol<br/>Completion</p>
                   </div>
                 </div>
                 <div className="space-y-6">
-                  <div className="bg-[#2F6F57] p-8 rounded-3xl text-white shadow-[0_20px_50px_rgba(47,111,87,0.2)] hover:-translate-y-1 transition-transform">
-                    <Stethoscope className="w-10 h-10 text-white/80 mb-6" />
+                  <div className="bg-[linear-gradient(135deg,#dfeadf_0%,#c9dacd_100%)] p-8 rounded-3xl border border-[#b8c9ba] text-[#1F3D2B] shadow-[0_20px_50px_rgba(47,111,87,0.14)] hover:-translate-y-1 transition-transform">
+                    <Stethoscope className="w-10 h-10 text-[#2F6F57] mb-6" />
                     <p className="font-extrabold text-4xl mb-2 font-mono tracking-tight">24/7</p>
-                    <p className="text-xs text-white/80 font-bold uppercase tracking-widest leading-relaxed">Live Protocol<br/>Adaptation</p>
+                    <p className="text-xs text-[#345847] font-bold uppercase tracking-widest leading-relaxed">Live Protocol<br/>Adaptation</p>
                   </div>
                   <div className="bg-white p-8 rounded-3xl border border-[#E2DDD3] shadow-[0_20px_50px_rgba(31,61,43,0.06)] hover:-translate-y-1 transition-transform">
                     <Droplets className="w-10 h-10 text-[#2F6F57] mb-6" />
@@ -655,30 +655,29 @@ export default function Home() {
       </section>
 
       {/* 🟢 9. FINAL CTA BLOCK */}
-      <section className="py-32 lg:py-40 bg-gradient-to-br from-[#12261A] via-[#1A3826] to-[#0A1A12] text-white overflow-hidden relative">
-        {/* Deep shadows and gradient transitions inside the dark block */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(47,111,87,0.3),transparent_50%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] opacity-20" />
+      <section className="py-32 lg:py-40 bg-[linear-gradient(180deg,#f4ecdf_0%,#e9dece_100%)] text-[#1F3D2B] overflow-hidden relative border-t border-[#e0d5c4]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(169,203,183,0.3),transparent_45%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(120,97,67,0.045)_1px,transparent_1px),linear-gradient(90deg,rgba(120,97,67,0.045)_1px,transparent_1px)] bg-[size:40px_40px] opacity-30" />
         
         <Container>
            <div className="max-w-4xl mx-auto text-center relative z-10">
              <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-8 tracking-tight leading-tight">
                Start Your Structured <br/>Transformation Today
              </h2>
-             <p className="text-[#A9CBB7] text-xl mb-12 max-w-2xl mx-auto font-medium leading-relaxed">
+             <p className="text-[#6B665D] text-xl mb-12 max-w-2xl mx-auto font-medium leading-relaxed">
                Stop guessing. Get exact clinical data on your physical health and a scientifically engineered routine to optimize it.
              </p>
              <Link
                href="/image-analyzer"
-               className="relative overflow-hidden inline-flex items-center gap-3 px-10 py-5 rounded-2xl bg-white text-[#1F3D2B] font-bold text-xl hover:bg-[#E2DDD3] hover:scale-105 active:scale-[0.98] transition-all duration-300 shadow-[0_0_50px_rgba(255,255,255,0.15)] hover:shadow-[0_0_80px_rgba(255,255,255,0.25)] group"
+               className="relative overflow-hidden inline-flex items-center gap-3 px-10 py-5 rounded-2xl bg-[#2F6F57] text-white font-bold text-xl hover:bg-[#275c48] hover:scale-105 active:scale-[0.98] transition-all duration-300 shadow-[0_16px_40px_rgba(47,111,87,0.24)] hover:shadow-[0_20px_52px_rgba(47,111,87,0.32)] group"
              >
                <span className="relative z-10 flex items-center gap-3">
                  Begin Clinical Assessment
                  <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                </span>
-               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out" />
+               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out" />
              </Link>
-             <p className="mt-10 text-sm text-[#A9CBB7] opacity-80 flex items-center justify-center gap-2 font-medium tracking-wide">
+             <p className="mt-10 text-sm text-[#8C6A5A] opacity-90 flex items-center justify-center gap-2 font-medium tracking-wide">
                <Lock className="w-4 h-4" />
                100% Private & Secure. No credit card required.
              </p>

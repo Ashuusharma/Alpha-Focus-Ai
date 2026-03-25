@@ -45,21 +45,21 @@ export default function EnhancedProductCard({
   };
 
   return (
-    <div className="rounded-2xl bg-transparent transition-all overflow-hidden flex flex-col h-full border border-white/5 hover:border-primary/30 group">
+    <div className="flex h-full flex-col overflow-hidden rounded-[1.8rem] border border-[#E2DDD3] bg-white transition-all shadow-[0_10px_26px_rgba(17,17,17,0.04)] hover:-translate-y-1 hover:shadow-[0_18px_38px_rgba(17,17,17,0.08)] group">
       {/* Header with Badge */}
-      <div className="bg-gradient-to-r from-white/5 to-transparent p-5 flex justify-between items-start border-b border-white/5">
+      <div className="flex items-start justify-between border-b border-[#eee4d7] bg-[linear-gradient(180deg,#fffaf3_0%,#f5ecdf_100%)] p-5">
         <div className="flex-1">
-          <h4 className="text-lg font-bold text-white group-hover:text-primary transition-colors">
+          <h4 className="text-lg font-black text-[#111] group-hover:text-[#2F6F57] transition-colors">
             {product.name}
           </h4>
-          <p className="text-sm text-gray-400 mt-1 line-clamp-2">
+          <p className="mt-1 line-clamp-2 text-sm text-[#6B665D]">
             {product.description}
           </p>
         </div>
 
         {/* Badge */}
         {product.badge && (
-          <div className="ml-3 px-3 py-1 text-xs font-semibold rounded-full whitespace-nowrap bg-primary/20 text-primary border border-primary/20 shadow-[0_0_10px_rgba(59,130,246,0.3)]">
+          <div className="ml-3 whitespace-nowrap rounded-full border border-[#C8DACF] bg-[#E8EFEA] px-3 py-1 text-xs font-black text-[#2F6F57] shadow-sm">
             {product.badge === "Best Seller" && "⭐ Best Seller"}
             {product.badge === "Recommended" && "👍 Recommended"}
             {product.badge === "New" && "✨ New"}
@@ -73,18 +73,18 @@ export default function EnhancedProductCard({
         <div className="flex items-center gap-2">
           <div className="flex text-yellow-500">
             {[...Array(5)].map((_, i) => (
-              <Star key={i} className={`w-3.5 h-3.5 ${i < 4 ? 'fill-yellow-500 text-yellow-500' : 'text-gray-600'}`} />
+              <Star key={i} className={`h-3.5 w-3.5 ${i < 4 ? 'fill-yellow-500 text-yellow-500' : 'text-[#cabfae]'}`} />
             ))}
           </div>
-          <span className="text-xs text-gray-400 font-medium">4.8 (120 reviews)</span>
+          <span className="text-xs font-medium text-[#8C6A5A]">4.8 (120 reviews)</span>
         </div>
 
         {/* Benefits */}
         <div className="space-y-2 mb-2">
-           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Key Benefits</p>
+           <p className="text-xs font-black uppercase tracking-[0.16em] text-[#8C6A5A]">Key Benefits</p>
            <div className="flex flex-wrap gap-2">
                 {product.benefits && product.benefits.slice(0,2).map((b: string, i: number) => (
-                    <span key={i} className="text-xs px-2 py-1 bg-white/5 text-gray-300 rounded border border-white/5">
+                    <span key={i} className="rounded-full border border-[#e2d8ca] bg-[#f7f1e7] px-2.5 py-1 text-xs font-semibold text-[#5F5A51]">
                         {b}
                     </span>
                 ))}
@@ -97,21 +97,21 @@ export default function EnhancedProductCard({
         <div className="flex-1" />
 
         {/* Action Area */}
-        <div className="flex items-center justify-between pt-4 border-t border-white/5 mt-auto">
+        <div className="mt-auto flex items-center justify-between border-t border-[#eee4d7] pt-4">
           <div>
-            <span className="text-xs text-gray-500 line-through mr-2">{formatINR(3999)}</span>
-            <span className="text-xl font-bold text-white">{formatINR(product.price || 2999)}</span>
+            <span className="mr-2 text-xs text-[#a09180] line-through">{formatINR(3999)}</span>
+            <span className="text-xl font-black text-[#111]">{formatINR(product.price || 2999)}</span>
           </div>
 
           <button
             onClick={handleAdd}
             disabled={isAdded}
             className={`
-              flex items-center gap-2 px-6 py-2.5 rounded-xl font-semibold transition-all duration-300
+              flex items-center gap-2 rounded-xl px-6 py-2.5 font-semibold transition-all duration-300
               ${
                 isAdded
-                  ? "bg-green-500/20 text-green-400 border border-green-500/50 cursor-pointer hover:bg-green-500/30"
-                  : "bg-primary text-black hover:bg-cyan-400 hover:shadow-[0_0_20px_rgba(6,182,212,0.6)]"
+                  ? "cursor-pointer border border-[#C8DACF] bg-[#E8EFEA] text-[#2F6F57] hover:bg-[#dce9df]"
+                  : "bg-[#2F6F57] text-white shadow-[0_14px_28px_rgba(47,111,87,0.18)] hover:bg-[#275c48]"
               }
             `}
           >

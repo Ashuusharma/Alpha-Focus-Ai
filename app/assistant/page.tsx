@@ -11,8 +11,10 @@ export default function AssistantEntryPage() {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-[#030917] text-white flex items-center justify-center px-4">
-      <p className="text-gray-300 text-sm">Redirecting to assistant experience...</p>
+    <div className="af-page-shell min-h-screen text-[#1F3D2B] flex items-center justify-center px-4">
+      <div className="af-surface-card px-6 py-5">
+        <p className="text-[#6B665D] text-sm">Redirecting to assistant experience...</p>
+      </div>
     </div>
   );
 }

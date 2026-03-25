@@ -17,30 +17,30 @@ export default function RewardProgress({ balance, streakDays }: RewardProgressPr
   const productLabel = unlockedProduct?.name || nextProduct?.name || "protocol product";
 
   return (
-    <section className="af-card rounded-2xl p-6">
+    <section className="rounded-[2rem] border border-[#E2DDD3] bg-white p-6 shadow-[0_10px_30px_rgba(17,17,17,0.04)]">
       <div className="flex items-center gap-2">
         <Gift className="h-5 w-5 text-[#2F6F57]" />
-        <h3 className="text-lg font-bold text-[#1F3D2B]">Motivation & Rewards</h3>
+        <h3 className="text-lg font-black text-[#111]">Motivation & Rewards</h3>
       </div>
       <div className="mt-4 grid gap-3 md:grid-cols-3">
-        <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-4">
+        <div className="rounded-[1.4rem] border border-[#E2DDD3] bg-[#FFF8EE] p-4">
           <p className="text-xs text-[#6B665D]">Daily Streak</p>
           <p className="mt-1 text-2xl font-bold text-[#1F3D2B]">🔥 {streakDays} days</p>
         </div>
 
-        <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-4">
+        <div className="rounded-[1.4rem] border border-[#E2DDD3] bg-[#FFF8EE] p-4">
           <p className="text-xs text-[#6B665D]">Alpha Sikka</p>
           <p className="mt-1 text-2xl font-bold text-[#1F3D2B]">{balance} A$</p>
         </div>
 
-        <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-4">
+        <div className="rounded-[1.4rem] border border-[#E2DDD3] bg-[#FFF8EE] p-4">
           <p className="text-xs text-[#6B665D]">Next Reward</p>
           <p className="mt-1 text-sm font-bold text-[#1F3D2B]">{bestUnlockedReward ? `${bestUnlockedReward.discountPercent}% product unlock ready` : nextReward ? `${nextReward.discountPercent}% product discount` : "All reward tiers active"}</p>
           <p className="mt-1 text-[11px] text-[#6B665D]">{bestUnlockedReward ? `Featured pick: ${productLabel}` : nextReward ? `Unlock at ${nextTier} A$ · ${productLabel}` : `Featured pick: ${productLabel}`}</p>
         </div>
       </div>
 
-      <div className="mt-3 rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-5">
+      <div className="mt-3 rounded-[1.6rem] border border-[#E2DDD3] bg-[#FFF8EE] p-5">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <p className="text-xs font-bold uppercase tracking-wider text-[#6B665D]">Reward Progress</p>
           {rewardProgress.next && (

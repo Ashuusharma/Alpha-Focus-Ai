@@ -95,28 +95,27 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-[#08130f]/70 backdrop-blur-sm flex items-center justify-center z-[70] px-4">
-      <div className="relative w-full max-w-[430px] rounded-3xl overflow-hidden border border-[#A9CBB7]/35 shadow-[0_20px_80px_rgba(12,45,34,0.55)]">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(92,173,120,0.45),transparent_45%),radial-gradient(circle_at_85%_15%,rgba(52,120,84,0.55),transparent_48%),linear-gradient(160deg,#0c2b23,#133f32_42%,#0f352b)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.16),rgba(255,255,255,0.06))]" />
-        <div className="relative p-7 text-[#E9F5EF]">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[rgba(12,20,14,0.38)] px-4 backdrop-blur-md">
+      <div className="relative w-full max-w-[430px] overflow-hidden rounded-[2rem] border border-[#dbcdb9] bg-[linear-gradient(180deg,#fffdf8_0%,#efe5d8_100%)] shadow-[0_30px_90px_rgba(46,35,20,0.28)]">
+        <div className="absolute inset-x-0 top-0 h-28 bg-[radial-gradient(circle_at_top_right,rgba(169,203,183,0.45),transparent_48%),radial-gradient(circle_at_top_left,rgba(216,181,95,0.22),transparent_45%)]" />
+        <div className="relative p-7 text-[#1F3D2B]">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-2xl font-bold tracking-tight">
                 {mode === "signin" ? "Welcome Back" : "Create Account"}
               </h2>
-              <p className="text-sm text-[#B9D8C7] mt-1">
+              <p className="mt-1 text-sm text-[#6B665D]">
                 Transform your appearance. Build confidence. Become Alpha Focus.
               </p>
             </div>
-            <button type="button" onClick={onClose} className="h-8 w-8 rounded-full bg-white/15 hover:bg-white/25 text-white">×</button>
+            <button type="button" onClick={onClose} className="h-8 w-8 rounded-full border border-[#ddcfbc] bg-white/70 text-[#1F3D2B] hover:bg-white">×</button>
           </div>
 
-          <div className="rounded-2xl border border-white/25 bg-white/10 backdrop-blur-xl p-4 space-y-3">
+          <div className="rounded-[1.6rem] border border-[#e2d8ca] bg-[rgba(255,251,245,0.82)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] space-y-3">
             {mode === "signup" && (
               <input
                 placeholder="Full Name"
-                className="w-full rounded-xl border border-white/35 bg-[#0f3a2f]/70 px-4 py-2.5 text-white placeholder:text-[#AFCFBF] outline-none focus:border-[#79D95B]"
+                className="af-input w-full rounded-xl px-4 py-2.5 outline-none"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
               />
@@ -124,7 +123,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
             <input
               placeholder="example@mail.com"
-              className="w-full rounded-xl border border-white/35 bg-[#0f3a2f]/70 px-4 py-2.5 text-white placeholder:text-[#AFCFBF] outline-none focus:border-[#79D95B]"
+              className="af-input w-full rounded-xl px-4 py-2.5 outline-none"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               type="email"
@@ -133,7 +132,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
             <input
               type="password"
               placeholder="Password"
-              className="w-full rounded-xl border border-white/35 bg-[#0f3a2f]/70 px-4 py-2.5 text-white placeholder:text-[#AFCFBF] outline-none focus:border-[#79D95B]"
+              className="af-input w-full rounded-xl px-4 py-2.5 outline-none"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
@@ -141,25 +140,25 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
             <button
               type="button"
               onClick={handleForgotPassword}
-              className="text-xs text-[#C8EFD8] hover:underline"
+              className="text-xs font-semibold text-[#2F6F57] hover:underline"
             >
               Forgot password?
             </button>
 
             <button
               onClick={handleAuth}
-              className="w-full rounded-xl bg-[#5FCF45] text-[#123425] py-2.5 font-bold hover:bg-[#79D95B] transition"
+              className="w-full rounded-xl bg-[#2F6F57] py-2.5 font-bold text-white transition hover:bg-[#275c48] shadow-[0_16px_28px_rgba(47,111,87,0.2)]"
               disabled={loading}
             >
               {loading ? "Processing..." : mode === "signin" ? "SIGN IN" : "SIGN UP"}
             </button>
           </div>
 
-          <p className="text-sm mt-4 text-center text-[#C8EFD8]">
+          <p className="mt-4 text-center text-sm text-[#6B665D]">
             {mode === "signin" ? "New user?" : "Already have account?"}
             <button
               onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-              className="text-[#79D95B] ml-2 font-semibold"
+              className="ml-2 font-semibold text-[#2F6F57]"
               type="button"
             >
               {mode === "signin" ? "Create Account" : "Sign In"}

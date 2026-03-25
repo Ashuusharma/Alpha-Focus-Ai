@@ -859,7 +859,7 @@ export default function DashboardPage() {
 
   if (loading || !user) {
     return (
-      <main className="min-h-screen bg-[#F8F6F0] px-4 py-6 text-[#1F3D2B] sm:px-6 lg:px-8">
+      <main className="min-h-screen bg-[#F4EFE6] px-4 py-6 text-[#1F3D2B] sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <p className="text-sm text-[#6B665D]">Loading personalized dashboard...</p>
         </div>
@@ -868,8 +868,8 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="af-page px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl space-y-6 md:space-y-8">
+    <main className="min-h-screen bg-[#F4EFE6] px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl space-y-8 md:space-y-10">
         <DashboardHero
           userName={userName}
           categoryLabel={categoryLabel}
@@ -905,35 +905,35 @@ export default function DashboardPage() {
           mode="mission"
         />
 
-        <section className="af-card rounded-2xl p-6">
+        <section className="rounded-[2rem] border border-[#E2DDD3] bg-white p-6 shadow-[0_10px_30px_rgba(17,17,17,0.04)]">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-[#8C6A5A]">Recovery Intelligence</p>
-              <h2 className="text-lg font-bold text-[#1F3D2B]">Clinical Signal Summary</h2>
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#8C6A5A]">Recovery Intelligence</p>
+              <h2 className="text-xl font-black text-[#111]">Clinical Signal Summary</h2>
             </div>
-            <p className="text-xs font-semibold text-[#2F6F57]">
+            <p className="rounded-full bg-[#F5FAF7] px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.14em] text-[#2F6F57]">
               {activeCategory ? `Category: ${categoryLabel}` : "No active category"}
             </p>
           </div>
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3">
-              <p className="text-xs text-[#6B665D]">Severity Change</p>
-              <p className="mt-1 text-lg font-bold text-[#1F3D2B]">↓ {progressSummary?.improvement_pct ?? 0}%</p>
+            <div className="rounded-[1.4rem] border border-[#E2DDD3] bg-[#FFF8EE] p-4">
+              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#7A6D5A]">Severity Change</p>
+              <p className="mt-2 text-2xl font-black text-[#111]">↓ {progressSummary?.improvement_pct ?? 0}%</p>
             </div>
-            <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3">
-              <p className="text-xs text-[#6B665D]">Consistency</p>
-              <p className="mt-1 text-lg font-bold text-[#1F3D2B]">{progressSummary?.consistency_score ?? consistencyScore}%</p>
+            <div className="rounded-[1.4rem] border border-[#E2DDD3] bg-[#FFF8EE] p-4">
+              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#7A6D5A]">Consistency</p>
+              <p className="mt-2 text-2xl font-black text-[#111]">{progressSummary?.consistency_score ?? consistencyScore}%</p>
             </div>
-            <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3">
-              <p className="text-xs text-[#6B665D]">Recovery Speed</p>
-              <p className="mt-1 text-lg font-bold text-[#1F3D2B]">{recoveryVelocityLabel}</p>
+            <div className="rounded-[1.4rem] border border-[#E2DDD3] bg-[#FFF8EE] p-4">
+              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#7A6D5A]">Recovery Speed</p>
+              <p className="mt-2 text-2xl font-black text-[#111]">{recoveryVelocityLabel}</p>
             </div>
-            <div className="rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3">
-              <p className="text-xs text-[#6B665D]">Confidence</p>
-              <p className="mt-1 text-lg font-bold text-[#1F3D2B]">{confidenceScore}</p>
+            <div className="rounded-[1.4rem] border border-[#E2DDD3] bg-[#FFF8EE] p-4">
+              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#7A6D5A]">Confidence</p>
+              <p className="mt-2 text-2xl font-black text-[#111]">{confidenceScore}</p>
             </div>
           </div>
-          <p className="mt-4 text-xs text-[#6B665D]">{refreshing || storeLoading ? "Syncing latest data..." : "Realtime sync is active for routine, rewards, and progress signals."}</p>
+          <p className="mt-4 text-xs font-semibold text-[#6B665D]">{refreshing || storeLoading ? "Syncing latest data..." : "Realtime sync is active for routine, rewards, and progress signals."}</p>
         </section>
 
         <ProgressVisualization data={weeklyProgressData} />
@@ -945,7 +945,7 @@ export default function DashboardPage() {
         <AIInsightEngine insights={aiInsights} behaviorInsights={behaviorInsights} />
 
         {!profile && (
-          <section className="af-card rounded-2xl p-6 text-sm text-[#6B665D]">
+          <section className="rounded-[2rem] border border-[#E2DDD3] bg-white p-6 text-sm text-[#6B665D] shadow-[0_10px_30px_rgba(17,17,17,0.04)]">
             Complete your profile to improve recommendation precision.
           </section>
         )}

@@ -39,21 +39,21 @@ export default function TrackingPage() {
     : null;
 
   return (
-    <div className="min-h-screen bg-[#030917] text-white px-4 py-8">
+    <div className="af-page-shell report-page min-h-screen text-[#1F3D2B] px-4 py-8">
       <div className="max-w-6xl mx-auto">
-        <button onClick={() => router.back()} className="mb-5 inline-flex items-center gap-2 text-gray-300 hover:text-white">
+        <button onClick={() => router.back()} className="mb-5 inline-flex items-center gap-2 text-[#6B665D] hover:text-[#1F3D2B]">
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
 
         <div className="mb-6">
           <h1 className="text-clinical-heading text-3xl font-extrabold tracking-tight">Lifestyle Tracking</h1>
-          <p className="mt-1 text-zinc-300">Track sleep, hydration, mood, and environment in one place.</p>
+          <p className="mt-1 text-[#6B665D]">Track sleep, hydration, mood, and environment in one place.</p>
         </div>
 
         {status === "denied" && (
-          <div className="mb-4 rounded-xl border border-amber-400/30 bg-amber-500/10 p-4">
-            <p className="text-sm text-amber-100">Location permission is disabled. Enable it to load climate intelligence.</p>
-            <button onClick={requestLocation} className="mt-3 px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-xs font-semibold">Retry Location Permission</button>
+          <div className="mb-4 rounded-xl border border-amber-500/30 bg-[#fff4df] p-4">
+            <p className="text-sm text-[#8a5c1b]">Location permission is disabled. Enable it to load climate intelligence.</p>
+            <button onClick={requestLocation} className="mt-3 px-3 py-1.5 rounded-lg bg-[#f5dfac] hover:bg-[#edd08f] text-xs font-semibold text-[#6f4a14]">Retry Location Permission</button>
           </div>
         )}
 

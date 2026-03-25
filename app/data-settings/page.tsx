@@ -63,14 +63,14 @@ export default function DataSettingsPage() {
         : displayLabel;
 
   return (
-    <div className="min-h-screen bg-[#030917] text-white px-4 py-8">
+    <div className="af-page-shell min-h-screen text-[#1F3D2B] px-4 py-8">
       <div className="max-w-3xl mx-auto">
-        <button onClick={() => router.back()} className="mb-5 inline-flex items-center gap-2 text-gray-300 hover:text-white">
+        <button onClick={() => router.back()} className="mb-5 inline-flex items-center gap-2 text-[#6B665D] hover:text-[#1F3D2B]">
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
 
         <div className="flex items-center gap-3 mb-6">
-          <ShieldCheck className="w-6 h-6 text-blue-300" />
+          <ShieldCheck className="w-6 h-6 text-[#2F6F57]" />
           <h1 className="text-3xl font-bold">Data Permissions</h1>
         </div>
 
@@ -81,23 +81,23 @@ export default function DataSettingsPage() {
             ["hydrationTracking", "Hydration Tracking"],
             ["moodTracking", "Mood Tracking"],
           ] as Array<[keyof PermissionState, string]>).map(([key, label]) => (
-            <div key={key} className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] p-4">
+            <div key={key} className="af-surface-card flex items-center justify-between p-4">
               <p className="font-medium">{label}</p>
-              <button onClick={() => toggle(key)} className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${permissions[key] ? "bg-emerald-500/20 text-emerald-300" : "bg-white/10 text-gray-300"}`}>
+              <button onClick={() => toggle(key)} className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${permissions[key] ? "bg-[#E8EFEA] text-[#2F6F57]" : "bg-[#f3ecdf] text-[#6B665D]"}`}>
                 {permissions[key] ? "Enabled" : "Disabled"}
               </button>
             </div>
           ))}
         </div>
 
-        <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-4">
-          <div className="flex items-center gap-2 text-sm text-gray-200">
-            <MapPin className="w-4 h-4 text-emerald-300" />
+        <div className="af-surface-card mt-4 p-4">
+          <div className="flex items-center gap-2 text-sm text-[#6B665D]">
+            <MapPin className="w-4 h-4 text-[#2F6F57]" />
             <span className="truncate" title={locationText}>{locationText}</span>
             <button
               type="button"
               onClick={refreshLocation}
-              className="ml-auto p-1.5 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
+              className="ml-auto p-1.5 rounded-md bg-[#f3ecdf] hover:bg-[#ebe1d2] transition-colors"
               title="Refresh location"
               aria-label="Refresh location"
             >
@@ -106,7 +106,7 @@ export default function DataSettingsPage() {
           </div>
         </div>
 
-        <button onClick={deleteAllData} className="mt-6 px-4 py-2 rounded-xl bg-red-500/20 text-red-300 border border-red-500/30 hover:bg-red-500/30 text-sm font-semibold">
+        <button onClick={deleteAllData} className="mt-6 px-4 py-2 rounded-xl bg-[#f6e7e2] text-[#8C6A5A] border border-[#ddc1b8] hover:bg-[#efd7cf] text-sm font-semibold">
           Delete All Data
         </button>
       </div>

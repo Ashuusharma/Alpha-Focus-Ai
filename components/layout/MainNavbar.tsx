@@ -61,6 +61,8 @@ type NotificationItem = {
   isRead?: boolean;
 };
 
+type NotificationFilter = "All" | "Routine" | "Program" | "Progress" | "Tip" | "System";
+
 function formatTimeAgo(iso?: string) {
   if (!iso) return "Just now";
   const then = new Date(iso).getTime();
@@ -98,6 +100,8 @@ export default function MainNavbar() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [notificationFilter, setNotificationFilter] = useState<NotificationFilter>("All");
+  const [showUnreadOnly, setShowUnreadOnly] = useState(true);
   const [toast, setToast] = useState<NotificationItem | null>(null);
   const [toastPhase, setToastPhase] = useState<"enter" | "exit">("enter");
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
@@ -118,7 +122,16 @@ export default function MainNavbar() {
   const toastHideTimerRef = useRef<number | null>(null);
 
   const visibleNotifications = useMemo(
-    () => notifications,
+    () => notifications.filter((item) => {
+      const matchesFilter = notificationFilter === "All" || item.tag === notificationFilter;
+      const matchesUnread = !showUnreadOnly || !item.isRead;
+      return matchesFilter && matchesUnread;
+    }),
+    [notificationFilter, notifications, showUnreadOnly]
+  );
+
+  const unreadNotifications = useMemo(
+    () => notifications.filter((item) => !item.isRead),
     [notifications]
   );
 
@@ -153,9 +166,7 @@ export default function MainNavbar() {
       };
       if (!payload.ok || !Array.isArray(payload.notifications)) return;
 
-      const mapped = payload.notifications
-        .filter((item) => !item.is_read)
-        .map((item) => ({
+      const mapped = payload.notifications.map((item) => ({
         id: item.id,
         title: item.title,
         body: item.message,
@@ -188,7 +199,7 @@ export default function MainNavbar() {
       // Ignore transient read-write failures.
     }
 
-    setNotifications((current) => current.filter((item) => item.id !== id));
+    setNotifications((current) => current.map((item) => item.id === id ? { ...item, isRead: true } : item));
     setUnreadCount((current) => Math.max(0, current - 1));
   };
 
@@ -221,14 +232,14 @@ export default function MainNavbar() {
 
   useEffect(() => initializeRewardStore(), [initializeRewardStore]);
 
-  // Lock body scroll when mobile menu is open
+  // Lock body scroll when an overlay drawer is open
   useEffect(() => {
-    if (mobileMenuOpen) {
+    if (mobileMenuOpen || showNotifications) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
     }
-  }, [mobileMenuOpen]);
+  }, [mobileMenuOpen, showNotifications]);
 
   // Calculate cart total safely
   const cartCount = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
@@ -311,12 +322,12 @@ export default function MainNavbar() {
   useEffect(() => {
     if (toast) return;
 
-    const nextToast = visibleNotifications[0];
+    const nextToast = unreadNotifications[0];
     if (!nextToast) return;
 
     setToast(nextToast);
     setToastPhase("enter");
-  }, [toast, visibleNotifications]);
+  }, [toast, unreadNotifications]);
 
   useEffect(() => {
     if (!toast) return;
@@ -386,124 +397,178 @@ export default function MainNavbar() {
 
   if (!mounted) return <div className="h-20 bg-[#F4EFE6] border-b border-[#E2DDD3]" />;
 
+  const filterTabs: NotificationFilter[] = ["All", "Routine", "Program", "Progress", "Tip", "System"];
+
   const notificationPanel = showNotifications && mountedDom
     ? createPortal(
-        <div
-          ref={notificationPanelRef}
-          role="dialog"
-          aria-label="Notifications"
-          className="fixed top-[72px] left-1/2 -translate-x-1/2 sm:left-auto sm:right-4 sm:translate-x-0 z-[10000] w-[min(460px,calc(100vw-1rem))] max-h-[72vh] overflow-y-auto rounded-2xl border border-[#E2DDD3] bg-[#F8F4EC] p-4 shadow-xl"
-          style={{ boxShadow: "0px 12px 40px rgba(31, 61, 43, 0.16)" }}
-          onClick={(e) => e.stopPropagation()}
-          tabIndex={-1}
-        >
-          <div className="flex items-start justify-between pb-3 mb-3 border-b border-[#E6E1D7]">
-            <div className="space-y-0.5">
-              <p className="text-lg font-semibold text-[#1F3D2B]">Updates & alerts</p>
-              <p className="text-sm text-[#6C7A70]">Unread: {unreadCount}</p>
-            </div>
-            <button
-              type="button"
-              aria-label="Close notifications"
-              onClick={() => setShowNotifications(false)}
-              className="h-7 w-7 rounded-full bg-[#E8E1D6] text-[#1F3D2B] flex items-center justify-center hover:bg-[#D9D2CD]"
-            >
-              ×
-            </button>
-          </div>
-
-          <div className="mb-3 flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                void refreshNotifications();
-              }}
-              className="rounded-full border border-[#D9D2C6] px-3 py-1.5 text-xs font-semibold text-[#1F3D2B] hover:bg-white"
-            >
-              Refresh
-            </button>
-            <button
-              type="button"
-              onClick={async () => {
-                const headers = await getSupabaseAuthHeaders({ "Content-Type": "application/json" });
-                await fetch("/api/notifications/read", {
-                  method: "POST",
-                  headers,
-                  body: JSON.stringify({ all: true }),
-                });
-                setToast(null);
-                void refreshNotifications();
-              }}
-              className="rounded-full border border-[#D9D2C6] px-3 py-1.5 text-xs font-semibold text-[#1F3D2B] hover:bg-white"
-              disabled={visibleNotifications.length === 0}
-            >
-              Mark all read
-            </button>
-          </div>
-
-          {visibleNotifications.length > 0 && (
-            <div className="mb-3 rounded-xl border border-[#E2DDD3] bg-gradient-to-r from-[#F6F0E3] to-[#EFE8DD] px-4 py-3 text-sm text-[#1F3D2B]">
-              <p className="font-semibold">You have {visibleNotifications.length} active notification{visibleNotifications.length === 1 ? "" : "s"}</p>
-              <p className="text-xs text-[#6C7A70]">Latest routine, challenge, and progress updates for your account.</p>
-            </div>
-          )}
-
-          <div className="space-y-2 pr-1">
-            {visibleNotifications.length === 0 && (
-              <div className="py-12 flex flex-col items-center text-center">
-                <div className="h-12 w-12 rounded-full bg-[#E8F1EC] flex items-center justify-center mb-3">
-                  <Bell className="h-5 w-5 text-[#6C7A70]" />
+        <div className="fixed inset-0 z-[10000] flex justify-end">
+          <div className="absolute inset-0 bg-black/45 backdrop-blur-sm" onClick={() => setShowNotifications(false)} />
+          <div
+            ref={notificationPanelRef}
+            role="dialog"
+            aria-label="Notifications"
+            className="relative z-10 flex h-full w-full max-w-[460px] flex-col overflow-hidden border-l border-[#264534] bg-[#F7F0E4] shadow-[0_24px_80px_rgba(15,31,21,0.38)]"
+            onClick={(e) => e.stopPropagation()}
+            tabIndex={-1}
+          >
+            <div className="relative overflow-hidden border-b border-[#24402f] bg-gradient-to-br from-[#0F1F15] via-[#173123] to-[#122419] px-5 py-5 text-white">
+              <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-[#22C55E]/10 blur-3xl" />
+              <div className="relative z-10 flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-[#A3BFA5]">Notification Center</p>
+                  <h2 className="mt-1 text-2xl font-black tracking-tight">Updates & alerts</h2>
+                  <p className="mt-1 text-sm text-[#D0DDD2]">Unread: {unreadCount} · Total: {notifications.length}</p>
                 </div>
-                <p className="text-sm font-semibold text-[#1F3D2B]">No active notifications</p>
-                <p className="text-xs text-[#6C7A70]">You are all caught up.</p>
+                <button
+                  type="button"
+                  aria-label="Close notifications"
+                  onClick={() => setShowNotifications(false)}
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/10 text-white hover:bg-white/20"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </div>
-            )}
 
-            {visibleNotifications.map((note) => (
-              <div
-                key={note.id}
-                className="group flex gap-3 p-3 rounded-xl border border-[#E6E1D7] bg-white/80 hover:bg-white shadow-[0_6px_16px_rgba(31,61,43,0.06)] transition-all"
-              >
-                <div className="flex-shrink-0">
-                  <div className="h-10 w-10 rounded-xl bg-[#E8F1EC] flex items-center justify-center text-[#2F5D46]">
-                    {note.tag === "Program" ? <Activity className="h-4 w-4" /> : note.tag === "Progress" ? <Zap className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
-                  </div>
+              <div className="relative z-10 mt-4 grid grid-cols-2 gap-3">
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-md">
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#A3BFA5]">Live unread</p>
+                  <p className="mt-1 text-2xl font-black text-white">{unreadCount}</p>
                 </div>
-                <div className="flex-1 min-w-0 space-y-1">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="font-semibold text-[#1F3D2B] text-sm leading-snug break-words">{note.title}</p>
-                    <span className="text-[11px] text-[#8A948C] flex-shrink-0 whitespace-nowrap">{note.time}</span>
-                  </div>
-                  <p className="text-sm text-[#4F5B52] leading-snug break-words">{note.body}</p>
-                  <div className="flex flex-wrap items-center gap-2 pt-1">
-                    {note.tag && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-[#2F5D46] text-white text-[10px] font-semibold px-2 py-0.5 uppercase">
-                        {note.tag}
-                      </span>
-                    )}
-                    {note.ctaHref && note.ctaLabel && (
-                      <Link
-                        href={note.ctaHref}
-                        onClick={() => setShowNotifications(false)}
-                        className="inline-flex items-center rounded-full border border-[#D9D2C6] px-2.5 py-1 text-[11px] font-semibold text-[#1F3D2B] hover:bg-[#F4EFE6]"
-                      >
-                        {note.ctaLabel}
-                      </Link>
-                    )}
+                <div className="rounded-2xl border border-[#F4D675]/20 bg-[#F4D675]/10 px-4 py-3">
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#FFE7A1]">Focus filter</p>
+                  <p className="mt-1 text-base font-black text-white">{notificationFilter}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-4 py-4">
+              <div className="mb-4 flex flex-wrap gap-2">
+                {filterTabs.map((filter) => {
+                  const active = notificationFilter === filter;
+                  return (
                     <button
+                      key={filter}
                       type="button"
-                      onClick={() => {
-                        void markNotificationRead(note.id);
-                        if (toast?.id === note.id) setToast(null);
-                      }}
-                      className="inline-flex items-center rounded-full border border-[#D9D2C6] px-2.5 py-1 text-[11px] font-semibold text-[#1F3D2B] hover:bg-[#F4EFE6]"
+                      onClick={() => setNotificationFilter(filter)}
+                      className={`rounded-full px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.14em] transition-all ${active ? "bg-[#1A3626] text-white shadow-md" : "border border-[#D9D2C6] bg-white/80 text-[#6B665D] hover:bg-white"}`}
                     >
-                      Mark read
+                      {filter}
                     </button>
+                  );
+                })}
+              </div>
+
+              <div className="mb-4 rounded-[1.5rem] border border-[#E2DDD3] bg-[#FFF8EE] p-4 shadow-[0_8px_24px_rgba(17,17,17,0.05)]">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#7A6D5A]">Display mode</p>
+                    <p className="mt-1 text-sm font-semibold text-[#111]">Unread only</p>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowUnreadOnly((current) => !current)}
+                    aria-pressed={showUnreadOnly}
+                    className={`relative inline-flex h-8 w-14 items-center rounded-full p-1 transition-colors ${showUnreadOnly ? "bg-[#1A3626]" : "bg-black/10"}`}
+                  >
+                    <span className={`h-6 w-6 rounded-full bg-white shadow-sm transition-transform ${showUnreadOnly ? "translate-x-6" : "translate-x-0"}`} />
+                  </button>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void refreshNotifications();
+                    }}
+                    className="rounded-full border border-[#D9D2C6] bg-white px-3 py-2 text-[11px] font-black uppercase tracking-[0.14em] text-[#1F3D2B] hover:bg-[#F7F0E4]"
+                  >
+                    Refresh
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const headers = await getSupabaseAuthHeaders({ "Content-Type": "application/json" });
+                      await fetch("/api/notifications/read", {
+                        method: "POST",
+                        headers,
+                        body: JSON.stringify({ all: true }),
+                      });
+                      setToast(null);
+                      void refreshNotifications();
+                    }}
+                    className="rounded-full border border-[#D9D2C6] bg-white px-3 py-2 text-[11px] font-black uppercase tracking-[0.14em] text-[#1F3D2B] hover:bg-[#F7F0E4] disabled:opacity-40"
+                    disabled={unreadNotifications.length === 0}
+                  >
+                    Mark all read
+                  </button>
                 </div>
               </div>
-            ))}
+
+              <div className="space-y-3 pr-1">
+                {visibleNotifications.length === 0 && (
+                  <div className="rounded-[2rem] border border-[#E2DDD3] bg-white p-8 text-center shadow-sm">
+                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#E8F1EC]">
+                      <Bell className="h-6 w-6 text-[#2F5D46]" />
+                    </div>
+                    <p className="text-base font-black text-[#111]">No notifications in this view</p>
+                    <p className="mt-1 text-sm text-[#6C7A70]">Try another filter or disable unread-only mode.</p>
+                  </div>
+                )}
+
+                {visibleNotifications.map((note) => (
+                  <div
+                    key={note.id}
+                    className={`group rounded-[1.7rem] border p-4 shadow-[0_8px_20px_rgba(17,17,17,0.05)] transition-all ${note.isRead ? "border-[#E6E1D7] bg-[#FCF8F1]" : "border-[#E9D9B5] bg-white"}`}
+                  >
+                    <div className="flex gap-3">
+                      <div className="flex-shrink-0">
+                        <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${note.tag === "Program" ? "bg-[#E8F1EC] text-[#2F5D46]" : note.tag === "Progress" ? "bg-[#FFF4DF] text-[#B47B00]" : note.tag === "Routine" ? "bg-[#EEF0FF] text-[#4C5FC1]" : "bg-[#F2EAE1] text-[#8C6A5A]"}`}>
+                          {note.tag === "Program" ? <Activity className="h-4 w-4" /> : note.tag === "Progress" ? <Zap className="h-4 w-4" /> : note.tag === "Routine" ? <ClipboardCheck className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
+                        </div>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-black leading-snug text-[#111] break-words">{note.title}</p>
+                            <p className="mt-1 text-xs font-semibold text-[#8A948C]">{note.time}</p>
+                          </div>
+                          {!note.isRead && <span className="mt-1 inline-flex h-2.5 w-2.5 rounded-full bg-[#22C55E] shadow-[0_0_10px_rgba(34,197,94,0.5)]" />}
+                        </div>
+                        <p className="mt-2 text-sm leading-relaxed text-[#4F5B52] break-words">{note.body}</p>
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          {note.tag && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-[#1A3626] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-white">
+                              {note.tag}
+                            </span>
+                          )}
+                          {note.ctaHref && note.ctaLabel && (
+                            <Link
+                              href={note.ctaHref}
+                              onClick={() => setShowNotifications(false)}
+                              className="inline-flex items-center rounded-full border border-[#D9D2C6] bg-[#FFF8EE] px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.14em] text-[#1F3D2B] hover:bg-white"
+                            >
+                              {note.ctaLabel}
+                            </Link>
+                          )}
+                          {!note.isRead && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                void markNotificationRead(note.id);
+                                if (toast?.id === note.id) setToast(null);
+                              }}
+                              className="inline-flex items-center rounded-full border border-[#D9D2C6] bg-white px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.14em] text-[#1F3D2B] hover:bg-[#F7F0E4]"
+                            >
+                              Mark read
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>,
         document.body

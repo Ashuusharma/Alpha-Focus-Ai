@@ -22,11 +22,11 @@ const impactStyle: Record<InsightItem["impact"], string> = {
 
 export default function AIInsightEngine({ insights, behaviorInsights = [] }: AIInsightEngineProps) {
   return (
-    <section className="af-card rounded-2xl p-6">
+    <section className="rounded-[2rem] border border-[#E2DDD3] bg-white p-6 shadow-[0_10px_30px_rgba(17,17,17,0.04)]">
       <div className="flex items-center justify-between gap-2">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-wider text-[#8C6A5A]">AI Coach Insights</p>
-          <h3 className="text-lg font-bold text-[#1F3D2B]">Insight, Action, and Expected Outcome</h3>
+          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#8C6A5A]">AI Coach Insights</p>
+          <h3 className="text-lg font-black text-[#111]">Insight, Action, and Expected Outcome</h3>
         </div>
       </div>
 
@@ -57,7 +57,7 @@ export default function AIInsightEngine({ insights, behaviorInsights = [] }: AII
       </div>
 
       {behaviorInsights.length ? (
-        <div className="mt-4 rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3">
+        <div className="mt-4 rounded-[1.4rem] border border-[#E2DDD3] bg-[#FFF8EE] p-4">
           <p className="text-xs font-semibold text-[#1F3D2B]">Behavior Insight Engine</p>
           <ul className="mt-2 space-y-1 text-xs text-[#6B665D]">
             {behaviorInsights.map((item) => (

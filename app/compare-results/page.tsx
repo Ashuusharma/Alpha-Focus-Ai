@@ -39,11 +39,11 @@ export default function CompareResultsPage() {
     : [];
 
   return (
-    <div className="min-h-screen bg-[#060b14] py-12 relative overflow-hidden text-white">
+    <div className="af-page-shell report-page min-h-screen py-12 relative overflow-hidden text-[#1F3D2B]">
       {/* Background Ambience */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#00f2ff]/5 rounded-full blur-[120px] mix-blend-screen" />
-        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-600/5 rounded-full blur-[120px] mix-blend-screen" />
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#A9CBB7]/20 rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#d8b55f]/14 rounded-full blur-[120px]" />
       </div>
       
       <Container>
@@ -52,7 +52,7 @@ export default function CompareResultsPage() {
           <div className="mb-10">
             <button
               onClick={() => router.back()}
-              className="flex items-center space-x-2 text-slate-400 hover:text-white transition group mb-6"
+              className="flex items-center space-x-2 text-[#6B665D] hover:text-[#1F3D2B] transition group mb-6"
             >
               <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
               <span>Back</span>
@@ -65,23 +65,23 @@ export default function CompareResultsPage() {
                 Compare Results
               </span>
             </h1>
-            <p className="text-slate-400 ml-16">
+            <p className="text-[#6B665D] ml-16">
               Track your recovery progress over time against previous assessments.
             </p>
           </div>
 
           {!hasComparison ? (
             <div className="lux-card p-16 text-center border-white/10">
-              <div className="w-24 h-24 bg-[#0c1626] border border-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
-                <BarChart2 className="w-10 h-10 text-slate-500" />
+              <div className="w-24 h-24 bg-[#f3ecdf] border border-[#e2d8ca] rounded-full flex items-center justify-center mx-auto mb-6">
+                <BarChart2 className="w-10 h-10 text-[#8C6A5A]" />
               </div>
-              <p className="text-xl font-bold text-white mb-2">Not enough data</p>
-              <p className="text-slate-400 mb-8 max-w-sm mx-auto">
+              <p className="text-xl font-bold text-[#1F3D2B] mb-2">Not enough data</p>
+              <p className="text-[#6B665D] mb-8 max-w-sm mx-auto">
                 Complete at least 2 assessments to unlock detailed progress comparison and analytics.
               </p>
               <button 
                 onClick={() => router.push('/')}
-                className="px-8 py-3 bg-gradient-to-r from-[#00f2ff] to-[#0066cc] hover:shadow-[0_0_20px_rgba(0,242,255,0.4)] text-[#060b14] rounded-xl font-bold transition transform hover:scale-105"
+                className="px-8 py-3 bg-gradient-to-r from-[#2F6F57] to-[#567b63] hover:shadow-[0_16px_30px_rgba(47,111,87,0.24)] text-white rounded-xl font-bold transition transform hover:scale-105"
               >
                 New Assessment
               </button>
@@ -94,25 +94,25 @@ export default function CompareResultsPage() {
             >
               {/* TIME PERIOD SELECTOR */}
               <div className="lux-card p-8 border-white/10">
-                <h3 className="text-sm font-bold text-slate-400 mb-6 uppercase tracking-wider">Comparing Assessment Dates</h3>
+                <h3 className="text-sm font-bold text-[#8C6A5A] mb-6 uppercase tracking-wider">Comparing Assessment Dates</h3>
                 <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                  <div className="flex-1 w-full bg-[#00f2ff]/10 border border-[#00f2ff]/20 rounded-xl p-6 text-center relative overflow-hidden group">
+                  <div className="flex-1 w-full bg-[#E8EFEA] border border-[#C8DACF] rounded-xl p-6 text-center relative overflow-hidden group">
                     <p className="text-sm text-[var(--lux-accent)] font-bold mb-1">Latest</p>
-                    <p className="text-3xl font-bold text-white mb-1">{new Date(current.completedAt).toLocaleDateString()}</p>
-                    <span className="text-xs text-white/40">Current Status</span>
+                    <p className="text-3xl font-bold text-[#1F3D2B] mb-1">{new Date(current.completedAt).toLocaleDateString()}</p>
+                    <span className="text-xs text-[#6B665D]">Current Status</span>
                     <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
                         <Calendar className="w-12 h-12 text-[var(--lux-accent)]" />
                     </div>
                   </div>
                   
-                  <div className="flex items-center justify-center w-10 h-10 rounded-full bg-[#0c1626] border border-white/10 text-slate-500 font-bold">VS</div>
+                  <div className="flex items-center justify-center w-10 h-10 rounded-full bg-[#f3ecdf] border border-[#e2d8ca] text-[#8C6A5A] font-bold">VS</div>
                   
-                  <div className="flex-1 w-full bg-[#0c1626] border border-white/10 rounded-xl p-6 text-center relative overflow-hidden group">
-                    <p className="text-sm text-slate-400 font-bold mb-1">Previous</p>
-                    <p className="text-3xl font-bold text-white/80 mb-1">{new Date(previous.completedAt).toLocaleDateString()}</p>
-                    <span className="text-xs text-white/30">Baseline</span>
+                  <div className="flex-1 w-full bg-[#f7f1e7] border border-[#e2d8ca] rounded-xl p-6 text-center relative overflow-hidden group">
+                    <p className="text-sm text-[#8C6A5A] font-bold mb-1">Previous</p>
+                    <p className="text-3xl font-bold text-[#1F3D2B] mb-1">{new Date(previous.completedAt).toLocaleDateString()}</p>
+                    <span className="text-xs text-[#6B665D]">Baseline</span>
                      <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
-                        <Calendar className="w-12 h-12 text-white" />
+                        <Calendar className="w-12 h-12 text-[#8C6A5A]" />
                     </div>
                   </div>
                 </div>
@@ -123,7 +123,7 @@ export default function CompareResultsPage() {
                 {comparisons.map((item, idx) => (
                   <div key={idx} className="lux-card p-8 border-white/10">
                     <div className="flex items-center justify-between mb-8">
-                      <h3 className="text-xl font-bold text-white">{item.metric}</h3>
+                      <h3 className="text-xl font-bold text-[#1F3D2B]">{item.metric}</h3>
                       <div className={`px-4 py-2 rounded-xl border flex items-center gap-2 ${
                           item.change >= 0 
                           ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" 
@@ -139,15 +139,15 @@ export default function CompareResultsPage() {
                        {/* Current Bar */}
                        <div>
                          <div className="flex justify-between items-end mb-2">
-                           <span className="text-sm text-slate-400">Current Score</span>
+                           <span className="text-sm text-[#6B665D]">Current Score</span>
                            <span className="text-2xl font-bold text-[var(--lux-accent)]">{item.jan}%</span>
                          </div>
-                         <div className="h-4 bg-[#0c1626] rounded-full overflow-hidden border border-white/5">
+                         <div className="af-progress-track h-4 border border-[#e2d8ca]">
                             <motion.div 
                               initial={{ width: 0 }}
                               animate={{ width: `${item.jan}%` }}
                               transition={{ duration: 1, ease: 'easeOut' }}
-                              className="h-full bg-gradient-to-r from-[#00f2ff] to-[#0066cc] shadow-[0_0_15px_rgba(0,242,255,0.3)]" 
+                              className="af-progress-fill" 
                             />
                          </div>
                        </div>
@@ -155,15 +155,15 @@ export default function CompareResultsPage() {
                        {/* Previous Bar */}
                        <div>
                          <div className="flex justify-between items-end mb-2">
-                           <span className="text-sm text-slate-500">Previous Score</span>
-                           <span className="text-xl font-bold text-slate-400">{item.dec}%</span>
+                           <span className="text-sm text-[#8C6A5A]">Previous Score</span>
+                           <span className="text-xl font-bold text-[#6B665D]">{item.dec}%</span>
                          </div>
-                         <div className="h-4 bg-[#0c1626] rounded-full overflow-hidden border border-white/5">
+                         <div className="af-progress-track h-4 border border-[#e2d8ca]">
                             <motion.div 
                               initial={{ width: 0 }}
                               animate={{ width: `${item.dec}%` }}
                               transition={{ duration: 1, delay: 0.2, ease: 'easeOut' }}
-                              className="h-full bg-white/10" 
+                              className="h-full bg-[linear-gradient(90deg,#e8ded0_0%,#c8bcab_100%)]" 
                             />
                          </div>
                        </div>

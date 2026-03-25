@@ -125,6 +125,96 @@ body::before {
   box-shadow: var(--shadow-raised);
 }
 
+.af-page-shell {
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top right, rgba(169, 203, 183, 0.24) 0%, rgba(169, 203, 183, 0) 24%),
+    radial-gradient(circle at bottom left, rgba(201, 162, 39, 0.12) 0%, rgba(201, 162, 39, 0) 28%),
+    linear-gradient(180deg, #f8f4eb 0%, #f1e9dc 100%);
+  color: #1f3d2b;
+}
+
+.af-surface-card {
+  position: relative;
+  border-radius: 1.75rem;
+  border: 1px solid rgba(120, 97, 67, 0.14);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-raised);
+}
+
+.af-surface-card::after,
+.af-surface-soft::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0));
+  opacity: 0.78;
+}
+
+.af-surface-soft {
+  position: relative;
+  border-radius: 1.35rem;
+  border: 1px solid rgba(120, 97, 67, 0.12);
+  background: var(--surface-soft);
+  box-shadow: var(--shadow-soft);
+}
+
+.af-inset-surface {
+  border-radius: 1.2rem;
+  border: 1px solid rgba(120, 97, 67, 0.1);
+  background: var(--surface-pressed);
+  box-shadow: var(--shadow-pressed);
+}
+
+.af-pill {
+  border-radius: 999px;
+  border: 1px solid rgba(120, 97, 67, 0.14);
+  background: rgba(255, 253, 249, 0.88);
+  box-shadow: var(--shadow-soft);
+}
+
+.af-input {
+  border: 1px solid rgba(120, 97, 67, 0.16);
+  background: rgba(255, 252, 246, 0.92);
+  color: #1f3d2b;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.af-input::placeholder {
+  color: #8c6a5a;
+}
+
+.af-input:focus {
+  border-color: rgba(47, 111, 87, 0.42);
+  box-shadow: 0 0 0 3px rgba(169, 203, 183, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.af-progress-track {
+  overflow: hidden;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(227, 216, 198, 0.95), rgba(248, 242, 232, 0.95));
+  box-shadow: var(--shadow-pressed);
+}
+
+.af-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #d2a05f 0%, #d8b55f 40%, #6e9f87 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 6px 16px rgba(47, 111, 87, 0.22);
+}
+
+.af-text-muted {
+  color: #6b665d;
+}
+
+.af-text-subtle {
+  color: #8c6a5a;
+}
+
 .bg-deep-green-gradient {
   background: linear-gradient(135deg, #1F3D2B 0%, #2F6F57 100%);
 }
@@ -526,7 +616,7 @@ textarea {
 }
 
 .lux-text-gradient {
-  background: linear-gradient(90deg, #dbeafe, #60a5fa);
+  background: linear-gradient(90deg, #1f3d2b 0%, #2f6f57 52%, #c9a227 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;

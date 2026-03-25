@@ -25,8 +25,19 @@ export const AuthContext = createContext<AuthContextValue>({
   signOut: async () => {},
 });
 
+const AUTH_REQUEST_TIMEOUT_MS = 6000;
+const PROFILE_FETCH_TIMEOUT_MS = 4500;
 const SESSION_REFRESH_BUFFER_MS = 5 * 60 * 1000;
 const SESSION_RETRY_DELAYS_MS = [0, 800, 1600] as const;
+
+function withTimeout<T>(promise: PromiseLike<T>, timeoutMs: number, errorMessage: string) {
+  return Promise.race<T>([
+    promise,
+    new Promise<T>((_, reject) => {
+      window.setTimeout(() => reject(new Error(errorMessage)), timeoutMs);
+    }),
+  ]);
+}
 
 async function readSessionWithRetry() {
   let lastError: unknown = null;
@@ -36,7 +47,11 @@ async function readSessionWithRetry() {
       await new Promise((resolve) => window.setTimeout(resolve, delay));
     }
 
-    const result = await supabase.auth.getSession();
+    const result = await withTimeout(
+      supabase.auth.getSession(),
+      AUTH_REQUEST_TIMEOUT_MS,
+      "Session lookup timed out."
+    );
     if (!result.error) {
       return result;
     }
@@ -54,20 +69,49 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   const setUserData = useUserStore((state) => state.setUserData);
   const reset = useUserStore((state) => state.reset);
 
-  const refreshProfile = useCallback(async () => {
-    const { data: sessionData } = await supabase.auth.getSession();
-    const activeUser = sessionData.session?.user;
+  const refreshProfile = useCallback(async (sessionUser?: User | null) => {
+    let activeUser = sessionUser ?? null;
+
+    if (!activeUser) {
+      try {
+        const { data: sessionData } = await withTimeout(
+          supabase.auth.getSession(),
+          AUTH_REQUEST_TIMEOUT_MS,
+          "Profile session lookup timed out."
+        );
+        activeUser = sessionData.session?.user ?? null;
+      } catch {
+        setUserData({ profile: null });
+        return;
+      }
+    }
 
     if (!activeUser) {
       setUserData({ profile: null });
       return;
     }
 
-    const { data: profileData, error } = await supabase
-      .from("profiles")
-      .select("full_name")
-      .eq("id", activeUser.id)
-      .maybeSingle();
+    let profileData: Profile | null = null;
+    let error: Error | null = null;
+
+    try {
+      const result = await withTimeout(
+        Promise.resolve(
+          supabase
+            .from("profiles")
+            .select("full_name")
+            .eq("id", activeUser.id)
+            .maybeSingle()
+        ),
+        PROFILE_FETCH_TIMEOUT_MS,
+        "Profile lookup timed out."
+      );
+
+      profileData = (result.data as Profile | null) ?? null;
+      error = result.error;
+    } catch (profileError) {
+      error = profileError instanceof Error ? profileError : new Error("Profile lookup failed.");
+    }
 
     if (error) {
       setUserData({ profile: null });
@@ -79,20 +123,23 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
 
   const applySessionUser = useCallback(async (sessionUser: User | null) => {
     setUser(sessionUser);
-    setUserData({ user: sessionUser, loading: Boolean(sessionUser) });
+    setUserData({ user: sessionUser, loading: false });
 
     if (!sessionUser) {
       setUserData({ profile: null, loading: false });
       return;
     }
 
-    await refreshProfile();
-    setUserData({ loading: false });
+    void refreshProfile(sessionUser);
   }, [refreshProfile, setUserData]);
 
   const refreshSession = useCallback(async () => {
     try {
-      const { data, error } = await supabase.auth.refreshSession();
+      const { data, error } = await withTimeout(
+        supabase.auth.refreshSession(),
+        AUTH_REQUEST_TIMEOUT_MS,
+        "Session refresh timed out."
+      );
       if (error) {
         return;
       }
@@ -197,8 +244,10 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        Verifying secure session...
+      <div className="af-page-shell flex min-h-screen items-center justify-center px-6">
+        <div className="af-surface-card px-6 py-5 text-sm font-semibold text-[#6B665D]">
+          Verifying secure session...
+        </div>
       </div>
     );
   }

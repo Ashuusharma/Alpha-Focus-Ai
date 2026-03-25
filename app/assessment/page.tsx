@@ -308,21 +308,21 @@ export default function AssessmentPage() {
 
 if (loading) {
     return (
-      <div className="flex h-full items-center justify-center p-6">
-        <div className="rounded-2xl bg-black/20 border border-white/5 backdrop-blur-md px-6 py-5 text-sm text-zinc-400">Loading clinical flow validation...</div>
+      <div className="af-page-shell flex h-full items-center justify-center p-6">
+        <div className="af-surface-card px-6 py-5 text-sm text-[#6B665D]">Loading clinical flow validation...</div>
       </div>
     );
   }
 
   if (blockedMessage || !activeCategory) {
     return (
-      <div className="flex h-full items-center justify-center p-6">
-        <div className="max-w-xl w-full rounded-3xl bg-[#0a1a1f] border border-red-500/20 shadow-[0_0_40px_rgba(239,68,68,0.1)] p-8 text-center space-y-4">
-          <h1 className="text-xl font-bold text-white">Assessment Locked</h1>
-          <p className="text-sm text-zinc-400">{blockedMessage || "Flow validation failed."}</p>
+      <div className="af-page-shell flex h-full items-center justify-center p-6">
+        <div className="max-w-xl w-full rounded-3xl border border-[#d8c4bf] bg-[linear-gradient(180deg,#fff8f6_0%,#f4e7e3_100%)] shadow-[0_24px_60px_rgba(140,106,90,0.12)] p-8 text-center space-y-4">
+          <h1 className="text-xl font-bold text-[#1F3D2B]">Assessment Locked</h1>
+          <p className="text-sm text-[#6B665D]">{blockedMessage || "Flow validation failed."}</p>
           <button
             onClick={() => router.push("/image-analyzer")}
-            className="inline-flex items-center justify-center rounded-full bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 px-6 py-3 text-sm font-semibold transition-colors"
+            className="inline-flex items-center justify-center rounded-full bg-[#8C6A5A] hover:bg-[#775748] text-white border border-[#8C6A5A]/20 px-6 py-3 text-sm font-semibold transition-colors shadow-[0_12px_28px_rgba(140,106,90,0.18)]"
           >
             Go to Analyzer
           </button>
@@ -335,32 +335,32 @@ if (loading) {
   const isLastQuestion = activeQuestionIndex === categoryQuestions.length - 1;
 
   return (
-    <div className="flex flex-col h-full bg-[#071318] w-full animate-in fade-in duration-700 min-h-screen">
+    <div className="af-page-shell flex flex-col h-full w-full animate-in fade-in duration-700 min-h-screen">
       
       {/* HEADER PROGRESS BAR */}
-      <div className="sticky top-0 z-30 bg-[#0a1a1f]/80 backdrop-blur-xl border-b border-white/5 shadow-lg">
+      <div className="sticky top-0 z-30 bg-[rgba(250,245,236,0.9)] backdrop-blur-xl border-b border-[#e2d8ca] shadow-[0_10px_28px_rgba(120,97,67,0.08)]">
         <div className="max-w-3xl mx-auto px-6 py-4 space-y-4">
           <div className="flex items-start justify-between">
             <div className="space-y-1">
-              <h1 className="text-clinical-heading text-xl font-extrabold text-white tracking-tight text-shadow-glow">Clinical Assessment - {getCategoryLabel(activeCategory)}</h1>
-              <p className="text-xs text-zinc-300">Category-locked protocol scoring with weighted domain inputs.</p>
+              <h1 className="text-clinical-heading text-xl font-extrabold text-[#1F3D2B] tracking-tight">Clinical Assessment - {getCategoryLabel(activeCategory)}</h1>
+              <p className="text-xs text-[#6B665D]">Category-locked protocol scoring with weighted domain inputs.</p>
             </div>
             <div className="flex flex-col items-end">
-               <span className="text-xs font-bold text-green-400 bg-green-500/10 px-2 py-1 rounded-md border border-green-500/20">{answeredCount}/{categoryQuestions.length} answered</span>
+               <span className="text-xs font-bold text-[#2F6F57] bg-[#E8EFEA] px-2 py-1 rounded-md border border-[#C8DACF] shadow-sm">{answeredCount}/{categoryQuestions.length} answered</span>
             </div>
           </div>
           
-          <div className="rounded-xl border border-white/5 bg-white/5 backdrop-blur-sm px-4 py-3 text-xs text-zinc-300 flex items-center gap-3">
-             <Activity className="w-4 h-4 text-blue-400" />
+          <div className="af-surface-soft px-4 py-3 text-xs text-[#6B665D] flex items-center gap-3">
+             <Activity className="w-4 h-4 text-[#2F6F57]" />
             {clinicalContextMessage || "We detected early signs. Let’s understand your daily behavior drivers."}
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+          <div className="af-surface-card p-4">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Recovery Track</p>
-                <p className="mt-1 text-sm font-semibold text-white">{selectedLevelMeta.label}</p>
-                <p className="mt-1 max-w-xl text-xs leading-relaxed text-zinc-400">{selectedLevelMeta.description} This selection is saved to your profile and used by the 30-day planner after assessment.</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#8C6A5A]">Recovery Track</p>
+                <p className="mt-1 text-sm font-semibold text-[#1F3D2B]">{selectedLevelMeta.label}</p>
+                <p className="mt-1 max-w-xl text-xs leading-relaxed text-[#6B665D]">{selectedLevelMeta.description} This selection is saved to your profile and used by the 30-day planner after assessment.</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 {(["beginner", "intermediate", "advanced"] as ProtocolToleranceMode[]).map((level) => {
@@ -372,7 +372,7 @@ if (loading) {
                       key={level}
                       type="button"
                       onClick={() => handleSelectProgramLevel(level)}
-                      className={`rounded-xl px-4 py-2 text-left transition-all ${active ? "bg-green-500 text-black shadow-[0_0_18px_rgba(74,222,128,0.25)]" : "bg-white/5 text-zinc-300 hover:bg-white/10"}`}
+                      className={`rounded-xl px-4 py-2 text-left transition-all ${active ? "bg-[#2F6F57] text-white shadow-[0_14px_28px_rgba(47,111,87,0.24)]" : "af-surface-soft text-[#6B665D] hover:text-[#1F3D2B]"}`}
                     >
                       <span className="block text-[10px] font-black uppercase tracking-widest">{option.label}</span>
                     </button>
@@ -383,20 +383,20 @@ if (loading) {
           </div>
           
           {flowDiagnosticSource && (
-            <p className="text-[10px] uppercase tracking-wider text-zinc-400">
-              Diagnostic mode: <span className="text-green-500/70">{flowDiagnosticSource === "db_scan" ? "DB scan validated" : "Session fallback"}</span>
+            <p className="text-[10px] uppercase tracking-wider text-[#8C6A5A]">
+              Diagnostic mode: <span className="text-[#2F6F57]">{flowDiagnosticSource === "db_scan" ? "DB scan validated" : "Session fallback"}</span>
             </p>
           )}
           
-          <div className="w-full h-1.5 bg-black/40 rounded-full overflow-hidden border border-white/5">
-            <div className="h-full bg-gradient-to-r from-blue-500 to-green-400 transition-all duration-500 ease-out shadow-[0_0_10px_rgba(74,222,128,0.5)]" style={{ width: `${progressPercent}%` }} />
+          <div className="af-progress-track w-full h-1.5 border border-[#e3d8c8]">
+            <div className="af-progress-fill transition-all duration-500 ease-out" style={{ width: `${progressPercent}%` }} />
           </div>
         </div>
       </div>
 
       <main className="flex-1 max-w-3xl mx-auto w-full px-6 py-10 relative">
         {/* Glow effect */}
-        <div className="absolute top-[10%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-green-500/5 blur-[120px] rounded-full pointer-events-none" />
+        <div className="absolute top-[10%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-[#A9CBB7]/25 blur-[120px] rounded-full pointer-events-none" />
 
         <AnimatePresence mode="wait">
           {activeQuestion && (
@@ -406,35 +406,35 @@ if (loading) {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.98, y: -10 }}
               transition={{ duration: 0.3 }}
-              className="relative rounded-3xl bg-[#0a1a1f]/80 backdrop-blur-xl border border-white/10 p-6 md:p-8 space-y-6 shadow-2xl"
+              className="af-surface-card relative p-6 md:p-8 space-y-6"
             >
-              <div className="flex items-center justify-between border-b border-white/5 pb-4">
+              <div className="flex items-center justify-between border-b border-[#e6dccd] pb-4">
                 <button
                   onClick={handleBack}
-                  className="inline-flex items-center gap-2 text-xs font-semibold text-zinc-400 hover:text-white transition-colors"
+                  className="inline-flex items-center gap-2 text-xs font-semibold text-[#6B665D] hover:text-[#1F3D2B] transition-colors"
                 >
                   <ArrowLeft className="w-4 h-4" /> Back
                 </button>
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-green-400">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#2F6F57]">
                     {getClinicalRelevance(activeQuestion.id)} relevance
                   </span>
                 </div>
               </div>
 
               <div className="space-y-4">
-                <div className="flex items-center justify-between text-[11px] uppercase tracking-wider text-zinc-400">
+                <div className="flex items-center justify-between text-[11px] uppercase tracking-wider text-[#8C6A5A]">
                   <span>Question {activeQuestionIndex + 1} of {categoryQuestions.length}</span>
                   <span>{Math.max(0, categoryQuestions.length - (activeQuestionIndex + 1))} remaining</span>
                 </div>
-                <div className="inline-block px-2 py-1 rounded border border-white/10 bg-white/5 text-[10px] uppercase tracking-wider text-zinc-400">
-                  Domain: <span className="text-white">{activeQuestion.domain.replace(/_/g, " ")}</span>
+                <div className="inline-block px-2 py-1 rounded border border-[#ddd2c2] bg-[rgba(255,252,246,0.72)] text-[10px] uppercase tracking-wider text-[#8C6A5A]">
+                  Domain: <span className="text-[#1F3D2B]">{activeQuestion.domain.replace(/_/g, " ")}</span>
                 </div>
-                <h2 className="text-2xl font-bold text-white leading-snug">{activeQuestion.text}</h2>
-                <div className="flex items-center gap-4 text-xs text-zinc-400">
-                  <span className="flex items-center gap-1.5"><Activity className="w-3.5 h-3.5 text-blue-400" /> W-{activeQuestion.weight.toFixed(1)}</span>
-                  <span className="w-1 h-1 rounded-full bg-zinc-700"></span>
+                <h2 className="text-2xl font-bold text-[#1F3D2B] leading-snug">{activeQuestion.text}</h2>
+                <div className="flex items-center gap-4 text-xs text-[#6B665D]">
+                  <span className="flex items-center gap-1.5"><Activity className="w-3.5 h-3.5 text-[#2F6F57]" /> W-{activeQuestion.weight.toFixed(1)}</span>
+                  <span className="w-1 h-1 rounded-full bg-[#c8bcab]"></span>
                   <span>Answer based on recent 2-4 weeks.</span>
                 </div>
               </div>
@@ -448,17 +448,17 @@ if (loading) {
                       onClick={() => handleSelectAnswer(option.label)}
                       className={`w-full rounded-2xl border px-5 py-4 text-left transition-all duration-300 relative overflow-hidden group ${
                         selected
-                          ? "border-green-500/50 bg-green-500/10 shadow-[0_0_15px_rgba(74,222,128,0.1)]"
-                          : "border-white/5 bg-black/20 hover:border-white/20 hover:bg-white/5"
+                          ? "border-[#7ea58f] bg-[#e7f0e8] shadow-[0_12px_24px_rgba(47,111,87,0.12)]"
+                          : "border-[#e3d8c8] bg-[rgba(255,251,245,0.84)] hover:border-[#c9bba6] hover:bg-[rgba(255,255,255,0.92)]"
                       }`}
                     >
-                      {selected && <div className="absolute inset-0 bg-gradient-to-r from-green-500/10 to-transparent pointer-events-none" />}
+                      {selected && <div className="absolute inset-0 bg-gradient-to-r from-[#A9CBB7]/45 to-transparent pointer-events-none" />}
                       <div className="relative z-10 flex items-center justify-between gap-3">
-                        <span className={`text-sm font-medium transition-colors ${selected ? "text-green-400" : "text-zinc-300 group-hover:text-white"}`}>{option.label}</span>
+                        <span className={`text-sm font-medium transition-colors ${selected ? "text-[#2F6F57]" : "text-[#5F5A51] group-hover:text-[#1F3D2B]"}`}>{option.label}</span>
                         <div className="flex items-center gap-3">
-                           <span className={`text-[10px] font-mono px-2 py-1 rounded ${selected ? "bg-green-500/20 text-green-400" : "bg-white/5 text-zinc-300"}`}>SC {option.score}</span>
-                           <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${selected ? "border-green-400" : "border-zinc-600"}`}>
-                             {selected && <div className="w-2 h-2 bg-green-400 rounded-full" />}
+                           <span className={`text-[10px] font-mono px-2 py-1 rounded ${selected ? "bg-[#dce9df] text-[#2F6F57]" : "bg-[#f3ecdf] text-[#6B665D]"}`}>SC {option.score}</span>
+                           <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${selected ? "border-[#2F6F57]" : "border-[#b8aa95]"}`}>
+                             {selected && <div className="w-2 h-2 bg-[#2F6F57] rounded-full" />}
                            </div>
                         </div>
                       </div>
@@ -472,7 +472,7 @@ if (loading) {
                   <button
                     onClick={handleContinue}
                     disabled={!isAnswered}
-                    className="inline-flex items-center gap-2 rounded-xl bg-white text-black px-8 py-3 text-sm font-bold shadow-lg hover:shadow-xl hover:bg-zinc-200 transition-all disabled:opacity-30 disabled:pointer-events-none"
+                    className="inline-flex items-center gap-2 rounded-xl bg-[#efe6d8] text-[#1F3D2B] px-8 py-3 text-sm font-bold shadow-[0_12px_24px_rgba(120,97,67,0.12)] hover:shadow-[0_16px_28px_rgba(120,97,67,0.18)] hover:bg-[#e4d8c6] transition-all disabled:opacity-30 disabled:pointer-events-none"
                   >
                     Next Query <ArrowRight className="w-4 h-4" />
                   </button>
@@ -480,7 +480,7 @@ if (loading) {
                   <button
                     onClick={handleSubmit}
                     disabled={!isAnswered || isSubmitting || progressPercent < 60}
-                    className="relative overflow-hidden inline-flex items-center gap-2 rounded-xl bg-green-500 text-black px-8 py-3 text-sm font-bold shadow-[0_0_20px_rgba(74,222,128,0.3)] hover:shadow-[0_0_30px_rgba(74,222,128,0.5)] transition-all disabled:opacity-30 disabled:pointer-events-none"
+                    className="relative overflow-hidden inline-flex items-center gap-2 rounded-xl bg-[#2F6F57] text-white px-8 py-3 text-sm font-bold shadow-[0_16px_30px_rgba(47,111,87,0.24)] hover:shadow-[0_20px_36px_rgba(47,111,87,0.32)] transition-all disabled:opacity-30 disabled:pointer-events-none"
                   >
                     <CheckCircle2 className="w-4 h-4" />
                     {isSubmitting ? "Compiling Report..." : "Generate Clinical Report"}

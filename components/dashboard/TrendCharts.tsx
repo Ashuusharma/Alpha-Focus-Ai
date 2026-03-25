@@ -34,10 +34,10 @@ function clampPct(value: number) {
 
 function ChartCard({ title, children }: ChartCardProps) {
   return (
-    <div className="rounded-[1.5rem] border-none bg-white p-6 shadow-sm hover:shadow-md transition-all duration-300">
+    <div className="rounded-[1.8rem] border border-[#E2DDD3] bg-[#FFFDFC] p-6 shadow-[0_10px_24px_rgba(17,17,17,0.04)] hover:shadow-[0_16px_30px_rgba(17,17,17,0.08)] transition-all duration-300">
       <div className="flex justify-between items-center mb-4">
         <p className="text-xs font-black uppercase tracking-widest text-[#1F3D2B]">{title}</p>
-        <span className="text-[10px] font-bold text-[#2F6F57] bg-[#E8F4EE] px-2 py-0.5 rounded-full">You improved +8% this week</span>
+        <span className="text-[10px] font-black text-[#2F6F57] bg-[#E8F4EE] px-2 py-0.5 rounded-full border border-[#C8DACF]">You improved +8% this week</span>
       </div>
       <div className="h-64 w-full">{children}</div>
     </div>

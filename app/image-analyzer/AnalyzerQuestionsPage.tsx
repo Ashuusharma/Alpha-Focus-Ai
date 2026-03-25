@@ -99,11 +99,11 @@ export default function AnalyzerQuestionsPage({ onSubmit }: Props) {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--lux-bg-primary)] text-white relative overflow-hidden">
+    <div className="af-page-shell min-h-screen text-[var(--lux-text-primary)] relative overflow-hidden">
       {/* Background */}
       <div className="fixed inset-0 pointer-events-none -z-10">
-        <div className="absolute top-[20%] right-[10%] w-[500px] h-[500px] bg-[var(--lux-accent)]/10 blur-[120px] rounded-full opacity-40 animate-pulse" />
-        <div className="absolute bottom-[10%] left-[10%] w-[400px] h-[400px] bg-[#0066ff]/10 blur-[120px] rounded-full opacity-40" />
+        <div className="absolute top-[20%] right-[10%] w-[500px] h-[500px] bg-[var(--lux-accent)]/16 blur-[120px] rounded-full opacity-40 animate-pulse" />
+        <div className="absolute bottom-[10%] left-[10%] w-[400px] h-[400px] bg-[#d8b55f]/14 blur-[120px] rounded-full opacity-40" />
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-10 relative z-10">
@@ -139,7 +139,7 @@ export default function AnalyzerQuestionsPage({ onSubmit }: Props) {
           >
             <div className="lux-card p-8 mb-6">
               <div className="flex items-center gap-4 mb-8">
-                <div className="w-12 h-12 rounded-xl bg-[var(--lux-accent)]/10 border border-[var(--lux-accent)]/20 flex items-center justify-center shadow-[0_0_15px_rgba(0,242,255,0.1)]">
+                <div className="w-12 h-12 rounded-xl bg-[var(--lux-accent)]/10 border border-[var(--lux-accent)]/20 flex items-center justify-center shadow-[0_14px_28px_rgba(47,111,87,0.14)]">
                   <Layers className="w-6 h-6 text-[var(--lux-accent)]" />
                 </div>
                 <div>
@@ -157,7 +157,7 @@ export default function AnalyzerQuestionsPage({ onSubmit }: Props) {
                       onClick={() => toggleCategory(cat.id)}
                       className={`relative p-4 rounded-xl border transition-all duration-300 text-left overflow-hidden group ${
                         isSelected
-                          ? "bg-[var(--lux-accent)]/10 border-[var(--lux-accent)] shadow-[0_0_20px_rgba(0,242,255,0.15)]"
+                          ? "bg-[var(--lux-accent)]/10 border-[var(--lux-accent)] shadow-[0_16px_30px_rgba(47,111,87,0.12)]"
                           : "bg-[var(--lux-bg-elevated)] border-[var(--lux-glass-border)] hover:bg-[var(--lux-bg-secondary)] hover:border-[var(--lux-accent)]/30"
                       }`}
                     >
@@ -209,7 +209,7 @@ export default function AnalyzerQuestionsPage({ onSubmit }: Props) {
               disabled={selectedCategories.length === 0}
               className={`w-full flex items-center justify-center gap-2 px-6 py-4 rounded-xl font-bold transition-all duration-300 ${
                 selectedCategories.length > 0
-                  ? "lux-btn-primary shadow-[0_0_30px_rgba(0,242,255,0.2)] hover:shadow-[0_0_40px_rgba(0,242,255,0.3)]"
+                  ? "lux-btn-primary shadow-[0_16px_30px_rgba(47,111,87,0.18)] hover:shadow-[0_18px_34px_rgba(47,111,87,0.26)]"
                   : "bg-[var(--lux-bg-elevated)] border border-[var(--lux-glass-border)] text-[var(--lux-text-muted)] cursor-not-allowed opacity-50"
               }`}
             >
@@ -224,7 +224,7 @@ export default function AnalyzerQuestionsPage({ onSubmit }: Props) {
           <>
             {/* Category Tag */}
             <div className="mb-6 flex justify-center">
-              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[var(--lux-accent)]/10 border border-[var(--lux-accent)]/20 text-xs font-bold text-[var(--lux-accent)] uppercase tracking-wider shadow-[0_0_10px_rgba(0,242,255,0.1)]">
+              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[var(--lux-accent)]/10 border border-[var(--lux-accent)]/20 text-xs font-bold text-[var(--lux-accent)] uppercase tracking-wider shadow-[0_10px_20px_rgba(47,111,87,0.12)]">
                 <span>{categoryIcons[current.category]}</span>
                 {categories.find((c) => c.id === current.category)?.label || current.category}
               </span>
@@ -254,16 +254,16 @@ export default function AnalyzerQuestionsPage({ onSubmit }: Props) {
                           key={opt.label}
                           className={`block w-full text-left px-5 py-4 rounded-xl border transition-all duration-200 font-medium text-sm group ${
                             selected
-                              ? "bg-[var(--lux-accent)]/10 border-[var(--lux-accent)] text-[var(--lux-accent)] shadow-[0_0_15px_rgba(0,242,255,0.1)]"
+                              ? "bg-[var(--lux-accent)]/10 border-[var(--lux-accent)] text-[var(--lux-accent)] shadow-[0_12px_24px_rgba(47,111,87,0.1)]"
                               : "bg-[var(--lux-bg-elevated)] border-[var(--lux-glass-border)] text-[var(--lux-text-secondary)] hover:bg-[var(--lux-bg-secondary)] hover:border-[var(--lux-accent)]/30 hover:text-[var(--lux-text-primary)]"
                           }`}
                           onClick={() => handleAnswer(opt.label)}
                         >
                           <span className="flex items-center gap-3">
                             <span className={`w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 transition-all ${
-                              selected ? "border-[var(--lux-accent)] bg-[var(--lux-accent)] shadow-[0_0_10px_var(--lux-accent)]" : "border-[var(--lux-text-muted)] bg-transparent group-hover:border-[var(--lux-text-secondary)]"
+                              selected ? "border-[var(--lux-accent)] bg-[var(--lux-accent)] shadow-[0_8px_18px_rgba(47,111,87,0.14)]" : "border-[var(--lux-text-muted)] bg-transparent group-hover:border-[var(--lux-text-secondary)]"
                             }`}>
-                              {selected && <CheckCircle2 className="w-3.5 h-3.5 text-[#060b14]" />}
+                              {selected && <CheckCircle2 className="w-3.5 h-3.5 text-[#fffdf9]" />}
                             </span>
                             {opt.label}
                           </span>
@@ -296,7 +296,7 @@ export default function AnalyzerQuestionsPage({ onSubmit }: Props) {
                           key={sev.label}
                           className={`flex-1 px-4 py-3 rounded-xl border font-semibold text-sm transition-all ${
                             selected
-                              ? `${sev.color.replace('10', '20')} shadow-[0_0_15px_rgba(0,0,0,0.3)] ring-1 ring-white/10`
+                              ? `${sev.color.replace('10', '20')} shadow-[0_12px_24px_rgba(120,97,67,0.12)] ring-1 ring-white/30`
                               : "bg-[var(--lux-bg-elevated)] border-[var(--lux-glass-border)] text-[var(--lux-text-muted)] hover:bg-[var(--lux-bg-secondary)]"
                           }`}
                           onClick={() => handleSeverity(sev.label)}
@@ -327,7 +327,7 @@ export default function AnalyzerQuestionsPage({ onSubmit }: Props) {
                   !answers[current.question.id]
                     ? "bg-[var(--lux-bg-elevated)] border border-[var(--lux-glass-border)] text-[var(--lux-text-muted)] cursor-not-allowed opacity-50 shadow-none"
                     : step === allQuestions.length - 1
-                      ? "bg-gradient-to-r from-[var(--lux-accent)] to-[var(--lux-accent-secondary)] text-[#060b14] shadow-[0_0_20px_var(--lux-accent)] hover:shadow-[0_0_30px_var(--lux-accent)] hover:scale-105"
+                      ? "bg-gradient-to-r from-[var(--lux-accent)] to-[var(--lux-accent-secondary)] text-[#fffdf9] shadow-[0_16px_28px_rgba(47,111,87,0.18)] hover:shadow-[0_20px_34px_rgba(47,111,87,0.24)] hover:scale-105"
                       : "bg-[var(--lux-bg-secondary)] border border-[var(--lux-glass-border)] text-[var(--lux-text-primary)] hover:border-[var(--lux-accent)]/50 hover:bg-[var(--lux-bg-elevated)]"
                 }`}
               >
