@@ -17,26 +17,36 @@ type WalletSummaryPayload = {
 };
 
 export async function refreshAlphaWallet(userId: string) {
-  const headers = await getSupabaseAuthHeaders();
-  const response = await fetch("/api/alpha-sikka/summary", {
-    headers,
-    cache: "no-store",
-  });
+  try {
+    const headers = await getSupabaseAuthHeaders();
+    if (!headers.Authorization) {
+      return false;
+    }
 
-  if (!response.ok) {
-    throw new Error("alpha_wallet_refresh_failed");
+    const response = await fetch("/api/alpha-sikka/summary", {
+      headers,
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return false;
+    }
+
+    const payload = (await response.json()) as WalletSummaryPayload;
+    if (!payload.ok) {
+      return false;
+    }
+
+    useUserStore.getState().setUserData({
+      alphaSummary: toAlphaWalletSummary(payload.summary || null) as unknown as Record<string, unknown>,
+      alphaTransactions: Array.isArray(payload.transactions) ? payload.transactions : [],
+      alphaStreak: toAlphaWalletStreak(payload.streak || null) as unknown as Record<string, unknown>,
+    });
+
+    return true;
+  } catch {
+    return false;
   }
-
-  const payload = (await response.json()) as WalletSummaryPayload;
-  if (!payload.ok) {
-    throw new Error("alpha_wallet_refresh_failed");
-  }
-
-  useUserStore.getState().setUserData({
-    alphaSummary: toAlphaWalletSummary(payload.summary || null) as unknown as Record<string, unknown>,
-    alphaTransactions: Array.isArray(payload.transactions) ? payload.transactions : [],
-    alphaStreak: toAlphaWalletStreak(payload.streak || null) as unknown as Record<string, unknown>,
-  });
 }
 
 export function applyRealtimeAlphaInsert(transaction: Record<string, unknown>) {
