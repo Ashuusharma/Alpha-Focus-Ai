@@ -54,11 +54,9 @@ export default function RootLayout({
               } catch (e) {}
 
               try {
-                if ('serviceWorker' in navigator && location.hostname === 'localhost') {
-                  navigator.serviceWorker.getRegistrations().then(function (registrations) {
-                    registrations.forEach(function (registration) {
-                      registration.unregister();
-                    });
+                if ('serviceWorker' in navigator) {
+                  window.addEventListener('load', function () {
+                    navigator.serviceWorker.register('/service-worker.js').catch(function () {});
                   });
                 }
               } catch (e) {}

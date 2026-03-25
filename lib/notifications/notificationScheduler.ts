@@ -1,4 +1,5 @@
 import { createNotification } from "@/lib/notifications/notificationEngine";
+import { getRewardCatalog } from "@/lib/couponService";
 
 type RoutineLogRow = {
   user_id: string;
@@ -17,6 +18,12 @@ type ChallengeRow = {
   user_id: string;
   completed_days?: number[];
   progress_payload?: { completedDays?: number[] };
+  updated_at?: string;
+};
+
+type RewardSummaryRow = {
+  user_id: string;
+  balance: number | null;
   updated_at?: string;
 };
 
@@ -111,6 +118,23 @@ async function fetchChallengeProgress(baseUrl: string, serviceKey: string, userI
   return rows[0] || null;
 }
 
+async function fetchRewardSummary(baseUrl: string, serviceKey: string, userId: string) {
+  const url = new URL(`${baseUrl}/rest/v1/alpha_sikka_summary`);
+  url.searchParams.set("select", "user_id,balance,updated_at");
+  url.searchParams.set("user_id", `eq.${userId}`);
+  url.searchParams.set("limit", "1");
+
+  const response = await fetch(url.toString(), {
+    method: "GET",
+    headers: buildAuthHeaders(serviceKey),
+    cache: "no-store",
+  });
+
+  if (!response.ok) return null;
+  const rows = (await response.json()) as RewardSummaryRow[];
+  return rows[0] || null;
+}
+
 function extractCompletedDays(row: ChallengeRow | null) {
   if (!row) return [] as number[];
   if (Array.isArray(row.completed_days)) return row.completed_days.filter((x) => Number.isFinite(x));
@@ -129,11 +153,26 @@ export async function runNotificationScheduler(input?: { userId?: string; now?: 
   const hour = now.getHours();
 
   const users = await listTargetUsers(config.baseUrl, config.serviceKey, input?.userId);
+  const rewardCatalog = getRewardCatalog();
   const results: Array<{ userId: string; created: number; skipped: number }> = [];
 
   for (const userId of users) {
     let created = 0;
     let skipped = 0;
+
+    const todayRoutine = await fetchTodayRoutine(config.baseUrl, config.serviceKey, userId, dayKey);
+    const completedToday = Boolean(todayRoutine?.am_done) && Boolean(todayRoutine?.pm_done);
+
+    if (hour >= 7 && !completedToday) {
+      const reminderResult = await createNotification({
+        userId,
+        eventType: "routine_reminder",
+        metadata: { slot: todayRoutine?.am_done ? "pm" : "am", logDate: dayKey },
+        dedupeKey: `routine_reminder:${dayKey}`,
+      });
+      if (reminderResult.ok && !("skipped" in reminderResult)) created += 1;
+      else skipped += 1;
+    }
 
     if (hour >= 10) {
       const tipResult = await createNotification({
@@ -147,9 +186,7 @@ export async function runNotificationScheduler(input?: { userId?: string; now?: 
     }
 
     if (hour >= 21) {
-      const todayRoutine = await fetchTodayRoutine(config.baseUrl, config.serviceKey, userId, dayKey);
-      const completed = Boolean(todayRoutine?.am_done) && Boolean(todayRoutine?.pm_done);
-      if (!completed) {
+      if (!completedToday) {
         const result = await createNotification({
           userId,
           eventType: "routine_missed",
@@ -183,6 +220,36 @@ export async function runNotificationScheduler(input?: { userId?: string; now?: 
         eventType: "challenge_milestone",
         metadata: { milestoneDay },
         dedupeKey: `challenge_milestone:${milestoneDay}`,
+      });
+      if (result.ok && !("skipped" in result)) created += 1;
+      else skipped += 1;
+    }
+
+    const streakDays = completedDays.length;
+    if (streakDays >= 3 && !completedToday && hour >= 18) {
+      const result = await createNotification({
+        userId,
+        eventType: "streak_at_risk",
+        metadata: { streakDays, logDate: dayKey },
+        dedupeKey: `streak_at_risk:${dayKey}`,
+      });
+      if (result.ok && !("skipped" in result)) created += 1;
+      else skipped += 1;
+    }
+
+    const rewardSummary = await fetchRewardSummary(config.baseUrl, config.serviceKey, userId);
+    const balance = Number(rewardSummary?.balance || 0);
+    const unlockedReward = [...rewardCatalog].reverse().find((reward) => balance >= reward.cost);
+    if (unlockedReward) {
+      const result = await createNotification({
+        userId,
+        eventType: "reward_unlocked",
+        metadata: {
+          balance,
+          rewardLabel: `${unlockedReward.discountPercent}% reward`,
+          rewardCost: unlockedReward.cost,
+        },
+        dedupeKey: `reward_unlocked:${unlockedReward.id}`,
       });
       if (result.ok && !("skipped" in result)) created += 1;
       else skipped += 1;

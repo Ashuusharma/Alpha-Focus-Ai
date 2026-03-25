@@ -2,7 +2,7 @@
 
 import { AnalyzerType } from "@/lib/analyzeImage";
 import { motion } from "framer-motion";
-import { User, Scissors, CircleDot, Eye, Clock, Brain, ShirtIcon, Droplet } from "lucide-react";
+import { User, Scissors, CircleDot, Eye, Clock, Brain, ShirtIcon, Droplet, SunMedium, BatteryMedium, Dumbbell } from "lucide-react";
 
 interface AnalyzerSelectorProps {
   selected: AnalyzerType | null;
@@ -38,28 +38,28 @@ export default function AnalyzerSelector({
       color: "from-indigo-400 to-violet-400",
     },
     {
-      type: "aging",
+      type: "anti_aging",
       label: "Anti-Aging",
       icon: Clock,
       description: "Fine lines, wrinkles, firmness loss & sun damage",
       color: "from-amber-400 to-orange-400",
     },
     {
-      type: "hair",
+      type: "hair_loss",
       label: "Hair Loss",
       icon: User,
       description: "Hairline recession, thinning, density & pattern baldness",
       color: "from-purple-400 to-pink-400",
     },
     {
-      type: "scalp",
+      type: "scalp_health",
       label: "Scalp Health",
       icon: Brain,
       description: "Dandruff, dryness, flaking, product buildup & irritation",
       color: "from-teal-400 to-emerald-400",
     },
     {
-      type: "beard",
+      type: "beard_growth",
       label: "Beard Growth",
       icon: Scissors,
       description: "Patchiness, density, ingrown hairs & texture issues",
@@ -73,11 +73,39 @@ export default function AnalyzerSelector({
       color: "from-rose-400 to-red-400",
     },
     {
-      type: "lips",
+      type: "body_odor",
+      label: "Body Odor / Sweat",
+      icon: ShirtIcon,
+      description: "Sweat load, odor retention, underarm stress & fabric smell buildup",
+      color: "from-cyan-400 to-sky-400",
+    },
+    {
+      type: "lip_care",
       label: "Lip Care",
       icon: Droplet,
       description: "Dryness, cracking, pigmentation & lip health analysis",
       color: "from-pink-400 to-rose-400",
+    },
+    {
+      type: "skin_dullness",
+      label: "Skin Dullness",
+      icon: SunMedium,
+      description: "Tan, tired tone, rough texture, pollution stress and low glow",
+      color: "from-yellow-400 to-amber-400",
+    },
+    {
+      type: "energy_fatigue",
+      label: "Energy / Fatigue",
+      icon: BatteryMedium,
+      description: "Sleep debt, midday crashes, hydration gaps and tired-face signals",
+      color: "from-lime-400 to-emerald-400",
+    },
+    {
+      type: "fitness_recovery",
+      label: "Fitness / Recovery",
+      icon: Dumbbell,
+      description: "Soreness, poor recovery, hydration, protein gaps and training stress",
+      color: "from-orange-400 to-red-400",
     },
   ];
 

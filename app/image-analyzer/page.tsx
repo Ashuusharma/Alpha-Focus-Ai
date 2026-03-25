@@ -285,7 +285,7 @@ export default function ImageAnalyzerPage() {
         sessionStorage.setItem("uploadedPhotoUrls", JSON.stringify(storageUpload.urls));
       }
 
-      const hairAnalyzers: AnalyzerType[] = ["hair", "scalp", "beard"];
+      const hairAnalyzers: AnalyzerType[] = ["hair", "scalp", "beard", "hair_loss", "scalp_health", "beard_growth"];
       const isHairFlow = hairAnalyzers.includes(selectedType);
       const fullScanPayload = {
         user_id: user.id,

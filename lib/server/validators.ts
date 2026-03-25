@@ -75,6 +75,20 @@ export const aiAdviceSchema = z.object({
   issues: z.array(z.string().min(1)).min(1).max(20),
   answers: z.record(z.string(), z.string()).optional(),
   locale: z.string().max(20).optional(),
+  category: z.string().max(60).optional(),
+  severity: z.enum(["mild", "moderate", "high"]).optional(),
+  environment: z.object({
+    climate: z.string().max(80).optional(),
+    humidity: z.number().min(0).max(100).optional(),
+    uv: z.number().min(0).max(20).optional(),
+    aqi: z.number().min(0).max(1000).optional(),
+  }).optional(),
+  lifestyle: z.object({
+    workMode: z.string().max(60).optional(),
+    sleepHours: z.number().min(0).max(24).optional(),
+    stressLevel: z.string().max(40).optional(),
+    workoutFrequency: z.string().max(40).optional(),
+  }).optional(),
 });
 
 export const galaxyAnalyzeSchema = z.object({
@@ -136,12 +150,15 @@ export const alphaSikkaSpendSchema = z.object({
 
 export const notificationCreateSchema = z.object({
   eventType: z.enum([
+    "routine_reminder",
     "routine_completed",
     "routine_missed",
     "challenge_started",
     "challenge_milestone",
     "progress_improved",
     "streak_milestone",
+    "streak_at_risk",
+    "reward_unlocked",
     "daily_tip",
     "system_alert",
   ]),

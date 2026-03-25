@@ -40,6 +40,10 @@ export const CATEGORY_CONTENT_MAP: Partial<Record<CategoryId, CategoryAdminConte
     imageExternal: "https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?q=80&w=1400&auto=format&fit=crop",
     imageLocal: "/images/assessment/male-body.svg",
   },
+  body_odor: {
+    imageExternal: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?q=80&w=1400&auto=format&fit=crop",
+    imageLocal: "/images/assessment/male-body.svg",
+  },
   lip_care: {
     imageExternal: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=1400&auto=format&fit=crop",
     imageLocal: "/images/assessment/male-skin.svg",
@@ -47,6 +51,18 @@ export const CATEGORY_CONTENT_MAP: Partial<Record<CategoryId, CategoryAdminConte
   anti_aging: {
     imageExternal: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?q=80&w=1400&auto=format&fit=crop",
     imageLocal: "/images/assessment/male-skin.svg",
+  },
+  skin_dullness: {
+    imageExternal: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=1400&auto=format&fit=crop",
+    imageLocal: "/images/assessment/male-skin.svg",
+  },
+  energy_fatigue: {
+    imageExternal: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=1400&auto=format&fit=crop",
+    imageLocal: "/images/assessment/male-health.svg",
+  },
+  fitness_recovery: {
+    imageExternal: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?q=80&w=1400&auto=format&fit=crop",
+    imageLocal: "/images/assessment/male-fitness.svg",
   },
 };
 

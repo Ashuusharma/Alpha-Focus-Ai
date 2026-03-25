@@ -1,12 +1,15 @@
 export type NotificationCategory = "routine" | "challenge" | "progress" | "tips" | "system";
 
 export type NotificationEventType =
+  | "routine_reminder"
   | "routine_completed"
   | "routine_missed"
   | "challenge_started"
   | "challenge_milestone"
   | "progress_improved"
   | "streak_milestone"
+  | "streak_at_risk"
+  | "reward_unlocked"
   | "daily_tip"
   | "system_alert";
 

@@ -36,6 +36,59 @@ This project now includes a provider-agnostic AI adapter endpoint at `POST /api/
 - `AI_BASE_URL` (OpenAI-compatible endpoint)
 - `AI_MODEL`
 
+### Web push env vars
+
+- `NEXT_PUBLIC_WEB_PUSH_VAPID_PUBLIC_KEY`
+- `WEB_PUSH_VAPID_PRIVATE_KEY`
+- `WEB_PUSH_VAPID_SUBJECT` (recommended format: `mailto:you@example.com`)
+- `NOTIFICATION_SCHEDULER_SECRET` (required to trigger the scheduler route manually or from cron)
+
+Push subscriptions are stored in Supabase-backed `user_app_state` under the `push_subscriptions` key and delivered from the notification backend.
+
+### Web push setup and testing
+
+1. Generate one VAPID keypair per environment.
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+2. Put the public key in `NEXT_PUBLIC_WEB_PUSH_VAPID_PUBLIC_KEY`.
+3. Put the private key only in server-side envs as `WEB_PUSH_VAPID_PRIVATE_KEY`.
+4. Set `WEB_PUSH_VAPID_SUBJECT` to a monitored email, for example `mailto:ops@yourdomain.com`.
+5. Never commit the private key, never place it in client-side code, and do not reuse production keys in local development.
+6. Restart the app after changing env vars because service-worker subscription setup depends on the public key at runtime.
+
+Recommended deployment pattern:
+
+- Local: keep keys only in `.env.local`.
+- Preview/staging: generate a separate staging keypair.
+- Production: store keys in your hosting provider secret manager.
+- Rotation: create a new keypair, deploy both app and backend config together, then resubscribe devices because old subscriptions are tied to the old public key.
+
+Safe verification flow:
+
+1. Start the app and sign in.
+2. Open Settings -> Notifications.
+3. Enable browser push on the current device.
+4. Use the new `Send test push` action in settings.
+5. Lock the screen or move the browser to the background.
+6. Confirm the notification arrives.
+7. Click the notification and verify it deep-links back into the app.
+
+Manual scheduler trigger example for Windows PowerShell:
+
+```powershell
+$headers = @{
+	"x-scheduler-secret" = "YOUR_NOTIFICATION_SCHEDULER_SECRET"
+	"Content-Type" = "application/json"
+}
+
+Invoke-RestMethod -Method Post -Uri "http://localhost:3000/api/notifications/scheduler" -Headers $headers -Body '{"userId":"YOUR_SUPABASE_USER_ID"}'
+```
+
+Use the scheduler route only from trusted automation or an operator terminal. The test route in settings is better for verifying one device end to end.
+
 ### 2) Built-in cost & safety controls
 
 - Daily budget cap: `AI_DAILY_BUDGET_USD`

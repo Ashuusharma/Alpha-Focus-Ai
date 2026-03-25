@@ -112,6 +112,18 @@ function defaultHotspotsForCategories(categories: string[]): GalaxyHotspot[] {
   if (lower.some((c) => c.includes("beard"))) {
     spots.push({ x: 50, y: 62, label: "Beard line", severity: "medium" });
   }
+  if (lower.some((c) => c.includes("odor") || c.includes("sweat"))) {
+    spots.push({ x: 50, y: 45, label: "Underarm / chest sweat zone", severity: "medium" });
+  }
+  if (lower.some((c) => c.includes("dull") || c.includes("tan"))) {
+    spots.push({ x: 50, y: 40, label: "Cheek and forehead tone", severity: "medium" });
+  }
+  if (lower.some((c) => c.includes("energy") || c.includes("fatigue"))) {
+    spots.push({ x: 50, y: 32, label: "Under-eye fatigue signal", severity: "low" });
+  }
+  if (lower.some((c) => c.includes("fitness") || c.includes("recovery"))) {
+    spots.push({ x: 50, y: 58, label: "Recovery stress zone", severity: "low" });
+  }
 
   return spots.slice(0, 8);
 }
@@ -163,6 +175,54 @@ function defaultIssuesForCategories(categories: string[]): GalaxyIssue[] {
         impact: "minor",
         description: "Baseline under-eye stress marker detected for lifestyle correlation.",
         affectedArea: "Under-eye",
+      },
+    ];
+  }
+
+  if (lower.some((c) => c.includes("odor") || c.includes("sweat"))) {
+    return [
+      {
+        name: "Sweat Retention Marker (Baseline)",
+        confidence: 74,
+        impact: "moderate",
+        description: "Baseline sweat and odor-retention pattern detected for hygiene and fabric-control protocol calibration.",
+        affectedArea: "Underarm / torso",
+      },
+    ];
+  }
+
+  if (lower.some((c) => c.includes("dull") || c.includes("tan"))) {
+    return [
+      {
+        name: "Tone Fatigue Marker (Baseline)",
+        confidence: 75,
+        impact: "moderate",
+        description: "Baseline dullness and tan-load marker detected for brightening and protection planning.",
+        affectedArea: "Forehead / cheeks",
+      },
+    ];
+  }
+
+  if (lower.some((c) => c.includes("energy") || c.includes("fatigue"))) {
+    return [
+      {
+        name: "Fatigue Signal Marker (Baseline)",
+        confidence: 72,
+        impact: "minor",
+        description: "Baseline fatigue-linked appearance marker detected for sleep, hydration, and energy routine planning.",
+        affectedArea: "Under-eye / overall face",
+      },
+    ];
+  }
+
+  if (lower.some((c) => c.includes("fitness") || c.includes("recovery"))) {
+    return [
+      {
+        name: "Recovery Load Marker (Baseline)",
+        confidence: 73,
+        impact: "minor",
+        description: "Baseline recovery-load marker detected for hydration, protein, and training-balance calibration.",
+        affectedArea: "Target recovery region",
       },
     ];
   }

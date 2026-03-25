@@ -7,6 +7,20 @@ type AdviceRequest = {
   issues: string[];
   answers?: Record<string, string>;
   locale?: string;
+  category?: string;
+  severity?: "mild" | "moderate" | "high";
+  environment?: {
+    climate?: string;
+    humidity?: number;
+    uv?: number;
+    aqi?: number;
+  };
+  lifestyle?: {
+    workMode?: string;
+    sleepHours?: number;
+    stressLevel?: string;
+    workoutFrequency?: string;
+  };
 };
 
 type AdviceResponse = {
@@ -71,19 +85,52 @@ function estimateCostUsd(prompt: string): number {
 
 function buildFallback(body: AdviceRequest): AdviceResponse {
   const primary = body.issues[0] ?? "grooming";
+  const category = body.category?.replace(/_/g, " ") || primary;
+  const indiaAware = (body.locale || "").toLowerCase().includes("in");
+  const climateLines: string[] = [];
+
+  if ((body.environment?.humidity || 0) >= 75) {
+    climateLines.push("Keep the daytime routine lighter because humid weather and sweat can worsen congestion and scalp irritation.");
+  }
+
+  if ((body.environment?.aqi || 0) >= 150) {
+    climateLines.push("Prioritize evening cleansing on commute or outdoor days to clear pollution, dust, and sunscreen residue.");
+  }
+
+  if ((body.environment?.uv || 0) >= 7) {
+    climateLines.push("Use strict SPF and reapply during long outdoor exposure to control pigmentation and inflammation rebound.");
+  }
+
   return {
     summary:
       body.issues.length > 1
-        ? `You currently have ${body.issues.length} priority concerns. Start with the highest-impact routine first, then layer secondary treatments after 7-10 days to reduce irritation.`
-        : `Your top focus is ${primary}. A consistent 14-day routine with gentle cleansing, targeted treatment, and protection is the fastest path to visible improvement.`,
+        ? `You currently have ${body.issues.length} priority concerns. Start with the highest-impact ${category} routine first, then add secondary steps after 7 to 10 days so the skin or scalp does not get overloaded.`
+        : `Your top focus is ${category}. A simple 14-day routine built around cleansing, targeted treatment, sun protection, sleep, and consistency is the fastest realistic path to visible improvement.`,
     actions: [
-      "Follow one AM and one PM routine daily for 14 days",
-      "Track progress photos every 7 days in similar lighting",
-      "Pause harsh combinations if irritation appears",
-      "Re-scan after one week to adjust products",
+      indiaAware
+        ? "Follow one short AM routine and one short PM routine that still fits commute, work, gym, and late evenings."
+        : "Follow one short AM routine and one short PM routine daily for 14 days.",
+      climateLines[0] || "Track progress photos every 7 days in similar lighting and keep the routine steady.",
+      climateLines[1] || "Pause harsh combinations if burning, peeling, or tightness appears.",
+      climateLines[2] || "Re-scan after one week so the protocol can be adjusted from fresh data.",
     ],
     source: "fallback",
   };
+}
+
+function buildEnvironmentContext(body: AdviceRequest) {
+  const points: string[] = [];
+
+  if (body.environment?.climate) points.push(`climate: ${body.environment.climate}`);
+  if (typeof body.environment?.humidity === "number") points.push(`humidity: ${body.environment.humidity}`);
+  if (typeof body.environment?.uv === "number") points.push(`uv: ${body.environment.uv}`);
+  if (typeof body.environment?.aqi === "number") points.push(`aqi: ${body.environment.aqi}`);
+  if (body.lifestyle?.workMode) points.push(`work mode: ${body.lifestyle.workMode}`);
+  if (typeof body.lifestyle?.sleepHours === "number") points.push(`sleep hours: ${body.lifestyle.sleepHours}`);
+  if (body.lifestyle?.stressLevel) points.push(`stress: ${body.lifestyle.stressLevel}`);
+  if (body.lifestyle?.workoutFrequency) points.push(`workouts: ${body.lifestyle.workoutFrequency}`);
+
+  return points.length > 0 ? points.join(", ") : "not provided";
 }
 
 function normalizeActions(actions: unknown): string[] {
@@ -134,16 +181,26 @@ export async function POST(req: NextRequest) {
     const dailyBudget = envNumber("AI_DAILY_BUDGET_USD", 0.5);
     const today = getTodayKey();
 
-    const prompt = `You are a premium personal grooming expert.\n
-User issues: ${body.issues.join(", ")}\n
-Questionnaire answers: ${JSON.stringify(body.answers ?? {})}\n
-Language locale: ${body.locale || "en"}\n
-Return strict JSON only: {"summary":"...","actions":["...","...","...","..."]}.\n
-Rules:\n
-- summary max 70 words\n
-- actions exactly 4 concise action lines\n
-- no medical diagnosis claims\n
-- actionable and practical.`;
+    const prompt = `You are a premium personal grooming and recovery coach.
+
+  User issues: ${body.issues.join(", ")}
+  Primary category: ${body.category || "not provided"}
+  Severity hint: ${body.severity || "moderate"}
+  Questionnaire answers: ${JSON.stringify(body.answers ?? {})}
+  Language locale: ${body.locale || "en-IN"}
+  Environment and lifestyle context: ${buildEnvironmentContext(body)}
+
+  Return strict JSON only: {"summary":"...","actions":["...","...","...","..."]}.
+
+  Rules:
+  - summary max 85 words
+  - actions exactly 4 concise action lines
+  - no medical diagnosis claims
+  - no unrealistic promises, no fairness language, no miracle wording
+  - make the plan practical for Indian daily life when locale or context fits India
+  - use relevant constraints only when helpful: heat, humidity, dust, pollution, hard water, long commute, shaving irritation, gym sweat, irregular sleep, office routine
+  - keep it mobile-friendly and easy to follow
+  - prioritize consistency, affordable practicality, and low confusion`;
 
     const estimatedCost = estimateCostUsd(prompt);
     const spent = usageByDay.get(today) ?? 0;
@@ -174,7 +231,7 @@ Rules:\n
           {
             role: "system",
             content:
-              "You are a trusted men’s grooming coach focused on practical routines, consistency, and safe guidance.",
+              "You are a trusted men’s grooming coach focused on practical routines, consistency, and safe guidance for real daily life. When the user context points to India, adapt routines for climate, commute, sweat, dust, and schedule constraints without stereotyping.",
           },
           { role: "user", content: prompt },
         ],

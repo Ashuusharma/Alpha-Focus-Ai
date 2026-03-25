@@ -14,8 +14,12 @@ function getConditionLabel(category: string) {
     scalp_health: "Scalp Barrier Imbalance",
     beard_growth: "Beard Growth Variability",
     body_acne: "Body Acne Activity",
+    body_odor: "Sweat and Odor Burden",
     lip_care: "Lip Barrier Stress",
     anti_aging: "Early Aging Markers",
+    skin_dullness: "Tone and Dullness Stress",
+    energy_fatigue: "Energy and Fatigue Load",
+    fitness_recovery: "Fitness Recovery Strain",
   };
   return map[category] || "Clinical Concern";
 }

@@ -25,6 +25,31 @@ export default function CoreUserHydrator() {
   useEffect(() => {
     if (!user) return;
 
+    const syncFreshState = () => {
+      void hydrateUserData(user.id, { force: true, silent: true });
+      void refreshAlphaWallet(user.id);
+    };
+
+    const handleVisibility = () => {
+      if (!document.hidden) {
+        syncFreshState();
+      }
+    };
+
+    window.addEventListener("online", syncFreshState);
+    window.addEventListener("focus", syncFreshState);
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      window.removeEventListener("online", syncFreshState);
+      window.removeEventListener("focus", syncFreshState);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user) return;
+
     const { dateKey } = getIndiaDateParts(new Date());
     const claimKey = `alpha-login-claim:${user.id}:${dateKey}`;
     if (typeof window !== "undefined" && window.sessionStorage.getItem(claimKey)) {

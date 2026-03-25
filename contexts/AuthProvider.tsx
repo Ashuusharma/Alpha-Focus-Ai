@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useEffect, useState } from "react";
+import { createContext, useCallback, useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
 import { useUserStore } from "@/stores/useUserStore";
@@ -25,6 +25,28 @@ export const AuthContext = createContext<AuthContextValue>({
   signOut: async () => {},
 });
 
+const SESSION_REFRESH_BUFFER_MS = 5 * 60 * 1000;
+const SESSION_RETRY_DELAYS_MS = [0, 800, 1600] as const;
+
+async function readSessionWithRetry() {
+  let lastError: unknown = null;
+
+  for (const delay of SESSION_RETRY_DELAYS_MS) {
+    if (delay > 0) {
+      await new Promise((resolve) => window.setTimeout(resolve, delay));
+    }
+
+    const result = await supabase.auth.getSession();
+    if (!result.error) {
+      return result;
+    }
+
+    lastError = result.error;
+  }
+
+  throw lastError instanceof Error ? lastError : new Error("Unable to restore session.");
+}
+
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,7 +54,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   const setUserData = useUserStore((state) => state.setUserData);
   const reset = useUserStore((state) => state.reset);
 
-  const refreshProfile = async () => {
+  const refreshProfile = useCallback(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const activeUser = sessionData.session?.user;
 
@@ -53,7 +75,37 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     }
 
     setUserData({ profile: profileData || null });
-  };
+  }, [setUserData]);
+
+  const applySessionUser = useCallback(async (sessionUser: User | null) => {
+    setUser(sessionUser);
+    setUserData({ user: sessionUser, loading: Boolean(sessionUser) });
+
+    if (!sessionUser) {
+      setUserData({ profile: null, loading: false });
+      return;
+    }
+
+    await refreshProfile();
+    setUserData({ loading: false });
+  }, [refreshProfile, setUserData]);
+
+  const refreshSession = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.auth.refreshSession();
+      if (error) {
+        return;
+      }
+
+      if (typeof window !== "undefined") {
+        window.sessionStorage.setItem("af:last-session-refresh", String(Date.now()));
+      }
+
+      await applySessionUser(data.session?.user ?? null);
+    } catch {
+      // Keep the current session state until a later retry succeeds.
+    }
+  }, [applySessionUser]);
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -73,14 +125,17 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     let mounted = true;
 
     const initSession = async () => {
-      const { data } = await supabase.auth.getSession();
+      try {
+        const { data } = await readSessionWithRetry();
+        if (!mounted) return;
+
+        await applySessionUser(data.session?.user ?? null);
+      } catch {
+        if (!mounted) return;
+        await applySessionUser(null);
+      }
+
       if (!mounted) return;
-
-      const sessionUser = data.session?.user ?? null;
-      setUser(sessionUser);
-
-      setUserData({ user: sessionUser, loading: Boolean(sessionUser) });
-
       if (mounted) setLoading(false);
     };
 
@@ -88,12 +143,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
 
     const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (!mounted) return;
-
-      const sessionUser = session?.user ?? null;
-      setUser(sessionUser);
-
-      setUserData({ user: sessionUser, loading: Boolean(sessionUser) });
-
+      await applySessionUser(session?.user ?? null);
       setLoading(false);
     });
 
@@ -101,7 +151,49 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
       mounted = false;
       listener.subscription.unsubscribe();
     };
-  }, [reset, setUserData]);
+  }, [applySessionUser, reset, setUserData]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    let timer: number | null = null;
+    let cancelled = false;
+
+    const scheduleRefresh = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (cancelled) return;
+
+      const expiresAtMs = (data.session?.expires_at || 0) * 1000;
+      const delay = expiresAtMs
+        ? Math.max(60_000, expiresAtMs - Date.now() - SESSION_REFRESH_BUFFER_MS)
+        : 30 * 60 * 1000;
+
+      timer = window.setTimeout(() => {
+        void refreshSession();
+      }, delay);
+    };
+
+    const handleOnline = () => {
+      void refreshSession();
+    };
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        void refreshSession();
+      }
+    };
+
+    void scheduleRefresh();
+    window.addEventListener("online", handleOnline);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+      window.removeEventListener("online", handleOnline);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [refreshSession, user]);
 
   if (loading) {
     return (

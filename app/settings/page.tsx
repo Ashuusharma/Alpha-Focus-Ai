@@ -24,6 +24,15 @@ import { readUserState, writeUserState } from "@/lib/dbUserState";
 import { useContext } from "react";
 import { getSupabaseAuthHeaders } from "@/lib/auth/clientAuthHeaders";
 
+type PushStatus = "checking" | "enabled" | "disabled" | "unsupported" | "blocked" | "unavailable";
+
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = window.atob(base64);
+  return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
+}
+
 interface UserPreferences {
   notifications: boolean;
   emailUpdates: boolean;
@@ -62,6 +71,13 @@ export default function SettingsPage() {
   const [newIngredient, setNewIngredient] = useState("");
   const [newIngredientReason, setNewIngredientReason] = useState<"allergy" | "sensitivity" | "preference" | "other">("preference");
   const [walletMessage, setWalletMessage] = useState("");
+  const [pushStatus, setPushStatus] = useState<PushStatus>("checking");
+  const [pushMessage, setPushMessage] = useState("");
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushConfigured, setPushConfigured] = useState(false);
+  const [pushDeliveryReady, setPushDeliveryReady] = useState(false);
+  const [pushMissingConfig, setPushMissingConfig] = useState<string[]>([]);
+  const [pushTestBusy, setPushTestBusy] = useState(false);
 
   // Stores
   const { blacklist, addIngredient, removeIngredient, clearAll: clearBlacklist } = useIngredientBlacklistStore();
@@ -116,6 +132,42 @@ export default function SettingsPage() {
       } catch {
         return;
       }
+
+      try {
+        if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+          setPushStatus("unsupported");
+          return;
+        }
+
+        const headers = await getSupabaseAuthHeaders();
+        const response = await fetch("/api/notifications/push", { cache: "no-store", headers });
+        if (!response.ok) {
+          setPushStatus(Notification.permission === "denied" ? "blocked" : "disabled");
+          return;
+        }
+
+        const payload = (await response.json()) as {
+          ok: boolean;
+          configured?: boolean;
+          deliveryReady?: boolean;
+          serviceRoleReady?: boolean;
+          missing?: string[];
+          subscribed?: boolean;
+        };
+
+        setPushConfigured(Boolean(payload.configured));
+        setPushDeliveryReady(Boolean(payload.deliveryReady));
+        setPushMissingConfig(Array.isArray(payload.missing) ? payload.missing : []);
+        if (!payload.configured) {
+          setPushStatus("unavailable");
+        } else if (Notification.permission === "denied") {
+          setPushStatus("blocked");
+        } else {
+          setPushStatus(payload.subscribed ? "enabled" : "disabled");
+        }
+      } catch {
+        setPushStatus(Notification.permission === "denied" ? "blocked" : "disabled");
+      }
     };
 
     if (mounted) {
@@ -142,17 +194,24 @@ export default function SettingsPage() {
   };
 
   const handleMasterNotificationsToggle = () => {
-    setSettings((prev) => {
-      const next = !prev.notifications;
-      return {
+    void (async () => {
+      const enabling = !settings.notifications;
+
+      setSettings((prev) => ({
         ...prev,
-        notifications: next,
-        routineNotifications: next,
-        challengeNotifications: next,
-        progressNotifications: next,
-        tipNotifications: next,
-      };
-    });
+        notifications: enabling,
+        routineNotifications: enabling,
+        challengeNotifications: enabling,
+        progressNotifications: enabling,
+        tipNotifications: enabling,
+      }));
+
+      if (enabling) {
+        await enableBrowserPush();
+      } else {
+        await disableBrowserPush();
+      }
+    })();
   };
 
   const handleNotificationChannelToggle = (key: "routineNotifications" | "challengeNotifications" | "progressNotifications" | "tipNotifications") => {
@@ -200,6 +259,151 @@ export default function SettingsPage() {
     }
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+  };
+
+  const enableBrowserPush = async () => {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+      setPushStatus("unsupported");
+      setPushMessage("This browser does not support web push.");
+      return;
+    }
+
+    setPushBusy(true);
+    setPushMessage("");
+
+    try {
+      const headers = await getSupabaseAuthHeaders({ "Content-Type": "application/json" });
+      const statusResponse = await fetch("/api/notifications/push", { cache: "no-store", headers });
+      const statusPayload = statusResponse.ok
+        ? (await statusResponse.json()) as {
+            ok: boolean;
+            publicKey?: string;
+            configured?: boolean;
+            deliveryReady?: boolean;
+            missing?: string[];
+          }
+        : { ok: false };
+
+      if (!statusPayload.configured || !statusPayload.publicKey) {
+        setPushConfigured(false);
+        setPushDeliveryReady(false);
+        setPushMissingConfig(Array.isArray(statusPayload.missing) ? statusPayload.missing : []);
+        setPushStatus("unavailable");
+        setPushMessage("Push is not configured on the server yet.");
+        return;
+      }
+
+      setPushConfigured(true);
+      setPushDeliveryReady(Boolean(statusPayload.deliveryReady));
+      setPushMissingConfig(Array.isArray(statusPayload.missing) ? statusPayload.missing : []);
+
+      const permission = Notification.permission === "granted"
+        ? "granted"
+        : await Notification.requestPermission();
+
+      if (permission !== "granted") {
+        setPushStatus(permission === "denied" ? "blocked" : "disabled");
+        setPushMessage(permission === "denied" ? "Browser permission is blocked. Enable notifications in site settings." : "Notification permission was not granted.");
+        return;
+      }
+
+      const registration = await navigator.serviceWorker.ready;
+      const existingSubscription = await registration.pushManager.getSubscription();
+      const subscription = existingSubscription || await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(statusPayload.publicKey),
+      });
+
+      const saveResponse = await fetch("/api/notifications/push", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ subscription: subscription.toJSON() }),
+      });
+
+      if (!saveResponse.ok) {
+        throw new Error("Could not save the browser push subscription.");
+      }
+
+      setPushStatus("enabled");
+      setPushMessage(
+        statusPayload.deliveryReady
+          ? "Browser push is active for this device and backend delivery is fully ready."
+          : "Browser push is active for this device. Automatic scheduler delivery still needs the remaining server config shown below."
+      );
+    } catch (error) {
+      setPushStatus(Notification.permission === "denied" ? "blocked" : "disabled");
+      setPushMessage(error instanceof Error ? error.message : "Could not enable browser push.");
+    } finally {
+      setPushBusy(false);
+    }
+  };
+
+  const disableBrowserPush = async () => {
+    if (!("serviceWorker" in navigator)) {
+      setPushStatus("unsupported");
+      return;
+    }
+
+    setPushBusy(true);
+    setPushMessage("");
+
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.getSubscription();
+      const endpoint = subscription?.endpoint;
+      if (subscription) {
+        await subscription.unsubscribe();
+      }
+
+      await fetch("/api/notifications/push", {
+        method: "DELETE",
+        headers: await getSupabaseAuthHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ endpoint }),
+      });
+
+      setPushStatus(Notification.permission === "denied" ? "blocked" : "disabled");
+      setPushMessage("Browser push is off for this device.");
+    } catch (error) {
+      setPushMessage(error instanceof Error ? error.message : "Could not disable browser push.");
+    } finally {
+      setPushBusy(false);
+    }
+  };
+
+  const sendTestPush = async () => {
+    if (pushStatus !== "enabled") {
+      setPushMessage("Enable browser push on this device before sending a test notification.");
+      return;
+    }
+
+    setPushTestBusy(true);
+    setPushMessage("");
+
+    try {
+      const headers = await getSupabaseAuthHeaders({ "Content-Type": "application/json" });
+      const response = await fetch("/api/notifications/test", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          eventType: "progress_improved",
+          metadata: {
+            improvementPct: 12,
+            categoryLabel: "your active recovery track",
+          },
+        }),
+      });
+
+      const payload = (await response.json().catch(() => ({}))) as { ok?: boolean; error?: string; skipped?: string };
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.error || "Could not send a test notification.");
+      }
+
+      setPushMessage("Test notification queued. Lock the screen or switch tabs, then click the notification to verify deep linking to your report.");
+    } catch (error) {
+      setPushMessage(error instanceof Error ? error.message : "Could not send a test notification.");
+    } finally {
+      setPushTestBusy(false);
+    }
   };
 
   const handleAddIngredient = () => {
@@ -744,9 +948,48 @@ export default function SettingsPage() {
                       <div className="flex items-center justify-between">
                         <div>
                           <h3 className="font-bold text-[#1F3D2B] mb-1">Push Notifications</h3>
-                          <p className="text-sm text-[#6B665D]">Get alerts about analysis results</p>
+                          <p className="text-sm text-[#6B665D]">Get routine, streak, reward, and recovery alerts on this device</p>
                         </div>
                         <Toggle active={settings.notifications} onClick={handleMasterNotificationsToggle} />
+                      </div>
+
+                      <div className={`skeuo-panel rounded-2xl border px-4 py-4 ${pushStatus === "enabled" ? "border-[#2F6F57]/30 bg-[#E8EFEA]" : pushStatus === "blocked" ? "border-[#E4B9AA] bg-[#FFF5F1]" : "border-[#D9D2C7] bg-white/50"}`}>
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                          <div>
+                            <p className="text-sm font-semibold text-[#1F3D2B]">Browser push status</p>
+                            <p className="text-xs text-[#6B665D] mt-1">
+                              {pushStatus === "enabled" && "Enabled on this device."}
+                              {pushStatus === "disabled" && "Permission is available, but this device is not subscribed yet."}
+                              {pushStatus === "blocked" && "Permission is blocked in the browser. Allow notifications in site settings first."}
+                              {pushStatus === "unsupported" && "This browser does not support web push."}
+                              {pushStatus === "unavailable" && "Server VAPID keys are missing, so push cannot be delivered yet."}
+                              {pushStatus === "checking" && "Checking current device status..."}
+                            </p>
+                            {pushConfigured && !pushDeliveryReady ? (
+                              <p className="mt-2 text-xs text-[#8C6A5A]">
+                                Device subscription is ready, but automatic backend delivery still needs: {pushMissingConfig.filter((item) => item === "SUPABASE_SERVICE_ROLE_KEY").join(", ") || "server completion"}.
+                              </p>
+                            ) : null}
+                          </div>
+                          <button
+                            onClick={pushStatus === "enabled" ? disableBrowserPush : enableBrowserPush}
+                            disabled={pushBusy || pushStatus === "unsupported" || (!pushConfigured && pushStatus === "unavailable")}
+                            className="skeuo-button rounded-xl border border-[#C8DACF] bg-white px-4 py-2 text-sm font-semibold text-[#1F3D2B] transition hover:bg-[#F7F4EE] disabled:opacity-50"
+                          >
+                            {pushBusy ? "Updating..." : pushStatus === "enabled" ? "Disable on this device" : "Enable on this device"}
+                          </button>
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <button
+                            onClick={sendTestPush}
+                            disabled={pushTestBusy || pushStatus !== "enabled"}
+                            className="skeuo-button rounded-xl border border-[#C8DACF] px-4 py-2 text-sm font-semibold text-[#1F3D2B] disabled:opacity-50"
+                          >
+                            {pushTestBusy ? "Sending test..." : "Send test push"}
+                          </button>
+                          <p className="self-center text-xs text-[#6B665D]">Test push uses your signed-in session so you can verify delivery and click-through immediately on this device.</p>
+                        </div>
+                        {pushMessage ? <p className="mt-3 text-xs text-[#2F6F57]">{pushMessage}</p> : null}
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">

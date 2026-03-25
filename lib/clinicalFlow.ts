@@ -3,13 +3,22 @@ import { CategoryId } from "@/lib/questions";
 
 export const analyzerToCategoryMap: Partial<Record<AnalyzerType, CategoryId>> = {
   scalp: "scalp_health",
+  scalp_health: "scalp_health",
   acne: "acne",
   dark_circles: "dark_circles",
   hair: "hair_loss",
+  hair_loss: "hair_loss",
   beard: "beard_growth",
+  beard_growth: "beard_growth",
   body_acne: "body_acne",
+  body_odor: "body_odor",
   lips: "lip_care",
+  lip_care: "lip_care",
   aging: "anti_aging",
+  anti_aging: "anti_aging",
+  skin_dullness: "skin_dullness",
+  energy_fatigue: "energy_fatigue",
+  fitness_recovery: "fitness_recovery",
 };
 
 export function getCategoryFromAnalyzer(type: AnalyzerType): CategoryId | null {
@@ -17,14 +26,18 @@ export function getCategoryFromAnalyzer(type: AnalyzerType): CategoryId | null {
 }
 
 const categoryToAnalyzerMap: Partial<Record<CategoryId, AnalyzerType>> = {
-  scalp_health: "scalp",
+  scalp_health: "scalp_health",
   acne: "acne",
   dark_circles: "dark_circles",
-  hair_loss: "hair",
-  beard_growth: "beard",
+  hair_loss: "hair_loss",
+  beard_growth: "beard_growth",
   body_acne: "body_acne",
-  lip_care: "lips",
-  anti_aging: "aging",
+  body_odor: "body_odor",
+  lip_care: "lip_care",
+  anti_aging: "anti_aging",
+  skin_dullness: "skin_dullness",
+  energy_fatigue: "energy_fatigue",
+  fitness_recovery: "fitness_recovery",
 };
 
 export function getAnalyzerFromCategory(category: CategoryId): AnalyzerType | null {
@@ -43,6 +56,8 @@ export const onboardingConcerns: OnboardingConcern[] = [
   { label: "Dark Circles", category: "dark_circles" },
   { label: "Beard Growth", category: "beard_growth" },
   { label: "Confidence Routine", category: "scalp_health" },
+  { label: "Skin Dullness", category: "skin_dullness" },
+  { label: "Energy / Fatigue", category: "energy_fatigue" },
 ];
 
 export function getAssessmentContextIntro(category: CategoryId, severityHint: "mild" | "moderate" | "high" = "moderate") {
@@ -59,8 +74,12 @@ export function getAssessmentContextIntro(category: CategoryId, severityHint: "m
     hair_loss: "in follicle density and shedding risk.",
     beard_growth: "in beard patchiness and irritation tendency.",
     body_acne: "in sweat-friction driven body breakouts.",
+    body_odor: "in sweat volume, odor retention, and hygiene-triggered body odor patterns.",
     lip_care: "in dryness and pigmentation stress around lips.",
     anti_aging: "in elasticity decline and expression-line burden.",
+    skin_dullness: "in tanning, dull tone, and texture fatigue from pollution and sleep stress.",
+    energy_fatigue: "in sleep debt, hydration gaps, and energy-crash drivers.",
+    fitness_recovery: "in soreness load, protein recovery, and training balance stress.",
     hairCare: "in hair and scalp resilience factors.",
     skinCare: "in skin inflammation and texture balance.",
     beardCare: "in beard growth consistency and irritation markers.",
@@ -111,6 +130,11 @@ export function getDailyRoutineTemplate(category: CategoryId): RoutineTemplate {
       night: ["Post-sweat shower", "Anti-bacterial active", "Barrier lotion"],
       weeklyReset: "Laundry and friction trigger reset",
     },
+    body_odor: {
+      morning: ["Anti-bacterial body wash", "Underarm protection", "Breathable clothing check"],
+      night: ["Post-commute rinse", "Drying powder or roll-on", "Fresh sleepwear"],
+      weeklyReset: "Laundry, shoe, and towel odor reset",
+    },
     lip_care: {
       morning: ["Hydrating balm", "UV lip shield", "Water goal check"],
       night: ["Gentle exfoliation (if needed)", "Overnight lip mask", "Hydration close"],
@@ -120,6 +144,21 @@ export function getDailyRoutineTemplate(category: CategoryId): RoutineTemplate {
       morning: ["Cleanse", "Antioxidant serum", "SPF 50"],
       night: ["Cleanse", "Retinoid/peptide layer", "Barrier moisturizer"],
       weeklyReset: "Progress photo + active tolerance review",
+    },
+    skin_dullness: {
+      morning: ["Gentle cleanse", "Brightening serum", "High-protection SPF"],
+      night: ["Cleanse", "Repair serum", "Barrier moisturizer"],
+      weeklyReset: "Tan, sleep, and hydration audit",
+    },
+    energy_fatigue: {
+      morning: ["Water + daylight", "Protein-first breakfast", "2-minute activation walk"],
+      night: ["Screen cutoff", "Light dinner timing", "Sleep setup reset"],
+      weeklyReset: "Sleep debt and workload review",
+    },
+    fitness_recovery: {
+      morning: ["Mobility warm-up", "Hydration + electrolytes", "Protein anchor"],
+      night: ["Cooldown stretch", "Recovery meal", "Sleep protection"],
+      weeklyReset: "Load, soreness, and injury-risk review",
     },
     hairCare: {
       morning: ["Scalp cleanse", "Growth support", "Hydration"],
@@ -169,8 +208,12 @@ export function getFailSafeAdjustment(category: CategoryId) {
     hair_loss: "Move to consistency-first growth cycle with stress-load reduction and weekly reassessment.",
     beard_growth: "Reduce irritation triggers and switch to low-friction growth protocol for 2 weeks.",
     body_acne: "Apply friction-control + post-workout cleanse protocol with targeted antibacterial rotation.",
+    body_odor: "Move to sweat-control, fabric-hygiene, and antibacterial body-care protocol for 14 days.",
     lip_care: "Switch to strict barrier and UV-protection protocol until cracking/pigmentation stabilizes.",
     anti_aging: "Step down active intensity and rebuild tolerance before re-escalating anti-aging actives.",
+    skin_dullness: "Reduce exfoliation intensity, prioritize brightening plus sunscreen, and stabilize sleep and hydration.",
+    energy_fatigue: "Reset with sleep, hydration, and meal-timing structure before adding harder productivity goals.",
+    fitness_recovery: "Reset with lower training load, more protein, hydration, mobility, and two full recovery nights.",
     hairCare: "Reset with scalp-barrier and consistency protocol.",
     skinCare: "Reset with low-irritation inflammation control protocol.",
     beardCare: "Reset with gentle growth and anti-ingrown protocol.",
@@ -221,6 +264,26 @@ export function buildCategoryPhotoMetrics(category: CategoryId, issues: Detected
       pore_visibility: clamp(Math.round(issueLoad * 0.75)),
       pigmentation_index: clamp(Math.round(issueLoad * 0.7)),
       oiliness_index: clamp(Math.round(issueLoad * 0.8)),
+      image_valid: confidence >= 45,
+    };
+  }
+
+  if (category === "body_odor") {
+    return {
+      sweat_score: clamp(Math.round(issueLoad * 0.85)),
+      odor_load: clamp(Math.round(issueLoad * 0.9 + inverseConfidence * 0.1)),
+      friction_index: clamp(Math.round(issueLoad * 0.65 + 10)),
+      fabric_retention_score: clamp(Math.round(issueLoad * 0.7)),
+      image_valid: confidence >= 45,
+    };
+  }
+
+  if (category === "skin_dullness") {
+    return {
+      dullness_index: clamp(Math.round(issueLoad * 0.85)),
+      tan_load: clamp(Math.round(issueLoad * 0.8)),
+      texture_roughness: clamp(Math.round(issueLoad * 0.7)),
+      hydration_drop: clamp(Math.round(issueLoad * 0.6 + inverseConfidence * 0.2)),
       image_valid: confidence >= 45,
     };
   }

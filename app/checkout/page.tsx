@@ -17,6 +17,12 @@ const STEPS = [
   { id: 3, label: "Payment" },
 ];
 
+function getResultTimeline(days?: number) {
+   if (days && days >= 45) return `${days}+ days of consistent use`;
+   if (days && days >= 21) return `${days} days with daily adherence`;
+   return "21 to 45 days with consistent use";
+}
+
 export default function CheckoutPage() {
   const { items } = useCartStore();
    const activeReward = useRewardStore((state) => state.activeReward);
@@ -267,8 +273,9 @@ export default function CheckoutPage() {
                 <h3 className="text-lg font-bold text-[#1F3D2B] mb-4">Order Summary</h3>
                 <div className="space-y-4 mb-6 max-h-64 overflow-y-auto pr-2">
                    {items.map((item) => (
-                      <div key={item.id} className="flex gap-3">
-                         <div className="relative h-16 w-16 rounded-lg bg-[#F4EFE6] border border-[#E2DDD4] flex-shrink-0">
+                                 <div key={item.id} className="rounded-xl border border-[#E2DDD4] bg-[#FCFBF8] p-3">
+                                     <div className="flex gap-3">
+                                        <div className="relative h-16 w-16 rounded-lg bg-[#F4EFE6] border border-[#E2DDD4] flex-shrink-0">
                            {/* Using placeholder or catalog image if available */}
                             <Image 
                               src={item.imageUrl || ""} 
@@ -277,12 +284,23 @@ export default function CheckoutPage() {
                               className="object-cover rounded-lg"
                               onError={(e) => { e.currentTarget.style.display = 'none' }}
                             /> 
-                         </div>
-                         <div className="flex-1">
-                            <p className="font-bold text-[#1F3D2B] text-sm line-clamp-1">{item.name}</p>
-                            <p className="text-xs text-[#6B665D]">Qty: {item.quantity}</p>
-                         </div>
-                         <p className="font-bold text-[#1F3D2B] text-sm">{formatINR(item.price * item.quantity)}</p>
+                                        </div>
+                                        <div className="flex-1">
+                                             <div className="flex items-start justify-between gap-3">
+                                                <div>
+                                                   <p className="font-bold text-[#1F3D2B] text-sm line-clamp-1">{item.name}</p>
+                                                   <p className="text-xs text-[#6B665D]">Qty: {item.quantity}</p>
+                                                </div>
+                                                <p className="font-bold text-[#1F3D2B] text-sm">{formatINR(item.price * item.quantity)}</p>
+                                             </div>
+
+                                             <div className="mt-2 rounded-lg border border-[#E2DDD4] bg-white px-3 py-2 text-[11px] text-[#4A453E]">
+                                                <p><span className="font-semibold text-[#1F3D2B]">Why this product:</span> {item.recommendationReason || "Recommended for your current severity, routine adherence, and recovery stage."}</p>
+                                                <p className="mt-1"><span className="font-semibold text-[#1F3D2B]">Results timeline:</span> {getResultTimeline(item.usageDays)}</p>
+                                                <p className="mt-1"><span className="font-semibold text-[#1F3D2B]">Protocol fit:</span> {item.protocolTier || "Core Protocol"}</p>
+                                             </div>
+                                        </div>
+                                     </div>
                       </div>
                    ))}
                 </div>

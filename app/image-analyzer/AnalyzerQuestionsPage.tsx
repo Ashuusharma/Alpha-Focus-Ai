@@ -16,8 +16,12 @@ const categoryIcons: Partial<Record<CategoryId, string>> = {
   hair_loss: "💇",
   beard_growth: "🧔",
   body_acne: "🧴",
+  body_odor: "🧼",
   lip_care: "💧",
   anti_aging: "⏳",
+  skin_dullness: "☀️",
+  energy_fatigue: "🔋",
+  fitness_recovery: "🏋️",
 };
 
 export default function AnalyzerQuestionsPage({ onSubmit }: Props) {

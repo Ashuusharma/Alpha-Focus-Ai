@@ -30,11 +30,26 @@ body {
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
-  background: var(--primary-bg);
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.78) 0%, rgba(255, 255, 255, 0) 28%),
+    radial-gradient(circle at 82% 12%, rgba(169, 203, 183, 0.18) 0%, rgba(169, 203, 183, 0) 20%),
+    linear-gradient(180deg, #f7f2e8 0%, #efe6d7 100%);
   color: var(--text-primary);
   font-family: var(--font-ui, var(--font-inter));
   opacity: 0;
   animation: fadeInBody 0.7s cubic-bezier(0.4,0,0.2,1) 0.1s forwards;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0)),
+    repeating-linear-gradient(135deg, rgba(140, 106, 90, 0.018) 0 2px, rgba(255, 255, 255, 0) 2px 14px);
+  opacity: 0.85;
+  z-index: 0;
 }
 
 /* Glassmorphism Utilities - Premium Medical Palette */
@@ -104,10 +119,10 @@ body {
 }
 
 .af-card {
-  background: #ffffff;
-  border: none;
-  border-radius: 1rem;
-  box-shadow: 0 4px 20px rgba(31, 61, 43, 0.04), 0 1px 3px rgba(31, 61, 43, 0.02);
+  background: var(--surface-raised);
+  border: 1px solid var(--surface-outline);
+  border-radius: 1.35rem;
+  box-shadow: var(--shadow-raised);
 }
 
 .bg-deep-green-gradient {
@@ -130,6 +145,8 @@ body {
   color: #ffffff;
   border-radius: 0.75rem;
   font-weight: 600;
+  border: 1px solid rgba(20, 53, 38, 0.28);
+  box-shadow: var(--shadow-button);
   transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
 }
 
@@ -138,11 +155,12 @@ body {
 }
 
 .af-btn-soft {
-  background: #FFFFFF;
-  border: 1px solid #E2DDD3;
+  background: var(--surface-soft);
+  border: 1px solid rgba(120, 97, 67, 0.12);
   color: #1F3D2B;
   border-radius: 0.75rem;
   font-weight: 600;
+  box-shadow: var(--shadow-soft);
   transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -412,12 +430,80 @@ textarea {
 }
 
 .lux-card {
-  border-radius: 1rem;
-  border: 1px solid var(--lux-glass-border);
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  position: relative;
+  border-radius: 1.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: var(--surface-soft);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: var(--shadow-raised);
+}
+
+.lux-card::after,
+.af-card::after,
+.skeuo-panel::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0));
+  opacity: 0.8;
+}
+
+.skeuo-panel {
+  position: relative;
+  border-radius: 1.8rem;
+  border: 1px solid rgba(120, 97, 67, 0.14);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-raised);
+}
+
+.skeuo-inset {
+  border-radius: 1.25rem;
+  border: 1px solid rgba(120, 97, 67, 0.1);
+  background: var(--surface-pressed);
+  box-shadow: var(--shadow-pressed);
+}
+
+.skeuo-chip {
+  border-radius: 999px;
+  border: 1px solid rgba(120, 97, 67, 0.14);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(240, 232, 220, 0.92));
+  box-shadow: var(--shadow-soft);
+}
+
+.skeuo-button {
+  border-radius: 0.95rem;
+  border: 1px solid rgba(120, 97, 67, 0.12);
+  background: var(--surface-soft);
+  box-shadow: var(--shadow-soft);
+}
+
+.skeuo-progress {
+  overflow: hidden;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(224, 214, 198, 0.95), rgba(247, 242, 234, 0.95));
+  box-shadow: var(--shadow-pressed);
+}
+
+.skeuo-progress-bar {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #c98a5c 0%, #d4b058 38%, #6e9f87 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 6px 12px rgba(47, 111, 87, 0.2);
+}
+
+.skeuo-report-shell {
+  position: relative;
+}
+
+.skeuo-report-shell main > section {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface-raised);
+  border: 1px solid rgba(120, 97, 67, 0.12);
+  box-shadow: var(--shadow-raised);
 }
 
 .lux-btn-primary {

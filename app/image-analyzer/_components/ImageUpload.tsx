@@ -5,6 +5,7 @@ import NextImage from "next/image";
 import { Camera, Upload, X, Check, RotateCcw, ChevronRight, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { AnalyzerType, PhotoAngle, getPhotoAngles } from "@/lib/analyzeImage";
+import { compressImageToDataUrl } from "@/lib/mobileImage";
 
 interface MultiAngleUploadProps {
   analyzerType: AnalyzerType;
@@ -13,6 +14,27 @@ interface MultiAngleUploadProps {
 }
 
 type QualityWarning = "lighting" | "blur" | "framing";
+
+const CATEGORY_CAPTURE_TIPS: Partial<Record<AnalyzerType, string[]>> = {
+  acne: ["Use plain skin with no heavy cream or makeup.", "Keep bumps and marks fully visible in even light."],
+  dark_circles: ["Avoid overhead shadows.", "Keep eyes naturally open and relaxed."],
+  anti_aging: ["Show forehead, eye area, and smile lines clearly.", "Do not use smoothing filters."],
+  hair_loss: ["Expose hairline and crown fully.", "Use bright overhead light for scalp visibility."],
+  scalp_health: ["Part the hair so scalp skin is visible.", "Avoid heavy oil right before capture."],
+  beard_growth: ["Show cheeks, jawline, and neckline clearly.", "Capture patchy zones without trimming them too short first."],
+  body_acne: ["Show the full affected area, not only one spot.", "Use bright light and avoid sweaty glare if possible."],
+  body_odor: ["Capture clean dry skin so irritation and sweat zones are visible.", "Show the zone that smells or sweats most, not random body skin."],
+  lip_care: ["Keep lips product-free if possible before capture.", "Show cracks, dryness, or pigmentation clearly."],
+  skin_dullness: ["Use natural daylight for true tone.", "Avoid beauty mode and warm yellow indoor light."],
+  energy_fatigue: ["Capture under-eye area clearly.", "Take the photo before caffeine or splash-water touchups if possible."],
+  fitness_recovery: ["Show the exact recovery concern area.", "Keep the full region in frame so strain pattern is visible."],
+};
+
+const QUALITY_WARNING_COPY: Record<QualityWarning, string> = {
+  lighting: "Use brighter, even light with less shadow and glare.",
+  blur: "Hold the camera steady and wait for sharp focus before capture.",
+  framing: "Keep the target area centered, close enough, and fully visible.",
+};
 
 async function analyzeImageQuality(imageData: string): Promise<QualityWarning[]> {
   return new Promise((resolve) => {
@@ -91,6 +113,8 @@ export default function MultiAngleUpload({
   const [cameraActive, setCameraActive] = useState(false);
   const [allDone, setAllDone] = useState(false);
   const [qualityWarnings, setQualityWarnings] = useState<Record<string, QualityWarning[]>>({});
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [processingImage, setProcessingImage] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -101,6 +125,7 @@ export default function MultiAngleUpload({
     setAngles(photoAngles);
     setActiveAngleIdx(0);
     setAllDone(false);
+    setUploadError(null);
   }, [analyzerType]);
 
   const capturedCount = angles.filter((a) => a.imageData).length;
@@ -109,6 +134,7 @@ export default function MultiAngleUpload({
   // Start camera for current angle
   const startCamera = async () => {
     try {
+      setUploadError(null);
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
       });
@@ -120,7 +146,7 @@ export default function MultiAngleUpload({
         }
       }, 100);
     } catch {
-      alert("Camera access denied or unavailable. Please enable camera permissions.");
+      setUploadError("Camera access is unavailable. Enable permissions or upload a photo instead.");
     }
   };
 
@@ -133,7 +159,7 @@ export default function MultiAngleUpload({
   }, []);
 
   // Capture photo for current angle
-  const capturePhoto = () => {
+  const capturePhoto = async () => {
     if (!videoRef.current) return;
     const canvas = document.createElement("canvas");
     canvas.width = videoRef.current.videoWidth;
@@ -141,33 +167,53 @@ export default function MultiAngleUpload({
     const ctx = canvas.getContext("2d");
     if (ctx) {
       ctx.drawImage(videoRef.current, 0, 0);
-      const imageData = canvas.toDataURL("image/jpeg", 0.85);
-      saveAnglePhoto(imageData);
-      stopCamera();
+      setProcessingImage(true);
+      setUploadError(null);
+      try {
+        const imageData = canvas.toDataURL("image/jpeg", 0.88);
+        const compressed = await compressImageToDataUrl(imageData);
+        saveAnglePhoto(compressed);
+        stopCamera();
+      } catch (error) {
+        setUploadError(error instanceof Error ? error.message : "Could not process the captured photo.");
+      } finally {
+        setProcessingImage(false);
+      }
     }
   };
 
   // Upload file for current angle
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const imageData = event.target?.result as string;
-      saveAnglePhoto(imageData);
-    };
-    reader.readAsDataURL(file);
+    setProcessingImage(true);
+    setUploadError(null);
+
+    try {
+      const reader = new FileReader();
+      const imageData = await new Promise<string>((resolve, reject) => {
+        reader.onload = (event) => resolve(String(event.target?.result || ""));
+        reader.onerror = () => reject(new Error("Unable to read that file."));
+        reader.readAsDataURL(file);
+      });
+
+      const compressed = await compressImageToDataUrl(imageData);
+      saveAnglePhoto(compressed);
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : "Could not prepare that image for analysis.");
+    } finally {
+      setProcessingImage(false);
+    }
+
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   // Save photo to the active angle
   const saveAnglePhoto = (imageData: string) => {
     const activeAngle = angles[activeAngleIdx];
-    setAngles((prev) => {
-      const updated = [...prev];
-      updated[activeAngleIdx] = { ...updated[activeAngleIdx], imageData };
-      return updated;
-    });
+    const updatedAngles = [...angles];
+    updatedAngles[activeAngleIdx] = { ...updatedAngles[activeAngleIdx], imageData };
+    setAngles(updatedAngles);
 
     if (activeAngle) {
       void analyzeImageQuality(imageData).then((warnings) => {
@@ -175,13 +221,11 @@ export default function MultiAngleUpload({
       });
     }
 
-    // Auto-advance to next uncaptured angle
-    const nextEmpty = angles.findIndex((a, i) => i > activeAngleIdx && !a.imageData);
+    const nextEmpty = updatedAngles.findIndex((a, i) => i > activeAngleIdx && !a.imageData);
     if (nextEmpty !== -1) {
       setActiveAngleIdx(nextEmpty);
     } else {
-      // Check if all captured
-      const allCaptured = angles.every((a, i) => i === activeAngleIdx ? true : !!a.imageData);
+      const allCaptured = updatedAngles.every((angle) => Boolean(angle.imageData));
       if (allCaptured) setAllDone(true);
     }
   };
@@ -218,6 +262,8 @@ export default function MultiAngleUpload({
   const canSubmit = capturedCount >= minPhotosRequired;
   const currentWarnings = currentAngle ? qualityWarnings[currentAngle.id] || [] : [];
   const hasAnyWarnings = angles.some((angle) => (qualityWarnings[angle.id] || []).length > 0);
+  const currentTips = CATEGORY_CAPTURE_TIPS[analyzerType] || [];
+  const currentPhotoApproved = Boolean(currentAngle?.imageData) && currentWarnings.length === 0;
 
   return (
     <div className="space-y-7">
@@ -315,13 +361,23 @@ export default function MultiAngleUpload({
               <p className="text-sm text-[#2F6F57] leading-relaxed">
                 {currentAngle.instruction}
               </p>
+              {currentTips.length > 0 ? (
+                <div className="mt-4 rounded-xl border border-[#C8DACF] bg-white/70 px-4 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#6E9F87]">Quality cues</p>
+                  <div className="mt-2 space-y-1 text-xs text-[#2F6F57]">
+                    {currentTips.map((tip) => (
+                      <p key={tip}>• {tip}</p>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 mt-6">
             <button
               onClick={startCamera}
-              disabled={disabled}
+              disabled={disabled || processingImage}
               className="flex-1 flex items-center justify-center gap-2 bg-medical-gradient text-white py-4 px-5 rounded-xl font-bold transition-all shadow-[0_10px_20px_rgba(47,111,87,0.2)] disabled:opacity-50"
             >
               <Camera className="w-5 h-5" />
@@ -329,7 +385,7 @@ export default function MultiAngleUpload({
             </button>
             <button
               onClick={() => fileInputRef.current?.click()}
-              disabled={disabled}
+              disabled={disabled || processingImage}
               className="flex-1 flex items-center justify-center gap-2 bg-white hover:bg-[#F7F4EE] text-[#2F6F57] py-4 px-5 rounded-xl font-bold transition-all border border-[#D9D2C7] disabled:opacity-50"
             >
               <Upload className="w-5 h-5" />
@@ -344,6 +400,12 @@ export default function MultiAngleUpload({
               className="hidden"
             />
           </div>
+          {processingImage ? (
+            <p className="mt-3 text-xs font-medium text-[#2F6F57]">Optimizing photo for faster upload on mobile...</p>
+          ) : null}
+          {uploadError ? (
+            <p className="mt-3 rounded-xl border border-[#E4B9AA] bg-[#FFF5F1] px-3 py-2 text-xs text-[#8C4C3A]">{uploadError}</p>
+          ) : null}
         </motion.div>
       )}
 
@@ -374,6 +436,7 @@ export default function MultiAngleUpload({
           <div className="absolute bottom-0 left-0 right-0 p-5 bg-gradient-to-t from-black/90 to-transparent flex gap-4 justify-center">
             <button
               onClick={capturePhoto}
+              disabled={processingImage}
               className="flex items-center gap-2 bg-white text-black px-8 py-3 rounded-full font-bold hover:bg-[#F7F4EE] transition shadow-[0_0_20px_rgba(255,255,255,0.3)]"
             >
               <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse" />
@@ -411,7 +474,7 @@ export default function MultiAngleUpload({
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
           <div className="absolute bottom-4 left-4 flex items-center gap-2 text-[#E8EFEA] font-bold bg-black/60 backdrop-blur px-3 py-1.5 rounded-full border border-[#A9CBB7] text-sm">
             <Check className="w-4 h-4" />
-            {currentAngle.label} ✓
+            {currentPhotoApproved ? `${currentAngle.label} ready` : `${currentAngle.label} captured`}
           </div>
           <button
             onClick={() => removePhoto(activeAngleIdx)}
@@ -424,11 +487,18 @@ export default function MultiAngleUpload({
           {currentWarnings.length > 0 && (
             <div className="absolute left-4 right-4 top-4 rounded-xl border border-amber-300/50 bg-amber-100/90 px-3 py-2 text-xs text-amber-900">
               <p className="font-semibold">Quality check suggests a retake for better accuracy.</p>
-              <p className="mt-1">
-                {currentWarnings.includes("lighting") ? "• Improve lighting. " : ""}
-                {currentWarnings.includes("blur") ? "• Hold camera steady to reduce blur. " : ""}
-                {currentWarnings.includes("framing") ? "• Keep face centered and clearly visible." : ""}
-              </p>
+              <div className="mt-1 space-y-1">
+                {currentWarnings.map((warning) => (
+                  <p key={warning}>• {QUALITY_WARNING_COPY[warning]}</p>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {currentPhotoApproved && (
+            <div className="absolute left-4 right-4 top-4 rounded-xl border border-emerald-300/60 bg-emerald-100/90 px-3 py-2 text-xs text-emerald-900">
+              <p className="font-semibold">Good to analyze.</p>
+              <p className="mt-1">Lighting, focus, and framing look strong enough for this category.</p>
             </div>
           )}
         </motion.div>
@@ -456,6 +526,7 @@ export default function MultiAngleUpload({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             onClick={handleSubmitAll}
+            disabled={processingImage}
             className="flex-1 bg-medical-gradient text-white py-3.5 rounded-xl font-bold hover:shadow-[0_0_25px_rgba(47,111,87,0.3)] transition-all flex items-center justify-center gap-2 group relative overflow-hidden"
           >
             <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-500 skew-y-12" />
@@ -478,7 +549,7 @@ export default function MultiAngleUpload({
       {hasAnyWarnings && capturedCount > 0 && (
         <div className="flex items-center gap-2 text-amber-700 text-xs justify-center bg-amber-100/70 rounded-xl border border-amber-300/60 px-3 py-2">
           <AlertCircle className="w-3.5 h-3.5" />
-          <span>Some photos may reduce confidence. Retake flagged angles for stronger analysis quality.</span>
+          <span>Some photos may reduce confidence. Retake flagged angles first, then analyze the strongest set.</span>
         </div>
       )}
     </div>

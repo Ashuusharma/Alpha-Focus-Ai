@@ -5,8 +5,12 @@ export type ClinicalCategoryId =
   | "hair_loss"
   | "beard_growth"
   | "body_acne"
+  | "body_odor"
   | "lip_care"
-  | "anti_aging";
+  | "anti_aging"
+  | "skin_dullness"
+  | "energy_fatigue"
+  | "fitness_recovery";
 
 export type LegacyCategoryId =
   | "hairCare"
@@ -72,6 +76,11 @@ export const categories: Category[] = [
     imageUrl: "https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?q=80&w=1400&auto=format&fit=crop",
   },
   {
+    id: "body_odor",
+    label: "Body Odor / Sweat",
+    imageUrl: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?q=80&w=1400&auto=format&fit=crop",
+  },
+  {
     id: "lip_care",
     label: "Lip Care",
     imageUrl: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=1400&auto=format&fit=crop",
@@ -80,6 +89,21 @@ export const categories: Category[] = [
     id: "anti_aging",
     label: "Anti-Aging",
     imageUrl: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?q=80&w=1400&auto=format&fit=crop",
+  },
+  {
+    id: "skin_dullness",
+    label: "Skin Dullness",
+    imageUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=1400&auto=format&fit=crop",
+  },
+  {
+    id: "energy_fatigue",
+    label: "Energy / Fatigue",
+    imageUrl: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=1400&auto=format&fit=crop",
+  },
+  {
+    id: "fitness_recovery",
+    label: "Fitness / Recovery",
+    imageUrl: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?q=80&w=1400&auto=format&fit=crop",
   },
 ];
 
@@ -90,8 +114,12 @@ const clinicalCategoryDomains: Record<ClinicalCategoryId, string[]> = {
   hair_loss: ["follicle_density", "recession_pattern", "shedding_rate", "hormonal_risk", "nutritional_risk", "stress_factor"],
   beard_growth: ["patchiness", "density", "ingrown_risk", "irritation_level", "grooming_pattern"],
   body_acne: ["sweat_load", "friction_irritation", "bacterial_risk", "hygiene_pattern"],
+  body_odor: ["sweat_volume", "odor_intensity", "fabric_retention", "hygiene_gap", "climate_trigger", "diet_trigger"],
   lip_care: ["dryness_index", "pigmentation", "sun_exposure", "hydration_level"],
   anti_aging: ["wrinkle_depth", "elasticity_loss", "sun_exposure", "collagen_decline", "stress_oxidation"],
+  skin_dullness: ["tone_unevenness", "tan_buildup", "texture_roughness", "sleep_stress", "hydration_drop", "pollution_exposure"],
+  energy_fatigue: ["sleep_debt", "midday_crash", "hydration_gap", "stress_burden", "meal_quality", "screen_overload"],
+  fitness_recovery: ["soreness_load", "recovery_sleep", "protein_intake", "hydration_gap", "training_balance", "injury_risk"],
 };
 
 export const categoryDomains: Record<CategoryId, string[]> = {
@@ -157,6 +185,14 @@ const clinicalQuestions: Record<ClinicalCategoryId, Question[]> = {
     { id: "ba_bacterial_risk", text: "How frequently do inflamed pustules recur in same zones?", domain: "bacterial_risk", weight: 1.4, options: [S4, S3, S2, S1] },
     { id: "ba_hygiene_pattern", text: "How consistent is shower/laundry routine after sweating?", domain: "hygiene_pattern", weight: 1.0, options: [S4, S3, S2, S1] },
   ],
+  body_odor: [
+    { id: "bo_sweat_volume", text: "How quickly do underarms, chest, or groin become heavily sweaty in a normal Indian day?", domain: "sweat_volume", weight: 1.3, options: [S4, S3, S2, S1] },
+    { id: "bo_odor_intensity", text: "How noticeable is body odor by midday even after bathing and deodorant?", domain: "odor_intensity", weight: 1.5, options: [S4, S3, S2, S1] },
+    { id: "bo_fabric_retention", text: "How often do shirts or gym clothes hold smell even after one use?", domain: "fabric_retention", weight: 1.1, options: [S4, S3, S2, S1] },
+    { id: "bo_hygiene_gap", text: "How often do long commute, workout, or work hours delay a bath or clothes change?", domain: "hygiene_gap", weight: 1.2, options: [S4, S3, S2, S1] },
+    { id: "bo_climate_trigger", text: "How strongly do heat, humidity, or helmets/backpacks trigger sweating or odor?", domain: "climate_trigger", weight: 1.0, options: [S4, S3, S2, S1] },
+    { id: "bo_diet_trigger", text: "How often do onion-garlic heavy meals, alcohol, or low water intake worsen body smell?", domain: "diet_trigger", weight: 0.9, options: [S4, S3, S2, S1] },
+  ],
   lip_care: [
     { id: "lip_dryness_index", text: "How severe is persistent lip dryness, peeling, or cracking?", domain: "dryness_index", weight: 1.4, options: [S4, S3, S2, S1] },
     { id: "lip_pigmentation_depth", text: "How marked is lip pigmentation versus natural baseline?", domain: "pigmentation", weight: 1.2, options: [S4, S3, S2, S1] },
@@ -169,6 +205,30 @@ const clinicalQuestions: Record<ClinicalCategoryId, Question[]> = {
     { id: "age_uv_burden", text: "How high is cumulative UV burden without strict SPF adherence?", domain: "sun_exposure", weight: 1.1, options: [S4, S3, S2, S1] },
     { id: "age_collagen_decline", text: "How quickly do creases persist after expression changes?", domain: "collagen_decline", weight: 1.2, options: [S4, S3, S2, S1] },
     { id: "age_stress_oxidation", text: "How elevated are stress/lifestyle oxidation contributors currently?", domain: "stress_oxidation", weight: 1.0, options: [S4, S3, S2, S1] },
+  ],
+  skin_dullness: [
+    { id: "sd_tone_unevenness", text: "How uneven or patchy does your face look across forehead, cheeks, and around the mouth?", domain: "tone_unevenness", weight: 1.4, options: [S4, S3, S2, S1] },
+    { id: "sd_tan_buildup", text: "How stubborn is tanning from commute, cricket, biking, or outdoor work?", domain: "tan_buildup", weight: 1.2, options: [S4, S3, S2, S1] },
+    { id: "sd_texture_roughness", text: "How rough or tired does skin texture feel by evening?", domain: "texture_roughness", weight: 1.1, options: [S4, S3, S2, S1] },
+    { id: "sd_sleep_stress", text: "How often do poor sleep or stress make your face look tired or lifeless?", domain: "sleep_stress", weight: 1.0, options: [S4, S3, S2, S1] },
+    { id: "sd_hydration_drop", text: "How often does your skin look flat or dehydrated despite using moisturizer?", domain: "hydration_drop", weight: 1.0, options: [S4, S3, S2, S1] },
+    { id: "sd_pollution_exposure", text: "How much daily dust, smoke, sweat, or traffic pollution exposure does your skin take?", domain: "pollution_exposure", weight: 1.0, options: [S4, S3, S2, S1] },
+  ],
+  energy_fatigue: [
+    { id: "ef_sleep_debt", text: "How many days each week do you wake up feeling under-recovered or sleepy?", domain: "sleep_debt", weight: 1.4, options: [S4, S3, S2, S1] },
+    { id: "ef_midday_crash", text: "How strong is your post-lunch or mid-evening energy crash?", domain: "midday_crash", weight: 1.2, options: [S4, S3, S2, S1] },
+    { id: "ef_hydration_gap", text: "How often do you stay below 2 to 2.5 litres of water in a normal day?", domain: "hydration_gap", weight: 1.0, options: [S4, S3, S2, S1] },
+    { id: "ef_stress_burden", text: "How much mental load, work pressure, or family stress is draining your energy right now?", domain: "stress_burden", weight: 1.2, options: [S4, S3, S2, S1] },
+    { id: "ef_meal_quality", text: "How often do skipped breakfasts, fried snacks, or late dinners leave you heavy or drained?", domain: "meal_quality", weight: 1.0, options: [S4, S3, S2, S1] },
+    { id: "ef_screen_overload", text: "How often do late-night screen use and short sleep make the next day harder?", domain: "screen_overload", weight: 0.9, options: [S4, S3, S2, S1] },
+  ],
+  fitness_recovery: [
+    { id: "fr_soreness_load", text: "How often does soreness stay so long that your next session or daily work feels compromised?", domain: "soreness_load", weight: 1.3, options: [S4, S3, S2, S1] },
+    { id: "fr_recovery_sleep", text: "How often do poor sleep and late nights affect gym performance or recovery?", domain: "recovery_sleep", weight: 1.2, options: [S4, S3, S2, S1] },
+    { id: "fr_protein_intake", text: "How inconsistent is your protein intake across breakfast, lunch, and dinner?", domain: "protein_intake", weight: 1.1, options: [S4, S3, S2, S1] },
+    { id: "fr_hydration_gap", text: "How often do you train or play sport without planned water and electrolyte replacement?", domain: "hydration_gap", weight: 1.0, options: [S4, S3, S2, S1] },
+    { id: "fr_training_balance", text: "How often do you push hard with no easy day, mobility, or warm-up work?", domain: "training_balance", weight: 1.1, options: [S4, S3, S2, S1] },
+    { id: "fr_injury_risk", text: "How often do niggles in knees, shoulders, lower back, or ankles limit your consistency?", domain: "injury_risk", weight: 1.3, options: [S4, S3, S2, S1] },
   ],
 };
 

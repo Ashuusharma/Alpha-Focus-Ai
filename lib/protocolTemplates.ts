@@ -8,8 +8,12 @@ export type ClinicalCategoryId =
   | "hair_loss"
   | "beard_growth"
   | "body_acne"
+  | "body_odor"
   | "lip_care"
-  | "anti_aging";
+  | "anti_aging"
+  | "skin_dullness"
+  | "energy_fatigue"
+  | "fitness_recovery";
 
 export type ProtocolTask = {
   id: string;
@@ -408,6 +412,41 @@ const CATEGORY_RECOVERY_PROFILES: Record<ClinicalCategoryId, CategoryRecoveryPro
       "Truncal acne remains uncontrolled despite consistent wash and clothing changes.",
     ],
   },
+  body_odor: {
+    issueSummary: "Body odor recovery improves when sweat control, fast cleanup, breathable fabrics, and diet-linked trigger awareness are handled together.",
+    commonReasons: [
+      "Heavy sweating, delayed showers, and repeat wear of damp clothes intensify odor.",
+      "Indian heat, commute, helmets, and backpacks trap sweat in friction-heavy zones.",
+      "Low hydration, spicy-heavy meals, and poor underarm care can worsen smell intensity for some users.",
+    ],
+    homeCarePrinciples: [
+      "Clean and dry sweat-prone zones quickly after commute, gym, or outdoor time.",
+      "Use breathable fabrics and rotate shirts, socks, towels, and innerwear aggressively.",
+      "Keep underarms fully dry before applying anti-perspirant or deodorant.",
+    ],
+    foodsToPrefer: [
+      "Hydrating foods and steady water intake across the day.",
+      "Simple meals with curd if tolerated, fruit, dal, and lighter lunch portions on hot days.",
+      "Fresh herbs, cucumber, citrus, and less processed snacks when odor flares are strong.",
+    ],
+    foodsToLimit: [
+      "Repeated dehydration during work, travel, or sport.",
+      "Reusing sweaty gym or commute clothes.",
+      "Any recurring meal pattern that clearly worsens smell for the user.",
+    ],
+    indianMeals: {
+      breakfast: ["Curd + fruit bowl if tolerated", "Vegetable poha with lemon", "Eggs with cucumber and roti"],
+      lunch: ["Dal, rice, cucumber salad", "Grilled paneer bowl with vegetables", "Roti with lauki and curd if tolerated"],
+      dinner: ["Light khichdi with salad", "Chicken and veg soup", "Moong dal chilla with mint chutney"],
+      fruits: ["Mosambi", "Watermelon", "Apple", "Pear"],
+    },
+    benefitSummary: "The goal is to reduce odor rebound, feel fresher through the day, and build a low-friction routine that survives Indian heat and busy schedules.",
+    whenToEscalate: [
+      "Body odor changes suddenly, feels medically unusual, or comes with rash or pain.",
+      "Sweating is excessive enough to disrupt work or confidence despite routine control.",
+      "There is persistent underarm irritation from all deodorant or antiperspirant options.",
+    ],
+  },
   lip_care: {
     issueSummary: "Lip recovery depends on repairing the barrier, stopping lip licking, protecting from sun, and removing irritant products and habits.",
     commonReasons: [
@@ -478,6 +517,111 @@ const CATEGORY_RECOVERY_PROFILES: Record<ClinicalCategoryId, CategoryRecoveryPro
       "You want prescription-strength anti-aging treatment planning.",
     ],
   },
+  skin_dullness: {
+    issueSummary: "Skin dullness usually improves when sun exposure, pollution load, dehydration, rough texture, and poor sleep are corrected together instead of with harsh scrubbing.",
+    commonReasons: [
+      "Daily commute, dust, and UV exposure increase tan and dull tone.",
+      "Late nights, dehydration, and low-protein or low-fruit diets make skin look flat and tired.",
+      "Over-exfoliation can make skin look worse by weakening barrier comfort.",
+    ],
+    homeCarePrinciples: [
+      "Prioritize sunscreen and brightening before adding stronger exfoliation.",
+      "Keep skin hydrated and avoid rough scrubbing tools.",
+      "Track sleep, water intake, and outdoor exposure with the routine.",
+    ],
+    foodsToPrefer: [
+      "Vitamin C fruit like orange, guava, kiwi, or amla.",
+      "Colorful vegetables, dal, eggs, paneer, and lighter home meals.",
+      "Water, coconut water, and fruit-based snacks over fried tea-time snacks.",
+    ],
+    foodsToLimit: [
+      "Repeated tanning without sunscreen or cap use.",
+      "Very sugary or greasy late-night meals if skin looks puffy or flat the next day.",
+      "Harsh DIY scrubs on already tired skin.",
+    ],
+    indianMeals: {
+      breakfast: ["Oats with fruit and seeds", "Moong chilla with coriander chutney", "Egg bhurji with salad"],
+      lunch: ["Dal, roti, sabzi, and salad", "Paneer bowl with rice and vegetables", "Chicken with roti and cucumber"],
+      dinner: ["Light khichdi with vegetables", "Grilled fish or paneer with greens", "Soup plus millet roti"],
+      fruits: ["Orange", "Guava", "Papaya", "Kiwi"],
+    },
+    benefitSummary: "This plan is designed to bring back visible freshness, reduce tan load, and improve texture without pushing users into irritation-heavy routines.",
+    whenToEscalate: [
+      "Sudden dark patches, persistent pigmentation, or irritation are increasing.",
+      "No visible change after consistent sunscreen and brightening care for 8 weeks.",
+      "The user wants dermatology-level pigmentation planning.",
+    ],
+  },
+  energy_fatigue: {
+    issueSummary: "Energy recovery improves most when sleep debt, hydration gaps, poor meal timing, and screen-heavy nights are corrected with simple daily anchors.",
+    commonReasons: [
+      "Late nights, poor sleep quality, and irregular wake times drain next-day energy.",
+      "Long work blocks, low hydration, and skipped breakfasts create repeated crashes.",
+      "Stress load and poor recovery habits can show up as fatigue and tired-looking face signals.",
+    ],
+    homeCarePrinciples: [
+      "Anchor wake-up time, water intake, and breakfast quality first.",
+      "Reduce late-night screens and heavy dinners.",
+      "Keep the plan realistic enough for office, commute, and family schedules.",
+    ],
+    foodsToPrefer: [
+      "Protein-first breakfasts like eggs, paneer, sprouts, or dal chilla.",
+      "Balanced lunches with dal, roti, sabzi, and salad instead of only refined carbs.",
+      "Hydration with water, lemon water, buttermilk if tolerated, or coconut water on hot days.",
+    ],
+    foodsToLimit: [
+      "Skipping breakfast and then overeating fried snacks later.",
+      "High-sugar tea, cold drinks, or energy drinks as the main fix for crashes.",
+      "Heavy late-night dinners right before sleep.",
+    ],
+    indianMeals: {
+      breakfast: ["Eggs with toast and fruit", "Sprouts chaat with nimbu", "Besan chilla with paneer"],
+      lunch: ["Dal, roti, sabzi, and curd if tolerated", "Chicken rice bowl with cucumber", "Rajma chawal with salad"],
+      dinner: ["Light dal soup with roti", "Khichdi with vegetables", "Paneer and veg bowl"],
+      fruits: ["Banana", "Orange", "Apple", "Pomegranate"],
+    },
+    benefitSummary: "The routine aims to reduce tiredness, improve steadier energy, and make daily discipline feel easier rather than heavier.",
+    whenToEscalate: [
+      "Fatigue is persistent, unexplained, or affecting normal function despite good sleep.",
+      "The user has breathlessness, palpitations, or other concerning symptoms.",
+      "Energy remains very poor after several weeks of sleep and hydration correction.",
+    ],
+  },
+  fitness_recovery: {
+    issueSummary: "Fitness recovery improves when protein timing, hydration, sleep, mobility, and training balance are handled as a system instead of random effort.",
+    commonReasons: [
+      "Hard training with poor sleep and low protein slows recovery.",
+      "Indian summer heat and sweat loss increase electrolyte and hydration gaps.",
+      "Skipping warm-ups, cooldowns, and easy days raises soreness and injury risk.",
+    ],
+    homeCarePrinciples: [
+      "Protect sleep and post-workout nutrition before buying more supplements.",
+      "Warm up before sessions and cool down after.",
+      "Use mobility and lower-intensity days to keep long-term consistency high.",
+    ],
+    foodsToPrefer: [
+      "Protein at each major meal from eggs, paneer, chicken, fish, soy, or dal.",
+      "Electrolyte-aware hydration around workouts.",
+      "Rice, roti, fruit, curd if tolerated, and dal around training for better recovery support.",
+    ],
+    foodsToLimit: [
+      "Training hard on empty stomach plus poor hydration.",
+      "Very low-protein days repeated across the week.",
+      "Ignoring niggles until they become full setbacks.",
+    ],
+    indianMeals: {
+      breakfast: ["Egg and toast combo", "Paneer wrap", "Oats with whey or curd if tolerated"],
+      lunch: ["Chicken and rice with vegetables", "Dal, rice, and paneer", "Fish curry with rice and salad"],
+      dinner: ["Paneer bhurji with roti", "Dal khichdi with eggs", "Chicken soup with rice"],
+      fruits: ["Banana", "Orange", "Watermelon", "Pomegranate"],
+    },
+    benefitSummary: "The plan is built to reduce soreness spillover, improve gym consistency, and protect users from avoidable recovery mistakes.",
+    whenToEscalate: [
+      "Pain is sharp, localized, or worsening instead of improving.",
+      "The user has repeated injury flare-ups or cannot recover between sessions.",
+      "Fatigue and soreness stay severe despite reducing load and improving recovery habits.",
+    ],
+  },
 };
 
 const protocolTemplates: Record<ClinicalCategoryId, ProtocolTemplate> = {
@@ -529,6 +673,14 @@ const protocolTemplates: Record<ClinicalCategoryId, ProtocolTemplate> = {
       { name: "Stabilize", duration_days: 16, tasks: [] },
     ],
   },
+  body_odor: {
+    category: "body_odor",
+    phases: [
+      { name: "Reset", duration_days: 7, tasks: [] },
+      { name: "Repair", duration_days: 7, tasks: [] },
+      { name: "Stabilize", duration_days: 16, tasks: [] },
+    ],
+  },
   lip_care: {
     category: "lip_care",
     phases: [
@@ -539,6 +691,30 @@ const protocolTemplates: Record<ClinicalCategoryId, ProtocolTemplate> = {
   },
   anti_aging: {
     category: "anti_aging",
+    phases: [
+      { name: "Reset", duration_days: 7, tasks: [] },
+      { name: "Repair", duration_days: 7, tasks: [] },
+      { name: "Stabilize", duration_days: 16, tasks: [] },
+    ],
+  },
+  skin_dullness: {
+    category: "skin_dullness",
+    phases: [
+      { name: "Reset", duration_days: 7, tasks: [] },
+      { name: "Repair", duration_days: 7, tasks: [] },
+      { name: "Stabilize", duration_days: 16, tasks: [] },
+    ],
+  },
+  energy_fatigue: {
+    category: "energy_fatigue",
+    phases: [
+      { name: "Reset", duration_days: 7, tasks: [] },
+      { name: "Repair", duration_days: 7, tasks: [] },
+      { name: "Stabilize", duration_days: 16, tasks: [] },
+    ],
+  },
+  fitness_recovery: {
+    category: "fitness_recovery",
     phases: [
       { name: "Reset", duration_days: 7, tasks: [] },
       { name: "Repair", duration_days: 7, tasks: [] },
@@ -774,6 +950,30 @@ const CATEGORY_GUIDANCE: Record<ClinicalCategoryId, CategoryGuidance> = {
       { label: "Workout gear sanitation", howTo: "Wash gym towel/bag and sanitize wearable gear.", whyItHelps: "Lowers bacterial re-exposure from gear.", product: "Mild disinfectant", durationMin: 8 },
     ],
   },
+  body_odor: {
+    morning: [
+      { label: "Antibacterial body wash", howTo: "Wash underarms, chest, neck, feet, and groin-adjacent outer skin thoroughly, then dry completely.", whyItHelps: "Removes sweat film and lowers odor-causing bacterial buildup.", product: "Antibacterial body wash", durationMin: 5 },
+      { label: "Dry-skin antiperspirant layer", howTo: "Apply antiperspirant on fully dry underarms only after bathing.", whyItHelps: "Lower sweat output means less odor retention in shirts through the day.", product: "Night or morning antiperspirant", durationMin: 2 },
+      { label: "Fresh fabric rule", howTo: "Start in a fresh vest, shirt, and socks. Avoid reusing yesterday's damp items.", whyItHelps: "Fabric retention is a major reason odor returns quickly.", product: "Fresh cotton inner layer", durationMin: 2 },
+      { label: "Carry a quick-reset kit", howTo: "Keep wipes, spare tee, and pocket deodorant for long commute or gym days.", whyItHelps: "Makes midday reset realistic for Indian heat and traffic-heavy schedules.", product: "Travel freshness kit", durationMin: 2 },
+    ],
+    night: [
+      { label: "Post-commute rinse", howTo: "Rinse sweat-prone zones after commute or workout instead of staying in day-long sweat.", whyItHelps: "Cuts odor rebound before it sets into skin and clothes.", product: "Quick shower or wash", durationMin: 4 },
+      { label: "Night sweat-control layer", howTo: "Apply underarm antiperspirant at night 3 to 5 times weekly on fully dry skin.", whyItHelps: "Night application gives better next-day sweat control for many users.", product: "Clinical antiperspirant roll-on", durationMin: 2, caution: "Do not apply on irritated or freshly shaved underarms." },
+      { label: "Foot and shoe reset", howTo: "Air shoes, rotate socks, and dry feet fully before bed.", whyItHelps: "Footwear is a common hidden source of lingering body odor.", product: "Foot powder or drying spray", durationMin: 3 },
+      { label: "Laundry separation", howTo: "Wash workout and commute clothes separately if they trap odor easily.", whyItHelps: "Prevents re-exposure from odor-loaded fabric.", product: "Odor-control detergent", durationMin: 3 },
+    ],
+    lifestyle: [
+      { label: "Hydration checkpoint", howTo: "Cross 2.5L fluids on hot or sweat-heavy days unless medically restricted.", whyItHelps: "Better hydration helps reduce concentrated sweat and tired-body smell.", product: "Water bottle tracker", durationMin: 2 },
+      { label: "Commute sweat strategy", howTo: "Prefer breathable layers, remove backpack as soon as possible, and ventilate after reaching destination.", whyItHelps: "Reduces heat-trap zones where odor spikes fastest.", product: "Breathable fabric switch", durationMin: 3 },
+      { label: "Meal trigger review", howTo: "Track whether onion-heavy, garlic-heavy, alcohol, or low-water days worsen odor for you.", whyItHelps: "User-specific triggers matter more than generic rules.", product: "Quick notes tracker", durationMin: 3 },
+      { label: "Fresh towel rule", howTo: "Rotate towels frequently and keep bath cloths dry between uses.", whyItHelps: "Damp towels quietly amplify body odor recurrence.", product: "Dry towel rotation", durationMin: 2 },
+    ],
+    weekly: [
+      { label: "Wardrobe odor audit", howTo: "Audit shirts, gym wear, socks, and shoes that keep holding smell and deep clean them.", whyItHelps: "Cuts fabric-based odor recurrence that products alone cannot solve.", product: "Laundry reset", durationMin: 10 },
+      { label: "Underarm irritation check", howTo: "Review if shaving, deodorant, or friction is causing redness and adjust the plan.", whyItHelps: "Lower irritation improves consistency with sweat-control products.", product: "Routine tracker", durationMin: 6 },
+    ],
+  },
   lip_care: {
     morning: [
       { label: "SPF lip shield", howTo: "Apply SPF lip balm generously and reapply every 3-4 hours outdoors.", whyItHelps: "Prevents UV-driven dryness and pigmentation.", product: "SPF 30+ lip balm", durationMin: 2 },
@@ -820,6 +1020,78 @@ const CATEGORY_GUIDANCE: Record<ClinicalCategoryId, CategoryGuidance> = {
     weekly: [
       { label: "Texture photo review", howTo: "Capture same-light close-ups of forehead/cheeks.", whyItHelps: "Visual evidence improves confidence and adherence.", product: "Phone camera", durationMin: 8 },
       { label: "Irritation tolerance check", howTo: "Adjust retinoid frequency based on redness/dryness score.", whyItHelps: "Smart pacing prevents setbacks.", product: "Routine scorecard", durationMin: 7 },
+    ],
+  },
+  skin_dullness: {
+    morning: [
+      { label: "Gentle brightening cleanse", howTo: "Cleanse without harsh scrubbing, then pat dry completely before serum.", whyItHelps: "Protects barrier while prepping skin for glow-support steps.", product: "Gentle cleanser", durationMin: 3 },
+      { label: "Vitamin C glow layer", howTo: "Apply 2 to 3 drops over face and neck, especially tan-prone zones.", whyItHelps: "Supports brighter tone and daily defense against UV and pollution stress.", product: "Vitamin C serum", durationMin: 2 },
+      { label: "Hydration plus SPF", howTo: "Seal with light moisturizer and broad-spectrum sunscreen before leaving home.", whyItHelps: "Without sunscreen, dullness and tan keep returning.", product: "Hydrator + SPF 50", durationMin: 3 },
+      { label: "Commute defense habit", howTo: "Use cap, helmet visor hygiene, and midday sunscreen reapplication when outdoors.", whyItHelps: "Indian commute exposure is a major dullness driver.", product: "Pocket sunscreen", durationMin: 2 },
+    ],
+    night: [
+      { label: "Pollution reset cleanse", howTo: "Cleanse thoroughly after commute to remove dust, sweat, and sunscreen.", whyItHelps: "Night recovery starts with taking the day off your skin.", product: "Low-foam cleanser", durationMin: 3 },
+      { label: "Texture renew serum", howTo: "Use low-strength lactic or mandelic serum 2 to 4 nights weekly only.", whyItHelps: "Smooths rough texture with less irritation than aggressive scrubs.", product: "Beginner exfoliating serum", durationMin: 2, caution: "Skip on irritated skin and never combine with too many strong actives." },
+      { label: "Barrier support layer", howTo: "Finish with a calming moisturizer over the whole face and neck.", whyItHelps: "Hydrated skin reflects light better and tolerates brightening actives longer.", product: "Ceramide moisturizer", durationMin: 2 },
+      { label: "Sleep-before-midnight rule", howTo: "Aim for a consistent sleep window instead of scrolling late.", whyItHelps: "Sleep debt shows up fast as tired, flat skin.", product: "Sleep reminder", durationMin: 2 },
+    ],
+    lifestyle: [
+      { label: "Fruit and hydration block", howTo: "Add one vitamin C fruit plus one hydration checkpoint before lunch.", whyItHelps: "Supports brighter tone and lowers dehydration-driven flatness.", product: "Fruit + water cue", durationMin: 3 },
+      { label: "No harsh scrub day", howTo: "Avoid walnut scrubs or rough towel rubbing even if skin feels rough.", whyItHelps: "Over-scrubbing often makes dullness linger longer.", product: "Soft towel", durationMin: 2 },
+      { label: "Dust cleanup rule", howTo: "Wash face after cricket, biking, or dusty outdoor exposure.", whyItHelps: "Stops pollution film from sitting on skin for hours.", product: "Travel cleanser or rinse", durationMin: 3 },
+      { label: "Late-sugar check", howTo: "Limit dessert or fried snack nights when skin looks puffy and tired next morning.", whyItHelps: "Helps lower next-day dullness spillover.", product: "Meal tracker", durationMin: 3 },
+    ],
+    weekly: [
+      { label: "Glow comparison photo", howTo: "Take same-light front and side photos weekly before skincare.", whyItHelps: "Makes subtle brightness changes visible and keeps users consistent.", product: "Phone camera", durationMin: 8 },
+      { label: "Tan trigger recap", howTo: "Review outdoor exposure, sunscreen misses, and late nights from the week.", whyItHelps: "Most dullness relapse comes from repeat triggers, not one bad product.", product: "Weekly tracker", durationMin: 7 },
+    ],
+  },
+  energy_fatigue: {
+    morning: [
+      { label: "Water plus daylight start", howTo: "Drink water soon after waking and step into daylight for 3 to 5 minutes.", whyItHelps: "A fast circadian cue improves wakefulness and steadier morning energy.", product: "Water bottle + daylight cue", durationMin: 5 },
+      { label: "Protein-first breakfast", howTo: "Eat eggs, paneer, sprouts, curd if tolerated, or dal-based breakfast before relying on tea.", whyItHelps: "Reduces mid-morning and post-lunch crashes from weak breakfast quality.", product: "Protein breakfast option", durationMin: 10 },
+      { label: "Tea-coffee timing control", howTo: "Keep first caffeine after some water and food instead of empty stomach overload.", whyItHelps: "Helps reduce jitter-crash cycles.", product: "Caffeine timing plan", durationMin: 2 },
+      { label: "2-minute movement activation", howTo: "Do a short walk, stretch, or stair round before sitting for long work blocks.", whyItHelps: "Shifts the body out of sluggish morning inertia.", product: "2-minute timer", durationMin: 2 },
+    ],
+    night: [
+      { label: "Screen cutoff block", howTo: "Cut down phone or laptop usage at least 30 to 45 minutes before sleep.", whyItHelps: "Late blue-light exposure pushes next-day fatigue higher.", product: "Do-not-disturb schedule", durationMin: 2 },
+      { label: "Light dinner timing", howTo: "Finish heavy dinner earlier and avoid sleeping immediately after overeating.", whyItHelps: "Improves next-day freshness and sleep quality.", product: "Dinner reminder", durationMin: 3 },
+      { label: "Sleep setup reset", howTo: "Cool room, dark lights, and same bedtime window at least 5 nights weekly.", whyItHelps: "Consistency matters more than occasional perfect sleep.", product: "Sleep checklist", durationMin: 4 },
+      { label: "Next-day plan close", howTo: "Write the first task of tomorrow and stop mental looping.", whyItHelps: "Reduces stress carryover into sleep.", product: "Phone notes or diary", durationMin: 3 },
+    ],
+    lifestyle: [
+      { label: "Hydration ladder", howTo: "Break water into 4 checkpoints instead of trying to catch up late.", whyItHelps: "Steadier hydration means steadier energy.", product: "1L bottle tracker", durationMin: 2 },
+      { label: "Lunch crash defense", howTo: "Choose dal, roti, sabzi, salad, or protein bowl instead of only rice plus fried sides.", whyItHelps: "Balanced lunch lowers the heavy post-lunch slump.", product: "Balanced lunch swap", durationMin: 4 },
+      { label: "Stress interrupt", howTo: "Take one 5-minute walk or breath break during the busiest part of the day.", whyItHelps: "Mental load often shows up as physical fatigue.", product: "Break timer", durationMin: 5 },
+      { label: "Weekend recovery guardrail", howTo: "Avoid ruining sleep rhythm by sleeping extremely late on weekends.", whyItHelps: "Social jet lag can wreck Monday-to-Wednesday energy.", product: "Wake-time guardrail", durationMin: 3 },
+    ],
+    weekly: [
+      { label: "Energy crash review", howTo: "Review which days had the worst crash and what came before them.", whyItHelps: "Makes the plan personalized instead of generic.", product: "Energy journal", durationMin: 7 },
+      { label: "Sleep debt reset", howTo: "Plan one or two nights this week where sleep gets priority over late entertainment or work.", whyItHelps: "Recovery starts with banking back lost sleep.", product: "Weekly schedule review", durationMin: 6 },
+    ],
+  },
+  fitness_recovery: {
+    morning: [
+      { label: "Mobility primer", howTo: "Spend 5 minutes on hips, shoulders, ankles, or the stiffest zones before the day gets busy.", whyItHelps: "Prepares the body better for training and daily movement.", product: "Mobility flow", durationMin: 5 },
+      { label: "Hydration and electrolytes", howTo: "Hydrate early, especially after sweaty sessions or hot-weather walks.", whyItHelps: "Cuts the hidden dehydration load that slows recovery.", product: "Electrolyte drink", durationMin: 2 },
+      { label: "Protein anchor", howTo: "Include at least one clear protein source in breakfast or post-training meal.", whyItHelps: "Recovery is limited when protein stays low till lunch.", product: "Protein option", durationMin: 5 },
+      { label: "Warm-up rule", howTo: "Never start training cold. Use 5 to 8 minutes of progressive prep.", whyItHelps: "Lowers avoidable injury risk and improves session quality.", product: "Warm-up template", durationMin: 6 },
+    ],
+    night: [
+      { label: "Cooldown stretch", howTo: "Do a short cooldown for the most loaded muscle groups after training or before sleep.", whyItHelps: "Helps next-day stiffness feel more manageable.", product: "Recovery stretch plan", durationMin: 6 },
+      { label: "Recovery meal check", howTo: "Review whether the day had enough protein, carbs, and fluids after training.", whyItHelps: "Recovery fails more from nutrition misses than motivation misses.", product: "Meal checklist", durationMin: 3 },
+      { label: "Soreness support", howTo: "Use a recovery gel, hot shower, or light walk instead of complete stagnation when sore.", whyItHelps: "Gentle recovery beats doing nothing when soreness is high.", product: "Recovery gel or hot shower", durationMin: 5 },
+      { label: "Sleep protection", howTo: "Treat sleep as part of the training plan, not optional extra effort.", whyItHelps: "Sleep is the biggest legal recovery enhancer most users ignore.", product: "Sleep alarm", durationMin: 2 },
+    ],
+    lifestyle: [
+      { label: "Load balance check", howTo: "Avoid stacking several all-out sessions with no low-intensity day.", whyItHelps: "Smart load management keeps consistency higher over months.", product: "Training calendar", durationMin: 3 },
+      { label: "Post-workout fuel timing", howTo: "Eat within a sensible window after training instead of waiting many hours.", whyItHelps: "Improves recovery quality and reduces next-day heaviness.", product: "Recovery meal plan", durationMin: 3 },
+      { label: "Niggle log", howTo: "Track knee, shoulder, or low-back niggles before they become layoff injuries.", whyItHelps: "Small warnings are easier to manage than full setbacks.", product: "Pain note tracker", durationMin: 2 },
+      { label: "Easy-day discipline", howTo: "Keep one active recovery or lower-intensity day instead of pushing max effort daily.", whyItHelps: "Long-term gains need recoverable training, not constant fatigue.", product: "Recovery walk or cycle", durationMin: 5 },
+    ],
+    weekly: [
+      { label: "Soreness and performance review", howTo: "Compare soreness, performance, and sleep quality for the full week.", whyItHelps: "Shows whether the current training load is sustainable.", product: "Weekly training notes", durationMin: 8 },
+      { label: "Mobility reset session", howTo: "Do one focused 15-minute mobility block on the tightest body region this week.", whyItHelps: "Improves recovery and reduces repetitive stress buildup.", product: "Mobility routine", durationMin: 15 },
     ],
   },
 };
@@ -1020,6 +1292,11 @@ function applyToleranceTaskCount(base: { morning: number; night: number; lifesty
 
 export function getRecoveryLevelDisplay(level: ProtocolToleranceMode) {
   return LEVEL_DISPLAY[level];
+}
+
+export function getCategoryRecoveryProfile(category: CategoryId) {
+  const exactCategory = category === "fitness" ? "fitness_recovery" : category;
+  return CATEGORY_RECOVERY_PROFILES[exactCategory as ClinicalCategoryId] || null;
 }
 
 export function normalizeRecoveryLevel(level?: string | null): ProtocolToleranceMode {
@@ -1320,8 +1597,12 @@ function fallbackByCategory(category: CategoryId): string[] {
     scalp_health: ["Use lukewarm water only", "Keep scalp dry after sweat", "Avoid fragranced scalp styling products"],
     beard_growth: ["Warm towel compress before massage", "Daily beard-area cleanse", "Avoid aggressive over-trimming"],
     body_acne: ["Shower after sweating", "Wear breathable cotton fabrics", "Avoid occlusive body lotions on acne-prone zones"],
+    body_odor: ["Rinse sweat-prone zones quickly", "Switch into a fresh shirt and socks", "Dry underarms fully before antiperspirant"],
     lip_care: ["Apply plain petroleum jelly overnight", "Hydrate regularly", "Avoid licking lips"],
     anti_aging: ["Use sunscreen daily", "Keep gentle cleanse + moisturizer rhythm", "Prioritize sleep and hydration"],
+    skin_dullness: ["Use sunscreen daily", "Add one vitamin C fruit", "Avoid harsh scrubbing"],
+    energy_fatigue: ["Drink water soon after waking", "Eat protein before relying on tea", "Cut late-night scrolling"],
+    fitness_recovery: ["Warm up before training", "Hit protein after workouts", "Protect sleep on hard-training days"],
   };
   return map[category] || ["Keep routine simple, consistent, and gentle."];
 }

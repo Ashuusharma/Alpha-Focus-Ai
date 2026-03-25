@@ -14,18 +14,38 @@ const DAILY_TIPS = [
   "Progress compounds when routine consistency is tracked daily.",
 ];
 
+function getPersonalization(metadata: Record<string, unknown>) {
+  const firstName = typeof metadata.firstName === "string" ? metadata.firstName.trim() : "";
+  const categoryLabel = typeof metadata.categoryLabel === "string" ? metadata.categoryLabel.trim() : "";
+  const prefix = firstName ? `${firstName}, ` : "";
+  const concern = categoryLabel ? ` for ${categoryLabel}` : "";
+  return { prefix, concern };
+}
+
 function pickDailyTip(reference = new Date().toISOString().slice(0, 10)) {
   const chars = reference.split("").reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
   return DAILY_TIPS[chars % DAILY_TIPS.length];
 }
 
 export function buildTemplate(eventType: NotificationEventType, metadata: Record<string, unknown> = {}): NotificationTemplate {
+  const { prefix, concern } = getPersonalization(metadata);
+
+  if (eventType === "routine_reminder") {
+    const slot = typeof metadata.slot === "string" ? metadata.slot.toUpperCase() : "NEXT";
+    return {
+      category: "routine",
+      title: `${slot} routine reminder`,
+      message: `${prefix}your next protocol step${concern} is due now. Finish it on time to protect today\'s streak and keep recovery moving this week.`,
+      actionUrl: "/dashboard?focus=routine",
+    };
+  }
+
   if (eventType === "routine_completed") {
     const phase = typeof metadata.phase === "string" ? metadata.phase.toUpperCase() : "ROUTINE";
     return {
       category: "routine",
       title: `${phase} logged`,
-      message: "Great consistency. Keep the loop tight for compounding results.",
+      message: `${prefix}${phase.toLowerCase()} is logged${concern}. That completion strengthens your consistency score and compounds visible results over the next few weeks.`,
       actionUrl: "/dashboard",
     };
   }
@@ -34,8 +54,8 @@ export function buildTemplate(eventType: NotificationEventType, metadata: Record
     return {
       category: "routine",
       title: "Routine check-in missed",
-      message: "You still have time to recover today. Complete your next routine slot now.",
-      actionUrl: "/dashboard",
+      message: `${prefix}today\'s routine${concern} is slipping. Recover the day now to avoid losing momentum and delaying the next visible improvement window.`,
+      actionUrl: "/dashboard?focus=recovery-lite",
     };
   }
 
@@ -43,7 +63,7 @@ export function buildTemplate(eventType: NotificationEventType, metadata: Record
     return {
       category: "challenge",
       title: "Challenge started",
-      message: "Momentum matters in the first week. Complete day one to lock a streak.",
+      message: `${prefix}your challenge has started. Nail day one to lock momentum early and make the next 7 days easier to sustain.`,
       actionUrl: "/challenges",
     };
   }
@@ -54,7 +74,7 @@ export function buildTemplate(eventType: NotificationEventType, metadata: Record
     return {
       category: "challenge",
       title: `${label} unlocked`,
-      message: "Strong discipline. Keep stacking completions to protect your streak.",
+      message: `${prefix}${label} is complete. Stack the next win quickly to protect your streak and unlock faster confidence gains.`,
       actionUrl: "/challenges",
     };
   }
@@ -65,8 +85,8 @@ export function buildTemplate(eventType: NotificationEventType, metadata: Record
       category: "progress",
       title: "Progress signal detected",
       message: improvement > 0
-        ? `Clinical improvement up ${improvement}%. Stay consistent for the next cycle.`
-        : "Your metrics are moving in the right direction. Keep protocol consistency high.",
+        ? `${prefix}your clinical score${concern} improved by ${improvement}%. Keep execution tight now to turn this signal into a visible before-and-after shift.`
+        : `${prefix}your metrics${concern} are starting to move. Stay consistent through this cycle so early gains do not flatten out.`,
       actionUrl: "/result",
     };
   }
@@ -76,8 +96,27 @@ export function buildTemplate(eventType: NotificationEventType, metadata: Record
     return {
       category: "progress",
       title: `Streak: ${streakDays} days`,
-      message: "Your discipline is compounding. Protect this streak today.",
+      message: `${prefix}you\'re on a ${streakDays}-day streak${concern}. Protect it today because consistency is what turns effort into measurable recovery.`,
       actionUrl: "/dashboard",
+    };
+  }
+
+  if (eventType === "streak_at_risk") {
+    return {
+      category: "progress",
+      title: "Streak at risk",
+      message: `${prefix}your streak${concern} is at risk today. Complete one routine slot now to save momentum and avoid restarting from zero tomorrow.`,
+      actionUrl: "/dashboard?focus=streak",
+    };
+  }
+
+  if (eventType === "reward_unlocked") {
+    const rewardLabel = typeof metadata.rewardLabel === "string" ? metadata.rewardLabel : "reward";
+    return {
+      category: "progress",
+      title: "Reward unlocked",
+      message: `${prefix}your ${rewardLabel} is live now. Use it while momentum is high and turn current discipline into a practical reward before it expires.`,
+      actionUrl: "/alpha-credits",
     };
   }
 
@@ -85,7 +124,7 @@ export function buildTemplate(eventType: NotificationEventType, metadata: Record
     return {
       category: "tips",
       title: "Daily tactical tip",
-      message: pickDailyTip(String(metadata.reference || "")),
+      message: `${prefix}${pickDailyTip(String(metadata.reference || ""))} Use it today${concern} so the benefit compounds instead of staying theoretical.`,
       actionUrl: "/learning-center",
     };
   }

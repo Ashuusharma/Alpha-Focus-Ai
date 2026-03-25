@@ -6,12 +6,21 @@ export type AnalyzerType =
   | "acne"
   | "dark_circles"
   | "aging"
+  | "anti_aging"
   | "hair"
+  | "hair_loss"
   | "scalp"
+  | "scalp_health"
   | "beard"
+  | "beard_growth"
   | "teeth"
   | "body_acne"
-  | "lips";
+  | "body_odor"
+  | "lips"
+  | "lip_care"
+  | "skin_dullness"
+  | "energy_fatigue"
+  | "fitness_recovery";
 
 export interface PhotoAngle {
   id: string;
@@ -77,7 +86,7 @@ export interface AnalysisResult {
 
 // ─── PHOTO ANGLE DEFINITIONS PER TYPE ───────────────────────────
 
-const ANGLE_DEFINITIONS: Record<AnalyzerType, Omit<PhotoAngle, "imageData">[]> = {
+const ANGLE_DEFINITIONS: Partial<Record<AnalyzerType, Omit<PhotoAngle, "imageData">[]>> = {
   skin: [
     { id: "skin-front", label: "Front Face", instruction: "Look straight at the camera with a neutral expression. Keep your face relaxed, hair pulled back. Ensure even, natural lighting with no shadows on your face." },
     { id: "skin-left", label: "Left Profile", instruction: "Turn your head 90° to the right so your LEFT cheek faces the camera. Keep eyes looking forward. This captures jawline, cheek texture, and sideburn area." },
@@ -123,15 +132,42 @@ const ANGLE_DEFINITIONS: Record<AnalyzerType, Omit<PhotoAngle, "imageData">[]> =
     { id: "body-chest", label: "Chest Area", instruction: "Face camera shirtless showing full chest area. This reveals breakouts along the chest center where sweat accumulates." },
     { id: "body-shoulder", label: "Shoulder Close-Up", instruction: "Show the shoulder/upper arm area close-up. Folliculitis and keratosis pilaris (bumpy skin) are common here." },
   ],
+  body_odor: [
+    { id: "odor-underarm", label: "Underarm Zone", instruction: "Capture clean, dry underarm skin in bright light after bathing. Avoid deodorant residue if possible so irritation or sweat retention can be seen clearly." },
+    { id: "odor-chest", label: "Chest / Collar Zone", instruction: "Capture upper chest and collar area where sweat or odor tends to build up during commute, work, or gym sessions." },
+    { id: "odor-back-neck", label: "Neck / Upper Back", instruction: "Capture back of neck or upper back if that is where shirt smell, sweat marks, or heat rash tend to build up." },
+  ],
   lips: [
     { id: "lips-closed", label: "Closed Mouth", instruction: "Face camera with lips gently closed in natural position. This shows lip texture, dryness, cracks, and overall lip color." },
     { id: "lips-open", label: "Slightly Open", instruction: "Open mouth slightly to show lip margins and inner lip edge. This reveals angular cheilitis (corner cracking) and inner lip health." },
     { id: "lips-side", label: "Side View", instruction: "Turn 45° to show lip profile. This reveals lip volume, asymmetry, and the lip border definition." },
   ],
+  skin_dullness: [
+    { id: "dull-front", label: "Front Face", instruction: "Capture your full face in even daylight with no beauty filter. We need to see true skin tone, flatness, and uneven brightness clearly." },
+    { id: "dull-left", label: "Left Cheek / Forehead", instruction: "Turn slightly to show the side that looks most tanned or tired after commute or sun exposure." },
+    { id: "dull-right", label: "Right Cheek / Jaw", instruction: "Show the opposite side in the same light so tone asymmetry and roughness are easier to compare." },
+  ],
+  energy_fatigue: [
+    { id: "energy-front", label: "Face Straight", instruction: "Capture a neutral front-face photo in natural light without smiling. This helps assess tired-eye and low-energy visual signals." },
+    { id: "energy-eyes", label: "Under-Eye Close-Up", instruction: "Move closer to show under-eye area and upper cheeks clearly. Avoid overhead lighting that creates fake shadows." },
+    { id: "energy-side", label: "45 Degree Side", instruction: "Turn 45 degrees to show how puffiness, tiredness, or low-sleep markers look from the side." },
+  ],
+  fitness_recovery: [
+    { id: "fitness-target", label: "Target Recovery Zone", instruction: "Capture the main body area where soreness, tightness, or training fatigue shows up most clearly. Keep the frame steady and well lit." },
+    { id: "fitness-posture", label: "Standing Posture", instruction: "Capture a standing posture shot from the front or side if recovery issues affect how you stand or move." },
+    { id: "fitness-skin", label: "Training Stress Area", instruction: "If training stress shows on skin or joints, capture the zone clearly with the whole area visible and in focus." },
+  ],
 };
 
+ANGLE_DEFINITIONS.anti_aging = ANGLE_DEFINITIONS.aging;
+ANGLE_DEFINITIONS.hair_loss = ANGLE_DEFINITIONS.hair;
+ANGLE_DEFINITIONS.scalp_health = ANGLE_DEFINITIONS.scalp;
+ANGLE_DEFINITIONS.beard_growth = ANGLE_DEFINITIONS.beard;
+ANGLE_DEFINITIONS.lip_care = ANGLE_DEFINITIONS.lips;
+
 export function getPhotoAngles(type: AnalyzerType): PhotoAngle[] {
-  return (ANGLE_DEFINITIONS[type] || ANGLE_DEFINITIONS.skin).map((a) => ({
+  const definitions = ANGLE_DEFINITIONS[type] || ANGLE_DEFINITIONS.skin || [];
+  return definitions.map((a) => ({
     ...a,
     imageData: null,
   }));
@@ -139,7 +175,7 @@ export function getPhotoAngles(type: AnalyzerType): PhotoAngle[] {
 
 // ─── MOCK ANALYSIS ENGINE ──────────────────────────────────────
 
-const ANALYSIS_DATA: Record<AnalyzerType, Omit<AnalysisResult, "capturedPhotos">> = {
+const ANALYSIS_DATA: Partial<Record<AnalyzerType, Omit<AnalysisResult, "capturedPhotos">>> = {
   skin: {
     type: "skin",
     confidence: 87,
@@ -593,6 +629,42 @@ const ANALYSIS_DATA: Record<AnalyzerType, Omit<AnalysisResult, "capturedPhotos">
     ],
     weeklyRoutines: generateWeeklyRoutines("body_acne"),
   },
+  body_odor: {
+    type: "body_odor",
+    confidence: 82,
+    severity: "moderate",
+    detectedIssues: [
+      { name: "Sweat Retention Pattern", confidence: 86, impact: "moderate", description: "Sweat-heavy zones appear prone to repeat dampness and odor rebound during long days.", affectedArea: "Underarms / Chest" },
+      { name: "Friction Heat Build-Up", confidence: 74, impact: "minor", description: "Backpack, collar, or tight-fabric friction may be worsening sweat retention and smell.", affectedArea: "Neck / Upper Back" },
+    ],
+    recommendations: [
+      "Use an antibacterial body wash on sweat-prone zones",
+      "Apply antiperspirant only on fully dry underarms",
+      "Carry a shirt and sock change for long commute or gym days",
+      "Rotate shoes and wash workout fabrics aggressively",
+      "Track diet or dehydration triggers if smell spikes on specific days",
+    ],
+    tips: [
+      "Body odor often improves more from fabric and sweat management than from stronger perfume",
+      "Do not apply antiperspirant on irritated or freshly shaved underarms",
+      "Drying skin fully matters almost as much as cleansing it",
+      "Use separate towels for body and gym when possible",
+      "Visible improvement usually comes within 1 to 2 weeks of consistent reset habits",
+    ],
+    products: [
+      {
+        name: "Sweat Reset Antibacterial Body Wash",
+        type: "Body Wash",
+        keyIngredients: ["Lactic Acid", "Zinc Ricinoleate"],
+        ingredientBenefits: { "Lactic Acid": "Helps reduce odor-causing buildup", "Zinc Ricinoleate": "Supports odor absorption" },
+        howToUse: "Wash underarms, chest, and upper back thoroughly after sweat-heavy periods and dry completely.",
+        whenToUse: "Morning or post-sweat",
+        price: "₹649",
+        rating: 4.4,
+      },
+    ],
+    weeklyRoutines: generateWeeklyRoutines("body_odor"),
+  },
   lips: {
     type: "lips",
     confidence: 80,
@@ -629,7 +701,121 @@ const ANALYSIS_DATA: Record<AnalyzerType, Omit<AnalysisResult, "capturedPhotos">
     ],
     weeklyRoutines: generateWeeklyRoutines("lips"),
   },
+  skin_dullness: {
+    type: "skin_dullness",
+    confidence: 84,
+    severity: "moderate",
+    detectedIssues: [
+      { name: "Uneven Tone Dullness", confidence: 87, impact: "moderate", description: "The skin looks flat and patchy, likely influenced by tan, pollution load, and sleep debt.", affectedArea: "Forehead / Cheeks" },
+      { name: "Texture Fatigue", confidence: 71, impact: "minor", description: "Slight roughness and low reflectivity suggest dehydration and recovery slowdown.", affectedArea: "Cheeks / Jaw" },
+    ],
+    recommendations: [
+      "Use a brightening vitamin C serum in the morning",
+      "Prioritize SPF 50 every day and reapply during outdoor exposure",
+      "Use a low-irritation exfoliating serum only a few nights per week",
+      "Increase sleep consistency and hydration instead of scrubbing harder",
+      "Wash off commute dust and sunscreen before bed",
+    ],
+    tips: [
+      "Dullness often improves slower from one miracle product than from daily protection plus sleep",
+      "Avoid rough walnut scrubs and repeated towel friction",
+      "A cap and sunscreen during commute can change results faster than adding another serum",
+      "Fruit, water, and protein gaps show up on skin fast",
+      "Expect noticeable brightness improvement in 2 to 4 weeks with consistency",
+    ],
+    products: [
+      {
+        name: "Daily Bright Vitamin C Serum",
+        type: "Serum",
+        keyIngredients: ["Vitamin C", "Ferulic Acid"],
+        ingredientBenefits: { "Vitamin C": "Supports brightness and tone", "Ferulic Acid": "Helps defend against daily oxidative stress" },
+        howToUse: "Apply 2 to 3 drops every morning before moisturizer and sunscreen.",
+        whenToUse: "Morning",
+        price: "₹849",
+        rating: 4.5,
+      },
+    ],
+    weeklyRoutines: generateWeeklyRoutines("skin_dullness"),
+  },
+  energy_fatigue: {
+    type: "energy_fatigue",
+    confidence: 79,
+    severity: "moderate",
+    detectedIssues: [
+      { name: "Sleep Debt Signal", confidence: 82, impact: "moderate", description: "Visible tiredness markers suggest poor recent recovery and unstable sleep quality.", affectedArea: "Under-eye / Full face" },
+      { name: "Hydration Stress", confidence: 70, impact: "minor", description: "Facial fatigue pattern may be worsened by dehydration or long work blocks without breaks.", affectedArea: "Cheeks / Under-eye" },
+    ],
+    recommendations: [
+      "Anchor wake-up time and daylight exposure",
+      "Add protein before depending on caffeine",
+      "Split hydration into fixed checkpoints",
+      "Reduce late-night screen use and heavy dinners",
+      "Track midday crash timing for 7 days",
+    ],
+    tips: [
+      "Fatigue is usually behavioral before it is cosmetic, so the routine should stay simple",
+      "Late-night scrolling often hits harder than one missed skincare step",
+      "Hydration and breakfast quality affect under-eye fatigue quickly",
+      "A 5-minute walk break can rescue energy better than another chai for some users",
+      "Visible improvement can happen within 1 to 3 weeks if sleep rhythm improves",
+    ],
+    products: [
+      {
+        name: "Daily Restore Electrolyte Mix",
+        type: "Hydration Support",
+        keyIngredients: ["Electrolytes", "B Vitamins"],
+        ingredientBenefits: { "Electrolytes": "Support hydration balance", "B Vitamins": "Help steady daytime energy metabolism" },
+        howToUse: "Use once in the first half of the day or after heavy sweat exposure.",
+        whenToUse: "Morning / Post-sweat",
+        price: "₹499",
+        rating: 4.3,
+      },
+    ],
+    weeklyRoutines: generateWeeklyRoutines("energy_fatigue"),
+  },
+  fitness_recovery: {
+    type: "fitness_recovery",
+    confidence: 80,
+    severity: "moderate",
+    detectedIssues: [
+      { name: "Recovery Load Stress", confidence: 81, impact: "moderate", description: "Training effort may be outpacing recovery support from sleep, hydration, and protein intake.", affectedArea: "Primary training zones" },
+      { name: "Soreness Carryover", confidence: 73, impact: "minor", description: "Recovery pattern suggests soreness or stiffness is likely leaking into the next training block.", affectedArea: "Lower body / Upper body" },
+    ],
+    recommendations: [
+      "Prioritize protein intake around training",
+      "Hydrate with electrolytes on hot or sweaty training days",
+      "Protect sleep like part of the training plan",
+      "Warm up before sessions and cool down after",
+      "Use one lighter recovery day each week",
+    ],
+    tips: [
+      "More supplements will not fix under-eating protein and sleeping poorly",
+      "The best recovery plan is the one you can repeat after long workdays too",
+      "Most users improve faster by lowering overload than by pushing harder",
+      "Keep a note of recurring knee, shoulder, or back niggles",
+      "Expect steadier next-day recovery in 1 to 2 weeks if the basics are fixed",
+    ],
+    products: [
+      {
+        name: "Post-Training Recovery Protein",
+        type: "Protein Support",
+        keyIngredients: ["Whey Isolate", "Digestive Enzymes"],
+        ingredientBenefits: { "Whey Isolate": "Supports muscle repair", "Digestive Enzymes": "Improve easier post-workout digestion" },
+        howToUse: "Take within 60 minutes after training or as a protein-focused recovery snack.",
+        whenToUse: "Post-workout",
+        price: "₹1499",
+        rating: 4.5,
+      },
+    ],
+    weeklyRoutines: generateWeeklyRoutines("fitness_recovery"),
+  },
 };
+
+ANALYSIS_DATA.anti_aging = ANALYSIS_DATA.aging;
+ANALYSIS_DATA.hair_loss = ANALYSIS_DATA.hair;
+ANALYSIS_DATA.scalp_health = ANALYSIS_DATA.scalp;
+ANALYSIS_DATA.beard_growth = ANALYSIS_DATA.beard;
+ANALYSIS_DATA.lip_care = ANALYSIS_DATA.lips;
 
 // ─── WEEKLY ROUTINE GENERATOR ──────────────────────────────────
 
@@ -795,6 +981,9 @@ export async function analyzeImage(
   await new Promise((res) => setTimeout(res, 1500 + Math.random() * 1500));
 
   const data = ANALYSIS_DATA[analyzerType] || ANALYSIS_DATA.skin;
+  if (!data) {
+    throw new Error("Analysis data is not configured for this analyzer type.");
+  }
 
   // Slightly randomize confidence for realism
   const jitter = Math.floor(Math.random() * 6) - 3;

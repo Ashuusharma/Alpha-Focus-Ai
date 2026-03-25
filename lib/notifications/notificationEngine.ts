@@ -1,4 +1,5 @@
 import { buildTemplate } from "@/lib/notifications/notificationTemplates";
+import { deliverPushNotification } from "@/lib/notifications/pushDelivery";
 import { NotificationEventType, NotificationPreferenceRow, NotificationRow } from "@/lib/notifications/types";
 
 const MAX_NOTIFICATIONS_PER_DAY = 3;
@@ -152,7 +153,13 @@ export async function createNotification(input: {
   }
 
   const rows = (await response.json()) as NotificationRow[];
-  return { ok: true as const, notification: rows[0] || null };
+  const notification = rows[0] || null;
+
+  if (notification) {
+    void deliverPushNotification(input.userId, notification, input.accessToken);
+  }
+
+  return { ok: true as const, notification };
 }
 
 export async function listNotifications(input: { userId: string; limit?: number; accessToken?: string }) {
