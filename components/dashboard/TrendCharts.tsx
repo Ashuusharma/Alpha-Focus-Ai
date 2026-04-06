@@ -4,8 +4,10 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  LabelList,
   Line,
   LineChart,
+  ReferenceArea,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -34,10 +36,11 @@ function clampPct(value: number) {
 
 function ChartCard({ title, children }: ChartCardProps) {
   return (
-    <div className="rounded-[1.8rem] border border-[#E2DDD3] bg-[#FFFDFC] p-6 shadow-[0_10px_24px_rgba(17,17,17,0.04)] hover:shadow-[0_16px_30px_rgba(17,17,17,0.08)] transition-all duration-300">
+    <div className="relative overflow-hidden rounded-[1.8rem] border border-[#E2DDD3] bg-[linear-gradient(180deg,#fffdfb_0%,#f8f0e4_100%)] p-6 shadow-[0_12px_28px_rgba(17,17,17,0.05)] hover:shadow-[0_18px_34px_rgba(17,17,17,0.08)] transition-all duration-300">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-[radial-gradient(circle_at_top,rgba(47,111,87,0.12),rgba(47,111,87,0))]" />
       <div className="flex justify-between items-center mb-4">
         <p className="text-xs font-black uppercase tracking-widest text-[#1F3D2B]">{title}</p>
-        <span className="text-[10px] font-black text-[#2F6F57] bg-[#E8F4EE] px-2 py-0.5 rounded-full border border-[#C8DACF]">You improved +8% this week</span>
+        <span className="text-[10px] font-black text-[#2F6F57] bg-[#E8F4EE] px-2 py-0.5 rounded-full border border-[#C8DACF]">Target zone visible</span>
       </div>
       <div className="h-64 w-full">{children}</div>
     </div>
@@ -51,10 +54,11 @@ export function SeverityTrendChart({ data }: { data: TrendPoint[] }) {
         <LineChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
           <defs>
             <linearGradient id="colorSeverity" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#A04747" stopOpacity={0.1}/>
+              <stop offset="5%" stopColor="#A04747" stopOpacity={0.22}/>
               <stop offset="95%" stopColor="#A04747" stopOpacity={0}/>
             </linearGradient>
           </defs>
+          <ReferenceArea y1={0} y2={35} fill="#EAF3EE" fillOpacity={0.75} />
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1ECE3" />
           <XAxis dataKey="label" tick={{ fill: "#8C6A5A", fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
           <YAxis tick={{ fill: "#8C6A5A", fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} domain={[0, 100]} />
@@ -72,7 +76,9 @@ export function SeverityTrendChart({ data }: { data: TrendPoint[] }) {
             activeDot={{ r: 6, strokeWidth: 0 }}
             animationDuration={1500}
             animationEasing="ease-in-out"
-          />
+          >
+            <LabelList dataKey="severity" position="top" formatter={(value) => `${clampPct(Number(value || 0))}%`} style={{ fill: "#8C6A5A", fontSize: 10, fontWeight: 800 }} />
+          </Line>
         </LineChart>
       </ResponsiveContainer>
     </ChartCard>
@@ -86,10 +92,11 @@ export function RoutineAdherenceChart({ data }: { data: TrendPoint[] }) {
         <BarChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
           <defs>
             <linearGradient id="colorAdherence" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#2F6F57" stopOpacity={1}/>
+              <stop offset="5%" stopColor="#5A9A7C" stopOpacity={1}/>
               <stop offset="95%" stopColor="#1F3D2B" stopOpacity={1}/>
             </linearGradient>
           </defs>
+          <ReferenceArea y1={75} y2={100} fill="#EAF3EE" fillOpacity={0.65} />
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1ECE3" />
           <XAxis dataKey="label" tick={{ fill: "#8C6A5A", fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
           <YAxis tick={{ fill: "#8C6A5A", fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} domain={[0, 100]} />
@@ -104,7 +111,9 @@ export function RoutineAdherenceChart({ data }: { data: TrendPoint[] }) {
             radius={[6, 6, 0, 0]} 
             animationDuration={1500}
             animationEasing="ease-in-out"
-          />
+          >
+            <LabelList dataKey="adherence" position="top" formatter={(value) => `${clampPct(Number(value || 0))}%`} style={{ fill: "#8C6A5A", fontSize: 10, fontWeight: 800 }} />
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     </ChartCard>
@@ -118,10 +127,11 @@ export function ConfidenceTrendChart({ data }: { data: TrendPoint[] }) {
         <LineChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
           <defs>
             <linearGradient id="colorConfidence" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#2F6F57" stopOpacity={0.1}/>
+              <stop offset="5%" stopColor="#2F6F57" stopOpacity={0.22}/>
               <stop offset="95%" stopColor="#2F6F57" stopOpacity={0}/>
             </linearGradient>
           </defs>
+          <ReferenceArea y1={70} y2={100} fill="#FFF3D9" fillOpacity={0.55} />
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1ECE3" />
           <XAxis dataKey="label" tick={{ fill: "#8C6A5A", fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
           <YAxis tick={{ fill: "#8C6A5A", fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} domain={[0, 100]} />
@@ -139,7 +149,9 @@ export function ConfidenceTrendChart({ data }: { data: TrendPoint[] }) {
             activeDot={{ r: 6, strokeWidth: 0 }}
             animationDuration={1500}
             animationEasing="ease-in-out"
-          />
+          >
+            <LabelList dataKey="confidence" position="top" formatter={(value) => `${clampPct(Number(value || 0))}%`} style={{ fill: "#8C6A5A", fontSize: 10, fontWeight: 800 }} />
+          </Line>
         </LineChart>
       </ResponsiveContainer>
     </ChartCard>
