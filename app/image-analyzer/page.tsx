@@ -371,8 +371,8 @@ export default function ImageAnalyzerPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#F4EFE6] via-[#EFE8DD] to-[#E5E0D4] text-[#1F3D2B] selection:bg-[#1F3D2B]/20">
-      <header className="fixed top-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-md border-b border-[#1F3D2B]/10 shadow-sm">
+    <div className="af-page-shell min-h-screen text-[#1F3D2B] selection:bg-[#1F3D2B]/20">
+      <header className="fixed top-0 left-0 right-0 z-40 border-b border-[#1F3D2B]/10 bg-white/80 backdrop-blur-md shadow-sm">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <button
             onClick={() => router.push("/")}
@@ -391,7 +391,7 @@ export default function ImageAnalyzerPage() {
         </div>
       </header>
 
-      <main className="pt-24 pb-20 px-4 max-w-6xl mx-auto min-h-screen flex flex-col justify-center">
+      <main className="af-page-frame mx-auto flex min-h-screen max-w-6xl flex-col justify-center px-4 pb-20 pt-24">
         <AnimatePresence mode="wait">
           {step === "select" && (
             <motion.div
@@ -401,15 +401,21 @@ export default function ImageAnalyzerPage() {
               exit={{ opacity: 0, y: -20 }}
               className="space-y-8"
             >
-              <div className="text-center space-y-4">
-                <div className="w-20 h-20 rounded-2xl bg-[#1F3D2B] mx-auto flex items-center justify-center shadow-[0_10px_24px_rgba(47,111,87,0.2)]">
-                  <ScanLine className="w-8 h-8 text-white" />
+              <section className="af-page-hero p-6 text-center md:p-10">
+                <div className="relative z-10 mx-auto max-w-3xl space-y-4">
+                  <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-[#1F3D2B] shadow-[0_10px_24px_rgba(47,111,87,0.2)]">
+                    <ScanLine className="w-8 h-8 text-white" />
+                  </div>
+                  <span className="af-page-kicker mx-auto">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    AI Intake
+                  </span>
+                  <h1 className="text-clinical-heading text-4xl font-extrabold tracking-tight text-[#1F3D2B]">Choose an area to analyze and start a cleaner diagnostic flow.</h1>
+                  <p className="text-[#6B665D]">Select an analyzer mode, upload consistent angles, and move into the linked assessment without leaving the premium shell.</p>
                 </div>
-                <h1 className="text-4xl font-bold text-[#1F3D2B]">What would you like to analyze?</h1>
-                <p className="text-[#6B665D]">Select an area for our AI clinical engine to evaluate.</p>
-              </div>
+              </section>
 
-              <div className="bg-white/60 backdrop-blur-sm rounded-3xl border border-white/40 p-8 md:p-10 shadow-sm">
+              <div className="af-card-secondary p-8 md:p-10">
                 <AnalyzerSelector selected={selectedType} onSelect={handleTypeSelect} />
               </div>
             </motion.div>
@@ -423,10 +429,10 @@ export default function ImageAnalyzerPage() {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-6"
             >
-              <div className="flex items-center gap-4 mb-4">
+              <div className="mb-4 flex items-center gap-4">
                 <button
                   onClick={() => setStep("select")}
-                  className="w-10 h-10 rounded-full bg-white/60 border border-white/40 hover:bg-white/80 flex items-center justify-center transition-colors shadow-sm"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-white/40 bg-white/60 shadow-sm transition-colors hover:bg-white/80"
                 >
                   <ChevronLeft className="w-5 h-5 text-[#1F3D2B]" />
                 </button>
@@ -436,7 +442,7 @@ export default function ImageAnalyzerPage() {
                 </div>
               </div>
 
-              <div className="bg-white/60 backdrop-blur-sm rounded-3xl border border-white/40 p-8 md:p-10 shadow-sm">
+              <div className="af-card-secondary p-8 md:p-10">
                 <MultiAngleUpload analyzerType={selectedType || "skin"} onAllCaptured={handleAllCaptured} />
               </div>
             </motion.div>
@@ -450,7 +456,7 @@ export default function ImageAnalyzerPage() {
               exit={{ opacity: 0 }}
               className="flex flex-col items-center justify-center text-center space-y-6 py-20"
             >
-              <div className="relative">
+              <div className="relative af-card-primary p-8">
                 <div className="w-24 h-24 rounded-full border-4 border-[#D9D2C7] border-t-[#2F6F57] animate-spin" />
                 <div className="absolute inset-0 flex items-center justify-center">
                   {step === "done" ? (
@@ -461,7 +467,7 @@ export default function ImageAnalyzerPage() {
                 </div>
               </div>
 
-              <div>
+              <div className="max-w-xl space-y-2">
                 <h2 className="text-2xl font-bold mb-2">
                   {step === "done" ? "Analysis Complete" : "Analyzing Images..."}
                 </h2>
@@ -473,7 +479,7 @@ export default function ImageAnalyzerPage() {
                 )}
               </div>
 
-              <div className="w-full max-w-md">
+              <div className="af-card-secondary w-full max-w-md p-5">
                 <div className="h-2 w-full bg-[#E2DDD4] rounded-full overflow-hidden">
                   <div
                     className="h-full bg-medical-gradient transition-all duration-300"

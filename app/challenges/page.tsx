@@ -160,23 +160,24 @@ if (view === "list") {
           <div className="absolute bottom-[10%] right-[10%] w-[500px] h-[500px] bg-[#d8b55f]/14 blur-[120px] rounded-full opacity-30" />
         </div>
 
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 relative z-10 w-full">
-          {/* Header */}
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-            <div>
-              <p className="text-xs font-bold text-[#2F6F57] uppercase tracking-widest flex items-center gap-2 mb-2">
-                <Trophy className="w-4 h-4" /> Clinical Programs
-              </p>
-              <h1 className="text-clinical-heading text-4xl lg:text-5xl font-extrabold text-[#1F3D2B] tracking-tight">
-                Discipline Accelerators
-              </h1>
-              <p className="text-[#6B665D] mt-3 max-w-xl text-sm leading-relaxed">
-                Structured habit-building trajectories engineered to repair specific symptoms over defined timelines.
-              </p>
-            </div>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 relative z-10 w-full af-section-grid">
+          <section className="af-page-hero p-6 md:p-8">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+              <div>
+                <div className="af-badge-row mb-3">
+                  <span className="af-badge-chip text-[#2F6F57]"><Trophy className="w-3.5 h-3.5" /> Clinical programs</span>
+                  <span className="af-badge-chip text-[#A46A2D]">Reward-linked consistency</span>
+                </div>
+                <h1 className="text-clinical-heading text-4xl lg:text-5xl font-extrabold text-[#1F3D2B] tracking-tight">
+                  Discipline accelerators for real adherence.
+                </h1>
+                <p className="text-[#6B665D] mt-3 max-w-xl text-sm leading-relaxed">
+                  Use challenge programs to turn routines into repeatable wins, build streaks, and earn Alpha rewards without losing clinical structure.
+                </p>
+              </div>
             {/* Active Challenge Summary */}
             {activeChallengeId && progress && (
-               <div className="af-surface-card p-5 flex items-center gap-6 cursor-pointer hover:border-[#9ab7a2] transition-all" onClick={() => {
+               <div className="af-card-secondary p-5 flex items-center gap-6 cursor-pointer hover:border-[#9ab7a2] transition-all" onClick={() => {
                  const c = challenges.find((ch) => ch.id === activeChallengeId);
                  if (c) openChallenge(c);
                }}>
@@ -199,7 +200,8 @@ if (view === "list") {
                   </div>
                </div>
             )}
-          </div>
+            </div>
+          </section>
 
           {/* Catalog */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -217,11 +219,11 @@ if (view === "list") {
                   className={`group relative overflow-hidden rounded-3xl border transition-all duration-300 cursor-pointer shadow-xl ${
                     isActive
                       ? "border-[#9fbea8] bg-[#e8efe9] shadow-[0_18px_36px_rgba(47,111,87,0.12)]"
-                      : "bg-[rgba(255,252,246,0.86)] border-[#e3d8c8] hover:border-[#ccbda7] hover:bg-white"
+                      : "bg-[linear-gradient(180deg,rgba(255,252,246,0.92),rgba(247,239,226,0.94))] border-[#e3d8c8] hover:border-[#ccbda7] hover:bg-white"
                   }`}
                 >
                   <div className="p-6 h-full flex flex-col justify-between">
-                    <div className="flex items-start gap-5">
+                     <div className="flex items-start gap-5">
                       <div className="w-14 h-14 rounded-2xl bg-[#f5efe5] border border-[#e2d8ca] flex items-center justify-center text-2xl shadow-inner relative overflow-hidden group-hover:scale-110 transition-transform">
                         <span className="relative z-10">{challenge.icon}</span>
                       </div>
@@ -304,8 +306,8 @@ if (view === "list") {
        <div className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-8 relative z-10 grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           {/* Header Info Left Col */}
-          <div className="lg:col-span-1 space-y-6">
-             <div className="af-surface-card p-6 relative overflow-hidden">
+           <div className="lg:col-span-1 space-y-6">
+             <div className="af-card-primary p-6 relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-green-400 opacity-50" />
                <div className="w-16 h-16 rounded-2xl bg-[#f5efe5] border border-[#e2d8ca] flex items-center justify-center text-4xl mb-6 shadow-inner">
                    {selectedChallenge.icon}
@@ -356,7 +358,7 @@ if (view === "list") {
 
           {/* Ladder / Roadmap Right Col */}
           <div className="lg:col-span-2 space-y-6">
-             <div className="af-surface-card p-6 flex flex-col h-full">
+             <div className="af-card-secondary p-6 flex flex-col h-full">
                <div className="flex items-center justify-between mb-8 pb-4 border-b border-[#e3d8c8] overflow-x-auto gap-4 hide-scrollbar">
                    {selectedChallenge.weeks.map((week, wIdx) => (
                       <button
@@ -394,7 +396,7 @@ if (view === "list") {
                                    ? "bg-[#e8efe9] border-[#c8dacf] shadow-[0_12px_24px_rgba(47,111,87,0.08)]"
                                    : isLocked
                                    ? "bg-[#eee4d7] border-[#e2d8ca] opacity-60 cursor-not-allowed"
-                                   : "bg-[rgba(255,252,246,0.88)] border-[#e2d8ca] hover:border-[#ccbda7] hover:bg-white"
+                                   : "bg-[linear-gradient(180deg,rgba(255,252,246,0.92),rgba(247,239,226,0.95))] border-[#e2d8ca] hover:border-[#ccbda7] hover:bg-white"
                               }`}
                             >
                                <div className="flex items-start gap-4">

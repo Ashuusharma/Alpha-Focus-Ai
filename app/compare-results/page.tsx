@@ -47,31 +47,46 @@ export default function CompareResultsPage() {
       </div>
       
       <Container>
-        <div className="max-w-4xl mx-auto relative z-10">
-          {/* HEADER */}
-          <div className="mb-10">
-            <button
-              onClick={() => router.back()}
-              className="flex items-center space-x-2 text-[#6B665D] hover:text-[#1F3D2B] transition group mb-6"
-            >
-              <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-              <span>Back</span>
-            </button>
-            <h1 className="text-4xl font-bold flex items-center gap-4 mb-2">
-              <span className="p-3 bg-[#00f2ff]/10 rounded-xl border border-[#00f2ff]/20">
-                <BarChart2 className="w-8 h-8 text-[var(--lux-accent)]" />
+        <div className="af-page-frame max-w-4xl mx-auto relative z-10 space-y-8">
+          <section className="af-page-hero p-6 md:p-8">
+            <div className="relative z-10 space-y-5">
+              <button
+                onClick={() => router.back()}
+                className="inline-flex items-center gap-2 text-[#6B665D] hover:text-[#1F3D2B] transition"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                <span>Back</span>
+              </button>
+              <span className="af-page-kicker">
+                <BarChart2 className="h-3.5 w-3.5" />
+                Progress Comparison
               </span>
-              <span className="lux-text-gradient">
-                Compare Results
-              </span>
-            </h1>
-            <p className="text-[#6B665D] ml-16">
-              Track your recovery progress over time against previous assessments.
-            </p>
-          </div>
+              <div className="max-w-3xl">
+                <h1 className="text-clinical-heading text-4xl font-extrabold tracking-tight">Compare Results</h1>
+                <p className="mt-3 text-sm leading-7 text-[#6B665D]">Track movement between assessment checkpoints with the same premium analysis shell used across the rest of the recovery journey.</p>
+              </div>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="af-stat-tile">
+                  <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#8C6A5A]">Assessments loaded</p>
+                  <p className="mt-2 text-3xl font-bold text-[#1F3D2B]">{sorted.length}</p>
+                  <p className="mt-1 text-xs text-[#6B665D]">Available comparison points</p>
+                </div>
+                <div className="af-stat-tile">
+                  <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#8C6A5A]">Current score</p>
+                  <p className="mt-2 text-3xl font-bold text-[#1F3D2B]">{current?.progress ?? "--"}%</p>
+                  <p className="mt-1 text-xs text-[#6B665D]">Latest result</p>
+                </div>
+                <div className="af-stat-tile">
+                  <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#8C6A5A]">Change</p>
+                  <p className="mt-2 text-3xl font-bold text-[#1F3D2B]">{hasComparison ? `${comparisons[0].change > 0 ? "+" : ""}${comparisons[0].change}%` : "--"}</p>
+                  <p className="mt-1 text-xs text-[#6B665D]">Vs previous assessment</p>
+                </div>
+              </div>
+            </div>
+          </section>
 
           {!hasComparison ? (
-            <div className="lux-card p-16 text-center border-white/10">
+            <div className="af-card-primary p-16 text-center">
               <div className="w-24 h-24 bg-[#f3ecdf] border border-[#e2d8ca] rounded-full flex items-center justify-center mx-auto mb-6">
                 <BarChart2 className="w-10 h-10 text-[#8C6A5A]" />
               </div>
@@ -93,7 +108,7 @@ export default function CompareResultsPage() {
                className="space-y-8"
             >
               {/* TIME PERIOD SELECTOR */}
-              <div className="lux-card p-8 border-white/10">
+              <div className="af-card-secondary p-8">
                 <h3 className="text-sm font-bold text-[#8C6A5A] mb-6 uppercase tracking-wider">Comparing Assessment Dates</h3>
                 <div className="flex flex-col md:flex-row items-center justify-between gap-6">
                   <div className="flex-1 w-full bg-[#E8EFEA] border border-[#C8DACF] rounded-xl p-6 text-center relative overflow-hidden group">
@@ -121,7 +136,7 @@ export default function CompareResultsPage() {
               {/* COMPARISON CHARTS */}
               <div className="space-y-6">
                 {comparisons.map((item, idx) => (
-                  <div key={idx} className="lux-card p-8 border-white/10">
+                  <div key={idx} className="af-card-secondary p-8">
                     <div className="flex items-center justify-between mb-8">
                       <h3 className="text-xl font-bold text-[#1F3D2B]">{item.metric}</h3>
                       <div className={`px-4 py-2 rounded-xl border flex items-center gap-2 ${

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useContext, useEffect, useMemo, useState } from "react";
+import { CalendarRange, Sparkles } from "lucide-react";
 import { AuthContext } from "@/contexts/AuthProvider";
 import { useUserStore } from "@/stores/useUserStore";
 import { hydrateUserData } from "@/lib/hydrateUserData";
@@ -114,14 +115,58 @@ export default function RecoveryProgramPage() {
   const categoryLabel = activeCategory ? categories.find((c) => c.id === activeCategory)?.label || "Recovery" : "Recovery";
 
   return (
-    <main className="af-page px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-6xl space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[#8C6A5A]">Daily Execution Engine</p>
-            <h1 className="text-2xl font-bold text-[#1F3D2B]">Full Recovery Planner</h1>
+    <main className="af-page-shell px-4 py-6 sm:px-6 lg:px-8">
+      <div className="af-page-frame mx-auto max-w-6xl space-y-6">
+        <section className="af-page-hero p-6 md:p-8">
+          <div className="relative z-10 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-3xl">
+              <span className="af-page-kicker">
+                <Sparkles className="h-3.5 w-3.5" />
+                Daily Execution Engine
+              </span>
+              <h1 className="mt-3 text-clinical-heading text-3xl font-extrabold tracking-tight md:text-4xl">Full Recovery Planner</h1>
+              <p className="mt-3 text-sm leading-7 text-[#6B665D]">View the complete protocol timeline, stay anchored to your current phase, and switch categories without leaving the premium dashboard shell.</p>
+            </div>
+            <div className="flex w-full flex-col gap-3 lg:max-w-sm">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="af-stat-tile">
+                  <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#8C6A5A]">Current day</p>
+                  <p className="mt-2 text-3xl font-bold text-[#1F3D2B]">{programDay}</p>
+                  <p className="mt-1 text-xs text-[#6B665D]">Of 30-day protocol</p>
+                </div>
+                <div className="af-stat-tile">
+                  <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#8C6A5A]">Current phase</p>
+                  <p className="mt-2 text-base font-semibold text-[#1F3D2B]">{phaseName}</p>
+                  <p className="mt-1 text-xs text-[#6B665D]">{categoryLabel}</p>
+                </div>
+              </div>
+              <Link href="/dashboard" className="af-btn-soft px-4 py-3 text-sm text-center">Back to Dashboard</Link>
+            </div>
           </div>
-          <Link href="/dashboard" className="af-btn-soft px-3 py-1.5 text-xs">Back to Dashboard</Link>
+        </section>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="af-card-secondary p-4">
+            <div className="flex items-center gap-2 text-[#1F3D2B]">
+              <CalendarRange className="h-4 w-4 text-[#2F6F57]" />
+              <span className="font-semibold">Protocol timing</span>
+            </div>
+            <p className="mt-2 text-sm text-[#5F5A51]">Use this screen when you need the full day-by-day view rather than the dashboard mission summary.</p>
+          </div>
+          <div className="af-card-secondary p-4">
+            <div className="flex items-center gap-2 text-[#1F3D2B]">
+              <Sparkles className="h-4 w-4 text-[#2F6F57]" />
+              <span className="font-semibold">Category switching</span>
+            </div>
+            <p className="mt-2 text-sm text-[#5F5A51]">Switch categories here to audit how each track maps into its own execution plan.</p>
+          </div>
+          <div className="af-card-secondary p-4">
+            <div className="flex items-center gap-2 text-[#1F3D2B]">
+              <Sparkles className="h-4 w-4 text-[#2F6F57]" />
+              <span className="font-semibold">Goal</span>
+            </div>
+            <p className="mt-2 text-sm text-[#5F5A51]">Keep this page focused on execution structure, not secondary analytics already covered on the dashboard.</p>
+          </div>
         </div>
 
         <TreatmentPlan

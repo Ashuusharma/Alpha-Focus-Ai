@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, CloudSun, Droplets, MoonStar, Sparkles } from "lucide-react";
 import SleepTracker from "@/src/components/tracking/SleepTracker";
 import HydrationTracker from "@/src/components/tracking/HydrationTracker";
 import MoodTracker from "@/src/components/tracking/MoodTracker";
@@ -40,15 +40,39 @@ export default function TrackingPage() {
 
   return (
     <div className="af-page-shell report-page min-h-screen text-[#1F3D2B] px-4 py-8">
-      <div className="max-w-6xl mx-auto">
-        <button onClick={() => router.back()} className="mb-5 inline-flex items-center gap-2 text-[#6B665D] hover:text-[#1F3D2B]">
-          <ArrowLeft className="w-4 h-4" /> Back
-        </button>
-
-        <div className="mb-6">
-          <h1 className="text-clinical-heading text-3xl font-extrabold tracking-tight">Lifestyle Tracking</h1>
-          <p className="mt-1 text-[#6B665D]">Track sleep, hydration, mood, and environment in one place.</p>
-        </div>
+      <div className="af-page-frame mx-auto max-w-6xl space-y-6">
+        <section className="af-page-hero p-6 md:p-8">
+          <div className="relative z-10 space-y-5">
+            <button onClick={() => router.back()} className="inline-flex items-center gap-2 text-[#6B665D] hover:text-[#1F3D2B]">
+              <ArrowLeft className="w-4 h-4" /> Back
+            </button>
+            <span className="af-page-kicker">
+              <Sparkles className="h-3.5 w-3.5" />
+              Daily Tracking
+            </span>
+            <div className="max-w-3xl">
+              <h1 className="text-clinical-heading text-3xl font-extrabold tracking-tight md:text-4xl">Track sleep, hydration, mood, and environment from one daily execution board.</h1>
+              <p className="mt-3 text-sm leading-7 text-[#6B665D]">This page now frames the lifestyle inputs as recovery levers, with climate context and the three core trackers visible inside the same premium shell.</p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="af-stat-tile">
+                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#8C6A5A]">Sleep target</p>
+                <p className="mt-2 text-2xl font-bold text-[#1F3D2B]">7h+</p>
+                <p className="mt-1 text-xs text-[#6B665D]">Support overnight repair</p>
+              </div>
+              <div className="af-stat-tile">
+                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#8C6A5A]">Hydration target</p>
+                <p className="mt-2 text-2xl font-bold text-[#1F3D2B]">2500ml</p>
+                <p className="mt-1 text-xs text-[#6B665D]">Stabilize visible recovery pace</p>
+              </div>
+              <div className="af-stat-tile">
+                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#8C6A5A]">Climate sync</p>
+                <p className="mt-2 text-base font-semibold text-[#1F3D2B]">{weather ? "Live conditions loaded" : "Waiting for location"}</p>
+                <p className="mt-1 text-xs text-[#6B665D]">Adjust routine to UV, humidity, and AQI</p>
+              </div>
+            </div>
+          </div>
+        </section>
 
         {status === "denied" && (
           <div className="mb-4 rounded-xl border border-amber-500/30 bg-[#fff4df] p-4">
@@ -68,6 +92,30 @@ export default function TrackingPage() {
             />
           </div>
         )}
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="af-card-secondary p-4 text-sm text-[#5F5A51]">
+            <div className="flex items-center gap-2 text-[#1F3D2B]">
+              <MoonStar className="h-4 w-4 text-[#2F6F57]" />
+              <span className="font-semibold">Night repair</span>
+            </div>
+            <p className="mt-2">Log sleep first to catch repair regressions before they show up in recovery scores.</p>
+          </div>
+          <div className="af-card-secondary p-4 text-sm text-[#5F5A51]">
+            <div className="flex items-center gap-2 text-[#1F3D2B]">
+              <Droplets className="h-4 w-4 text-[#2F6F57]" />
+              <span className="font-semibold">Barrier support</span>
+            </div>
+            <p className="mt-2">Hydration consistency is one of the fastest variables to improve when routine momentum starts slipping.</p>
+          </div>
+          <div className="af-card-secondary p-4 text-sm text-[#5F5A51]">
+            <div className="flex items-center gap-2 text-[#1F3D2B]">
+              <CloudSun className="h-4 w-4 text-[#2F6F57]" />
+              <span className="font-semibold">External stressors</span>
+            </div>
+            <p className="mt-2">Use climate guidance when humidity, AQI, or UV changes faster than your routine can compensate.</p>
+          </div>
+        </div>
 
         <div className="grid lg:grid-cols-3 gap-4">
           <SleepTracker />

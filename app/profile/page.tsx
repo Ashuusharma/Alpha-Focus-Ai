@@ -161,36 +161,74 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#F4EFE6] via-[#EFE8DD] to-[#E5E0D4] px-4 py-20 text-[#1F3D2B]">
-      <div className="mx-auto w-full max-w-6xl space-y-8">
-        <MedicalCard className="p-6 md:p-8">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-[auto,1fr] md:items-center">
-            <div className="flex h-24 w-24 items-center justify-center rounded-full border border-white/40 bg-white/40 shadow-sm">
+    <div className="af-page-shell px-4 py-20 text-[#1F3D2B]">
+      <div className="af-page-frame mx-auto w-full max-w-6xl">
+        <div className="af-page-stack">
+        <section className="af-page-hero p-6 md:p-8">
+          <div className="relative z-10 grid grid-cols-1 gap-6 md:grid-cols-[auto,1fr] md:items-center">
+            <div className="flex h-24 w-24 items-center justify-center rounded-full border border-white/50 bg-white/70 shadow-[0_14px_30px_rgba(31,61,43,0.1)]">
               <User className="h-10 w-10 text-[#6B665D]" />
             </div>
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-3xl font-semibold">{displayName}</h1>
+                <span className="af-page-kicker">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Profile Command
+                </span>
                 <StatusBadge variant="info">Tier {tierLabel}</StatusBadge>
               </div>
-              <p className="text-sm text-text-secondary">Lifetime earned: {lifetimeEarned} A$</p>
+              <div>
+                <h1 className="text-clinical-heading text-3xl font-extrabold tracking-tight md:text-4xl">{displayName}</h1>
+                <p className="mt-2 max-w-2xl text-sm leading-7 text-[#6B665D]">Track your account identity, reward status, records, and trend movement from a profile page that now matches the upgraded dashboard shell.</p>
+              </div>
               <div className="grid grid-cols-1 gap-3 text-sm text-[#6B665D] sm:grid-cols-3">
-                <div className="flex items-center gap-2 rounded-xl border border-white/40 bg-white/40 shadow-sm px-3 py-2">
+                <div className="af-stat-tile flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-[#2F6F57]" />
                   <span>{locationLabel}</span>
                 </div>
-                <div className="flex items-center gap-2 rounded-xl border border-white/40 bg-white/40 shadow-sm px-3 py-2">
+                <div className="af-stat-tile flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-[#2F6F57]" />
                   <span>Member since {formatDate(joinedDate)}</span>
                 </div>
-                <div className="flex items-center gap-2 rounded-xl border border-white/40 bg-white/40 shadow-sm px-3 py-2">
-                  <Medal className="h-4 w-4 text-[#2F6F57]" />
-                  <span>{tierLabel} tier active</span>
+                <div className="af-stat-tile flex items-center gap-2">
+                  <Medal className="h-4 w-4 text-[#C27803]" />
+                  <span>{lifetimeEarned} A$ lifetime earned</span>
                 </div>
               </div>
             </div>
           </div>
-        </MedicalCard>
+        </section>
+
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <div className="af-card-secondary p-5">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-[#6B665D]">Total scans</p>
+              <Camera className="h-4 w-4 text-[#2F6F57]" />
+            </div>
+            <p className="metric-number mt-3 text-4xl text-[#1F3D2B]">{totalScans}</p>
+          </div>
+          <div className="af-card-secondary p-5">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-[#6B665D]">Average score</p>
+              <Sparkles className="h-4 w-4 text-[#2F6F57]" />
+            </div>
+            <p className="metric-number mt-3 text-4xl text-[#1F3D2B]">{averageScore}%</p>
+          </div>
+          <div className="af-card-secondary p-5">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-[#6B665D]">Reports</p>
+              <FileText className="h-4 w-4 text-[#2F6F57]" />
+            </div>
+            <p className="metric-number mt-3 text-4xl text-[#1F3D2B]">{reportsGenerated}</p>
+          </div>
+          <div className="af-card-secondary p-5">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-[#6B665D]">Streak</p>
+              <Flame className="h-4 w-4 text-[#C27803]" />
+            </div>
+            <p className="metric-number mt-3 text-4xl text-[#1F3D2B]">{streakCount}d</p>
+          </div>
+        </div>
 
         <section className="rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-2 shadow-sm">
           <div className="flex flex-wrap gap-2">
@@ -464,6 +502,7 @@ export default function ProfilePage() {
             </div>
           </section>
         )}
+        </div>
       </div>
     </div>
   );

@@ -8,6 +8,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { PRODUCT_CATALOG_DATA } from "@/lib/productCatalogData";
 import { trackRewardEvent } from "@/lib/rewardTracking";
 import { useCartStore } from "@/lib/cartStore";
+import { formatINR } from "@/lib/currency";
 
 export default function ProductDetailPage() {
   const router = useRouter();
@@ -20,6 +21,7 @@ export default function ProductDetailPage() {
   const decodedId = decodeURIComponent(Array.isArray(productId) ? productId[0] : productId || "");
   const rewardDiscount = Number(searchParams?.get("reward") || 0);
   const rewardSource = searchParams?.get("source") || null;
+  const unitPrice = 2400;
   
   const product = PRODUCT_CATALOG_DATA.find(
     (p) => (p.sku && p.sku === decodedId) || p.name === decodedId
@@ -56,7 +58,7 @@ export default function ProductDetailPage() {
     addItem({
       id: product.sku || product.name,
       name: product.name,
-      price: 24.00,
+      price: unitPrice,
       quantity,
       usageDays: 30,
     });
@@ -64,8 +66,8 @@ export default function ProductDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F4EFE6] pb-20 pt-24 text-[#1F3D2B]">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div className="af-page-shell min-h-screen pb-20 pt-24 text-[#1F3D2B]">
+      <div className="af-page-frame mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-8">
         <Link 
           href="/shop" 
           className="mb-8 inline-flex items-center gap-2 text-sm font-semibold text-[#6B665D] hover:text-[#1F3D2B]"
@@ -82,9 +84,29 @@ export default function ProductDetailPage() {
           </div>
         )}
         
+        <section className="af-page-hero p-6 md:p-8">
+          <div className="relative z-10 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-3xl">
+              <span className="af-page-kicker">Protocol Product</span>
+              <h1 className="mt-3 text-clinical-heading text-3xl font-extrabold tracking-tight md:text-4xl">{product.name}</h1>
+              <p className="mt-3 text-sm leading-7 text-[#6B665D]">A product-detail page aligned with the new checkout flow, reward narrative, and protocol framing.</p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[320px]">
+              <div className="af-stat-tile">
+                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#8C6A5A]">Unit price</p>
+                <p className="mt-2 text-2xl font-bold text-[#1F3D2B]">{formatINR(unitPrice)}</p>
+              </div>
+              <div className="af-stat-tile">
+                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#8C6A5A]">Clinical fit</p>
+                <p className="mt-2 text-base font-semibold text-[#1F3D2B]">{product.type}</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <div className="grid gap-12 lg:grid-cols-2">
           {/* Product Image */}
-          <div className="relative aspect-square overflow-hidden rounded-3xl bg-white shadow-sm border border-[#E2DDD4]">
+          <div className="relative aspect-square overflow-hidden rounded-3xl border border-[#E2DDD4] bg-white shadow-sm">
             <Image
               src={imageSrc}
               alt={product.name}
@@ -123,7 +145,7 @@ export default function ProductDetailPage() {
               Formulated for optimal absorption and minimal irritation.
             </p>
 
-            <div className="mb-8 space-y-3 rounded-2xl bg-white/60 p-6 border border-[#E2DDD4]">
+            <div className="mb-8 space-y-3 rounded-2xl border border-[#E2DDD4] bg-white/60 p-6">
               <div className="flex items-start gap-3">
                 <div className="mt-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#E8EFEA] text-[#2F6F57]">
                   <Check className="h-3 w-3" />
@@ -162,8 +184,8 @@ export default function ProductDetailPage() {
                   </button>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-[#1F3D2B]">${(24.00 * quantity).toFixed(2)}</p>
-                  <p className="text-xs text-[#6B665D]">Includes Tax</p>
+                  <p className="text-2xl font-bold text-[#1F3D2B]">{formatINR(unitPrice * quantity)}</p>
+                  <p className="text-xs text-[#6B665D]">Tax-inclusive pricing</p>
                 </div>
               </div>
 

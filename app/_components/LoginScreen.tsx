@@ -71,13 +71,17 @@ return (
         initial={{ y: 30, opacity: 0, scale: 0.95 }}
         animate={{ y: 0, opacity: 1, scale: 1 }}
         transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-        className="relative z-10 w-full max-w-[440px]"
+        className="relative z-10 w-full max-w-[480px]"
       >
         <div className="bg-[linear-gradient(180deg,#fffdf8_0%,#efe6d8_100%)] border border-[#e2d8ca] rounded-3xl p-8 sm:p-10 shadow-[0_30px_80px_rgba(120,97,67,0.18),inset_0_1px_1px_rgba(255,255,255,0.6)] overflow-hidden">
           {/* Decorative Top Glow */}
           <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-green-500/50 to-transparent opacity-50" />
           
           <div className="flex flex-col items-center mb-10 relative">
+            <div className="af-badge-row mb-5 justify-center">
+              <span className="af-badge-chip text-[#2F6F57]">Clinical sign in</span>
+              <span className="af-badge-chip text-[#A46A2D]">Based on your recovery goal</span>
+            </div>
             <div className="mb-6 relative group">
               <div className="absolute inset-0 bg-[#A9CBB7] rounded-full blur-[20px] opacity-25 group-hover:opacity-40 transition-opacity duration-700" />
               <div className="w-20 h-20 rounded-2xl bg-gradient-to-b from-white to-[#efe6d8] border border-[#e2d8ca] flex items-center justify-center backdrop-blur-xl rotate-45 shadow-[0_18px_36px_rgba(120,97,67,0.12)]">
@@ -87,16 +91,16 @@ return (
               </div>
             </div>
             <h1 className="text-clinical-heading text-3xl font-extrabold text-[#1F3D2B] tracking-tight mb-2">
-              System Access
+              Start your guided recovery journey
             </h1>
             <p className="text-[#6B665D] text-sm text-center max-w-[280px] leading-relaxed">
-              Authenticate to initialize your tailored clinical & recovery protocol.
+              Enter a few details so the app can personalize your scans, routines, and product guidance from the first session.
             </p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-[#6B665D] tracking-wider uppercase ml-1">Identity</label>
+              <label className="block text-xs font-semibold text-[#6B665D] tracking-wider uppercase ml-1">Your name</label>
               <div className="relative">
                 <input
                   type="text"
@@ -105,7 +109,7 @@ return (
                     setName(e.target.value);
                     setError("");
                   }}
-                  placeholder="Enter full name"
+                  placeholder="How should we address you?"
                   disabled={loading}
                   className="af-input w-full rounded-xl px-4 py-3.5 focus:outline-none transition-all"
                 />
@@ -115,7 +119,7 @@ return (
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-[#6B665D] tracking-wider uppercase ml-1">Range</label>
+                <label className="block text-xs font-semibold text-[#6B665D] tracking-wider uppercase ml-1">Age range</label>
                 <div className="relative">
                   <select
                     value={ageRange}
@@ -139,7 +143,7 @@ return (
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-[#6B665D] tracking-wider uppercase ml-1">Primary Focus</label>
+                <label className="block text-xs font-semibold text-[#6B665D] tracking-wider uppercase ml-1">Primary issue</label>
                 <div className="relative">
                   <select
                     value={primaryConcern}
@@ -176,7 +180,7 @@ return (
                 <svg className="absolute w-2.5 h-2.5 pointer-events-none text-black opacity-0 peer-checked:opacity-100 transition-opacity" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 5L4.5 8.5L13 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </div>
               <span className="text-xs text-[#6B665D] group-hover:text-[#1F3D2B] transition-colors leading-relaxed">
-                I authorize continuous data telemetry and biometric tracking for absolute protocol personalization.
+                I agree to personalized scan analysis, routine planning, and progress tracking so the protocol can adapt to my issue.
               </span>
             </label>
             
@@ -197,11 +201,11 @@ return (
                 {loading ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>Establishing Link...</span>
+                    <span>Preparing your dashboard...</span>
                   </>
                 ) : (
                   <>
-                    <span>Initialize Interface</span>
+                    <span>Enter Alpha Focus</span>
                     <Sparkles className="w-4 h-4 opacity-70" />
                   </>
                 )}
@@ -209,10 +213,10 @@ return (
             </button>
           </form>
 
-          <div className="mt-8 flex items-center gap-4 text-xs text-[#8C6A5A] justify-center border-t border-[#e2d8ca] pt-6">
-            <span className="hover:text-[#1F3D2B] cursor-pointer transition-colors">Secured Connection</span>
-            <div className="w-1 h-1 rounded-full bg-[#2F6F57]/50" />
-            <span className="hover:text-[#1F3D2B] cursor-pointer transition-colors">v.2.0.4 Alpha</span>
+          <div className="mt-8 grid grid-cols-1 gap-3 border-t border-[#e2d8ca] pt-6 text-xs text-[#8C6A5A] sm:grid-cols-3">
+            <span className="rounded-xl bg-white/70 px-3 py-2 text-center font-semibold">Secure connection</span>
+            <span className="rounded-xl bg-white/70 px-3 py-2 text-center font-semibold">India-ready routines</span>
+            <span className="rounded-xl bg-white/70 px-3 py-2 text-center font-semibold">Scan-led guidance</span>
           </div>
         </div>
       </motion.div>

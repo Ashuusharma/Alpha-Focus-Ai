@@ -485,7 +485,7 @@ export default function AlphaCreditsPage() {
                <h2 className="text-2xl font-black text-[#111] tracking-tight">Reward Ladder</h2>
             </div>
             
-            <div className="flex gap-4 overflow-x-auto pb-6 pt-2 px-1 snap-x scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
+            <div className="-mx-4 flex gap-4 overflow-x-auto px-4 pb-6 pt-2 snap-x scrollbar-hide md:mx-0 md:px-0">
               {rewardCatalog.map((reward) => {
                 const isUnlocked = summary.current_balance >= reward.cost;
                 const isNext = reward.id === rewardProgress.next?.id;

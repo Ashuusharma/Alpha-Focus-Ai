@@ -100,34 +100,53 @@ export default function LearningCenterPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#F4EFE6] via-[#EFE8DD] to-[#E5E0D4] py-12 text-[#1F3D2B]">
+    <div className="af-page-shell py-12 text-[#1F3D2B]">
       <Container>
-        <div className="max-w-6xl mx-auto">
-          <div className="mb-12">
+        <div className="af-page-frame mx-auto max-w-6xl">
+          <div className="af-page-stack">
+          <section className="af-page-hero p-6 md:p-8">
+            <div className="relative z-10 space-y-6">
             <button
               onClick={() => router.back()}
-              className="group flex items-center gap-2 text-[#6B665D] hover:text-[#1F3D2B] transition-colors mb-6 px-4 py-2 rounded-full hover:bg-white/40"
+              className="group inline-flex items-center gap-2 rounded-full px-4 py-2 text-[#6B665D] transition-colors hover:bg-white/40 hover:text-[#1F3D2B]"
             >
               <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
               <span className="font-medium">Back</span>
             </button>
-            <h1 className="text-4xl font-bold flex items-center gap-4 mb-2 text-[#1F3D2B]">
-              <span className="p-3 bg-white/60 backdrop-blur-md rounded-xl border border-white/40 shadow-sm">
-                <BookOpen className="w-8 h-8 text-[#2F6F57]" />
+            <div className="space-y-3">
+              <span className="af-page-kicker">
+                <BookOpen className="h-3.5 w-3.5" />
+                Guided Learning
               </span>
-              <span>Learning Center</span>
-            </h1>
-            <p className="text-[#6B665D] ml-16 max-w-2xl font-medium">
-              Clinical guidance hub for assessment quality, photo analyzer accuracy, and category-specific routines.
-            </p>
-            <div className="ml-16 mt-6 flex flex-wrap gap-3">
-              <button onClick={() => router.push("/assessment")} className="px-5 py-2.5 rounded-xl border border-white/40 bg-white/40 backdrop-blur-md text-sm font-semibold text-[#2F6F57] hover:bg-white/60 transition-all shadow-sm">Answer Questions</button>
-              <button onClick={() => router.push("/image-analyzer")} className="px-5 py-2.5 rounded-xl border border-white/40 bg-white/40 backdrop-blur-md text-sm font-semibold text-[#2F6F57] hover:bg-white/60 transition-all shadow-sm">Analyze Photo</button>
-              <button onClick={() => router.push("/result")} className="px-5 py-2.5 rounded-xl bg-[#2F6F57] text-sm font-semibold text-white shadow-lg shadow-[#2F6F57]/20 hover:bg-[#1F4D3B] transition-all">Open Report</button>
+              <h1 className="text-clinical-heading text-4xl font-extrabold tracking-tight text-[#1F3D2B]">Clinical guidance, protocol education, and category-specific execution in one hub.</h1>
+              <p className="max-w-2xl text-sm font-medium leading-7 text-[#6B665D]">The learning center now carries the same premium shell as the operational pages, so education sits inside the product journey instead of outside it.</p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="af-stat-tile">
+                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#8C6A5A]">Knowledge paths</p>
+                <p className="mt-2 text-3xl font-bold text-[#1F3D2B]">3</p>
+                <p className="mt-1 text-xs text-[#6B665D]">Baseline, execution, optimization</p>
+              </div>
+              <div className="af-stat-tile">
+                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#8C6A5A]">Categories covered</p>
+                <p className="mt-2 text-3xl font-bold text-[#1F3D2B]">{categories.length}</p>
+                <p className="mt-1 text-xs text-[#6B665D]">Mapped to assessment prompts</p>
+              </div>
+              <div className="af-stat-tile">
+                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#8C6A5A]">Best use cadence</p>
+                <p className="mt-2 text-base font-semibold text-[#1F3D2B]">Weekly before routine changes</p>
+                <p className="mt-1 text-xs text-[#6B665D]">Use with report and scan reviews</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <button onClick={() => router.push("/assessment")} className="af-quick-action">Answer Questions</button>
+              <button onClick={() => router.push("/image-analyzer")} className="af-quick-action">Analyze Photo</button>
+              <button onClick={() => router.push("/result")} className="af-btn-primary px-5 py-3 text-sm">Open Report</button>
             </div>
           </div>
+          </section>
 
-          <section className="mb-12 rounded-3xl border border-white/40 bg-white/60 backdrop-blur-md p-8 shadow-sm">
+          <section className="af-card-secondary p-8">
             <h2 className="text-2xl font-bold text-[#1F3D2B] mb-2">Protocol Learning Paths</h2>
             <p className="text-sm text-[#6B665D] mb-6">Choose your current phase and follow the shortest path to execution quality.</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -152,7 +171,7 @@ export default function LearningCenterPage() {
             </div>
           </section>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
             {guidance.map((item) => {
               const isOpen = selectedGuide === item.id;
               return (
@@ -185,7 +204,7 @@ export default function LearningCenterPage() {
             })}
           </div>
 
-          <div className="rounded-3xl border border-white/40 bg-white/60 backdrop-blur-md p-8 shadow-sm">
+          <div className="af-card-secondary p-8">
             <h2 className="text-2xl font-bold text-[#1F3D2B] mb-2">Category Knowledge Library</h2>
             <p className="text-[#6B665D] mb-8">Expand each domain to read focused guidance and key question themes.</p>
 
@@ -252,6 +271,7 @@ export default function LearningCenterPage() {
                 );
               })}
             </div>
+          </div>
           </div>
         </div>
       </Container>

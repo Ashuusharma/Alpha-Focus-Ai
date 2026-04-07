@@ -469,7 +469,7 @@ export default function SettingsPage() {
   );
 
   return (
-    <div className="min-h-screen py-8 bg-gradient-to-b from-[#F4EFE6] via-[#EFE8DD] to-[#E5E0D4] text-[#1F3D2B] relative overflow-hidden">
+    <div className="af-page-shell min-h-screen py-8 text-[#1F3D2B] relative overflow-hidden">
       {/* Background Ambience */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-[20%] right-[10%] w-[500px] h-[500px] bg-[#2F6F57]/5 blur-[120px] rounded-full opacity-30 animate-pulse" />
@@ -477,48 +477,93 @@ export default function SettingsPage() {
       </div>
 
       <Container>
-        <div className="max-w-3xl mx-auto relative z-10">
+        <div className="af-page-frame mx-auto max-w-5xl">
+          <div className="af-page-stack">
           {/* HEADER */}
-          <div className="mb-8">
-            <button
-              onClick={() => router.back()}
-              className="flex items-center space-x-2 text-[#6B665D] hover:text-[#1F3D2B] transition group mb-6"
-            >
-              <div className="p-1.5 rounded-lg bg-white/60 backdrop-blur-md border border-white/40 group-hover:border-[#2F6F57]/50 transition-colors">
-                <ArrowLeft className="w-4 h-4" />
-              </div>
-              <span className="text-sm font-medium">Back</span>
-            </button>
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-white/40 backdrop-blur-sm border border-white/40 flex items-center justify-center text-[#2F6F57]">
-                  <Settings className="w-6 h-6" />
+          <div className="af-page-hero p-6 md:p-8">
+            <div className="relative z-10 space-y-6">
+              <button
+                onClick={() => router.back()}
+                className="inline-flex items-center gap-2 text-sm font-medium text-[#6B665D] transition hover:text-[#1F3D2B]"
+              >
+                <div className="rounded-xl border border-white/60 bg-white/70 p-2 shadow-sm">
+                  <ArrowLeft className="w-4 h-4" />
                 </div>
-                <div>
-                  <h1 className="text-3xl font-bold text-[#1F3D2B]">Settings</h1>
-                  <p className="text-sm text-[#6B665D]">Manage your preferences</p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <button onClick={() => router.push("/assessment")} className="px-3 py-1.5 rounded-xl border border-[#D9D2C7] bg-white text-xs font-semibold text-[#2F6F57] hover:bg-[#F7F4EE] transition-colors">Questions</button>
-                    <button onClick={() => router.push("/image-analyzer")} className="px-3 py-1.5 rounded-xl border border-[#D9D2C7] bg-white text-xs font-semibold text-[#2F6F57] hover:bg-[#F7F4EE] transition-colors">Photo Scan</button>
-                    <button onClick={() => router.push("/tracking")} className="px-3 py-1.5 rounded-xl border border-[#D9D2C7] bg-white text-xs font-semibold text-[#2F6F57] hover:bg-[#F7F4EE] transition-colors">Track Lifestyle</button>
-                    <button onClick={() => router.push("/reports/weekly")} className="px-3 py-1.5 rounded-xl border border-[#D9D2C7] bg-white text-xs font-semibold text-[#2F6F57] hover:bg-[#F7F4EE] transition-colors">Weekly Report</button>
-                    <button onClick={() => router.push("/data-settings")} className="px-3 py-1.5 rounded-xl border border-[#D9D2C7] bg-white text-xs font-semibold text-[#2F6F57] hover:bg-[#F7F4EE] transition-colors">Data Settings</button>
-                    <button onClick={() => router.push("/privacy-policy")} className="px-3 py-1.5 rounded-xl border border-[#D9D2C7] bg-white text-xs font-semibold text-[#2F6F57] hover:bg-[#F7F4EE] transition-colors">Privacy Policy</button>
-                    <button onClick={() => router.push("/upgrade")} className="px-3 py-1.5 rounded-xl bg-medical-gradient text-xs font-semibold text-[#F4F1EB] transition-colors">Upgrade</button>
+                <span>Back</span>
+              </button>
+
+              <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+                <div className="max-w-2xl space-y-4">
+                  <span className="af-page-kicker">
+                    <Settings className="h-3.5 w-3.5" />
+                    Control Center
+                  </span>
+                  <div>
+                    <h1 className="text-clinical-heading text-3xl font-extrabold tracking-tight md:text-4xl">Tune notifications, privacy, rewards, and device behavior from one place.</h1>
+                    <p className="mt-3 text-sm leading-7 text-[#6B665D]">The settings stack now matches the premium app shell and keeps the highest-friction controls visible before the deeper sections below.</p>
+                  </div>
+                  <div className="af-badge-row">
+                    <span className="af-badge-chip text-[#2F6F57]">Push {pushStatus === "enabled" ? "active" : pushStatus}</span>
+                    <span className="af-badge-chip text-[#A46A2D]">{settings.language.toUpperCase()} locale</span>
+                    <span className="af-badge-chip text-[#7A5C47]">{blacklist.length} blocked ingredients</span>
+                  </div>
+                </div>
+
+                <div className="flex w-full flex-col gap-4 lg:max-w-sm">
+                  <motion.button
+                    onClick={handleSave}
+                    whileTap={{ scale: 0.98 }}
+                    className={`inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-4 text-sm font-bold transition-all ${
+                      saved
+                        ? "bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.24)]"
+                        : "bg-[#1F3D2B] text-white shadow-[0_16px_30px_rgba(31,61,43,0.22)] hover:bg-[#27503a]"
+                    }`}
+                  >
+                    {saved ? <CheckCircle2 className="w-5 h-5" /> : <Save className="w-5 h-5" />}
+                    {saved ? "Saved" : "Save preferences"}
+                  </motion.button>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="af-stat-tile">
+                      <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#8C6A5A]">Wishlist</p>
+                      <p className="mt-2 text-2xl font-bold text-[#1F3D2B]">{wishlistItems.length}</p>
+                      <p className="mt-1 text-xs text-[#6B665D]">Saved products</p>
+                    </div>
+                    <div className="af-stat-tile">
+                      <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#8C6A5A]">Gallery</p>
+                      <p className="mt-2 text-2xl font-bold text-[#1F3D2B]">{photos.length}</p>
+                      <p className="mt-1 text-xs text-[#6B665D]">Stored captures</p>
+                    </div>
                   </div>
                 </div>
               </div>
-              <motion.button
-                onClick={handleSave}
-                whileTap={{ scale: 0.95 }}
-                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${
-                  saved 
-                  ? 'bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)]' 
-                  : 'bg-[var(--lux-accent)] text-black hover:shadow-[0_0_20px_var(--lux-accent)]'
-                }`}>
-                {saved ? <CheckCircle2 className="w-5 h-5" /> : <Save className="w-5 h-5" />}
-                {saved ? "Saved!" : "Save"}
-              </motion.button>
+
+              <div className="flex flex-wrap gap-3">
+                <button onClick={() => router.push("/assessment")} className="af-quick-action">Questions</button>
+                <button onClick={() => router.push("/image-analyzer")} className="af-quick-action">Photo Scan</button>
+                <button onClick={() => router.push("/tracking")} className="af-quick-action">Track Lifestyle</button>
+                <button onClick={() => router.push("/reports/weekly")} className="af-quick-action">Weekly Report</button>
+                <button onClick={() => router.push("/data-settings")} className="af-quick-action">Data Settings</button>
+                <button onClick={() => router.push("/privacy-policy")} className="af-quick-action">Privacy Policy</button>
+                <button onClick={() => router.push("/upgrade")} className="af-btn-primary px-4 py-3 text-sm">Upgrade</button>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="af-card-secondary p-4">
+              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#8C6A5A]">Delivery status</p>
+              <p className="mt-2 text-base font-semibold text-[#1F3D2B]">{pushDeliveryReady ? "All notification routes ready" : "Browser-ready, server follow-up may remain"}</p>
+              <p className="mt-1 text-xs text-[#6B665D]">{pushMissingConfig.length ? `${pushMissingConfig.length} config items still missing.` : "No missing push config detected."}</p>
+            </div>
+            <div className="af-card-secondary p-4">
+              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#8C6A5A]">Reward balance</p>
+              <p className="mt-2 text-base font-semibold text-[#1F3D2B]">{credits} credits available</p>
+              <p className="mt-1 text-xs text-[#6B665D]">Lifetime earned: {lifetimeCredits}</p>
+            </div>
+            <div className="af-card-secondary p-4">
+              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#8C6A5A]">Theme mode</p>
+              <p className="mt-2 text-base font-semibold text-[#1F3D2B] capitalize">{settings.theme}</p>
+              <p className="mt-1 text-xs text-[#6B665D]">Timezone set to {settings.timezone}</p>
             </div>
           </div>
 
@@ -1084,6 +1129,7 @@ export default function SettingsPage() {
               </AnimatePresence>
             </section>
 
+          </div>
           </div>
         </div>
       </Container>

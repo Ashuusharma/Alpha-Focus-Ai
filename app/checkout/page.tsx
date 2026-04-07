@@ -125,8 +125,25 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F4EFE6] pb-20 pt-24 text-[#1F3D2B]">
-       <div className="mx-auto max-w-7xl px-6 lg:px-8 mb-6">
+    <div className="af-page-shell min-h-screen pb-20 pt-24 text-[#1F3D2B]">
+       <div className="mx-auto max-w-7xl px-6 lg:px-8 mb-6 space-y-4">
+          <div className="af-page-hero px-5 py-6 md:px-6">
+             <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                <div className="max-w-2xl">
+                   <div className="af-badge-row mb-3">
+                      <span className="af-badge-chip text-[#2F6F57]">Secure checkout</span>
+                      <span className="af-badge-chip text-[#A46A2D]">Routine-backed products</span>
+                   </div>
+                   <h1 className="text-clinical-heading text-3xl font-extrabold tracking-tight md:text-4xl">Complete payment with your plan, rewards, and trust signals visible.</h1>
+                   <p className="mt-3 max-w-xl text-sm leading-7 text-[#6B665D]">This checkout keeps the product logic visible so users understand what they are buying, why it fits the protocol, and when results should be expected.</p>
+                </div>
+                <div className="af-card-secondary p-4 text-sm text-[#5F5A51] lg:max-w-[280px]">
+                   <p className="text-xs font-black uppercase tracking-[0.16em] text-[#8C6A5A]">Live summary</p>
+                   <p className="mt-2 font-semibold text-[#1F3D2B]">{items.length} items ready</p>
+                   <p className="mt-1">Rewards, coupons, and shipping logic are already applied below.</p>
+                </div>
+             </div>
+          </div>
           <div className="rounded-2xl border border-[#C8DACF] bg-[#E8EFEA] px-4 py-3 text-sm text-[#1F3D2B] flex flex-wrap items-center gap-4 justify-between">
              <span className="inline-flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-[#2F6F57]" /> Secure checkout</span>
              <span className="inline-flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-[#2F6F57]" /> Dermatologist recommended products</span>
@@ -152,7 +169,7 @@ export default function CheckoutPage() {
             {currentStep === 1 && (
               <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
                 <h2 className="text-2xl font-bold text-[#1F3D2B]">Contact Information</h2>
-                <div className="bg-white p-6 rounded-2xl border border-[#E2DDD4] shadow-sm space-y-4">
+                <div className="af-card-secondary p-6 space-y-4">
                   <div>
                     <label className="block text-xs uppercase font-bold text-[#6B665D] mb-1">Email Address</label>
                     <input type="email" placeholder="john@example.com" className="w-full p-3 rounded-xl border border-[#E2DDD4] focus:ring-1 focus:ring-[#2F6F57] outline-none" />
@@ -191,7 +208,7 @@ export default function CheckoutPage() {
             {currentStep === 2 && (
                <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
                   <h2 className="text-2xl font-bold text-[#1F3D2B]">Shipping Method</h2>
-                  <div className="bg-white p-6 rounded-2xl border border-[#E2DDD4] shadow-sm space-y-4">
+                  <div className="af-card-secondary p-6 space-y-4">
                      <label className="flex items-center justify-between p-4 border border-[#2F6F57] bg-[#E8EFEA] rounded-xl cursor-pointer">
                         <div className="flex items-center gap-3">
                            <div className="h-5 w-5 rounded-full border-[5px] border-[#2F6F57] bg-white"></div>
@@ -225,7 +242,7 @@ export default function CheckoutPage() {
             {currentStep === 3 && (
                <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
                   <h2 className="text-2xl font-bold text-[#1F3D2B]">Secure Payment</h2>
-                  <div className="bg-white p-6 rounded-2xl border border-[#E2DDD4] shadow-sm space-y-6">
+                  <div className="af-card-secondary p-6 space-y-6">
                      <div className="flex items-center justify-between text-sm text-[#6B665D] bg-[#F4EFE6] p-3 rounded-lg border border-[#E2DDD4]">
                         <div className="flex items-center gap-2">
                            <Lock className="h-4 w-4" /> 
@@ -269,11 +286,11 @@ export default function CheckoutPage() {
           
           {/* Right Column: Summary */}
           <div className="lg:sticky lg:top-24 h-fit space-y-6">
-             <div className="bg-white p-6 rounded-2xl border border-[#E2DDD4] shadow-sm">
+             <div className="af-card-primary p-6">
                 <h3 className="text-lg font-bold text-[#1F3D2B] mb-4">Order Summary</h3>
                 <div className="space-y-4 mb-6 max-h-64 overflow-y-auto pr-2">
                    {items.map((item) => (
-                                 <div key={item.id} className="rounded-xl border border-[#E2DDD4] bg-[#FCFBF8] p-3">
+                                 <div key={item.id} className="af-card-subtle p-3">
                                      <div className="flex gap-3">
                                         <div className="relative h-16 w-16 rounded-lg bg-[#F4EFE6] border border-[#E2DDD4] flex-shrink-0">
                            {/* Using placeholder or catalog image if available */}
@@ -359,7 +376,7 @@ export default function CheckoutPage() {
                 </div>
              </div>
              
-             <div className="bg-[#E8EFEA] p-4 rounded-xl border border-[#C8DACF] flex items-start gap-3">
+             <div className="rounded-xl border border-[#C8DACF] bg-[#E8EFEA] p-4 flex items-start gap-3 shadow-[0_12px_24px_rgba(47,111,87,0.08)]">
                 <ShieldCheck className="h-6 w-6 text-[#2F6F57] flex-shrink-0" />
                 <div>
                    <h4 className="font-bold text-[#1F3D2B] text-sm">Satisfaction Guarantee</h4>
