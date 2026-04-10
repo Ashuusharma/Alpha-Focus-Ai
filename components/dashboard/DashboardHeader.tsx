@@ -1,4 +1,4 @@
-import MedicalCard from "@/components/ui/MedicalCard";
+﻿import MedicalCard from "@/components/ui/MedicalCard";
 
 type DashboardHeaderProps = {
   greeting: string;
@@ -42,7 +42,7 @@ export default function DashboardHeader({
         <div className="space-y-3">
           <p className="text-sm text-text-secondary">{greeting}</p>
           <div className="flex items-center gap-4">
-            <div className="relative flex h-24 w-24 items-center justify-center rounded-full bg-[conic-gradient(#2F6F57_0deg,#6E9F87_220deg,#E8E3DA_220deg,#E8E3DA_360deg)]">
+            <div className="relative flex h-24 w-24 items-center justify-center rounded-full bg-[conic-gradient(#0071e3_0deg,#6E9F87_220deg,#E8E3DA_220deg,#E8E3DA_360deg)]">
               <div className="flex h-[88px] w-[88px] items-center justify-center rounded-full bg-[#F4F1EB]">
                 <span className="metric-number text-2xl text-text-primary">{confidenceScore}</span>
               </div>
@@ -88,10 +88,11 @@ export default function DashboardHeader({
 
           <div className="flex items-center justify-between rounded-xl border border-[#DDD7CC] bg-[#F7F4EE] px-4 py-3">
             <span className="text-sm text-text-secondary">Trend & Streak</span>
-            <span className="metric-number text-lg text-accent-teal">{trendDelta >= 0 ? "↗" : "↘"} {Math.abs(Math.round(trendDelta))} · {streakDays}d</span>
+            <span className="metric-number text-lg text-accent-teal">{trendDelta >= 0 ? "up" : "down"} {Math.abs(Math.round(trendDelta))} - {streakDays}d</span>
           </div>
         </div>
       </div>
     </MedicalCard>
   );
 }
+

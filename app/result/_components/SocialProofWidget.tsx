@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 interface SuccessStory {
   name: string;
@@ -14,7 +14,7 @@ export default function SocialProofWidget() {
     {
       name: "Arjun K.",
       condition: "Hair Fall",
-      emoji: "👨",
+      emoji: "",
       quote:
         "After 6 weeks, my hair fall reduced by 70%. The routine was easy to follow and results are visible!",
       timeframe: "6 weeks",
@@ -23,7 +23,7 @@ export default function SocialProofWidget() {
     {
       name: "Rohan S.",
       condition: "Acne-Prone Skin",
-      emoji: "👨‍🦱",
+      emoji: "",
       quote:
         "My skin cleared up faster than I expected. The ingredient breakdown helped me understand what I'm using.",
       timeframe: "4 weeks",
@@ -32,7 +32,7 @@ export default function SocialProofWidget() {
     {
       name: "Vikram P.",
       condition: "Patchy Beard",
-      emoji: "🧔",
+      emoji: "",
       quote:
         "Full, dense beard in 3 months. The beard oil and growth routine made all the difference.",
       timeframe: "3 months",
@@ -43,7 +43,7 @@ export default function SocialProofWidget() {
   return (
     <div className="bg-white border rounded-2xl p-6">
       <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
-        👥 Success Stories from Users Like You
+         Success Stories from Users Like You
       </h3>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -70,14 +70,14 @@ export default function SocialProofWidget() {
             <div className="flex items-center gap-2 mb-3">
               {[...Array(5)].map((_, i) => (
                 <span key={i} className="text-lg">
-                  {i < story.rating ? "⭐" : "☆"}
+                  {i < story.rating ? "*" : "o"}
                 </span>
               ))}
             </div>
 
             {/* Timeframe */}
             <p className="text-xs font-semibold text-green-700 bg-green-100 px-2 py-1 rounded-full inline-block">
-              ✓ Results in {story.timeframe}
+              OK Results in {story.timeframe}
             </p>
           </div>
         ))}
@@ -91,9 +91,10 @@ export default function SocialProofWidget() {
           <strong>You could be next!</strong>
         </p>
         <button className="text-sm font-semibold text-green-700 hover:underline">
-          Read more success stories →
+          Read more success stories -&gt;
         </button>
       </div>
     </div>
   );
 }
+

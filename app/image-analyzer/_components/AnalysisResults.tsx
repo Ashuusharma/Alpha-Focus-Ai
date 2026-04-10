@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useRouter } from "next/navigation";
 import { AnalysisResult } from "@/lib/analyzeImage";
@@ -170,7 +170,7 @@ export default function AnalysisResults({
             {result.recommendations.map((rec, idx) => (
               <li key={idx} className="flex gap-3 text-white/80 items-start">
                 <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <span className="text-blue-400 text-xs text-center">✓</span>
+                  <span className="text-blue-400 text-xs text-center">âœ“</span>
                 </div>
                 <span>{rec}</span>
               </li>
@@ -193,7 +193,7 @@ export default function AnalysisResults({
             {result.tips.map((tip, idx) => (
               <li key={idx} className="flex gap-3 text-white/80 items-start">
                 <div className="w-6 h-6 rounded-full bg-purple-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <span className="text-purple-400 text-xs">•</span>
+                  <span className="text-purple-400 text-xs"> - </span>
                 </div>
                 <span>{tip}</span>
               </li>
@@ -209,7 +209,7 @@ export default function AnalysisResults({
         transition={{ delay: 0.6 }}
         className="bg-white/5 border border-white/10 rounded-2xl p-8"
       >
-        <h3 className="text-lg font-bold text-white mb-6">🎯 Next Steps</h3>
+        <h3 className="text-lg font-bold text-white mb-6"> Next Steps</h3>
         <div className="grid gap-4">
           {[
             { title: "Review Results", desc: "Understand your detected issues and severity" },
@@ -258,3 +258,4 @@ export default function AnalysisResults({
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -10,7 +10,7 @@ import { getActiveUserName } from "@/lib/userScopedStorage";
 import { Info } from "lucide-react";
 
 function formatCurrency(value: number) {
-  return `₹${Math.max(0, Math.round(value))}`;
+  return `Rs ${Math.max(0, Math.round(value))}`;
 }
 
 type UpsellCard = {
@@ -120,8 +120,8 @@ function CartHeader({
     <div className="border-b border-[#E7E1D7] px-5 py-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h3 className="text-lg font-semibold text-[#1F3D2B]">Your Clinical Cart</h3>
-          <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-[#E8F1EC] px-2 text-xs font-semibold text-[#2F5D46]">
+          <h3 className="text-lg font-semibold text-[#1d1d1f]">Your Clinical Cart</h3>
+          <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-[#eef5ff] px-2 text-xs font-semibold text-[#0071e3]">
             {count}
           </span>
         </div>
@@ -130,10 +130,10 @@ function CartHeader({
           aria-label="Close cart"
           className="rounded-lg border border-[#DFD8CD] bg-white px-2.5 py-1.5 text-sm font-medium text-[#5F7A69] hover:shadow-sm"
         >
-          ×
+          x
         </button>
       </div>
-      <p className="mt-1 text-xs text-[#6A7F71]">Subtotal: {formatCurrency(subtotal)} • Clinical recommendations optimized</p>
+      <p className="mt-1 text-xs text-[#6A7F71]">Subtotal: {formatCurrency(subtotal)}  -  Clinical recommendations optimized</p>
     </div>
   );
 }
@@ -175,13 +175,13 @@ function CartItemsList({
         return (
           <div key={`${item.userId || "guest"}-${item.id}`} className="rounded-xl border border-[#E6DED2] bg-[#FAF8F3] p-4 shadow-[0_4px_10px_rgba(0,0,0,0.03)]">
             <div className="flex items-start gap-3">
-              <div className="relative h-[72px] w-[72px] flex-shrink-0 overflow-hidden rounded-xl border border-[#E2DDD3] bg-white">
+              <div className="relative h-[72px] w-[72px] flex-shrink-0 overflow-hidden rounded-xl border border-[#d9d9de] bg-white">
                 <img
                   src={item.imageUrl || "/images/question-fallback.svg"}
                   alt={item.name}
                   className="h-full w-full object-cover"
                 />
-                <span className="absolute left-1 top-1 inline-flex rounded-full bg-[#2F5D46] px-2 py-0.5 text-[10px] font-semibold text-white">
+                <span className="absolute left-1 top-1 inline-flex rounded-full bg-[#0071e3] px-2 py-0.5 text-[10px] font-semibold text-white">
                   {matchPercent}% Match
                 </span>
               </div>
@@ -189,7 +189,7 @@ function CartItemsList({
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-[#1F3D2B]">{item.name}</p>
+                    <p className="truncate text-sm font-semibold text-[#1d1d1f]">{item.name}</p>
                     <p className="mt-0.5 text-xs text-[#6A7F71]">{item.protocolTier || "Core Protocol"}</p>
                     <p className="mt-1 text-xs text-[#4F6558]">{reason}</p>
                   </div>
@@ -208,7 +208,7 @@ function CartItemsList({
                   >
                     -
                   </button>
-                  <span className="min-w-8 text-center text-sm font-medium text-[#1F3D2B]">{item.quantity}</span>
+                  <span className="min-w-8 text-center text-sm font-medium text-[#1d1d1f]">{item.quantity}</span>
                   <button
                     onClick={() => onQty(item.id, item.quantity + 1)}
                     className="h-7 w-7 rounded-lg border border-[#DDD5C8] bg-white text-sm text-[#4F6558]"
@@ -217,9 +217,9 @@ function CartItemsList({
                   </button>
 
                   <div className="ml-auto text-right">
-                    <p className="text-sm font-semibold text-[#1F3D2B]">{formatCurrency(discountedPrice * item.quantity)}</p>
+                    <p className="text-sm font-semibold text-[#1d1d1f]">{formatCurrency(discountedPrice * item.quantity)}</p>
                     {hasSavings && (
-                      <span className="inline-flex rounded-full bg-[#E8F1EC] px-2 py-0.5 text-[10px] font-semibold text-[#2F5D46]">
+                      <span className="inline-flex rounded-full bg-[#eef5ff] px-2 py-0.5 text-[10px] font-semibold text-[#0071e3]">
                         Saving {formatCurrency((item.price - discountedPrice) * item.quantity)}
                       </span>
                     )}
@@ -247,7 +247,7 @@ function ClinicalUpsellSection({
 
   return (
     <div className="border-t border-[#E7E1D7] px-5 py-4">
-      <h4 className="text-sm font-semibold text-[#1F3D2B]">Recommended to Improve Results Faster</h4>
+      <h4 className="text-sm font-semibold text-[#1d1d1f]">Recommended to Improve Results Faster</h4>
       <div className="mt-3 space-y-3">
         {upsells.map((item) => (
           <div key={item.id} className="rounded-xl border border-[#E6DED2] bg-white p-3">
@@ -255,12 +255,12 @@ function ClinicalUpsellSection({
               <img
                 src={item.imageUrl || "/images/question-fallback.svg"}
                 alt={item.name}
-                className="h-14 w-14 rounded-lg border border-[#E2DDD3] object-cover"
+                className="h-14 w-14 rounded-lg border border-[#d9d9de] object-cover"
               />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="truncate text-sm font-semibold text-[#1F3D2B]">{item.name}</p>
-                  <span className="rounded-full bg-[#E8F1EC] px-2 py-0.5 text-[10px] font-semibold text-[#2F5D46]">{item.matchPercent}%</span>
+                  <p className="truncate text-sm font-semibold text-[#1d1d1f]">{item.name}</p>
+                  <span className="rounded-full bg-[#eef5ff] px-2 py-0.5 text-[10px] font-semibold text-[#0071e3]">{item.matchPercent}%</span>
                 </div>
                 <p className="mt-1 text-xs text-[#5F7A69]">{formatCurrency(item.price)}</p>
                 <div className="mt-2 flex items-center gap-2">
@@ -275,7 +275,7 @@ function ClinicalUpsellSection({
                   <button
                     type="button"
                     onClick={() => onQuickAdd(item)}
-                    className="ml-auto rounded-full bg-[#2F6F57] px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-[#245A47]"
+                    className="ml-auto rounded-full bg-[#0071e3] px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-[#005bbf]"
                   >
                     Add to Cart
                   </button>
@@ -302,19 +302,19 @@ function RewardsDiscountSection({
 }) {
   return (
     <div className="border-t border-[#E7E1D7] px-5 py-4">
-      <h4 className="text-sm font-semibold text-[#1F3D2B]">Rewards & Discount</h4>
+      <h4 className="text-sm font-semibold text-[#1d1d1f]">Rewards & Discount</h4>
       <div className="mt-2 rounded-xl border border-[#E6DED2] bg-[#FBF9F5] p-3">
-        <p className="text-xs text-[#5F7A69]">Available Credits: <span className="font-semibold text-[#1F3D2B]">{availableCredits} A$</span></p>
-        <p className="mt-1 text-xs text-[#5F7A69]">Eligible Discount: <span className="font-semibold text-[#1F3D2B]">{eligibleDiscount}%</span></p>
+        <p className="text-xs text-[#5F7A69]">Available Credits: <span className="font-semibold text-[#1d1d1f]">{availableCredits} A$</span></p>
+        <p className="mt-1 text-xs text-[#5F7A69]">Eligible Discount: <span className="font-semibold text-[#1d1d1f]">{eligibleDiscount}%</span></p>
         <button
           type="button"
           onClick={onApplyBest}
-          className="mt-3 w-full rounded-xl border border-[#CFE0D6] bg-[#E8F1EC] px-3 py-2 text-xs font-semibold text-[#2F5D46] hover:bg-[#DDECE5]"
+          className="mt-3 w-full rounded-xl border border-[#d9d9de] bg-[#eef5ff] px-3 py-2 text-xs font-semibold text-[#0071e3] hover:bg-[#dce9ff]"
         >
           Apply Best Available Discount
         </button>
         {appliedCouponCode && (
-          <span className="mt-2 inline-flex rounded-full bg-[#2F6F57] px-2.5 py-1 text-[10px] font-semibold text-white">
+          <span className="mt-2 inline-flex rounded-full bg-[#0071e3] px-2.5 py-1 text-[10px] font-semibold text-white">
             Applied coupon: {appliedCouponCode}
           </span>
         )}
@@ -340,21 +340,21 @@ function OrderSummary({
     <div className="space-y-2 border-t border-[#E7E1D7] px-5 pt-4 text-sm">
       <div className="flex items-center justify-between text-[#5F7A69]">
         <span>Subtotal</span>
-        <span className="font-medium text-[#1F3D2B]">{formatCurrency(subtotal)}</span>
+        <span className="font-medium text-[#1d1d1f]">{formatCurrency(subtotal)}</span>
       </div>
       <div className="flex items-center justify-between text-[#5F7A69]">
         <span>Discount</span>
-        <span className="font-medium text-[#1F3D2B]">-{formatCurrency(discount)}</span>
+        <span className="font-medium text-[#1d1d1f]">-{formatCurrency(discount)}</span>
       </div>
       <div className="flex items-center justify-between text-[#5F7A69]">
         <span>Estimated Tax</span>
-        <span className="font-medium text-[#1F3D2B]">{formatCurrency(tax)}</span>
+        <span className="font-medium text-[#1d1d1f]">{formatCurrency(tax)}</span>
       </div>
       <div className="flex items-center justify-between text-[#5F7A69]">
         <span>Shipping</span>
-        <span className="font-medium text-[#1F3D2B]">{shipping === 0 ? "Free" : formatCurrency(shipping)}</span>
+        <span className="font-medium text-[#1d1d1f]">{shipping === 0 ? "Free" : formatCurrency(shipping)}</span>
       </div>
-      <div className="mt-2 flex items-center justify-between border-t border-[#E7E1D7] pt-2 text-[#1F3D2B]">
+      <div className="mt-2 flex items-center justify-between border-t border-[#E7E1D7] pt-2 text-[#1d1d1f]">
         <span className="font-semibold">Total</span>
         <span className="text-base font-bold">{formatCurrency(total)}</span>
       </div>
@@ -376,14 +376,14 @@ function CheckoutCTA({
       <button
         disabled={disabled}
         onClick={onCheckout}
-        className="w-full rounded-xl bg-[#2F6F57] px-4 py-3 text-sm font-semibold text-[#F4F1EB] disabled:cursor-not-allowed disabled:opacity-60"
+        className="w-full rounded-xl bg-[#0071e3] px-4 py-3 text-sm font-semibold text-[#F4F1EB] disabled:cursor-not-allowed disabled:opacity-60"
       >
         Proceed to Secure Checkout
       </button>
       <button
         type="button"
         onClick={onContinueShopping}
-        className="mt-2 w-full rounded-xl border border-[#DAD3C7] bg-white px-4 py-3 text-sm font-semibold text-[#2F5D46]"
+        className="mt-2 w-full rounded-xl border border-[#DAD3C7] bg-white px-4 py-3 text-sm font-semibold text-[#1d1d1f]"
       >
         Continue Shopping
       </button>
@@ -527,3 +527,5 @@ export default function ProfessionalCartDrawer({ open, onClose }: { open?: boole
     </>
   );
 }
+
+

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 interface IngredientsDisplayProps {
   productName: string;
@@ -37,26 +37,28 @@ export default function IngredientsDisplay({
   const items = ingredients || ingredientMap[productName] || [];
 
   return (
-    <div className="rounded-[1.35rem] border border-[#E2DDD3] bg-[#FFF8EE] p-4">
-      <h5 className="mb-3 flex items-center gap-2 text-sm font-black uppercase tracking-[0.16em] text-[#8C6A5A]">
-        🧪 Key Ingredients
+    <div className="rounded-[1.35rem] border border-[#d9d9de] bg-[#FFF8EE] p-4">
+      <h5 className="mb-3 flex items-center gap-2 text-sm font-black uppercase tracking-[0.16em] text-[#6e6e73]">
+         Key Ingredients
       </h5>
 
       <div className="space-y-2">
         {items.map((ingredient, idx) => (
           <div key={idx} className="flex gap-3 text-xs sm:text-sm">
-            <span className="font-bold text-[#2F6F57]">✓</span>
+            <span className="font-bold text-[#0071e3]">OK</span>
             <span className="text-[#5F5A51]">{ingredient}</span>
           </div>
         ))}
       </div>
 
       <div className="mt-3 border-t border-[#eadfce] pt-3">
-        <p className="text-xs text-[#6B665D]">
-          💡 These ingredients work together to target your specific concern and
+        <p className="text-xs text-[#6e6e73]">
+           These ingredients work together to target your specific concern and
           accelerate healing.
         </p>
       </div>
     </div>
   );
 }
+
+

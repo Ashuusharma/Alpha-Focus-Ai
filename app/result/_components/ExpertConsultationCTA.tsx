@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 export default function ExpertConsultationCTA() {
   return (
@@ -8,7 +8,9 @@ export default function ExpertConsultationCTA() {
 
       <div className="relative z-10">
         <div className="flex items-start gap-4">
-          <span className="text-4xl flex-shrink-0">👨‍⚕️</span>
+          <span className="text-4xl flex-shrink-0">
+            AI
+          </span>
           <div className="flex-1">
             <h3 className="text-xl font-bold mb-2">Talk to a Grooming Expert</h3>
             <p className="text-indigo-100 text-sm mb-4">
@@ -31,3 +33,4 @@ export default function ExpertConsultationCTA() {
     </div>
   );
 }
+

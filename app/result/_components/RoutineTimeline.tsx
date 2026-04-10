@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 interface RoutineTimelineProps {
   steps: string[];
@@ -12,7 +12,7 @@ export default function RoutineTimeline({
   return (
     <div className="bg-transparent rounded-2xl p-0">
       <div className="flex items-center gap-2 mb-6">
-        <span className="text-2xl drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">⏱️</span>
+        <span className="text-2xl drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">Timeline</span>
         <h3 className="text-xl font-bold text-white tracking-wide">
           Your Step-by-Step {category} Routine
         </h3>
@@ -42,10 +42,11 @@ export default function RoutineTimeline({
       {/* Timeline note */}
       <div className="mt-6 p-4 bg-mist rounded-lg">
         <p className="text-sm text-ocean">
-          💡 <strong>Pro Tip:</strong> Consistency is key! Follow this routine
+           <strong>Pro Tip:</strong> Consistency is key! Follow this routine
           for at least 4 weeks to see visible results.
         </p>
       </div>
     </div>
   );
 }
+

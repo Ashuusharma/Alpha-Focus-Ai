@@ -1,4 +1,4 @@
-// Progress Tracking & Comparison Component
+﻿// Progress Tracking & Comparison Component
 
 "use client";
 
@@ -42,7 +42,7 @@ export default function ProgressComparison({
     return (
       <div className="bg-white rounded-2xl p-6 shadow text-center">
         <p className="text-gray-600">
-          📊 Complete another scan to see progress tracking
+           Complete another scan to see progress tracking
         </p>
       </div>
     );
@@ -52,7 +52,7 @@ export default function ProgressComparison({
     return (
       <div className="bg-gradient-to-br from-blue-50 to-slate-50 rounded-2xl p-6 shadow">
         <h3 className="text-lg font-bold text-gray-900 mb-4">
-          📊 Your Progress
+           Your Progress
         </h3>
         <div className="text-center py-6">
           <p className="text-gray-600 mb-4">
@@ -71,7 +71,7 @@ export default function ProgressComparison({
       {/* Summary */}
       <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 shadow">
         <h3 className="text-lg font-bold text-gray-900 mb-4">
-          📈 Your Progress Summary
+           Your Progress Summary
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -113,7 +113,7 @@ export default function ProgressComparison({
               </span>
             </div>
             <p className="text-xs text-gray-600">
-              {new Date(previous.timestamp).toLocaleDateString()} →{" "}
+              {new Date(previous.timestamp).toLocaleDateString()} -&gt;{" "}
               {new Date(latest.timestamp).toLocaleDateString()}
             </p>
           </div>
@@ -124,7 +124,7 @@ export default function ProgressComparison({
       {progress.resolvedIssues.length > 0 && (
         <div className="bg-gradient-to-br from-green-50 to-teal-50 rounded-2xl p-6 border border-green-300">
           <h4 className="text-lg font-bold text-green-900 mb-3">
-            ✅ Issues Resolved ({progress.resolvedIssues.length})
+            Issues Resolved ({progress.resolvedIssues.length})
           </h4>
           <div className="space-y-2">
             {progress.resolvedIssues.map((issue: string, idx: number) => (
@@ -132,7 +132,7 @@ export default function ProgressComparison({
                 key={idx}
                 className="flex items-center gap-3 text-green-800 bg-white/50 p-3 rounded-lg"
               >
-                <span className="text-2xl">✨</span>
+                <span className="text-2xl">*</span>
                 <span className="font-medium">{issue}</span>
                 <span className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded-full ml-auto">
                   Cleared
@@ -147,7 +147,7 @@ export default function ProgressComparison({
       {progress.improvedIssues.length > 0 && (
         <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-6 border border-blue-300">
           <h4 className="text-lg font-bold text-blue-900 mb-3">
-            📉 Issues Improving ({progress.improvedIssues.length})
+             Issues Improving ({progress.improvedIssues.length})
           </h4>
           <div className="space-y-2">
             {progress.improvedIssues.map((issue: string, idx: number) => (
@@ -155,7 +155,7 @@ export default function ProgressComparison({
                 key={idx}
                 className="flex items-center gap-3 text-blue-800 bg-white/50 p-3 rounded-lg"
               >
-                <span className="text-2xl">↓</span>
+                <span className="text-2xl">down</span>
                 <span className="font-medium">{issue}</span>
                 <span className="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full ml-auto">
                   Getting better
@@ -170,7 +170,7 @@ export default function ProgressComparison({
       {progress.newIssues.length > 0 && (
         <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-6 border border-amber-300">
           <h4 className="text-lg font-bold text-amber-900 mb-3">
-            🆕 New Detections ({progress.newIssues.length})
+             New Detections ({progress.newIssues.length})
           </h4>
           <div className="space-y-2">
             {progress.newIssues.map((issue: string, idx: number) => (
@@ -178,7 +178,9 @@ export default function ProgressComparison({
                 key={idx}
                 className="flex items-center gap-3 text-amber-800 bg-white/50 p-3 rounded-lg"
               >
-                <span className="text-2xl">📍</span>
+                <span className="text-2xl">
+                  New
+                </span>
                 <span className="font-medium">{issue}</span>
                 <span className="text-xs bg-amber-200 text-amber-800 px-2 py-1 rounded-full ml-auto">
                   New
@@ -186,7 +188,7 @@ export default function ProgressComparison({
               </div>
             ))}
             <p className="text-xs text-amber-700 mt-3">
-              💡 These may be new issues or previously undetected. Add to your routine!
+               These may be new issues or previously undetected. Add to your routine!
             </p>
           </div>
         </div>
@@ -196,13 +198,13 @@ export default function ProgressComparison({
       {history && (
         <div className="bg-white rounded-2xl p-6 border border-gray-200">
           <h4 className="text-lg font-bold text-gray-900 mb-4">
-            📊 Overall Trend
+             Overall Trend
           </h4>
 
           {history.averageImprovement > 0 ? (
             <div className="text-center py-6">
               <div className="text-5xl font-bold text-green-600 mb-2">
-                ↓ {history.averageImprovement}%
+                down {history.averageImprovement}%
               </div>
               <p className="text-gray-600 text-lg">
                 Average improvement across all tracked issues
@@ -214,7 +216,7 @@ export default function ProgressComparison({
           ) : progress.overallImprovement === 0 ? (
             <div className="text-center py-6">
               <p className="text-gray-600 text-lg">
-                📋 No change detected yet
+                 No change detected yet
               </p>
               <p className="text-sm text-gray-500 mt-2">
                 Give your routine 2-4 weeks for visible results.
@@ -223,7 +225,7 @@ export default function ProgressComparison({
           ) : (
             <div className="text-center py-6">
               <p className="text-gray-600 text-lg">
-                ⚠️ Some issues may have increased
+                Warning: Some issues may have increased
               </p>
               <p className="text-sm text-gray-500 mt-2">
                 Check if you're following the routine consistently. Adjust products if needed.
@@ -235,28 +237,28 @@ export default function ProgressComparison({
 
       {/* Action Items */}
       <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6">
-        <h4 className="text-lg font-bold text-slate-900 mb-3">🎯 Action Items</h4>
+        <h4 className="text-lg font-bold text-slate-900 mb-3"> Action Items</h4>
         <ul className="space-y-2">
           <li className="flex items-start gap-3 text-blue-800">
-            <span className="mt-1">→</span>
+            <span className="mt-1">-&gt;</span>
             <span>
               <strong>Maintain consistency:</strong> Keep following your routine exactly
             </span>
           </li>
           <li className="flex items-start gap-3 text-blue-800">
-            <span className="mt-1">→</span>
+            <span className="mt-1">-&gt;</span>
             <span>
               <strong>Take photos:</strong> Document progress with dated photos
             </span>
           </li>
           <li className="flex items-start gap-3 text-blue-800">
-            <span className="mt-1">→</span>
+            <span className="mt-1">-&gt;</span>
             <span>
               <strong>Scan again:</strong> Next scan in 1-2 weeks for detailed comparison
             </span>
           </li>
           <li className="flex items-start gap-3 text-blue-800">
-            <span className="mt-1">→</span>
+            <span className="mt-1">-&gt;</span>
             <span>
               <strong>Track sleep & water:</strong> These dramatically impact results
             </span>
@@ -266,3 +268,4 @@ export default function ProgressComparison({
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { AnalyzerType } from "@/lib/analyzeImage";
 import { motion } from "framer-motion";
@@ -112,10 +112,10 @@ export default function AnalyzerSelector({
   return (
     <div className="w-full">
       <h3 className="text-2xl font-bold text-[#1E4D3A] mb-2 flex items-center gap-2">
-        <span className="w-1 h-7 bg-[#2F6F57] rounded-full" />
+        <span className="w-1 h-7 bg-[#0071e3] rounded-full" />
         Choose Analysis Type
       </h3>
-      <p className="text-[#2F6F57] text-sm mb-8 ml-4">Select the concern you want to evaluate. You will then capture guided photo angles.</p>
+      <p className="text-[#0071e3] text-sm mb-8 ml-4">Select the concern you want to evaluate. You will then capture guided photo angles.</p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {options.map((option, idx) => {
@@ -138,20 +138,20 @@ export default function AnalyzerSelector({
               whileTap={{ scale: 0.96 }}
               className={`relative group p-6 rounded-2xl border transition-all duration-300 text-left min-h-[190px] ${
                 isSelected
-                  ? "bg-white/80 backdrop-blur-md border-[#2F6F57] shadow-md"
-                  : "bg-white/40 backdrop-blur-md border-white/40 hover:bg-white/60 hover:border-[#2F6F57]/40"
+                  ? "bg-white/80 backdrop-blur-md border-[#0071e3] shadow-md"
+                  : "bg-white/40 backdrop-blur-md border-white/40 hover:bg-white/60 hover:border-[#0071e3]/40"
               } disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               {/* Tag Badge */}
               {option.tag && (
-                <div className="absolute -top-2 -right-2 bg-[#F4EED7] text-[#8C6A5A] text-[10px] font-bold px-2 py-0.5 rounded-full border border-[#E0CE97]">
+                <div className="absolute -top-2 -right-2 bg-[#F4EED7] text-[#6e6e73] text-[10px] font-bold px-2 py-0.5 rounded-full border border-[#E0CE97]">
                   {option.tag}
                 </div>
               )}
 
               {/* Selection Indicator */}
               {isSelected && (
-                <div className="absolute top-3 right-3 w-3 h-3 bg-[#2F6F57] rounded-full animate-pulse" />
+                <div className="absolute top-3 right-3 w-3 h-3 bg-[#0071e3] rounded-full animate-pulse" />
               )}
 
               {/* Icon Container */}
@@ -164,7 +164,7 @@ export default function AnalyzerSelector({
               >
                 <Icon
                   className={`w-6 h-6 ${
-                    isSelected ? "text-white" : "text-[#6E9F87] group-hover:text-[#2F6F57]"
+                    isSelected ? "text-white" : "text-[#6E9F87] group-hover:text-[#0071e3]"
                   }`}
                 />
               </div>
@@ -172,12 +172,12 @@ export default function AnalyzerSelector({
               {/* Text Content */}
               <h4
                 className={`text-sm font-bold mb-1 transition-colors leading-tight ${
-                  isSelected ? "text-[#1F3D2B]" : "text-[#1F3D2B]"
+                  isSelected ? "text-[#1d1d1f]" : "text-[#1d1d1f]"
                 }`}
               >
                 {option.label}
               </h4>
-              <p className="text-xs text-[#2F6F57] leading-relaxed transition-colors line-clamp-3">
+              <p className="text-xs text-[#0071e3] leading-relaxed transition-colors line-clamp-3">
                 {option.description}
               </p>
 
@@ -194,3 +194,4 @@ export default function AnalyzerSelector({
     </div>
   );
 }
+

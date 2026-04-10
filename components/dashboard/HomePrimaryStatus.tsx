@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import ClinicalSnapshotPanel from "@/components/dashboard/ClinicalSnapshotPanel";
 
 type TrendPoint = {
@@ -41,10 +41,10 @@ export default function HomePrimaryStatus({
 
   return (
     <section className="grid grid-cols-12 gap-4 lg:gap-5 items-stretch">
-      <div className="col-span-12 min-w-0 rounded-2xl border border-[#E2DDD4] bg-card-soft-gradient p-4 sm:p-6 shadow-card lg:col-span-7">
+      <div className="col-span-12 min-w-0 rounded-2xl border border-[#d9d9de] bg-card-soft-gradient p-4 sm:p-6 shadow-card lg:col-span-7">
         <p className="text-xs uppercase tracking-wide text-[#6E9F87]">Personal Wellness Command Center</p>
         <h2 className="mt-2 text-2xl sm:text-3xl lg:text-4xl font-semibold text-[#1E4D3A] leading-tight">Your skin and scalp outcomes are improving with consistency.</h2>
-        <p className="mt-3 text-sm sm:text-base text-[#2F6F57] leading-relaxed">{aiInsight}</p>
+        <p className="mt-3 text-sm sm:text-base text-[#0071e3] leading-relaxed">{aiInsight}</p>
 
         <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Link
@@ -55,9 +55,9 @@ export default function HomePrimaryStatus({
           </Link>
           <Link
             href="/assessment"
-            className="rounded-xl border border-[#DDD7CC] bg-white px-4 py-3 text-center text-sm font-semibold text-[#2F6F57] hover:bg-[#F7F4EE]"
+            className="rounded-xl border border-[#DDD7CC] bg-white px-4 py-3 text-center text-sm font-semibold text-[#0071e3] hover:bg-[#F7F4EE]"
           >
-            Log Today’s Routine
+            Log Today's Routine
           </Link>
         </div>
 
@@ -92,3 +92,5 @@ export default function HomePrimaryStatus({
     </section>
   );
 }
+
+

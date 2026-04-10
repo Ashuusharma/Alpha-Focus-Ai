@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useRouter } from "next/navigation";
 
@@ -11,7 +11,7 @@ export default function ImageAnalyzerCTA() {
       <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-16 -mt-16" />
 
       <div className="relative z-10">
-        <h3 className="text-2xl font-bold mb-2">📸 Get Even Better Results</h3>
+        <h3 className="text-2xl font-bold mb-2"> Get Even Better Results</h3>
         <p className="text-blue-100 mb-4">
           Combine your questionnaire with photo analysis for AI-powered insights. Our image analyzer
           detects skin condition, hair quality, and beard potential with 95% accuracy.
@@ -32,3 +32,4 @@ export default function ImageAnalyzerCTA() {
     </div>
   );
 }
+

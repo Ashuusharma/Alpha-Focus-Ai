@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useContext, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -22,17 +22,17 @@ function getCategoryLabel(categoryId: CategoryId) {
 
 function getClinicalContextMessage(categoryId: CategoryId, photoMetrics: Record<string, unknown> | null) {
   const baseByCategory: Record<string, string> = {
-    scalp_health: "We detected scalp imbalance indicators. Let’s validate inflammation, shedding, sleep, and stress triggers.",
-    acne: "We detected acne-pattern inflammation. Let’s validate hormonal, stress, diet, and pore-congestion drivers.",
-    dark_circles: "We detected under-eye stress signals. Let’s validate sleep debt, hydration, and vascular stress factors.",
-    hair_loss: "We detected hair-density risk patterns. Let’s validate shedding rate, hormonal risk, and recovery friction.",
-    beard_growth: "We detected beard growth variability. Let’s validate density blockers, irritation, and grooming consistency.",
-    body_acne: "We detected body-acne markers. Let’s validate sweat load, friction, and hygiene consistency.",
-    lip_care: "We detected lip barrier stress. Let’s validate hydration, pigmentation, and UV exposure patterns.",
-    anti_aging: "We detected early aging markers. Let’s validate elasticity, UV load, and oxidative stress contributors.",
+    scalp_health: "We detected scalp imbalance indicators. Let's validate inflammation, shedding, sleep, and stress triggers.",
+    acne: "We detected acne-pattern inflammation. Let's validate hormonal, stress, diet, and pore-congestion drivers.",
+    dark_circles: "We detected under-eye stress signals. Let's validate sleep debt, hydration, and vascular stress factors.",
+    hair_loss: "We detected hair-density risk patterns. Let's validate shedding rate, hormonal risk, and recovery friction.",
+    beard_growth: "We detected beard growth variability. Let's validate density blockers, irritation, and grooming consistency.",
+    body_acne: "We detected body-acne markers. Let's validate sweat load, friction, and hygiene consistency.",
+    lip_care: "We detected lip barrier stress. Let's validate hydration, pigmentation, and UV exposure patterns.",
+    anti_aging: "We detected early aging markers. Let's validate elasticity, UV load, and oxidative stress contributors.",
   };
 
-  const base = baseByCategory[categoryId] || "Let’s validate your lifestyle and behavior drivers.";
+  const base = baseByCategory[categoryId] || "Let's validate your lifestyle and behavior drivers.";
   if (!photoMetrics) return base;
 
   const numericValues = Object.values(photoMetrics)
@@ -308,21 +308,21 @@ export default function AssessmentPage() {
 
 if (loading) {
     return (
-      <div className="af-page-shell flex h-full items-center justify-center p-6">
-        <div className="af-surface-card px-6 py-5 text-sm text-[#6B665D]">Loading clinical flow validation...</div>
+      <div className="af-page-shell flex h-full items-center justify-center p-6 text-[#ffffff]">
+        <div className="af-surface-card px-6 py-5 text-sm text-[#1d1d1f]">Loading clinical flow validation...</div>
       </div>
     );
   }
 
   if (blockedMessage || !activeCategory) {
     return (
-      <div className="af-page-shell flex h-full items-center justify-center p-6">
-        <div className="max-w-xl w-full rounded-3xl border border-[#d8c4bf] bg-[linear-gradient(180deg,#fff8f6_0%,#f4e7e3_100%)] shadow-[0_24px_60px_rgba(140,106,90,0.12)] p-8 text-center space-y-4">
-          <h1 className="text-xl font-bold text-[#1F3D2B]">Assessment Locked</h1>
-          <p className="text-sm text-[#6B665D]">{blockedMessage || "Flow validation failed."}</p>
+      <div className="af-page-shell flex h-full items-center justify-center p-6 text-[#ffffff]">
+        <div className="max-w-xl w-full rounded-3xl border border-[#d8c4bf] bg-white shadow-[0_24px_60px_rgba(140,106,90,0.12)] p-8 text-center space-y-4">
+          <h1 className="text-xl font-bold text-[#1d1d1f]">Assessment Locked</h1>
+          <p className="text-sm text-[#6e6e73]">{blockedMessage || "Flow validation failed."}</p>
           <button
             onClick={() => router.push("/image-analyzer")}
-            className="inline-flex items-center justify-center rounded-full bg-[#8C6A5A] hover:bg-[#775748] text-white border border-[#8C6A5A]/20 px-6 py-3 text-sm font-semibold transition-colors shadow-[0_12px_28px_rgba(140,106,90,0.18)]"
+            className="inline-flex items-center justify-center rounded-full bg-[#0071e3] hover:bg-[#0066cc] text-white border border-[#0071e3] px-6 py-3 text-sm font-semibold transition-colors"
           >
             Go to Analyzer
           </button>
@@ -335,32 +335,32 @@ if (loading) {
   const isLastQuestion = activeQuestionIndex === categoryQuestions.length - 1;
 
   return (
-    <div className="af-page-shell flex flex-col h-full w-full animate-in fade-in duration-700 min-h-screen">
+    <div className="af-page-shell flex flex-col h-full w-full animate-in fade-in duration-700 min-h-screen text-[#ffffff]">
       
       {/* HEADER PROGRESS BAR */}
-      <div className="sticky top-0 z-30 bg-[rgba(250,245,236,0.9)] backdrop-blur-xl border-b border-[#e2d8ca] shadow-[0_10px_28px_rgba(120,97,67,0.08)]">
+      <div className="sticky top-0 z-30 bg-[#f5f5f7] border-b border-[#d9d9de]">
         <div className="max-w-3xl mx-auto px-6 py-4 space-y-4">
           <div className="flex items-start justify-between">
             <div className="space-y-1">
-              <h1 className="text-clinical-heading text-xl font-extrabold text-[#1F3D2B] tracking-tight">Clinical Assessment - {getCategoryLabel(activeCategory)}</h1>
-              <p className="text-xs text-[#6B665D]">Category-locked protocol scoring with weighted domain inputs.</p>
+              <h1 className="text-clinical-heading text-xl font-extrabold text-[#1d1d1f] tracking-tight">Clinical Assessment - {getCategoryLabel(activeCategory)}</h1>
+              <p className="text-xs text-[#6e6e73]">Category-locked protocol scoring with weighted domain inputs.</p>
             </div>
             <div className="flex flex-col items-end">
-               <span className="text-xs font-bold text-[#2F6F57] bg-[#E8EFEA] px-2 py-1 rounded-md border border-[#C8DACF] shadow-sm">{answeredCount}/{categoryQuestions.length} answered</span>
+               <span className="text-xs font-bold text-[#0071e3] bg-white px-2 py-1 rounded-md border border-[#0071e3]">{answeredCount}/{categoryQuestions.length} answered</span>
             </div>
           </div>
           
-          <div className="af-surface-soft px-4 py-3 text-xs text-[#6B665D] flex items-center gap-3">
-             <Activity className="w-4 h-4 text-[#2F6F57]" />
-            {clinicalContextMessage || "We detected early signs. Let’s understand your daily behavior drivers."}
+           <div className="af-surface-soft px-4 py-3 text-xs text-[#1d1d1f] flex items-center gap-3">
+             <Activity className="w-4 h-4 text-[#0071e3]" />
+            {clinicalContextMessage || "We detected early signs. Let's understand your daily behavior drivers."}
           </div>
 
           <div className="af-surface-card p-4">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#8C6A5A]">Recovery Track</p>
-                <p className="mt-1 text-sm font-semibold text-[#1F3D2B]">{selectedLevelMeta.label}</p>
-                <p className="mt-1 max-w-xl text-xs leading-relaxed text-[#6B665D]">{selectedLevelMeta.description} This selection is saved to your profile and used by the 30-day planner after assessment.</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6e6e73]">Recovery Track</p>
+                <p className="mt-1 text-sm font-semibold text-[#1d1d1f]">{selectedLevelMeta.label}</p>
+                <p className="mt-1 max-w-xl text-xs leading-relaxed text-[#6e6e73]">{selectedLevelMeta.description} This selection is saved to your profile and used by the 30-day planner after assessment.</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 {(["beginner", "intermediate", "advanced"] as ProtocolToleranceMode[]).map((level) => {
@@ -372,7 +372,7 @@ if (loading) {
                       key={level}
                       type="button"
                       onClick={() => handleSelectProgramLevel(level)}
-                      className={`rounded-xl px-4 py-2 text-left transition-all ${active ? "bg-[#2F6F57] text-white shadow-[0_14px_28px_rgba(47,111,87,0.24)]" : "af-surface-soft text-[#6B665D] hover:text-[#1F3D2B]"}`}
+                      className={`rounded-xl px-4 py-2 text-left transition-all ${active ? "bg-[#0071e3] text-white" : "af-surface-soft text-[#1d1d1f] hover:text-[#1d1d1f]"}`}
                     >
                       <span className="block text-[10px] font-black uppercase tracking-widest">{option.label}</span>
                     </button>
@@ -383,8 +383,8 @@ if (loading) {
           </div>
           
           {flowDiagnosticSource && (
-            <p className="text-[10px] uppercase tracking-wider text-[#8C6A5A]">
-              Diagnostic mode: <span className="text-[#2F6F57]">{flowDiagnosticSource === "db_scan" ? "DB scan validated" : "Session fallback"}</span>
+            <p className="text-[10px] uppercase tracking-wider text-[#6e6e73]">
+              Diagnostic mode: <span className="text-[#0071e3]">{flowDiagnosticSource === "db_scan" ? "DB scan validated" : "Session fallback"}</span>
             </p>
           )}
           
@@ -396,7 +396,7 @@ if (loading) {
 
       <main className="flex-1 max-w-3xl mx-auto w-full px-6 py-10 relative">
         {/* Glow effect */}
-        <div className="absolute top-[10%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-[#A9CBB7]/25 blur-[120px] rounded-full pointer-events-none" />
+        <div className="absolute top-[10%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-[#99c9ff]/25 blur-[120px] rounded-full pointer-events-none" />
 
         <AnimatePresence mode="wait">
           {activeQuestion && (
@@ -408,32 +408,32 @@ if (loading) {
               transition={{ duration: 0.3 }}
               className="af-surface-card relative p-6 md:p-8 space-y-6"
             >
-              <div className="flex items-center justify-between border-b border-[#e6dccd] pb-4">
+              <div className="flex items-center justify-between border-b border-[#e0e0e4] pb-4">
                 <button
                   onClick={handleBack}
-                  className="inline-flex items-center gap-2 text-xs font-semibold text-[#6B665D] hover:text-[#1F3D2B] transition-colors"
+                  className="inline-flex items-center gap-2 text-xs font-semibold text-[#1d1d1f] hover:text-[#1d1d1f] transition-colors"
                 >
                   <ArrowLeft className="w-4 h-4" /> Back
                 </button>
                 <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#2F6F57]">
+                    <span className="w-2 h-2 rounded-full bg-[#2997ff] animate-pulse"></span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#0071e3]">
                     {getClinicalRelevance(activeQuestion.id)} relevance
                   </span>
                 </div>
               </div>
 
               <div className="space-y-4">
-                <div className="flex items-center justify-between text-[11px] uppercase tracking-wider text-[#8C6A5A]">
+                <div className="flex items-center justify-between text-[11px] uppercase tracking-wider text-[#6e6e73]">
                   <span>Question {activeQuestionIndex + 1} of {categoryQuestions.length}</span>
                   <span>{Math.max(0, categoryQuestions.length - (activeQuestionIndex + 1))} remaining</span>
                 </div>
-                <div className="inline-block px-2 py-1 rounded border border-[#ddd2c2] bg-[rgba(255,252,246,0.72)] text-[10px] uppercase tracking-wider text-[#8C6A5A]">
-                  Domain: <span className="text-[#1F3D2B]">{activeQuestion.domain.replace(/_/g, " ")}</span>
+                <div className="inline-block px-2 py-1 rounded border border-[#ddd2c2] bg-[rgba(255,252,246,0.72)] text-[10px] uppercase tracking-wider text-[#6e6e73]">
+                  Domain: <span className="text-[#1d1d1f]">{activeQuestion.domain.replace(/_/g, " ")}</span>
                 </div>
-                <h2 className="text-2xl font-bold text-[#1F3D2B] leading-snug">{activeQuestion.text}</h2>
-                <div className="flex items-center gap-4 text-xs text-[#6B665D]">
-                  <span className="flex items-center gap-1.5"><Activity className="w-3.5 h-3.5 text-[#2F6F57]" /> W-{activeQuestion.weight.toFixed(1)}</span>
+                <h2 className="text-2xl font-bold text-[#1d1d1f] leading-snug">{activeQuestion.text}</h2>
+                <div className="flex items-center gap-4 text-xs text-[#6e6e73]">
+                  <span className="flex items-center gap-1.5"><Activity className="w-3.5 h-3.5 text-[#0071e3]" /> W-{activeQuestion.weight.toFixed(1)}</span>
                   <span className="w-1 h-1 rounded-full bg-[#c8bcab]"></span>
                   <span>Answer based on recent 2-4 weeks.</span>
                 </div>
@@ -448,17 +448,17 @@ if (loading) {
                       onClick={() => handleSelectAnswer(option.label)}
                       className={`w-full rounded-2xl border px-5 py-4 text-left transition-all duration-300 relative overflow-hidden group ${
                         selected
-                          ? "border-[#7ea58f] bg-[#e7f0e8] shadow-[0_12px_24px_rgba(47,111,87,0.12)]"
-                          : "border-[#e3d8c8] bg-[rgba(255,251,245,0.84)] hover:border-[#c9bba6] hover:bg-[rgba(255,255,255,0.92)]"
+                          ? "border-[#0071e3] bg-[#eef5ff]"
+                          : "border-[#d9d9de] bg-white hover:border-[#bfc2cc] hover:bg-white"
                       }`}
                     >
-                      {selected && <div className="absolute inset-0 bg-gradient-to-r from-[#A9CBB7]/45 to-transparent pointer-events-none" />}
+                      {selected && <div className="absolute inset-0 bg-[#eef5ff] pointer-events-none" />}
                       <div className="relative z-10 flex items-center justify-between gap-3">
-                        <span className={`text-sm font-medium transition-colors ${selected ? "text-[#2F6F57]" : "text-[#5F5A51] group-hover:text-[#1F3D2B]"}`}>{option.label}</span>
+                        <span className={`text-sm font-medium transition-colors ${selected ? "text-[#0071e3]" : "text-[#1d1d1f] group-hover:text-[#1d1d1f]"}`}>{option.label}</span>
                         <div className="flex items-center gap-3">
-                           <span className={`text-[10px] font-mono px-2 py-1 rounded ${selected ? "bg-[#dce9df] text-[#2F6F57]" : "bg-[#f3ecdf] text-[#6B665D]"}`}>SC {option.score}</span>
-                           <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${selected ? "border-[#2F6F57]" : "border-[#b8aa95]"}`}>
-                             {selected && <div className="w-2 h-2 bg-[#2F6F57] rounded-full" />}
+                           <span className={`text-[10px] font-mono px-2 py-1 rounded ${selected ? "bg-[#eef5ff] text-[#0071e3]" : "bg-[#f5f5f7] text-[#1d1d1f]"}`}>SC {option.score}</span>
+                           <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${selected ? "border-[#0071e3]" : "border-[#b8bac4]"}`}>
+                             {selected && <div className="w-2 h-2 bg-[#0071e3] rounded-full" />}
                            </div>
                         </div>
                       </div>
@@ -472,7 +472,7 @@ if (loading) {
                   <button
                     onClick={handleContinue}
                     disabled={!isAnswered}
-                    className="inline-flex items-center gap-2 rounded-xl bg-[#efe6d8] text-[#1F3D2B] px-8 py-3 text-sm font-bold shadow-[0_12px_24px_rgba(120,97,67,0.12)] hover:shadow-[0_16px_28px_rgba(120,97,67,0.18)] hover:bg-[#e4d8c6] transition-all disabled:opacity-30 disabled:pointer-events-none"
+                    className="inline-flex items-center gap-2 rounded-xl bg-[#f5f5f7] text-[#1d1d1f] px-8 py-3 text-sm font-bold border border-[#cfd1db] transition-all disabled:opacity-30 disabled:pointer-events-none"
                   >
                     Next Query <ArrowRight className="w-4 h-4" />
                   </button>
@@ -480,7 +480,7 @@ if (loading) {
                   <button
                     onClick={handleSubmit}
                     disabled={!isAnswered || isSubmitting || progressPercent < 60}
-                    className="relative overflow-hidden inline-flex items-center gap-2 rounded-xl bg-[#2F6F57] text-white px-8 py-3 text-sm font-bold shadow-[0_16px_30px_rgba(47,111,87,0.24)] hover:shadow-[0_20px_36px_rgba(47,111,87,0.32)] transition-all disabled:opacity-30 disabled:pointer-events-none"
+                    className="relative overflow-hidden inline-flex items-center gap-2 rounded-xl bg-[#0071e3] text-white px-8 py-3 text-sm font-bold transition-all disabled:opacity-30 disabled:pointer-events-none"
                   >
                     <CheckCircle2 className="w-4 h-4" />
                     {isSubmitting ? "Compiling Report..." : "Generate Clinical Report"}
@@ -494,3 +494,4 @@ if (loading) {
     </div>
   );
 }
+

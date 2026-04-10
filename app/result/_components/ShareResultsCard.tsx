@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -58,7 +58,7 @@ export default function ShareResultsCard({
   };
 
   const handleShareTwitter = () => {
-    const text = `💪 Just got my grooming analysis from Oneman AI! My skin score is ${score}/100. Check yours too!`;
+    const text = ` Just got my grooming analysis from Oneman AI! My skin score is ${score}/100. Check yours too!`;
     const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
     window.open(url, "_blank");
   };
@@ -233,3 +233,4 @@ export default function ShareResultsCard({
     </AnimatePresence>
   );
 }
+

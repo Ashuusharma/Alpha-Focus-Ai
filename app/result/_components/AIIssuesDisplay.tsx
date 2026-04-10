@@ -1,4 +1,4 @@
-import { EnrichedIssue } from "@/lib/aiAnalysisEngine";
+﻿import { EnrichedIssue } from "@/lib/aiAnalysisEngine";
 
 interface AIIssuesDisplayProps {
   issues: EnrichedIssue[];
@@ -10,10 +10,10 @@ export default function AIIssuesDisplay({ issues }: AIIssuesDisplayProps) {
       return (
         <div className="flex gap-1">
           <span className="inline-block px-2 py-1 text-xs font-semibold bg-green-500/20 text-green-300 rounded-full border border-green-500/20">
-            📸 Photo
+             Photo
           </span>
           <span className="inline-block px-2 py-1 text-xs font-semibold bg-blue-500/20 text-blue-300 rounded-full border border-blue-500/20">
-            📝 Answers
+             Answers
           </span>
         </div>
       );
@@ -26,7 +26,7 @@ export default function AIIssuesDisplay({ issues }: AIIssuesDisplayProps) {
             : "bg-blue-500/20 text-blue-300 border-blue-500/20"
         }`}
       >
-        {source === "photo" ? "📸 Photo" : "📝 Answers"}
+        {source === "photo" ? " Photo" : " Answers"}
       </span>
     );
   };
@@ -47,11 +47,11 @@ export default function AIIssuesDisplay({ issues }: AIIssuesDisplayProps) {
   const getImpactLabel = (impact: string) => {
     switch (impact) {
       case "minor":
-        return "⚠️ Minor";
+        return "Minor";
       case "moderate":
-        return "⚠️ Moderate";
+        return "Moderate";
       case "significant":
-        return "🔴 Significant";
+        return " Significant";
       default:
         return impact;
     }
@@ -111,12 +111,12 @@ export default function AIIssuesDisplay({ issues }: AIIssuesDisplayProps) {
           {/* Suggested Actions */}
           <div className="pt-3 border-t border-gray-300/50">
             <p className="text-xs font-semibold text-gray-700 mb-2">
-              ✅ Suggested Actions:
+              Suggested Actions:
             </p>
             <ul className="space-y-1">
               {issue.suggestedActions.map((action, i) => (
                 <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
-                  <span className="text-green-600 font-bold flex-shrink-0">→</span>
+                  <span className="text-green-600 font-bold flex-shrink-0">-&gt;</span>
                   <span>{action}</span>
                 </li>
               ))}
@@ -127,3 +127,4 @@ export default function AIIssuesDisplay({ issues }: AIIssuesDisplayProps) {
     </div>
   );
 }
+

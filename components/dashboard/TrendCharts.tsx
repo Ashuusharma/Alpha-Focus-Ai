@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import {
   Bar,
@@ -36,11 +36,10 @@ function clampPct(value: number) {
 
 function ChartCard({ title, children }: ChartCardProps) {
   return (
-    <div className="relative overflow-hidden rounded-[1.8rem] border border-[#E2DDD3] bg-[linear-gradient(180deg,#fffdfb_0%,#f8f0e4_100%)] p-6 shadow-[0_12px_28px_rgba(17,17,17,0.05)] hover:shadow-[0_18px_34px_rgba(17,17,17,0.08)] transition-all duration-300">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-[radial-gradient(circle_at_top,rgba(47,111,87,0.12),rgba(47,111,87,0))]" />
+    <div className="relative overflow-hidden border border-[#5e5e5e] bg-[#ffffff] p-6 shadow-[0_0_5px_rgba(0,0,0,0.3)]">
       <div className="flex justify-between items-center mb-4">
-        <p className="text-xs font-black uppercase tracking-widest text-[#1F3D2B]">{title}</p>
-        <span className="text-[10px] font-black text-[#2F6F57] bg-[#E8F4EE] px-2 py-0.5 rounded-full border border-[#C8DACF]">Target zone visible</span>
+        <p className="text-xs font-black uppercase tracking-widest text-[#000000]">{title}</p>
+        <span className="text-[10px] font-black text-[#0b0f0c] bg-[#eff9db] px-2 py-0.5 border border-[#0071e3]">Target zone visible</span>
       </div>
       <div className="h-64 w-full">{children}</div>
     </div>
@@ -54,30 +53,30 @@ export function SeverityTrendChart({ data }: { data: TrendPoint[] }) {
         <LineChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
           <defs>
             <linearGradient id="colorSeverity" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#A04747" stopOpacity={0.22}/>
-              <stop offset="95%" stopColor="#A04747" stopOpacity={0}/>
+              <stop offset="5%" stopColor="#0071e3" stopOpacity={0.22}/>
+              <stop offset="95%" stopColor="#0071e3" stopOpacity={0}/>
             </linearGradient>
           </defs>
-          <ReferenceArea y1={0} y2={35} fill="#EAF3EE" fillOpacity={0.75} />
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1ECE3" />
-          <XAxis dataKey="label" tick={{ fill: "#8C6A5A", fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fill: "#8C6A5A", fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} domain={[0, 100]} />
+          <ReferenceArea y1={0} y2={35} fill="#eff9db" fillOpacity={0.9} />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e5e5" />
+          <XAxis dataKey="label" tick={{ fill: "#5e5e5e", fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fill: "#5e5e5e", fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} domain={[0, 100]} />
           <Tooltip 
             contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontSize: '12px', fontWeight: 'bold' }}
-            cursor={{ stroke: '#E2DDD3', strokeWidth: 1 }}
+            cursor={{ stroke: '#0071e3', strokeWidth: 1 }}
             formatter={(value) => [`${clampPct(Number(value || 0))}%`, "Severity"]} 
           />
           <Line 
             type="monotone" 
             dataKey="severity" 
-            stroke="#A04747" 
+            stroke="#0071e3" 
             strokeWidth={4} 
-            dot={{ r: 4, fill: '#A04747', strokeWidth: 2, stroke: '#fff' }} 
+            dot={{ r: 4, fill: '#0071e3', strokeWidth: 2, stroke: '#fff' }} 
             activeDot={{ r: 6, strokeWidth: 0 }}
             animationDuration={1500}
             animationEasing="ease-in-out"
           >
-            <LabelList dataKey="severity" position="top" formatter={(value) => `${clampPct(Number(value || 0))}%`} style={{ fill: "#8C6A5A", fontSize: 10, fontWeight: 800 }} />
+            <LabelList dataKey="severity" position="top" formatter={(value) => `${clampPct(Number(value || 0))}%`} style={{ fill: "#5e5e5e", fontSize: 10, fontWeight: 800 }} />
           </Line>
         </LineChart>
       </ResponsiveContainer>
@@ -92,17 +91,17 @@ export function RoutineAdherenceChart({ data }: { data: TrendPoint[] }) {
         <BarChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
           <defs>
             <linearGradient id="colorAdherence" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#5A9A7C" stopOpacity={1}/>
-              <stop offset="95%" stopColor="#1F3D2B" stopOpacity={1}/>
+              <stop offset="5%" stopColor="#bff230" stopOpacity={1}/>
+              <stop offset="95%" stopColor="#0071e3" stopOpacity={1}/>
             </linearGradient>
           </defs>
-          <ReferenceArea y1={75} y2={100} fill="#EAF3EE" fillOpacity={0.65} />
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1ECE3" />
-          <XAxis dataKey="label" tick={{ fill: "#8C6A5A", fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fill: "#8C6A5A", fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} domain={[0, 100]} />
+          <ReferenceArea y1={75} y2={100} fill="#eff9db" fillOpacity={0.9} />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e5e5" />
+          <XAxis dataKey="label" tick={{ fill: "#5e5e5e", fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fill: "#5e5e5e", fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} domain={[0, 100]} />
           <Tooltip 
             contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontSize: '12px', fontWeight: 'bold' }}
-            cursor={{ fill: '#F8F7F4' }}
+            cursor={{ fill: '#f6fbe9' }}
             formatter={(value) => [`${clampPct(Number(value || 0))}%`, "Adherence"]} 
           />
           <Bar 
@@ -112,7 +111,7 @@ export function RoutineAdherenceChart({ data }: { data: TrendPoint[] }) {
             animationDuration={1500}
             animationEasing="ease-in-out"
           >
-            <LabelList dataKey="adherence" position="top" formatter={(value) => `${clampPct(Number(value || 0))}%`} style={{ fill: "#8C6A5A", fontSize: 10, fontWeight: 800 }} />
+            <LabelList dataKey="adherence" position="top" formatter={(value) => `${clampPct(Number(value || 0))}%`} style={{ fill: "#5e5e5e", fontSize: 10, fontWeight: 800 }} />
           </Bar>
         </BarChart>
       </ResponsiveContainer>
@@ -127,30 +126,30 @@ export function ConfidenceTrendChart({ data }: { data: TrendPoint[] }) {
         <LineChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
           <defs>
             <linearGradient id="colorConfidence" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#2F6F57" stopOpacity={0.22}/>
-              <stop offset="95%" stopColor="#2F6F57" stopOpacity={0}/>
+              <stop offset="5%" stopColor="#0071e3" stopOpacity={0.22}/>
+              <stop offset="95%" stopColor="#0071e3" stopOpacity={0}/>
             </linearGradient>
           </defs>
-          <ReferenceArea y1={70} y2={100} fill="#FFF3D9" fillOpacity={0.55} />
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1ECE3" />
-          <XAxis dataKey="label" tick={{ fill: "#8C6A5A", fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fill: "#8C6A5A", fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} domain={[0, 100]} />
+          <ReferenceArea y1={70} y2={100} fill="#eff9db" fillOpacity={0.9} />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e5e5" />
+          <XAxis dataKey="label" tick={{ fill: "#5e5e5e", fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fill: "#5e5e5e", fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} domain={[0, 100]} />
           <Tooltip 
             contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontSize: '12px', fontWeight: 'bold' }}
-            cursor={{ stroke: '#E2DDD3', strokeWidth: 1 }}
+            cursor={{ stroke: '#0071e3', strokeWidth: 1 }}
             formatter={(value) => [`${clampPct(Number(value || 0))}%`, "Confidence"]} 
           />
           <Line 
             type="monotone" 
             dataKey="confidence" 
-            stroke="#2F6F57" 
+            stroke="#0071e3" 
             strokeWidth={4} 
-            dot={{ r: 4, fill: '#2F6F57', strokeWidth: 2, stroke: '#fff' }} 
+            dot={{ r: 4, fill: '#0071e3', strokeWidth: 2, stroke: '#fff' }} 
             activeDot={{ r: 6, strokeWidth: 0 }}
             animationDuration={1500}
             animationEasing="ease-in-out"
           >
-            <LabelList dataKey="confidence" position="top" formatter={(value) => `${clampPct(Number(value || 0))}%`} style={{ fill: "#8C6A5A", fontSize: 10, fontWeight: 800 }} />
+            <LabelList dataKey="confidence" position="top" formatter={(value) => `${clampPct(Number(value || 0))}%`} style={{ fill: "#5e5e5e", fontSize: 10, fontWeight: 800 }} />
           </Line>
         </LineChart>
       </ResponsiveContainer>
@@ -182,3 +181,4 @@ export default function TrendCharts({ data }: TrendChartsProps) {
     </div>
   );
 }
+

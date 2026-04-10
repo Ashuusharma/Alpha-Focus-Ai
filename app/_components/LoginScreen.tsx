@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { motion } from "framer-motion";
@@ -58,11 +58,11 @@ return (
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[linear-gradient(180deg,#f8f4eb_0%,#ede3d4_100%)] text-[#1F3D2B] p-4 overflow-hidden"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[linear-gradient(180deg,#0b0f0c_0%,#121713_100%)] text-[#ffffff] p-4 overflow-hidden"
     >
       {/* Dynamic Background Effects */}
       <div className="absolute inset-0 pointer-events-none z-0">
-        <div className="absolute top-[20%] right-[10%] w-[500px] h-[500px] bg-[#A9CBB7]/25 blur-[130px] rounded-full opacity-50" />
+        <div className="absolute top-[20%] right-[10%] w-[500px] h-[500px] bg-[#99c9ff]/25 blur-[130px] rounded-full opacity-50" />
         <div className="absolute bottom-[20%] left-[10%] w-[600px] h-[600px] bg-[#d8b55f]/14 blur-[130px] rounded-full opacity-30" />
         <div className="absolute inset-0 bg-[rgba(248,244,235,0.62)] backdrop-blur-[50px]" />
       </div>
@@ -73,34 +73,34 @@ return (
         transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
         className="relative z-10 w-full max-w-[480px]"
       >
-        <div className="bg-[linear-gradient(180deg,#fffdf8_0%,#efe6d8_100%)] border border-[#e2d8ca] rounded-3xl p-8 sm:p-10 shadow-[0_30px_80px_rgba(120,97,67,0.18),inset_0_1px_1px_rgba(255,255,255,0.6)] overflow-hidden">
+        <div className="bg-[#ffffff] border border-[#5e5e5e] rounded-[2px] p-8 sm:p-10 shadow-[0_0_5px_rgba(0,0,0,0.3)] overflow-hidden text-[#000000]">
           {/* Decorative Top Glow */}
           <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-green-500/50 to-transparent opacity-50" />
           
           <div className="flex flex-col items-center mb-10 relative">
             <div className="af-badge-row mb-5 justify-center">
-              <span className="af-badge-chip text-[#2F6F57]">Clinical sign in</span>
+              <span className="af-badge-chip text-[#0071e3]">Clinical sign in</span>
               <span className="af-badge-chip text-[#A46A2D]">Based on your recovery goal</span>
             </div>
             <div className="mb-6 relative group">
-              <div className="absolute inset-0 bg-[#A9CBB7] rounded-full blur-[20px] opacity-25 group-hover:opacity-40 transition-opacity duration-700" />
+              <div className="absolute inset-0 bg-[#99c9ff] rounded-full blur-[20px] opacity-25 group-hover:opacity-40 transition-opacity duration-700" />
               <div className="w-20 h-20 rounded-2xl bg-gradient-to-b from-white to-[#efe6d8] border border-[#e2d8ca] flex items-center justify-center backdrop-blur-xl rotate-45 shadow-[0_18px_36px_rgba(120,97,67,0.12)]">
                 <div className="-rotate-45">
-                  <User className="w-8 h-8 text-[#2F6F57] drop-shadow-[0_8px_18px_rgba(47,111,87,0.16)]" strokeWidth={1.5} />
+                  <User className="w-8 h-8 text-[#0071e3] drop-shadow-[0_8px_18px_rgba(47,111,87,0.16)]" strokeWidth={1.5} />
                 </div>
               </div>
             </div>
-            <h1 className="text-clinical-heading text-3xl font-extrabold text-[#1F3D2B] tracking-tight mb-2">
+            <h1 className="text-clinical-heading text-3xl font-extrabold text-[#000000] tracking-tight mb-2">
               Start your guided recovery journey
             </h1>
-            <p className="text-[#6B665D] text-sm text-center max-w-[280px] leading-relaxed">
+            <p className="text-[#6e6e73] text-sm text-center max-w-[280px] leading-relaxed">
               Enter a few details so the app can personalize your scans, routines, and product guidance from the first session.
             </p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-[#6B665D] tracking-wider uppercase ml-1">Your name</label>
+              <label className="block text-xs font-semibold text-[#5e5e5e] tracking-wider uppercase ml-1">Your name</label>
               <div className="relative">
                 <input
                   type="text"
@@ -119,7 +119,7 @@ return (
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-[#6B665D] tracking-wider uppercase ml-1">Age range</label>
+                <label className="block text-xs font-semibold text-[#5e5e5e] tracking-wider uppercase ml-1">Age range</label>
                 <div className="relative">
                   <select
                     value={ageRange}
@@ -130,7 +130,7 @@ return (
                     disabled={loading}
                     className="af-input w-full rounded-xl px-4 py-3.5 focus:outline-none transition-all appearance-none cursor-pointer"
                   >
-                    <option value="" className="bg-[#fffaf3] text-[#6B665D]">Age</option>
+                    <option value="" className="bg-[#fffaf3] text-[#6e6e73]">Age</option>
                     <option value="18-24" className="bg-[#fffaf3]">18-24</option>
                     <option value="25-34" className="bg-[#fffaf3]">25-34</option>
                     <option value="35-44" className="bg-[#fffaf3]">35-44</option>
@@ -143,7 +143,7 @@ return (
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-[#6B665D] tracking-wider uppercase ml-1">Primary issue</label>
+                <label className="block text-xs font-semibold text-[#5e5e5e] tracking-wider uppercase ml-1">Primary issue</label>
                 <div className="relative">
                   <select
                     value={primaryConcern}
@@ -154,7 +154,7 @@ return (
                     disabled={loading}
                     className="af-input w-full rounded-xl px-4 py-3.5 focus:outline-none transition-all appearance-none cursor-pointer"
                   >
-                    <option value="" className="bg-[#fffaf3] text-[#6B665D]">Target</option>
+                    <option value="" className="bg-[#fffaf3] text-[#6e6e73]">Target</option>
                     <option value="hair_loss" className="bg-[#fffaf3]">Hair Loss</option>
                     <option value="acne" className="bg-[#fffaf3]">Acne</option>
                     <option value="scalp_health" className="bg-[#fffaf3]">Scalp Health</option>
@@ -175,11 +175,11 @@ return (
                   type="checkbox"
                   checked={consent}
                   onChange={(e) => setConsent(e.target.checked)}
-                  className="peer appearance-none w-4 h-4 border border-[#bba892] rounded shadow-inner bg-[#f4ede0] checked:bg-[#2F6F57] checked:border-[#2F6F57] transition-all cursor-pointer"
+                  className="peer appearance-none w-4 h-4 border border-[#bba892] rounded shadow-inner bg-[#f4ede0] checked:bg-[#0071e3] checked:border-[#0071e3] transition-all cursor-pointer"
                 />
                 <svg className="absolute w-2.5 h-2.5 pointer-events-none text-black opacity-0 peer-checked:opacity-100 transition-opacity" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 5L4.5 8.5L13 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </div>
-              <span className="text-xs text-[#6B665D] group-hover:text-[#1F3D2B] transition-colors leading-relaxed">
+              <span className="text-xs text-[#5e5e5e] group-hover:text-[#000000] transition-colors leading-relaxed">
                 I agree to personalized scan analysis, routine planning, and progress tracking so the protocol can adapt to my issue.
               </span>
             </label>
@@ -194,7 +194,7 @@ return (
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-4 group relative overflow-hidden rounded-xl bg-[#2F6F57] text-white font-bold py-3.5 sm:py-4 transition-all hover:bg-[#275c48] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-[0_16px_30px_rgba(47,111,87,0.24)]"
+              className="btn-primary w-full mt-4 group relative overflow-hidden text-[#000000] font-bold py-3.5 sm:py-4 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-[150%] skew-x-[-30deg] group-hover:animate-[shimmer_1.5s_infinite]" />
               <div className="relative flex items-center justify-center gap-2">
@@ -213,7 +213,7 @@ return (
             </button>
           </form>
 
-          <div className="mt-8 grid grid-cols-1 gap-3 border-t border-[#e2d8ca] pt-6 text-xs text-[#8C6A5A] sm:grid-cols-3">
+          <div className="mt-8 grid grid-cols-1 gap-3 border-t border-[#e2d8ca] pt-6 text-xs text-[#6e6e73] sm:grid-cols-3">
             <span className="rounded-xl bg-white/70 px-3 py-2 text-center font-semibold">Secure connection</span>
             <span className="rounded-xl bg-white/70 px-3 py-2 text-center font-semibold">India-ready routines</span>
             <span className="rounded-xl bg-white/70 px-3 py-2 text-center font-semibold">Scan-led guidance</span>
@@ -229,3 +229,4 @@ return (
     </motion.div>
   );
 }
+

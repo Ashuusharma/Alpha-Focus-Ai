@@ -1,4 +1,4 @@
-import { createHash } from "crypto";
+﻿import { createHash } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { aiAdviceSchema } from "@/lib/server/validators";
 import { writeAuditLog } from "@/lib/server/auditLog";
@@ -231,7 +231,7 @@ export async function POST(req: NextRequest) {
           {
             role: "system",
             content:
-              "You are a trusted men’s grooming coach focused on practical routines, consistency, and safe guidance for real daily life. When the user context points to India, adapt routines for climate, commute, sweat, dust, and schedule constraints without stereotyping.",
+              "You are a trusted men's grooming coach focused on practical routines, consistency, and safe guidance for real daily life. When the user context points to India, adapt routines for climate, commute, sweat, dust, and schedule constraints without stereotyping.",
           },
           { role: "user", content: prompt },
         ],
@@ -308,3 +308,4 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+

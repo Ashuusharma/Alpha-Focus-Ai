@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useContext, useMemo, useState } from "react";
 import { AuthContext } from "@/contexts/AuthProvider";
@@ -35,17 +35,19 @@ export default function SleepTracker() {
   };
 
   return (
-    <section className="af-surface-card p-5 text-[#1F3D2B]">
+    <section className="af-surface-card p-5 text-[#1d1d1f]">
       <h3 className="text-lg font-semibold mb-4">Sleep Tracker</h3>
-      <label className="text-sm text-[#6B665D]">Hours Slept</label>
+      <label className="text-sm text-[#6e6e73]">Hours Slept</label>
       <input type="number" min={0} max={14} value={hours} onChange={(event) => setHours(Number(event.target.value))} className="af-input mt-1 mb-3 w-full rounded-xl px-3 py-2" />
-      <label className="text-sm text-[#6B665D]">Bedtime</label>
+      <label className="text-sm text-[#6e6e73]">Bedtime</label>
       <input type="time" value={bedtime} onChange={(event) => setBedtime(event.target.value)} className="af-input mt-1 mb-3 w-full rounded-xl px-3 py-2" />
-      <label className="text-sm text-[#6B665D]">Sleep Quality (1–5)</label>
+      <label className="text-sm text-[#6e6e73]">Sleep Quality (1-5)</label>
       <input type="range" min={1} max={5} value={quality} onChange={(event) => setQuality(Number(event.target.value))} className="w-full mt-2" />
-      <p className="text-sm text-[#2F6F57] mt-1">Selected quality: {quality}/5</p>
-      <button onClick={saveLog} className="mt-4 px-4 py-2 rounded-xl bg-[#2F6F57] hover:bg-[#275c48] text-sm font-semibold text-white">Save Sleep Entry</button>
-      {savedAt && <p className="text-xs text-[#2F6F57] mt-2">Saved at {savedAt}</p>}
+      <p className="text-sm text-[#0071e3] mt-1">Selected quality: {quality}/5</p>
+      <button onClick={saveLog} className="mt-4 px-4 py-2 rounded-xl bg-[#0071e3] hover:bg-[#005bbf] text-sm font-semibold text-white">Save Sleep Entry</button>
+      {savedAt && <p className="text-xs text-[#0071e3] mt-2">Saved at {savedAt}</p>}
     </section>
   );
 }
+
+

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMounted } from "@/app/hooks/useMounted";
 
@@ -9,7 +9,7 @@ type Props = {
 export default function HealingProgressBar({ progress }: Props) {
   const mounted = useMounted();
 
-  /* 🚨 HYDRATION GUARD */
+  /*  HYDRATION GUARD */
   if (!mounted) return null;
 
   return (
@@ -17,7 +17,7 @@ export default function HealingProgressBar({ progress }: Props) {
       <div className="flex justify-between text-sm">
         <span className="font-medium">{progress}% healed</span>
         <span className="text-gray-500">
-          Personalizing your recovery…
+          Personalizing your recovery...
         </span>
       </div>
 
@@ -30,3 +30,4 @@ export default function HealingProgressBar({ progress }: Props) {
     </div>
   );
 }
+

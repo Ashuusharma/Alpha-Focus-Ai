@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useContext, useEffect, useMemo, useState } from "react";
 import { AuthContext } from "@/contexts/AuthProvider";
@@ -859,31 +859,33 @@ export default function DashboardPage() {
 
   if (loading || !user) {
     return (
-      <main className="min-h-screen bg-[#F4EFE6] px-4 py-6 text-[#1F3D2B] sm:px-6 lg:px-8">
+      <main className="min-h-screen bg-[#f5f5f7] px-4 py-6 text-[#1d1d1f] sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <p className="text-sm text-[#6B665D]">Loading personalized dashboard...</p>
+          <p className="text-sm text-[#6e6e73]">Loading personalized dashboard...</p>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-[#F4EFE6] px-4 py-6 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_right,rgba(0,113,227,0.16),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(41,151,255,0.1),transparent_30%),linear-gradient(180deg,#05070c_0%,#0a0f1a_100%)] px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl space-y-8 md:space-y-10">
-        <DashboardHero
-          userName={userName}
-          categoryLabel={categoryLabel}
-          transformationProgress={transformationProgress}
-          phaseLabel={phaseName}
-          recoveryTrend={recoveryTrend}
-          confidenceScore={confidenceScore}
-          streakDays={routineStreakDays}
-          alphaBalance={balance}
-          dayLabel={`Day ${programDay} / 30`}
-          nextMilestone={nextMilestone}
-        />
+        <section className="animate-in fade-in duration-500">
+          <DashboardHero
+            userName={userName}
+            categoryLabel={categoryLabel}
+            transformationProgress={transformationProgress}
+            phaseLabel={phaseName}
+            recoveryTrend={recoveryTrend}
+            confidenceScore={confidenceScore}
+            streakDays={routineStreakDays}
+            alphaBalance={balance}
+            dayLabel={`Day ${programDay} / 30`}
+            nextMilestone={nextMilestone}
+          />
+        </section>
 
-        <section className="space-y-4" id="recovery-roadmap">
+        <section className="nv-section-white space-y-4 animate-in fade-in duration-500 delay-100" id="recovery-roadmap">
           <RecoveryProgramNavigator
             dayNumber={programDay}
             totalDays={30}
@@ -892,60 +894,67 @@ export default function DashboardPage() {
               window.location.href = "/recovery-program";
             }}
           />
+          <TreatmentPlan
+            categoryLabel={categoryLabel}
+            phaseName={phaseName}
+            dayNumber={programDay}
+            category={activeCategory}
+            availableCategories={treatmentCategories}
+            userId={user.id}
+            onCategoryChange={setActiveCategory}
+            mode="mission"
+          />
         </section>
 
-        <TreatmentPlan
-          categoryLabel={categoryLabel}
-          phaseName={phaseName}
-          dayNumber={programDay}
-          category={activeCategory}
-          availableCategories={treatmentCategories}
-          userId={user.id}
-          onCategoryChange={setActiveCategory}
-          mode="mission"
-        />
-
-        <section className="rounded-[2rem] border border-[#E2DDD3] bg-white p-6 shadow-[0_10px_30px_rgba(17,17,17,0.04)]">
+        <section className="nv-section-white animate-in fade-in duration-500 delay-150">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#8C6A5A]">Recovery Intelligence</p>
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#6e6e73]">Recovery Intelligence</p>
               <h2 className="text-xl font-black text-[#111]">Clinical Signal Summary</h2>
             </div>
-            <p className="rounded-full bg-[#F5FAF7] px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.14em] text-[#2F6F57]">
+            <p className="rounded-full bg-white px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.14em] text-[#0071e3] border border-[#0071e3]">
               {activeCategory ? `Category: ${categoryLabel}` : "No active category"}
             </p>
           </div>
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-[1.4rem] border border-[#E2DDD3] bg-[#FFF8EE] p-4">
+            <div className="rounded-[1.4rem] border border-[#d9d9de] bg-[#FFF8EE] p-4">
               <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#7A6D5A]">Severity Change</p>
-              <p className="mt-2 text-2xl font-black text-[#111]">↓ {progressSummary?.improvement_pct ?? 0}%</p>
+              <p className="mt-2 text-2xl font-black text-[#111]">down {progressSummary?.improvement_pct ?? 0}%</p>
             </div>
-            <div className="rounded-[1.4rem] border border-[#E2DDD3] bg-[#FFF8EE] p-4">
+            <div className="rounded-[1.4rem] border border-[#d9d9de] bg-[#FFF8EE] p-4">
               <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#7A6D5A]">Consistency</p>
               <p className="mt-2 text-2xl font-black text-[#111]">{progressSummary?.consistency_score ?? consistencyScore}%</p>
             </div>
-            <div className="rounded-[1.4rem] border border-[#E2DDD3] bg-[#FFF8EE] p-4">
+            <div className="rounded-[1.4rem] border border-[#d9d9de] bg-[#FFF8EE] p-4">
               <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#7A6D5A]">Recovery Speed</p>
               <p className="mt-2 text-2xl font-black text-[#111]">{recoveryVelocityLabel}</p>
             </div>
-            <div className="rounded-[1.4rem] border border-[#E2DDD3] bg-[#FFF8EE] p-4">
+            <div className="rounded-[1.4rem] border border-[#d9d9de] bg-[#FFF8EE] p-4">
               <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#7A6D5A]">Confidence</p>
               <p className="mt-2 text-2xl font-black text-[#111]">{confidenceScore}</p>
             </div>
           </div>
-          <p className="mt-4 text-xs font-semibold text-[#6B665D]">{refreshing || storeLoading ? "Syncing latest data..." : "Realtime sync is active for routine, rewards, and progress signals."}</p>
+          <p className="mt-4 text-xs font-semibold text-[#6e6e73]">{refreshing || storeLoading ? "Syncing latest data..." : "Realtime sync is active for routine, rewards, and progress signals."}</p>
         </section>
 
-        <ProgressVisualization data={weeklyProgressData} />
+        <section className="nv-section-dark animate-in fade-in duration-500 delay-200">
+          <ProgressVisualization data={weeklyProgressData} />
+        </section>
 
-        <BeforeAfterTimeline categoryLabel={categoryLabel} photos={beforeAfterPhotos} />
+        <section className="nv-section-white animate-in fade-in duration-500 delay-300">
+          <BeforeAfterTimeline categoryLabel={categoryLabel} photos={beforeAfterPhotos} />
+        </section>
 
-        <RewardProgress balance={balance} streakDays={routineStreakDays} />
+        <section className="nv-section-white animate-in fade-in duration-500 delay-500">
+          <RewardProgress balance={balance} streakDays={routineStreakDays} />
+        </section>
 
-        <AIInsightEngine insights={aiInsights} behaviorInsights={behaviorInsights} />
+        <section className="nv-section-white animate-in fade-in duration-500 delay-700">
+          <AIInsightEngine insights={aiInsights} behaviorInsights={behaviorInsights} />
+        </section>
 
         {!profile && (
-          <section className="rounded-[2rem] border border-[#E2DDD3] bg-white p-6 text-sm text-[#6B665D] shadow-[0_10px_30px_rgba(17,17,17,0.04)]">
+          <section className="nv-section-white text-sm text-[#6e6e73]">
             Complete your profile to improve recommendation precision.
           </section>
         )}
@@ -953,3 +962,4 @@ export default function DashboardPage() {
     </main>
   );
 }
+

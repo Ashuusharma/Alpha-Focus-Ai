@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 
@@ -20,25 +20,25 @@ export default function RoutineComplianceTracker({
     {
       id: "morning",
       title: "Morning routine completed",
-      emoji: "🌅",
+      emoji: "",
       completed: false,
     },
     {
       id: "evening",
       title: "Evening routine completed",
-      emoji: "🌙",
+      emoji: "",
       completed: false,
     },
     {
       id: "weekly",
       title: "Weekly deep treatment done",
-      emoji: "🧖",
+      emoji: "",
       completed: false,
     },
     {
       id: "hydration",
       title: "Drank 3L+ water",
-      emoji: "💧",
+      emoji: "",
       completed: false,
     },
   ]);
@@ -57,7 +57,9 @@ export default function RoutineComplianceTracker({
   return (
     <div className="bg-white border rounded-2xl p-6">
       <div className="flex items-center gap-2 mb-6">
-        <span className="text-2xl">📋</span>
+        <span className="text-2xl">
+          Check
+        </span>
         <h3 className="text-lg font-bold text-slate-900">Today's Routine Check</h3>
       </div>
 
@@ -96,7 +98,7 @@ export default function RoutineComplianceTracker({
                 item.completed ? "bg-green-500 text-white" : "border-2 border-gray-300"
               }`}
             >
-              {item.completed && "✓"}
+              {item.completed && "OK"}
             </div>
             <span className="text-lg">{item.emoji}</span>
             <span
@@ -113,10 +115,11 @@ export default function RoutineComplianceTracker({
       {/* Motivation */}
       <div className="mt-6 p-4 bg-amber-50 rounded-lg border border-amber-200">
         <p className="text-sm text-amber-900">
-          🔥 <strong>Keep it up!</strong> Completing your routine daily will show
+           <strong>Keep it up!</strong> Completing your routine daily will show
           results in 4 weeks. You're building a life-changing habit.
         </p>
       </div>
     </div>
   );
 }
+

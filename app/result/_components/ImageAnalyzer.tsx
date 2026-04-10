@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 
@@ -20,7 +20,7 @@ export default function ImageAnalyzer({ onAnalyzed, disabled }: Props) {
   const handleAnalyze = async () => {
     setAnalyzing(true);
 
-    // 🔮 MOCK ANALYSIS (replace later with AI)
+    //  MOCK ANALYSIS (replace later with AI)
     await new Promise((res) => setTimeout(res, 1500));
 
     setAnalyzing(false);
@@ -65,7 +65,7 @@ export default function ImageAnalyzer({ onAnalyzed, disabled }: Props) {
 
           {done && (
             <div className="p-4 bg-green-50 text-green-700 rounded-xl text-sm">
-              ✔ Image analyzed successfully
+              OK Image analyzed successfully
             </div>
           )}
         </div>
@@ -73,3 +73,4 @@ export default function ImageAnalyzer({ onAnalyzed, disabled }: Props) {
     </div>
   );
 }
+

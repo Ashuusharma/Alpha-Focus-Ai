@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 interface RecoveryScoreProps {
-  score: number; // 0–100
+  score: number; // 0-100
   reasons: string[];
 }
 
@@ -19,7 +19,7 @@ export default function RecoveryScore({
     <div className="rounded-2xl border p-6 bg-white">
       {/* Header */}
       <div className="flex items-center gap-2 mb-2">
-        📊 <h4 className="font-semibold">Recovery score</h4>
+         <h4 className="font-semibold">Recovery score</h4>
       </div>
 
       {/* Score */}
@@ -31,7 +31,7 @@ export default function RecoveryScore({
         </span>
       </div>
 
-      {/* 🔥 Animated progress bar */}
+      {/*  Animated progress bar */}
       <div className="relative h-3 rounded-full bg-gray-200 overflow-hidden mb-4">
         <div
           className="absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out"
@@ -70,7 +70,7 @@ export default function RecoveryScore({
         }
         className="text-sm font-medium text-green-700 hover:underline"
       >
-        Improve my recovery score →
+        Improve my recovery score -&gt;
       </button>
 
       {/* Shopify-ready note */}
@@ -81,3 +81,4 @@ export default function RecoveryScore({
     </div>
   );
 }
+

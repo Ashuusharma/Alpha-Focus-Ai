@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -100,15 +100,15 @@ export default function LearningCenterPage() {
   ];
 
   return (
-    <div className="af-page-shell py-12 text-[#1F3D2B]">
+    <div className="af-page-shell py-12 text-[#ffffff]">
       <Container>
         <div className="af-page-frame mx-auto max-w-6xl">
           <div className="af-page-stack">
-          <section className="af-page-hero p-6 md:p-8">
+          <section className="nv-section-white">
             <div className="relative z-10 space-y-6">
             <button
               onClick={() => router.back()}
-              className="group inline-flex items-center gap-2 rounded-full px-4 py-2 text-[#6B665D] transition-colors hover:bg-white/40 hover:text-[#1F3D2B]"
+              className="group inline-flex items-center gap-2 rounded-full px-4 py-2 text-[#1d1d1f] transition-colors hover:bg-white hover:text-[#1d1d1f]"
             >
               <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
               <span className="font-medium">Back</span>
@@ -118,84 +118,83 @@ export default function LearningCenterPage() {
                 <BookOpen className="h-3.5 w-3.5" />
                 Guided Learning
               </span>
-              <h1 className="text-clinical-heading text-4xl font-extrabold tracking-tight text-[#1F3D2B]">Clinical guidance, protocol education, and category-specific execution in one hub.</h1>
-              <p className="max-w-2xl text-sm font-medium leading-7 text-[#6B665D]">The learning center now carries the same premium shell as the operational pages, so education sits inside the product journey instead of outside it.</p>
+              <h1 className="text-clinical-heading text-4xl font-extrabold tracking-tight text-[#1d1d1f]">Clinical guidance, protocol education, and category-specific execution in one hub.</h1>
+              <p className="max-w-2xl text-sm font-medium leading-7 text-[#6e6e73]">The learning center now carries the same premium shell as the operational pages, so education sits inside the product journey instead of outside it.</p>
             </div>
             <div className="grid gap-4 md:grid-cols-3">
               <div className="af-stat-tile">
-                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#8C6A5A]">Knowledge paths</p>
-                <p className="mt-2 text-3xl font-bold text-[#1F3D2B]">3</p>
-                <p className="mt-1 text-xs text-[#6B665D]">Baseline, execution, optimization</p>
+                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#6e6e73]">Knowledge paths</p>
+                <p className="mt-2 text-3xl font-bold text-[#1d1d1f]">3</p>
+                <p className="mt-1 text-xs text-[#6e6e73]">Baseline, execution, optimization</p>
               </div>
               <div className="af-stat-tile">
-                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#8C6A5A]">Categories covered</p>
-                <p className="mt-2 text-3xl font-bold text-[#1F3D2B]">{categories.length}</p>
-                <p className="mt-1 text-xs text-[#6B665D]">Mapped to assessment prompts</p>
+                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#6e6e73]">Categories covered</p>
+                <p className="mt-2 text-3xl font-bold text-[#1d1d1f]">{categories.length}</p>
+                <p className="mt-1 text-xs text-[#6e6e73]">Mapped to assessment prompts</p>
               </div>
               <div className="af-stat-tile">
-                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#8C6A5A]">Best use cadence</p>
-                <p className="mt-2 text-base font-semibold text-[#1F3D2B]">Weekly before routine changes</p>
-                <p className="mt-1 text-xs text-[#6B665D]">Use with report and scan reviews</p>
+                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#6e6e73]">Best use cadence</p>
+                <p className="mt-2 text-base font-semibold text-[#1d1d1f]">Weekly before routine changes</p>
+                <p className="mt-1 text-xs text-[#6e6e73]">Use with report and scan reviews</p>
               </div>
             </div>
             <div className="flex flex-wrap gap-3">
-              <button onClick={() => router.push("/assessment")} className="af-quick-action">Answer Questions</button>
-              <button onClick={() => router.push("/image-analyzer")} className="af-quick-action">Analyze Photo</button>
+              <button onClick={() => router.push("/assessment")} className="af-quick-action border border-[#0071e3] text-[#0071e3] bg-white">Answer Questions</button>
+              <button onClick={() => router.push("/image-analyzer")} className="af-quick-action border border-[#0071e3] text-[#0071e3] bg-white">Analyze Photo</button>
               <button onClick={() => router.push("/result")} className="af-btn-primary px-5 py-3 text-sm">Open Report</button>
             </div>
           </div>
           </section>
 
           <section className="af-card-secondary p-8">
-            <h2 className="text-2xl font-bold text-[#1F3D2B] mb-2">Protocol Learning Paths</h2>
-            <p className="text-sm text-[#6B665D] mb-6">Choose your current phase and follow the shortest path to execution quality.</p>
+            <h2 className="text-2xl font-bold text-[#1d1d1f] mb-2">Protocol Learning Paths</h2>
+            <p className="text-sm text-[#6e6e73] mb-6">Choose your current phase and follow the shortest path to execution quality.</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="rounded-xl border border-[#E2DDD4] bg-[#F8F6F3] p-4">
+              <div className="rounded-xl border border-[#d9d9de] bg-[#F8F6F3] p-4">
                 <p className="text-xs uppercase tracking-wider text-[#8C877D]">Path 1</p>
                 <p className="font-semibold mt-1">Baseline Week</p>
-                <p className="text-xs text-[#6B665D] mt-1">Focus on analyzer quality + complete first full assessment cycle.</p>
-                <button onClick={() => router.push("/image-analyzer")} className="mt-3 rounded-lg bg-[#1F3D2B] px-3 py-2 text-xs font-semibold text-white">Start Baseline</button>
+                <p className="text-xs text-[#6e6e73] mt-1">Focus on analyzer quality + complete first full assessment cycle.</p>
+                <button onClick={() => router.push("/image-analyzer")} className="mt-3 rounded-lg bg-[#0071e3] px-3 py-2 text-xs font-semibold text-white">Start Baseline</button>
               </div>
-              <div className="rounded-xl border border-[#E2DDD4] bg-[#F8F6F3] p-4">
+              <div className="rounded-xl border border-[#d9d9de] bg-[#F8F6F3] p-4">
                 <p className="text-xs uppercase tracking-wider text-[#8C877D]">Path 2</p>
                 <p className="font-semibold mt-1">Execution Week</p>
-                <p className="text-xs text-[#6B665D] mt-1">Use challenge loops to convert your report into daily completed actions.</p>
-                <button onClick={() => router.push("/challenges")} className="mt-3 rounded-lg bg-[#1F3D2B] px-3 py-2 text-xs font-semibold text-white">Open Challenges</button>
+                <p className="text-xs text-[#6e6e73] mt-1">Use challenge loops to convert your report into daily completed actions.</p>
+                <button onClick={() => router.push("/challenges")} className="mt-3 rounded-lg bg-[#0071e3] px-3 py-2 text-xs font-semibold text-white">Open Challenges</button>
               </div>
-              <div className="rounded-xl border border-[#E2DDD4] bg-[#F8F6F3] p-4">
+              <div className="rounded-xl border border-[#d9d9de] bg-[#F8F6F3] p-4">
                 <p className="text-xs uppercase tracking-wider text-[#8C877D]">Path 3</p>
                 <p className="font-semibold mt-1">Optimization Week</p>
-                <p className="text-xs text-[#6B665D] mt-1">Refine routine and product fit based on measurable trend movement.</p>
-                <button onClick={() => router.push("/dashboard")} className="mt-3 rounded-lg bg-[#1F3D2B] px-3 py-2 text-xs font-semibold text-white">Track Progress</button>
+                <p className="text-xs text-[#6e6e73] mt-1">Refine routine and product fit based on measurable trend movement.</p>
+                <button onClick={() => router.push("/dashboard")} className="mt-3 rounded-lg bg-[#0071e3] px-3 py-2 text-xs font-semibold text-white">Track Progress</button>
               </div>
             </div>
           </section>
 
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-1">
             {guidance.map((item) => {
               const isOpen = selectedGuide === item.id;
               return (
-                <div key={item.id} className="relative group/card cursor-pointer" onClick={() => setSelectedGuide(isOpen ? null : item.id)}>
-                   <div className={`absolute inset-0 bg-gradient-to-br from-white/60 to-white/30 rounded-2xl blur-xl transition-opacity duration-500 ${isOpen ? 'opacity-100' : 'opacity-0 group-hover/card:opacity-70'}`} />
-                   <div className={`relative rounded-2xl border transition-all duration-300 overflow-hidden ${
+                <div key={item.id} className="cursor-pointer" onClick={() => setSelectedGuide(isOpen ? null : item.id)}>
+                   <div className={`relative border transition-all duration-300 overflow-hidden ${
                      isOpen 
-                       ? "bg-white/80 backdrop-blur-xl border-[#A9CBB7] shadow-lg ring-1 ring-[#2F6F57]/20" 
-                       : "bg-white/60 backdrop-blur-md border-white/40 shadow-sm hover:shadow-md hover:bg-white/70"
+                       ? "bg-white border-[#0071e3]" 
+                       : "bg-white border-[#5a5a5a]"
                    }`}>
                     <div className="p-6">
                       <div className="flex items-center gap-4 mb-4">
                         <span className={`p-3 rounded-xl border transition-colors ${
-                          isOpen ? "bg-[#2F6F57] border-[#2F6F57] text-white" : "bg-white/50 border-white/40 text-[#2F6F57]"
+                          isOpen ? "bg-transparent border-[#0071e3] text-[#0071e3]" : "bg-white border-[#5a5a5a] text-[#1a1a1a]"
                         }`}>
                           <item.icon className="w-6 h-6" />
                         </span>
-                        <h3 className={`font-semibold text-lg leading-tight ${isOpen ? "text-[#1F3D2B]" : "text-[#1F3D2B]"}`}>{item.title}</h3>
+                        <h3 className={`font-semibold text-lg leading-tight ${isOpen ? "text-[#1d1d1f]" : "text-[#1d1d1f]"}`}>{item.title}</h3>
                       </div>
-                      <div className={`text-sm text-[#6B665D] leading-relaxed transition-all duration-300 ${isOpen ? "opacity-100 max-h-40" : "opacity-0 max-h-0 overflow-hidden"}`}>
+                      <div className={`text-sm text-[#6e6e73] leading-relaxed transition-all duration-300 ${isOpen ? "opacity-100 max-h-40" : "opacity-0 max-h-0 overflow-hidden"}`}>
                         {item.text}
                       </div>
                       <div className={`absolute top-6 right-6 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`}>
-                         <ChevronDown className="w-5 h-5 text-[#A9CBB7]" />
+                         <ChevronDown className="w-5 h-5 text-[#0071e3]" />
                       </div>
                     </div>
                   </div>
@@ -205,8 +204,8 @@ export default function LearningCenterPage() {
           </div>
 
           <div className="af-card-secondary p-8">
-            <h2 className="text-2xl font-bold text-[#1F3D2B] mb-2">Category Knowledge Library</h2>
-            <p className="text-[#6B665D] mb-8">Expand each domain to read focused guidance and key question themes.</p>
+            <h2 className="text-2xl font-bold text-[#1d1d1f] mb-2">Category Knowledge Library</h2>
+            <p className="text-[#6e6e73] mb-8">Expand each domain to read focused guidance and key question themes.</p>
 
             <div className="space-y-4">
               {categories.map((category) => {
@@ -220,8 +219,8 @@ export default function LearningCenterPage() {
                 return (
                   <div key={category.id} className={`rounded-2xl border transition-all duration-300 overflow-hidden ${
                     isOpen
-                      ? "bg-white/80 border-[#A9CBB7] shadow-md"
-                      : "bg-white/40 border-white/40 hover:bg-white/60"
+                        ? "bg-white border-[#0071e3] shadow-md"
+                        : "bg-white border-[#d9d9de] hover:bg-white"
                   }`}>
                     <button
                       onClick={() => setSelectedCategory(isOpen ? null : category.id)}
@@ -229,30 +228,30 @@ export default function LearningCenterPage() {
                     >
                       <div className="flex items-center gap-4">
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center border ${
-                          isOpen ? "bg-[#2F6F57] border-[#2F6F57] text-white" : "bg-white/50 border-white/40 text-[#6B665D]"
+                          isOpen ? "bg-[#0071e3] border-[#0071e3] text-white" : "bg-white border-[#d9d9de] text-[#1d1d1f]"
                         }`}>
                           <span className="text-sm font-bold">{category.label.charAt(0)}</span>
                         </div>
                         <div>
-                          <p className={`font-bold text-lg ${isOpen ? "text-[#1F3D2B]" : "text-[#1F3D2B]"}`}>{category.label}</p>
-                          <p className="text-xs text-[#6B665D] font-medium">{questions[category.id].length} assessment prompts</p>
+                          <p className={`font-bold text-lg ${isOpen ? "text-[#1d1d1f]" : "text-[#1d1d1f]"}`}>{category.label}</p>
+                          <p className="text-xs text-[#6e6e73] font-medium">{questions[category.id].length} assessment prompts</p>
                         </div>
                       </div>
-                      <span className={`p-2 rounded-full transition-all ${isOpen ? "bg-[#E8EFEA] text-[#2F6F57] rotate-180" : "bg-transparent text-[#A9CBB7]"}`}>
+                      <span className={`p-2 rounded-full transition-all ${isOpen ? "bg-[#eef5ff] text-[#0071e3] rotate-180" : "bg-transparent text-[#0071e3]"}`}>
                         <ChevronDown className="w-5 h-5" />
                       </span>
                     </button>
 
                     {isOpen && (
                       <div className="px-6 pb-6 pt-2">
-                        <div className="rounded-xl border border-[#E2DDD4]/60 bg-[#F4EFE6]/50 p-6 mb-4">
-                          <p className="font-semibold text-[#1F3D2B] mb-3 flex items-start gap-2">
-                            <Compass className="w-5 h-5 text-[#2F6F57] shrink-0" />
+                        <div className="border border-[#5a5a5a] bg-white p-6 mb-4">
+                          <p className="font-semibold text-[#1d1d1f] mb-3 flex items-start gap-2">
+                            <Compass className="w-5 h-5 text-[#0071e3] shrink-0" />
                             {insight.headline}
                           </p>
                           <ul className="space-y-3 text-sm text-[#4A4641] pl-7">
                             {insight.guidance.map((point) => (
-                              <li key={point} className="list-disc marker:text-[#2F6F57]">
+                              <li key={point} className="list-disc marker:text-[#0071e3]">
                                 {point}
                               </li>
                             ))}
@@ -260,7 +259,7 @@ export default function LearningCenterPage() {
                         </div>
                         <div className="grid gap-3 md:grid-cols-3">
                           {topQuestions.map((question) => (
-                            <div key={question.id} className="rounded-xl border border-white/60 bg-white/40 p-4 text-sm text-[#6B665D] hover:bg-white/60 transition-colors">
+                            <div key={question.id} className="border border-[#5a5a5a] bg-white p-4 text-sm text-[#1a1a1a]">
                               "{question.text}"
                             </div>
                           ))}
@@ -278,3 +277,4 @@ export default function LearningCenterPage() {
     </div>
   );
 }
+

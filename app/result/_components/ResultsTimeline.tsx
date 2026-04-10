@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 interface TimelinePhase {
   week: string;
@@ -17,35 +17,35 @@ export default function ResultsTimeline({ issue }: ResultsTimelineProps) {
       week: "Week 1-2",
       title: "Cleansing Phase",
       description: "Your skin/hair starts responding to treatment. Initial shedding of dead cells.",
-      emoji: "🧼",
+      emoji: "",
     },
     {
       week: "Week 3-4",
       title: "Healing Phase",
       description:
         "Visible improvement! Inflammation reduces, texture improves, hair looks healthier.",
-      emoji: "💚",
+      emoji: "",
     },
     {
       week: "Month 2-3",
       title: "Transformation Phase",
       description:
         "Significant visible changes. Friends will notice! Problem areas are mostly resolved.",
-      emoji: "✨",
+      emoji: "*",
     },
     {
       week: "Month 3+",
       title: "Maintenance Phase",
       description:
         "Results are stable. Continue routine to prevent relapse. Skin/hair at peak condition.",
-      emoji: "🏆",
+      emoji: "",
     },
   ];
 
   return (
     <div className="bg-white border rounded-2xl p-6">
       <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
-        ⏱️ Your Expected Results Timeline
+        Timeline Your Expected Results Timeline
       </h3>
 
       <div className="space-y-4">
@@ -80,7 +80,7 @@ export default function ResultsTimeline({ issue }: ResultsTimelineProps) {
       {/* Note */}
       <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
         <p className="text-xs text-blue-900">
-          💡 <strong>Note:</strong> Timeline varies by individual. Genetics, climate,
+           <strong>Note:</strong> Timeline varies by individual. Genetics, climate,
           diet, and consistency all impact results. Photos on Day 1 and Week 4 help
           track progress visually.
         </p>
@@ -88,3 +88,4 @@ export default function ResultsTimeline({ issue }: ResultsTimelineProps) {
     </div>
   );
 }
+

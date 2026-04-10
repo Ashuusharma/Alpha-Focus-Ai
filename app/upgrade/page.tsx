@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useRouter } from "next/navigation";
 import { CheckCircle2, Crown, Sparkles, TrendingUp } from "lucide-react";
@@ -17,7 +17,7 @@ type Tier = {
 const tiers: Tier[] = [
   {
     name: "Basic",
-    price: "₹0/month",
+    price: "Rs 0/month",
     subtitle: "Free",
     aiCost: "No AI cost",
     profit: "Top of funnel",
@@ -31,7 +31,7 @@ const tiers: Tier[] = [
   },
   {
     name: "Plus",
-    price: "₹199/month",
+    price: "Rs 199/month",
     subtitle: "Balanced growth",
     aiCost: "Minimal infra cost",
     profit: "High-margin",
@@ -46,7 +46,7 @@ const tiers: Tier[] = [
   },
   {
     name: "Pro",
-    price: "₹399/month",
+    price: "Rs 399/month",
     subtitle: "Premium affordable",
     aiCost: "Minimal infra cost",
     profit: "High-margin",
@@ -89,27 +89,27 @@ export default function UpgradePage() {
             <article
               key={tier.name}
               className={`af-card p-5 ${
-                tier.recommended ? "border-[#2F6F57]" : "border-[#E2DDD3]"
+                tier.recommended ? "border-[#0071e3]" : "border-[#d9d9de]"
               }`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-lg font-semibold text-[#1F3D2B]">{tier.name}</p>
+                  <p className="text-lg font-semibold text-[#1d1d1f]">{tier.name}</p>
                   <p className="text-xs af-muted mt-1">{tier.subtitle}</p>
                 </div>
                 {tier.recommended && (
-                  <span className="text-[11px] px-2 py-1 rounded-full border border-[#2F6F57]/30 bg-[#E8F4EE] text-[#2F6F57]">Most Popular</span>
+                  <span className="text-[11px] px-2 py-1 rounded-full border border-[#0071e3]/30 bg-[#E8F4EE] text-[#0071e3]">Most Popular</span>
                 )}
               </div>
 
-              <p className="text-2xl font-bold mt-4 text-[#1F3D2B]">{tier.price}</p>
+              <p className="text-2xl font-bold mt-4 text-[#1d1d1f]">{tier.price}</p>
               <p className="text-xs af-muted mt-2">AI Cost: {tier.aiCost}</p>
               <p className="text-xs af-accent mt-1">Profit: {tier.profit}</p>
 
-              <ul className="mt-4 space-y-2 text-sm text-[#1F3D2B]">
+              <ul className="mt-4 space-y-2 text-sm text-[#1d1d1f]">
                 {tier.features.map((feature) => (
                   <li key={feature} className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-[#2F6F57] mt-0.5" />
+                    <CheckCircle2 className="w-4 h-4 text-[#0071e3] mt-0.5" />
                     <span>{feature}</span>
                   </li>
                 ))}
@@ -139,13 +139,13 @@ export default function UpgradePage() {
 
         <section className="af-card p-6">
           <div className="flex items-center gap-2 mb-4">
-            <TrendingUp className="w-5 h-5 text-[#2F6F57]" />
+            <TrendingUp className="w-5 h-5 text-[#0071e3]" />
             <h2 className="text-2xl font-semibold">Profit Strategy</h2>
           </div>
-          <ul className="space-y-2 text-sm text-[#1F3D2B]">
+          <ul className="space-y-2 text-sm text-[#1d1d1f]">
             {profitStrategies.map((item) => (
               <li key={item} className="flex items-start gap-2">
-                <CheckCircle2 className="w-4 h-4 text-[#2F6F57] mt-0.5" />
+                <CheckCircle2 className="w-4 h-4 text-[#0071e3] mt-0.5" />
                 <span>{item}</span>
               </li>
             ))}
@@ -155,7 +155,7 @@ export default function UpgradePage() {
         <section className="af-card p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
             <h3 className="text-lg font-semibold">Free Trial Conversion Strategy</h3>
-            <p className="text-sm af-muted mt-1">Start users on Free, nudge with results proof, and convert into Premium/Pro in 7–14 days.</p>
+            <p className="text-sm af-muted mt-1">Start users on Free, nudge with results proof, and convert into Premium/Pro in 7-14 days.</p>
           </div>
           <button onClick={() => router.push("/image-analyzer")} className="inline-flex items-center gap-2 af-btn-primary px-5 py-2.5 text-sm">
             <Crown className="w-4 h-4" />
@@ -166,3 +166,5 @@ export default function UpgradePage() {
     </div>
   );
 }
+
+

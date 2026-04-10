@@ -1,4 +1,4 @@
-// Routine Display Component
+﻿// Routine Display Component
 
 "use client";
 
@@ -35,7 +35,7 @@ export default function RoutineDisplay({
       <div className="bg-gradient-to-r from-blue-700 to-slate-800 text-white rounded-2xl p-8">
         <h2 className="text-3xl font-bold mb-2">{displayRoutine.name}</h2>
         <p className="text-blue-100 mb-4">
-          Personalized for your needs • {displayRoutine.duration} minutes daily
+          Personalized for your needs  -  {displayRoutine.duration} minutes daily
         </p>
 
         {/* Focus Areas */}
@@ -55,7 +55,7 @@ export default function RoutineDisplay({
       {program && (
         <div className="bg-white rounded-2xl p-6 border border-gray-200">
           <h3 className="text-lg font-bold text-gray-900 mb-4">
-            📅 4-Week Progressive Program
+             4-Week Progressive Program
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             {program.map((week, idx) => (
@@ -80,7 +80,7 @@ export default function RoutineDisplay({
       <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
         <div className="bg-gradient-to-r from-blue-50 to-cyan-50 p-6 border-b border-blue-200">
           <h3 className="text-lg font-bold text-gray-900">
-            ⏱️ Daily Routine Timeline ({displayRoutine.duration} min)
+            Daily Routine Timeline ({displayRoutine.duration} min)
           </h3>
         </div>
 
@@ -108,7 +108,7 @@ export default function RoutineDisplay({
 
               {step.product && (
                 <p className="text-sm text-blue-600 font-semibold mb-2">
-                  💊 Use: {step.product}
+                   Use: {step.product}
                 </p>
               )}
 
@@ -126,12 +126,12 @@ export default function RoutineDisplay({
       {program && (
         <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-6 border border-amber-200">
           <h3 className="text-lg font-bold text-amber-900 mb-3">
-            🔄 {program[selectedWeek].name}
+             {program[selectedWeek].name}
           </h3>
           <div className="space-y-2">
             {program[selectedWeek].adjustments.map((adj, idx) => (
               <div key={idx} className="flex items-start gap-3">
-                <span className="text-amber-600 font-bold text-lg">→</span>
+                <span className="text-amber-600 font-bold text-lg">-&gt;</span>
                 <span className="text-amber-800">{adj}</span>
               </div>
             ))}
@@ -149,9 +149,9 @@ export default function RoutineDisplay({
           }
           className="w-full p-6 bg-gradient-to-r from-orange-50 to-amber-50 border-b border-gray-200 flex items-center justify-between hover:bg-orange-100 transition"
         >
-          <h3 className="text-lg font-bold text-gray-900">🌅 Morning Routine</h3>
+          <h3 className="text-lg font-bold text-gray-900"> Morning Routine</h3>
           <span className={`transform transition ${expandedSection === "morning" ? "rotate-180" : ""}`}>
-            ▼
+            v
           </span>
         </button>
 
@@ -169,7 +169,7 @@ export default function RoutineDisplay({
                 )}
                 <div className="text-sm text-gray-600 mt-1">{step.notes}</div>
                 <div className="text-xs text-gray-500 mt-2">
-                  {step.duration} min • {step.frequency}
+                  {step.duration} min  -  {step.frequency}
                 </div>
               </div>
             ))}
@@ -187,9 +187,9 @@ export default function RoutineDisplay({
           }
           className="w-full p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200 flex items-center justify-between hover:bg-blue-100 transition"
         >
-          <h3 className="text-lg font-bold text-gray-900">🌙 Evening Routine</h3>
+          <h3 className="text-lg font-bold text-gray-900"> Evening Routine</h3>
           <span className={`transform transition ${expandedSection === "evening" ? "rotate-180" : ""}`}>
-            ▼
+            v
           </span>
         </button>
 
@@ -207,7 +207,7 @@ export default function RoutineDisplay({
                 )}
                 <div className="text-sm text-gray-600 mt-1">{step.notes}</div>
                 <div className="text-xs text-gray-500 mt-2">
-                  {step.duration} min • {step.frequency}
+                  {step.duration} min  -  {step.frequency}
                 </div>
               </div>
             ))}
@@ -218,7 +218,7 @@ export default function RoutineDisplay({
       {/* Expected Results */}
       <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-200">
         <h3 className="text-lg font-bold text-green-900 mb-4">
-          ✨ Expected Results
+          Expected Results
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -230,7 +230,7 @@ export default function RoutineDisplay({
           <div className="space-y-2">
             {displayRoutine.expectedResults.improvements.map((imp, idx) => (
               <div key={idx} className="flex items-center gap-2 text-green-800">
-                <span>✓</span>
+                <span>OK</span>
                 <span>{imp}</span>
               </div>
             ))}
@@ -241,12 +241,12 @@ export default function RoutineDisplay({
       {/* Pro Tips */}
       <div className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-2xl p-6 border border-yellow-200">
         <h3 className="text-lg font-bold text-yellow-900 mb-4">
-          💡 Pro Tips for Success
+           Pro Tips for Success
         </h3>
         <div className="space-y-2">
           {tips.map((tip, idx) => (
             <div key={idx} className="flex items-start gap-3 text-yellow-800">
-              <span className="mt-1">•</span>
+              <span className="mt-1"> - </span>
               <span>{tip}</span>
             </div>
           ))}
@@ -255,19 +255,20 @@ export default function RoutineDisplay({
 
       {/* Notes */}
       <div className="bg-white rounded-2xl p-6 border border-gray-200">
-        <h3 className="text-lg font-bold text-gray-900 mb-3">📝 Notes</h3>
+        <h3 className="text-lg font-bold text-gray-900 mb-3"> Notes</h3>
         <p className="text-gray-700 leading-relaxed">{displayRoutine.notes}</p>
       </div>
 
       {/* Download/Export */}
       <div className="flex gap-3">
         <button className="flex-1 bg-blue-700 text-white py-3 rounded-xl font-semibold hover:bg-blue-800 transition">
-          📥 Download Routine
+           Download Routine
         </button>
         <button className="flex-1 bg-blue-700 text-white py-3 rounded-xl font-semibold hover:bg-blue-800 transition">
-          🔗 Share Routine
+           Share Routine
         </button>
       </div>
     </div>
   );
 }
+

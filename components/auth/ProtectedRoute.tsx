@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useContext, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -35,7 +35,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
 
   if (loading) {
     return (
-      <div className="min-h-[50vh] flex items-center justify-center text-[#6B665D] text-sm">
+      <div className="min-h-[50vh] flex items-center justify-center text-[#6e6e73] text-sm">
         Verifying secure session...
       </div>
     );
@@ -52,14 +52,14 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
           }}
         />
         <div className="min-h-[50vh] flex flex-col items-center justify-center gap-3 text-center px-6">
-          <h2 className="text-xl font-semibold text-[#1F3D2B]">Sign in required</h2>
-          <p className="text-sm text-[#6B665D] max-w-md">
+          <h2 className="text-xl font-semibold text-[#1d1d1f]">Sign in required</h2>
+          <p className="text-sm text-[#6e6e73] max-w-md">
             This page is protected. Please sign in to continue.
           </p>
           <button
             type="button"
             onClick={() => setModalOpen(true)}
-            className="rounded-full bg-[#1F3D2B] px-4 py-2 text-sm font-semibold text-white"
+            className="rounded-full bg-[#1d1d1f] px-4 py-2 text-sm font-semibold text-white"
           >
             Open Sign In
           </button>

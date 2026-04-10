@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Star, Check, ShoppingCart, ArrowRight, AlertTriangle } from "lucide-react";
@@ -17,7 +17,7 @@ export default function ProductComparison() {
     addToCart({
       id: product.id,
       name: product.name,
-      price: parseFloat(product.price.replace("₹", "")),
+      price: parseFloat(product.price.replace("INR", "").trim()),
       quantity: 1,
     });
   };
@@ -76,7 +76,9 @@ export default function ProductComparison() {
                   <X className="w-4 h-4" />
                 </button>
                 <div className="w-20 h-20 mx-auto mb-3 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/20 flex items-center justify-center">
-                  <span className="text-3xl">💧</span>
+                  <span className="text-3xl">
+                    PR
+                  </span>
                 </div>
                 <h4 className="font-bold text-white text-sm leading-tight mb-1">{product.name}</h4>
                 <p className="text-xs text-gray-500">{product.type}</p>
@@ -141,7 +143,7 @@ export default function ProductComparison() {
                               </span>
                             </div>
                           ) : (
-                            <span className="text-gray-600">—</span>
+                            <span className="text-gray-600">-</span>
                           )}
                         </div>
                       );
@@ -221,3 +223,4 @@ function CompareRow({
     </div>
   );
 }
+

@@ -16,6 +16,7 @@
     "e2e:flow": "node scripts/e2e-flow-verify.mjs",
     "e2e:quality": "node scripts/e2e-quality-matrix.mjs",
     "e2e:quality:full": "node scripts/e2e-quality-matrix.mjs --full",
+    "e2e:visual": "node scripts/visual-regression.mjs",
     "ci:verify": "npm run lint && npm run typecheck && npm run check:assets && npm run check:routes && npm run check:secrets"
   },
   "dependencies": {

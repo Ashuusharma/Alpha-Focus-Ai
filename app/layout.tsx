@@ -1,6 +1,5 @@
-import "./globals.css";
+﻿import "./globals.css";
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
 
 import CartDrawer from "./result/_components/CartDrawer";
 import ProductComparison from "./result/_components/ProductComparison";
@@ -15,11 +14,9 @@ import AuthProvider from "@/contexts/AuthProvider";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import CoreUserHydrator from "@/components/providers/CoreUserHydrator";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-
 export const metadata: Metadata = {
   title: "Alpha Focus",
-  description: "Alpha Focus — Premium grooming intelligence platform",
+  description: "Alpha Focus - Premium grooming intelligence platform",
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [{ url: "/favicon.ico" }],
@@ -29,7 +26,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#2F6F57",
+  themeColor: "#0b0f0c",
 };
 
 export default function RootLayout({
@@ -65,7 +62,7 @@ export default function RootLayout({
         />
       </head>
 
-      <body className={inter.variable}>
+      <body className="font-apple-ui">
         <I18nProvider>
           <AuthProvider>
             <CoreUserHydrator />
@@ -90,3 +87,4 @@ export default function RootLayout({
     </html>
   );
 }
+

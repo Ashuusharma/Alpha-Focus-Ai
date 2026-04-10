@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useContext, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -73,7 +73,7 @@ async function assertMonthlyScanLimit(userId: string) {
   const cap = monthlyCapByPlan[effectivePlan] ?? 2;
   if (used >= cap) {
     const label = effectivePlan.toUpperCase();
-    throw new Error(`${label} plan limit reached (${used}/${Number.isFinite(cap) ? cap : "∞"} scans this month).`);
+    throw new Error(`${label} plan limit reached (${used}/${Number.isFinite(cap) ? cap : "inf"} scans this month).`);
   }
 }
 
@@ -371,20 +371,20 @@ export default function ImageAnalyzerPage() {
   };
 
   return (
-    <div className="af-page-shell min-h-screen text-[#1F3D2B] selection:bg-[#1F3D2B]/20">
-      <header className="fixed top-0 left-0 right-0 z-40 border-b border-[#1F3D2B]/10 bg-white/80 backdrop-blur-md shadow-sm">
+    <div className="af-page-shell min-h-screen text-[#ffffff] selection:bg-[#0071e3]/30">
+      <header className="fixed top-0 left-0 right-0 z-40 border-b border-[#1d1d1f]/10 bg-white/80 backdrop-blur-md shadow-sm">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <button
             onClick={() => router.push("/")}
-            className="flex items-center gap-2 text-[#6B665D] hover:text-[#1F3D2B] transition-colors"
+            className="flex items-center gap-2 text-[#6e6e73] hover:text-[#1d1d1f] transition-colors"
           >
             <ChevronLeft className="w-5 h-5" />
             <span>Back</span>
           </button>
-          <span className="font-semibold text-[#1F3D2B]">Alpha Focus Analyzer</span>
+          <span className="font-semibold text-[#1d1d1f]">Alpha Focus Analyzer</span>
           <button
             onClick={handleQuestionsNavigation}
-            className="text-xs px-3 py-1.5 rounded-lg border border-[#1F3D2B]/10 text-[#1F3D2B] bg-white/60 hover:bg-white/80 transition-colors shadow-sm"
+            className="text-xs px-3 py-1.5 rounded-lg border border-[#1d1d1f]/10 text-[#1d1d1f] bg-white/60 hover:bg-white/80 transition-colors shadow-sm"
           >
             Questions
           </button>
@@ -401,17 +401,17 @@ export default function ImageAnalyzerPage() {
               exit={{ opacity: 0, y: -20 }}
               className="space-y-8"
             >
-              <section className="af-page-hero p-6 text-center md:p-10">
+              <section className="nv-section-white text-center">
                 <div className="relative z-10 mx-auto max-w-3xl space-y-4">
-                  <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-[#1F3D2B] shadow-[0_10px_24px_rgba(47,111,87,0.2)]">
+                  <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-[#1d1d1f] shadow-[0_10px_24px_rgba(47,111,87,0.2)]">
                     <ScanLine className="w-8 h-8 text-white" />
                   </div>
                   <span className="af-page-kicker mx-auto">
                     <Sparkles className="h-3.5 w-3.5" />
                     AI Intake
                   </span>
-                  <h1 className="text-clinical-heading text-4xl font-extrabold tracking-tight text-[#1F3D2B]">Choose an area to analyze and start a cleaner diagnostic flow.</h1>
-                  <p className="text-[#6B665D]">Select an analyzer mode, upload consistent angles, and move into the linked assessment without leaving the premium shell.</p>
+                  <h1 className="text-clinical-heading text-4xl font-extrabold tracking-tight text-[#1d1d1f]">Choose an area to analyze and start a cleaner diagnostic flow.</h1>
+                  <p className="text-[#6e6e73]">Select an analyzer mode, upload consistent angles, and move into the linked assessment without leaving the premium shell.</p>
                 </div>
               </section>
 
@@ -434,11 +434,11 @@ export default function ImageAnalyzerPage() {
                   onClick={() => setStep("select")}
                   className="flex h-10 w-10 items-center justify-center rounded-full border border-white/40 bg-white/60 shadow-sm transition-colors hover:bg-white/80"
                 >
-                  <ChevronLeft className="w-5 h-5 text-[#1F3D2B]" />
+                  <ChevronLeft className="w-5 h-5 text-[#1d1d1f]" />
                 </button>
                 <div>
-                  <h2 className="text-2xl font-bold text-[#1F3D2B]">Upload Photos</h2>
-                  <p className="text-sm text-[#6B665D]">Capture 3 angles for stronger hotspot confidence and report quality</p>
+                  <h2 className="text-2xl font-bold text-[#1d1d1f]">Upload Photos</h2>
+                  <p className="text-sm text-[#6e6e73]">Capture 3 angles for stronger hotspot confidence and report quality</p>
                 </div>
               </div>
 
@@ -457,12 +457,12 @@ export default function ImageAnalyzerPage() {
               className="flex flex-col items-center justify-center text-center space-y-6 py-20"
             >
               <div className="relative af-card-primary p-8">
-                <div className="w-24 h-24 rounded-full border-4 border-[#D9D2C7] border-t-[#2F6F57] animate-spin" />
+                <div className="w-24 h-24 rounded-full border-4 border-[#D9D2C7] border-t-[#0071e3] animate-spin" />
                 <div className="absolute inset-0 flex items-center justify-center">
                   {step === "done" ? (
-                    <Check className="w-8 h-8 text-[#2F6F57]" />
+                    <Check className="w-8 h-8 text-[#0071e3]" />
                   ) : (
-                    <Sparkles className="w-8 h-8 text-[#2F6F57] animate-pulse" />
+                    <Sparkles className="w-8 h-8 text-[#0071e3] animate-pulse" />
                   )}
                 </div>
               </div>
@@ -471,16 +471,16 @@ export default function ImageAnalyzerPage() {
                 <h2 className="text-2xl font-bold mb-2">
                   {step === "done" ? "Analysis Complete" : "Analyzing Images..."}
                 </h2>
-                <p className="text-[#2F6F57]">{analysisStatus}</p>
+                <p className="text-[#0071e3]">{analysisStatus}</p>
                 {diagnosticMode && (
-                  <p className="mt-2 text-xs text-[#6B665D]">
+                  <p className="mt-2 text-xs text-[#6e6e73]">
                     Diagnostic mode: {diagnosticMode === "db_persisted" ? "DB persisted" : "Session only"}
                   </p>
                 )}
               </div>
 
               <div className="af-card-secondary w-full max-w-md p-5">
-                <div className="h-2 w-full bg-[#E2DDD4] rounded-full overflow-hidden">
+                <div className="h-2 w-full bg-[#d9d9de] rounded-full overflow-hidden">
                   <div
                     className="h-full bg-medical-gradient transition-all duration-300"
                     style={{ width: `${analysisProgress}%` }}
@@ -495,3 +495,4 @@ export default function ImageAnalyzerPage() {
     </div>
   );
 }
+

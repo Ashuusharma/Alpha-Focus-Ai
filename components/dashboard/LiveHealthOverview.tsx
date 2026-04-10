@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { Line, LineChart, CartesianGrid, ResponsiveContainer, Tooltip, Legend, XAxis, YAxis } from "recharts";
@@ -143,13 +143,13 @@ export default function LiveHealthOverview({
   }, [missionsCompleted, missionsTotal, scansCount, streakDays]);
 
   return (
-    <section className="rounded-2xl border border-[#E2DDD4] bg-card-soft-gradient p-6 shadow-card">
+    <section className="rounded-2xl border border-[#d9d9de] bg-card-soft-gradient p-6 shadow-card">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-wide text-[#6E9F87]">Clinical Snapshot</p>
           <h2 className="text-2xl font-semibold text-[#1E4D3A]">Live Health Overview</h2>
         </div>
-        <div className="text-right text-sm text-[#2F6F57]">
+        <div className="text-right text-sm text-[#0071e3]">
           <p>Last updated {lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</p>
           <p className="text-xs text-[#6E9F87]">{locationLabel}</p>
         </div>
@@ -177,7 +177,7 @@ export default function LiveHealthOverview({
       <div className="mt-5 rounded-2xl border border-[#DDD7CC] bg-[#F7F4EE] p-6">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="text-base font-semibold text-[#1E4D3A]">Progress Trend</h3>
-          <button className="text-xs font-semibold text-[#2F6F57]">View Details</button>
+          <button className="text-xs font-semibold text-[#0071e3]">View Details</button>
         </div>
         <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
@@ -186,8 +186,8 @@ export default function LiveHealthOverview({
               <XAxis dataKey="label" tick={{ fill: "#6E9F87", fontSize: 12 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: "#6E9F87", fontSize: 12 }} axisLine={false} tickLine={false} domain={[0, 100]} />
               <Tooltip contentStyle={{ borderRadius: 12, borderColor: "#DDD7CC", backgroundColor: "#F7F4EE" }} />
-              <Legend wrapperStyle={{ color: "#2F6F57" }} />
-              <Line type="monotone" dataKey="alpha" stroke="#2F6F57" strokeWidth={2.5} dot={false} name="Alpha Score" />
+              <Legend wrapperStyle={{ color: "#0071e3" }} />
+              <Line type="monotone" dataKey="alpha" stroke="#0071e3" strokeWidth={2.5} dot={false} name="Alpha Score" />
               <Line type="monotone" dataKey="consistency" stroke="#6E9F87" strokeWidth={2.5} dot={false} name="Consistency" />
               <Line type="monotone" dataKey="recovery" stroke="#C9A227" strokeWidth={2.5} dot={false} name="Recovery %" />
             </LineChart>
@@ -204,21 +204,21 @@ export default function LiveHealthOverview({
           <p className="text-xs text-[#6E9F87]">In Progress</p>
           <p className="mt-2 text-base font-semibold text-[#1E4D3A]">{activityState.inProgress ? "Active" : "Idle"}</p>
         </div>
-        <div className="rounded-2xl border border-[#A9CBB7] bg-[#E8EFEA] p-6 shadow-[0_8px_18px_rgba(47,111,87,0.12)]">
-          <p className="text-xs text-[#2F6F57]">Next Action</p>
-          <p className="mt-2 text-base font-semibold text-[#1E4D3A]">{activityState.nextAction}</p>
+        <div className="rounded-2xl border border-[#99c9ff] bg-[#eef5ff] p-6 shadow-[0_8px_18px_rgba(47,111,87,0.12)]">
+          <p className="text-xs text-[#0071e3]">Next Action</p>
+          <p className="mt-2 text-base font-semibold text-[#1d1d1f]">{activityState.nextAction}</p>
         </div>
       </div>
 
       <div className="mt-5 rounded-2xl border border-[#DDD7CC] bg-[#F7F4EE] p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs text-[#6E9F87]">Environment</p>
-            <p className="text-lg font-semibold text-[#1E4D3A]">
-              UV {environment.uv ?? "--"} · AQI {environment.aqi ?? "--"}
+            <p className="text-xs text-[#6e6e73]">Environment</p>
+            <p className="text-lg font-semibold text-[#1d1d1f]">
+              UV {environment.uv ?? "--"} - AQI {environment.aqi ?? "--"}
             </p>
           </div>
-          <details className="text-sm text-[#2F6F57]">
+          <details className="text-sm text-[#0071e3]">
             <summary className="cursor-pointer list-none font-semibold">View Details</summary>
             <div className="mt-2 rounded-xl border border-[#DDD7CC] bg-white px-3 py-2 text-xs">
               <p>UV: {environment.uv ?? "--"}</p>
@@ -231,3 +231,4 @@ export default function LiveHealthOverview({
     </section>
   );
 }
+

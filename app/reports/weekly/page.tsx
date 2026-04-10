@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useContext, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -57,11 +57,11 @@ export default function WeeklyReportPage() {
   }, [logs]);
 
   return (
-    <div className="af-page-shell report-page min-h-screen text-[#1F3D2B] px-4 py-8">
+    <div className="af-page-shell report-page min-h-screen text-[#ffffff] px-4 py-8">
       <div className="af-page-frame mx-auto max-w-5xl space-y-6">
-        <section className="af-page-hero p-6 md:p-8">
+        <section className="nv-section-white">
           <div className="relative z-10 space-y-4">
-            <button onClick={() => router.back()} className="inline-flex items-center gap-2 text-[#6B665D] hover:text-[#1F3D2B]">
+            <button onClick={() => router.back()} className="inline-flex items-center gap-2 text-[#6e6e73] hover:text-[#1d1d1f]">
               <ArrowLeft className="w-4 h-4" /> Back
             </button>
             <span className="af-page-kicker">
@@ -69,7 +69,7 @@ export default function WeeklyReportPage() {
               Weekly Review
             </span>
             <h1 className="text-clinical-heading text-3xl font-extrabold tracking-tight md:text-4xl">Weekly AI report built from sleep, hydration, stress, and routine consistency.</h1>
-            <p className="max-w-2xl text-sm leading-7 text-[#6B665D]">This view now matches the premium app shell and frames the weekly report as a decision page instead of a standalone export.</p>
+            <p className="max-w-2xl text-sm leading-7 text-[#6e6e73]">This view now matches the premium app shell and frames the weekly report as a decision page instead of a standalone export.</p>
           </div>
         </section>
         <WeeklyReport summary={summary} />
@@ -77,3 +77,4 @@ export default function WeeklyReportPage() {
     </div>
   );
 }
+

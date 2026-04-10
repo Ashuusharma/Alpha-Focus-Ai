@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React from "react";
 
@@ -20,9 +20,10 @@ export default function FloatingChatBubble({ onClick, open }: { onClick: () => v
       <div className={`origin-bottom-right transform transition-all duration-300 ${open ? 'scale-100 opacity-100' : 'scale-95 opacity-0 pointer-events-none'}`}>
         <div className="w-64 bg-white rounded-lg shadow-lg p-3">
           <div className="text-sm font-medium">Support Chat</div>
-          <div className="text-xs text-gray-500 mt-2">Hi — need help with your routine? Click to start.</div>
+          <div className="text-xs text-gray-500 mt-2">Hi - need help with your routine? Click to start.</div>
         </div>
       </div>
     </div>
   );
 }
+

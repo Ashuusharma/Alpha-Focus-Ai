@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React from "react";
 
@@ -31,7 +31,7 @@ export default function ProfileDrawer({ open, onClose }: { open?: boolean; onClo
             </div>
           </div>
           <button onClick={onClose} className="absolute top-4 right-4 p-2 text-white hover:bg-white/20 rounded-full transition">
-            ✕
+            X
           </button>
         </div>
 
@@ -41,7 +41,9 @@ export default function ProfileDrawer({ open, onClose }: { open?: boolean; onClo
           {/* RECOVERY SNAPSHOT */}
           <div className="rounded-xl bg-gradient-to-br from-blue-50 to-slate-50 p-4 space-y-3 border border-blue-200">
             <h4 className="font-bold text-gray-900 flex items-center space-x-2">
-              <span className="text-xl">📊</span>
+              <span className="text-xl">
+                Stats
+              </span>
               <span>Your Recovery Snapshot</span>
             </h4>
             <div className="space-y-2 text-sm">
@@ -62,7 +64,9 @@ export default function ProfileDrawer({ open, onClose }: { open?: boolean; onClo
           {/* SAVED PLANS */}
           <div className="space-y-3">
             <h4 className="font-bold text-gray-900 flex items-center space-x-2">
-              <span className="text-xl">💼</span>
+              <span className="text-xl">
+                Plans
+              </span>
               <span>Saved Recovery Plans</span>
             </h4>
             <div className="space-y-2">
@@ -71,14 +75,15 @@ export default function ProfileDrawer({ open, onClose }: { open?: boolean; onClo
                   <p className="font-semibold text-slate-900 text-sm">Hair + Beard</p>
                   <p className="text-xs text-slate-600">Jan 2026</p>
                 </div>
-                <span className="text-indigo-600 font-bold text-lg">→</span>
+                <span className="text-indigo-600 font-bold text-lg">-&gt;</span>
+                
               </div>
               <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition cursor-pointer">
                 <div>
                   <p className="font-semibold text-slate-900 text-sm">Hair Care</p>
                   <p className="text-xs text-slate-600">Dec 2025</p>
                 </div>
-                <span className="text-indigo-600 font-bold text-lg">→</span>
+                <span className="text-indigo-600 font-bold text-lg">-&gt;</span>
               </div>
             </div>
           </div>
@@ -86,7 +91,9 @@ export default function ProfileDrawer({ open, onClose }: { open?: boolean; onClo
           {/* AI ACTIONS */}
           <div className="space-y-3">
             <h4 className="font-bold text-gray-900 flex items-center space-x-2">
-              <span className="text-xl">🤖</span>
+              <span className="text-xl">
+                AI
+              </span>
               <span>AI Assistant</span>
             </h4>
             <div className="space-y-2">
@@ -102,16 +109,22 @@ export default function ProfileDrawer({ open, onClose }: { open?: boolean; onClo
           {/* SETTINGS */}
           <div className="pt-4 border-t border-blue-200 space-y-2">
             <button className="w-full text-left p-3 rounded-lg text-gray-700 hover:bg-gray-50 transition flex items-center space-x-2">
-              <span>🔔</span>
-              <span className="font-medium text-sm\">Notifications</span>
+              <span>
+                Bell
+              </span>
+              <span className="font-medium text-sm">Notifications</span>
             </button>
             <button className="w-full text-left p-3 rounded-lg text-gray-700 hover:bg-gray-50 transition flex items-center space-x-2">
-              <span>🔐</span>
-              <span className="font-medium text-sm\">Data & Privacy</span>
+              <span>
+                Lock
+              </span>
+              <span className="font-medium text-sm">Data & Privacy</span>
             </button>
             <button className="w-full text-left p-3 rounded-lg text-red-600 hover:bg-red-50 transition flex items-center space-x-2">
-              <span>🔄</span>
-              <span className="font-medium text-sm\">Reset Recovery Plan</span>
+              <span>
+                Reset
+              </span>
+              <span className="font-medium text-sm">Reset Recovery Plan</span>
             </button>
           </div>
         </div>
@@ -119,3 +132,4 @@ export default function ProfileDrawer({ open, onClose }: { open?: boolean; onClo
     </>
   );
 }
+

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCartStore } from "@/lib/cartStore";
 import { useMounted } from "@/lib/useMounted";
@@ -23,9 +23,10 @@ export default function CartButton() {
         text-sm sm:text-base
       "
     >
-      🛒 {totalItems()} items
+       {totalItems()} items
       <br />
-      ₹{totalPrice()}
+      Rs {totalPrice()}
     </button>
   );
 }
+

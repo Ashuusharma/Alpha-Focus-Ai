@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState } from "react";
 import { Search, Sparkles } from "lucide-react";
@@ -20,6 +20,8 @@ export default function ShopPage() {
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
+  const activeIssue = typeof window !== "undefined" ? window.sessionStorage.getItem("analysisCategory") : null;
+
   const filteredProducts = useMemo(() => {
     return PRODUCT_CATALOG_DATA.filter((product) => {
       const matchesCategory =
@@ -37,25 +39,26 @@ export default function ShopPage() {
   );
 
   const advancedProducts = filteredProducts.filter((product) => !protocolProducts.some((p) => p.name === product.name));
+  const featuredProduct = (protocolProducts.length > 0 ? protocolProducts : filteredProducts)[0];
 
 return (
-  <div className="af-page-shell flex flex-col h-full w-full min-h-screen animate-in fade-in duration-700 relative">
+  <div className="af-page-shell flex flex-col h-full w-full min-h-screen animate-in fade-in duration-700 relative text-[#ffffff]">
       <CartDrawer />
       
       {/* Background Ambience */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-[10%] right-[10%] w-[600px] h-[600px] bg-[#A9CBB7]/20 blur-[120px] rounded-full opacity-40" />
+        <div className="absolute top-[10%] right-[10%] w-[600px] h-[600px] bg-[#99c9ff]/20 blur-[120px] rounded-full opacity-40" />
         <div className="absolute top-[40%] left-[-10%] w-[400px] h-[400px] bg-[#d8b55f]/14 blur-[120px] rounded-full opacity-30" />
       </div>
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 relative z-10 w-full">
         {/* Header Hero */}
-          <div className="af-surface-card overflow-hidden p-8 lg:p-12 mb-10 flex flex-col md:flex-row items-center justify-between gap-8">
-            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[#A9CBB7]/20 blur-[80px] pointer-events-none -translate-y-1/2 translate-x-1/2" />
+          <div className="nv-section-white overflow-hidden mb-10 flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[#99c9ff]/20 blur-[80px] pointer-events-none -translate-y-1/2 translate-x-1/2" />
            <div className="relative z-10 max-w-2xl">
-              <span className="text-xs font-bold text-[#2F6F57] uppercase tracking-widest bg-[#E8EFEA] px-3 py-1 rounded inline-block mb-3 border border-[#C8DACF]">Protocol Dispensary</span>
-              <h1 className="text-clinical-heading text-4xl sm:text-5xl font-extrabold text-[#1F3D2B] leading-tight tracking-tight mb-4">Clinical Apothecary</h1>
-              <p className="text-[#6B665D] text-sm leading-relaxed">
+              <span className="text-xs font-bold text-[#0071e3] uppercase tracking-widest bg-[#eef5ff] px-3 py-1 rounded inline-block mb-3 border border-[#d9d9de]">Protocol Dispensary</span>
+              <h1 className="text-clinical-heading text-4xl sm:text-5xl font-extrabold text-[#1d1d1f] leading-tight tracking-tight mb-4">Clinical Apothecary</h1>
+              <p className="text-[#6e6e73] text-sm leading-relaxed">
                 Dermatologist-approved formulations targeted to your specific protocol signals.
                 Every product is vetted for strict adherence to clinical standards and zero-interference.
               </p>
@@ -69,7 +72,7 @@ return (
                   placeholder="Query protocol treatments..." 
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="af-input w-full rounded-2xl px-5 py-4 pl-12 text-sm outline-none transition-all"
+                  className="af-input w-full px-5 py-4 pl-12 text-sm outline-none transition-all"
                 />
               </div>
            </div>
@@ -83,8 +86,8 @@ return (
               onClick={() => setActiveCategory(cat.id)}
               className={`whitespace-nowrap rounded-full px-6 py-2.5 text-sm font-semibold transition-all ${
                 activeCategory === cat.id
-                  ? "bg-[#2F6F57] text-white shadow-[0_14px_30px_rgba(47,111,87,0.24)] hover:bg-[#275c48]"
-                  : "af-pill text-[#6B665D] hover:text-[#1F3D2B]"
+                  ? "bg-[#0071e3] text-white shadow-[0_14px_30px_rgba(47,111,87,0.24)] hover:bg-[#005bbf]"
+                  : "af-pill text-[#6e6e73] hover:text-[#1d1d1f]"
               }`}
             >
               {cat.label}
@@ -95,11 +98,22 @@ return (
         {/* Product Grid */}
         {filteredProducts.length > 0 ? (
           <div className="space-y-16">
+            {featuredProduct && (
+              <section className="nv-section-white">
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#0071e3]">Recommended for YOU</p>
+                <h2 className="mt-2 text-2xl font-bold text-black">Priority Product</h2>
+                <p className="mt-1 text-sm text-[#1a1a1a]">Based on your current protocol signals, start here before adding optional modules.</p>
+                <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  <ProductCard product={featuredProduct} />
+                </div>
+              </section>
+            )}
+
             <section>
               <div className="mb-6">
-                <p className="text-xs font-bold text-[#2F6F57] uppercase tracking-widest mb-1 flex items-center gap-2"><Sparkles className="w-3.5 h-3.5" /> High Urgency</p>
-                <h2 className="text-2xl font-bold text-[#1F3D2B] mb-2">Protocol Prescriptions</h2>
-                <p className="text-sm text-[#6B665D]">Foundation components mathematically mapped to your current recovery phase.</p>
+                <p className="text-xs font-bold text-[#0071e3] uppercase tracking-widest mb-1 flex items-center gap-2"><Sparkles className="w-3.5 h-3.5" /> High Urgency</p>
+                <h2 className="text-2xl font-bold text-[#1d1d1f] mb-2">Protocol Prescriptions</h2>
+                <p className="text-sm text-[#6e6e73]">{activeIssue ? `Based on your issue: ${activeIssue.replace(/_/g, " ")}` : "Based on your issue profile and recovery phase."}</p>
               </div>
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {(protocolProducts.length > 0 ? protocolProducts : filteredProducts).map((product) => (
@@ -111,9 +125,9 @@ return (
             {advancedProducts.length > 0 && (
               <section className="pt-8 border-t border-[#e2d8ca]">
                 <div className="mb-6">
-                  <p className="text-xs font-bold text-[#8C6A5A] uppercase tracking-widest mb-1">Optimization Layer</p>
-                  <h2 className="text-2xl font-bold text-[#1F3D2B] mb-2">Advanced Modules</h2>
-                  <p className="text-sm text-[#6B665D]">Optional high-impact add-ons for targeted symptom resolution and accelerated timelines.</p>
+                  <p className="text-xs font-bold text-[#6e6e73] uppercase tracking-widest mb-1">Optimization Layer</p>
+                  <h2 className="text-2xl font-bold text-[#1d1d1f] mb-2">Advanced Modules</h2>
+                  <p className="text-sm text-[#6e6e73]">Optional high-impact add-ons for targeted symptom resolution and accelerated timelines.</p>
                 </div>
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {advancedProducts.map((product) => (
@@ -126,15 +140,15 @@ return (
         ) : (
           <div className="af-surface-card flex flex-col items-center justify-center py-24 text-center">
             <div className="mb-6 rounded-2xl bg-[#f5efe5] border border-[#e2d8ca] p-5 shadow-inner">
-              <Sparkles className="h-10 w-10 text-[#8C6A5A]" />
+              <Sparkles className="h-10 w-10 text-[#6e6e73]" />
             </div>
-            <h3 className="text-xl font-bold text-[#1F3D2B] mb-2">No formulations isolated</h3>
-            <p className="max-w-md text-sm text-[#6B665D]">
+            <h3 className="text-xl font-bold text-[#1d1d1f] mb-2">No formulations isolated</h3>
+            <p className="max-w-md text-sm text-[#6e6e73]">
               The query matrix returned zero compatible matches within the current clinical restrictions.
             </p>
             <button 
               onClick={() => { setActiveCategory("all"); setSearchQuery(""); }}
-              className="mt-8 px-6 py-2.5 rounded-full border border-[#C8DACF] text-[#2F6F57] font-semibold hover:bg-[#E8EFEA] transition-colors text-sm flex items-center gap-2"
+              className="mt-8 px-6 py-2.5 rounded-full border border-[#d9d9de] text-[#0071e3] font-semibold hover:bg-[#eef5ff] transition-colors text-sm flex items-center gap-2"
             >
               Reset Protocol Parameters
             </button>
@@ -144,3 +158,4 @@ return (
     </div>
   );
 }
+

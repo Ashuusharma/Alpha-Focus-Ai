@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -44,7 +44,7 @@ function normSpot(spot: Hotspot): { left: number; top: number } {
 
 function formatDate(dateIso: string): string {
   const date = new Date(dateIso);
-  return `${date.toLocaleDateString()} • ${date.toLocaleTimeString()}`;
+  return `${date.toLocaleDateString()}  -  ${date.toLocaleTimeString()}`;
 }
 
 export default function SavedScansPage() {
@@ -121,15 +121,15 @@ export default function SavedScansPage() {
   if (!mounted) return null;
 
   return (
-    <div className="af-page-shell text-[#1F3D2B] py-10">
+    <div className="af-page-shell py-10 text-[#ffffff]">
       <Container>
         <div className="af-page-frame mx-auto max-w-5xl">
           <div className="af-page-stack">
-          <section className="af-page-hero p-6 md:p-8">
+          <section className="nv-section-white">
             <div className="relative z-10 space-y-5">
             <button
               onClick={() => router.back()}
-              className="inline-flex items-center gap-2 text-[#6B665D] hover:text-[#1F3D2B] transition-colors"
+              className="inline-flex items-center gap-2 text-[#6e6e73] hover:text-[#1d1d1f] transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
               <span>Back</span>
@@ -141,23 +141,23 @@ export default function SavedScansPage() {
                 Scan Archive
               </span>
               <h1 className="text-clinical-heading text-3xl font-extrabold tracking-tight md:text-4xl">Review every scan, compare checkpoints, and reopen your progress story fast.</h1>
-              <p className="max-w-2xl text-sm leading-7 text-[#6B665D]">This page now uses the same premium page shell as the rest of the journey so scan history feels like an active recovery console, not an old utility screen.</p>
+              <p className="max-w-2xl text-sm leading-7 text-[#6e6e73]">This page now uses the same premium page shell as the rest of the journey so scan history feels like an active recovery console, not an old utility screen.</p>
             </div>
             <div className="grid gap-4 md:grid-cols-3">
               <div className="af-stat-tile">
-                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#8C6A5A]">Total scans</p>
-                <p className="mt-2 text-3xl font-bold text-[#1F3D2B]">{history.length}</p>
-                <p className="mt-1 text-xs text-[#6B665D]">Saved comparison points</p>
+                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#6e6e73]">Total scans</p>
+                <p className="mt-2 text-3xl font-bold text-[#1d1d1f]">{history.length}</p>
+                <p className="mt-1 text-xs text-[#6e6e73]">Saved comparison points</p>
               </div>
               <div className="af-stat-tile">
-                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#8C6A5A]">Confidence shift</p>
-                <p className="mt-2 text-3xl font-bold text-[#1F3D2B]">{confidenceDelta == null ? "--" : `${confidenceDelta > 0 ? "+" : ""}${confidenceDelta}%`}</p>
-                <p className="mt-1 text-xs text-[#6B665D]">Between selected comparison scans</p>
+                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#6e6e73]">Confidence shift</p>
+                <p className="mt-2 text-3xl font-bold text-[#1d1d1f]">{confidenceDelta == null ? "--" : `${confidenceDelta > 0 ? "+" : ""}${confidenceDelta}%`}</p>
+                <p className="mt-1 text-xs text-[#6e6e73]">Between selected comparison scans</p>
               </div>
               <div className="af-stat-tile">
-                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#8C6A5A]">Latest capture</p>
-                <p className="mt-2 text-base font-semibold text-[#1F3D2B]">{history[0] ? formatDate(history[0].createdAt) : "No scans yet"}</p>
-                <p className="mt-1 text-xs text-[#6B665D]">Ready for timeline review</p>
+                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#6e6e73]">Latest capture</p>
+                <p className="mt-2 text-base font-semibold text-[#1d1d1f]">{history[0] ? formatDate(history[0].createdAt) : "No scans yet"}</p>
+                <p className="mt-1 text-xs text-[#6e6e73]">Ready for timeline review</p>
               </div>
             </div>
             <div className="flex flex-wrap gap-3">
@@ -170,12 +170,12 @@ export default function SavedScansPage() {
 
           {history.length === 0 ? (
             <div className="af-card-primary p-10 text-center">
-              <ImageIcon className="w-12 h-12 text-[#6B665D] mx-auto mb-4" />
+              <ImageIcon className="w-12 h-12 text-[#6e6e73] mx-auto mb-4" />
               <h2 className="text-xl font-semibold mb-2">No scan history yet</h2>
-              <p className="text-[#6B665D] mb-6">Complete your first photo analysis to create timeline entries.</p>
+              <p className="text-[#6e6e73] mb-6">Complete your first photo analysis to create timeline entries.</p>
               <button
                 onClick={() => router.push("/image-analyzer")}
-                className="px-6 py-3 rounded-xl bg-[#1F3D2B] text-white font-semibold hover:bg-[#2A5239] shadow-sm transition-colors"
+                className="px-6 py-3 rounded-xl bg-[#1d1d1f] text-white font-semibold hover:bg-[#005bbf] shadow-sm transition-colors"
               >
                 Start New Scan
               </button>
@@ -185,7 +185,7 @@ export default function SavedScansPage() {
               <section className="af-card-secondary p-5 md:p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-bold">Your Scan Timeline</h2>
-                  <span className="text-sm text-[#6B665D]">{history.length} scans</span>
+                  <span className="text-sm text-[#6e6e73]">{history.length} scans</span>
                 </div>
 
                 <div className="space-y-3">
@@ -194,29 +194,29 @@ export default function SavedScansPage() {
                     const confidence = scan.finalResult?.confidence ?? 0;
 
                     return (
-                      <div key={scan.id} className="overflow-hidden rounded-2xl border border-white/50 bg-[rgba(255,252,246,0.72)] shadow-[0_12px_24px_rgba(31,61,43,0.06)]">
+                      <div key={scan.id} className="overflow-hidden rounded-2xl border border-white/50 bg-[rgba(255,252,246,0.72)] shadow-[0_12px_24px_rgba(31,61,43,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_32px_rgba(11,18,32,0.12)]">
                         <button
                           onClick={() => setExpandedScanId(expanded ? null : scan.id)}
                           className="w-full p-4 flex items-center justify-between text-left hover:bg-white/40 transition-colors"
                         >
                           <div>
-                            <p className="font-semibold text-[#1F3D2B]">Scan #{history.length - idx}</p>
-                            <p className="text-xs text-[#6B665D] flex items-center gap-1 mt-1">
+                            <p className="font-semibold text-[#1d1d1f]">Scan #{history.length - idx}</p>
+                            <p className="text-xs text-[#6e6e73] flex items-center gap-1 mt-1">
                               <Calendar className="w-3 h-3" />
                               {formatDate(scan.createdAt)}
                             </p>
                           </div>
 
                           <div className="text-right">
-                            <p className="text-sm text-[#6B665D] capitalize">{scan.analyzerType}</p>
-                            <p className="text-xs text-[#1F3D2B] font-semibold">Confidence: {confidence}%</p>
+                            <p className="text-sm text-[#6e6e73] capitalize">{scan.analyzerType}</p>
+                            <p className="text-xs text-[#1d1d1f] font-semibold">Confidence: {confidence}%</p>
                           </div>
                         </button>
 
                         {expanded && (
                           <div className="border-t border-white/40 p-4 space-y-4 bg-white/40">
                             <div>
-                              <p className="text-xs text-[#6B665D] mb-2">Captured Photos</p>
+                              <p className="text-xs text-[#6e6e73] mb-2">Captured Photos</p>
                               <div className="grid grid-cols-3 gap-2">
                                 {scan.originalImages.slice(0, 3).map((image, i) => (
                                   <img
@@ -230,7 +230,7 @@ export default function SavedScansPage() {
                             </div>
 
                             <div>
-                              <p className="text-xs text-[#6B665D] mb-2">Galaxy Annotated Image</p>
+                              <p className="text-xs text-[#6e6e73] mb-2">Galaxy Annotated Image</p>
                               <div className="relative rounded-xl border border-white/40 overflow-hidden">
                                 {scan.annotatedImageUrl || scan.originalImages[0] ? (
                                   <img
@@ -239,7 +239,7 @@ export default function SavedScansPage() {
                                     className="w-full h-56 object-cover"
                                   />
                                 ) : (
-                                  <div className="w-full h-56 bg-white/60 flex items-center justify-center text-xs text-[#6B665D]">
+                                  <div className="w-full h-56 bg-white/60 flex items-center justify-center text-xs text-[#6e6e73]">
                                     No image available
                                   </div>
                                 )}
@@ -268,7 +268,7 @@ export default function SavedScansPage() {
                                 {scan.selectedCategories.map((cat, i) => (
                                   <span
                                     key={`${scan.id}-cat-${i}`}
-                                    className="px-2 py-1 rounded-md border border-white/40 bg-white/60 text-xs text-[#6B665D]"
+                                    className="px-2 py-1 rounded-md border border-white/40 bg-white/60 text-xs text-[#6e6e73]"
                                   >
                                     {cat}
                                   </span>
@@ -284,18 +284,18 @@ export default function SavedScansPage() {
               </section>
 
               {history.length >= 2 && (
-                <section className="bg-white/60 backdrop-blur-sm border border-white/40 rounded-xl p-5 md:p-6 shadow-sm">
+                <section className="nv-section-white p-5 md:p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-bold">Before / After Hotspot Comparison</h2>
                     {confidenceDelta !== null && (
                       <span
-                        className={`text-xs px-3 py-1 rounded-full border ${
+                        className={`rounded-full border px-3 py-1 text-xs ${
                           confidenceDelta <= 0
                             ? "border-emerald-400/40 text-emerald-700 bg-emerald-500/10"
                             : "border-amber-400/40 text-amber-700 bg-amber-500/10"
                         }`}
                       >
-                        Confidence Δ: {confidenceDelta > 0 ? `+${confidenceDelta}` : confidenceDelta}
+                        Confidence Delta: {confidenceDelta > 0 ? `+${confidenceDelta}` : confidenceDelta}
                       </span>
                     )}
                   </div>
@@ -304,7 +304,7 @@ export default function SavedScansPage() {
                     <select
                       value={compareLeftId}
                       onChange={(e) => setCompareLeftId(e.target.value)}
-                      className="bg-white/60 border border-white/40 rounded-lg px-3 py-2 text-sm text-[#1F3D2B] outline-none focus:border-[#1F3D2B]/30"
+                      className="bg-white/60 border border-white/40 rounded-lg px-3 py-2 text-sm text-[#1d1d1f] outline-none focus:border-[#1d1d1f]/30"
                     >
                       {history.map((scan) => (
                         <option key={`left-${scan.id}`} value={scan.id}>
@@ -316,7 +316,7 @@ export default function SavedScansPage() {
                     <select
                       value={compareRightId}
                       onChange={(e) => setCompareRightId(e.target.value)}
-                      className="bg-white/60 border border-white/40 rounded-lg px-3 py-2 text-sm text-[#1F3D2B] outline-none focus:border-[#1F3D2B]/30"
+                      className="bg-white/60 border border-white/40 rounded-lg px-3 py-2 text-sm text-[#1d1d1f] outline-none focus:border-[#1d1d1f]/30"
                     >
                       {history.map((scan) => (
                         <option key={`right-${scan.id}`} value={scan.id}>
@@ -331,8 +331,8 @@ export default function SavedScansPage() {
                       if (!scan) return null;
 
                       return (
-                        <div key={scan.id} className="rounded-xl border border-white/40 overflow-hidden bg-[#EFE8DD]/50">
-                          <div className="px-3 py-2 border-b border-white/40 text-xs text-[#6B665D] flex items-center justify-between">
+                        <div key={scan.id} className="rounded-xl border border-white/40 overflow-hidden bg-[#ededf2]/50">
+                          <div className="px-3 py-2 border-b border-white/40 text-xs text-[#6e6e73] flex items-center justify-between">
                             <span className="font-medium">{idx === 0 ? "Before" : "After"}</span>
                             <span>{formatDate(scan.createdAt)}</span>
                           </div>
@@ -358,9 +358,9 @@ export default function SavedScansPage() {
                             })}
                           </div>
 
-                          <div className="p-3 text-xs text-[#6B665D] border-t border-white/40">
+                          <div className="p-3 text-xs text-[#6e6e73] border-t border-white/40">
                             <p>
-                              Issues: <span className="text-[#1F3D2B] font-medium">{scan.issues?.length || 0}</span> · Confidence: <span className="text-[#1F3D2B] font-medium">{scan.finalResult?.confidence ?? 0}%</span>
+                              Issues: <span className="text-[#1d1d1f] font-medium">{scan.issues?.length || 0}</span> - Confidence: <span className="text-[#1d1d1f] font-medium">{scan.finalResult?.confidence ?? 0}%</span>
                             </p>
                           </div>
                         </div>
@@ -377,3 +377,5 @@ export default function SavedScansPage() {
     </div>
   );
 }
+
+

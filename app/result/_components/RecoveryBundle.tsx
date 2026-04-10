@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCartStore } from "@/lib/cartStore";
 
@@ -21,7 +21,7 @@ export default function RecoveryBundle({
   return (
     <div className="border rounded-2xl p-6 space-y-4">
       <h3 className="text-lg font-semibold">
-        🧩 Your AI-Generated Recovery Bundle
+         Your AI-Generated Recovery Bundle
       </h3>
 
       <div className="space-y-3">
@@ -33,11 +33,11 @@ export default function RecoveryBundle({
             <div>
               <p className="font-medium">{item.name}</p>
               <p className="text-gray-500">
-                ₹{item.price} × {item.quantity}
+                Rs {item.price} x {item.quantity}
               </p>
             </div>
             <p className="font-medium">
-              ₹{item.price * item.quantity}
+              Rs {item.price * item.quantity}
             </p>
           </div>
         ))}
@@ -45,7 +45,7 @@ export default function RecoveryBundle({
 
       <div className="border-t pt-4 flex justify-between items-center">
         <span className="font-medium">Total Bundle Value</span>
-        <span className="font-semibold">₹{totalPrice}</span>
+        <span className="font-semibold">Rs {totalPrice}</span>
       </div>
 
       <button
@@ -61,3 +61,4 @@ export default function RecoveryBundle({
     </div>
   );
 }
+

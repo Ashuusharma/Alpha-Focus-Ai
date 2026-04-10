@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { ShoppingCart, Star } from "lucide-react";
@@ -34,8 +34,8 @@ export default function ProductCard({ product }: ProductCardProps) {
   };
 
   return (
-    <div className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-[#E2DDD4] bg-white transition-all hover:border-[#2F6F57]/30 hover:shadow-lg">
-      <Link href={`/shop/${encodeURIComponent(product.sku || product.name)}`} className="relative block h-64 overflow-hidden bg-[#F4EFE6]">
+    <div className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-[#d9d9de] bg-white transition-all hover:border-[#0071e3]/30 hover:shadow-lg">
+      <Link href={`/shop/${encodeURIComponent(product.sku || product.name)}`} className="relative block h-64 overflow-hidden bg-[#f5f5f7]">
         <Image
           src={imageSrc}
           alt={product.name}
@@ -45,7 +45,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           unoptimized
         />
         {product.tags && product.tags.includes("active") && (
-          <span className="absolute left-3 top-3 rounded-full bg-[#2F6F57] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
+          <span className="absolute left-3 top-3 rounded-full bg-[#0071e3] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
             Clinical Strength
           </span>
         )}
@@ -53,29 +53,29 @@ export default function ProductCard({ product }: ProductCardProps) {
 
       <div className="flex flex-1 flex-col p-5">
         <div className="mb-2 flex items-center justify-between">
-          <span className="text-xs font-bold uppercase tracking-wider text-[#6B665D]">
+          <span className="text-xs font-bold uppercase tracking-wider text-[#6e6e73]">
             {product.brand || "Alpha Focus"}
           </span>
           <div className="flex items-center gap-1">
             <Star className="h-3 w-3 fill-[#C9A227] text-[#C9A227]" />
-            <span className="text-xs font-semibold text-[#1F3D2B]">4.8</span>
+            <span className="text-xs font-semibold text-[#1d1d1f]">4.8</span>
           </div>
         </div>
 
         <Link href={`/shop/${encodeURIComponent(product.sku || product.name)}`}>
-          <h3 className="mb-1 text-lg font-bold text-[#1F3D2B] transition-colors group-hover:text-[#2F6F57]">
+          <h3 className="mb-1 text-lg font-bold text-[#1d1d1f] transition-colors group-hover:text-[#0071e3]">
             {product.name}
           </h3>
         </Link>
         
-        <p className="mb-4 line-clamp-2 text-sm text-[#6B665D]">
+        <p className="mb-4 line-clamp-2 text-sm text-[#6e6e73]">
           {product.type} formulation designed for optimal skin barrier repair and maintenance.
         </p>
 
         <div className="mt-auto flex items-center justify-between gap-3">
           <div className="flex flex-col">
-            <span className="text-lg font-bold text-[#1F3D2B]">{formatINR(2400)}</span>
-            <span className="text-[10px] text-[#6B665D]">Free Shipping</span>
+            <span className="text-lg font-bold text-[#1d1d1f]">{formatINR(2400)}</span>
+            <span className="text-[10px] text-[#6e6e73]">Free Shipping</span>
           </div>
           
           <button
@@ -83,8 +83,8 @@ export default function ProductCard({ product }: ProductCardProps) {
             disabled={isInCart}
             className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-all ${
               isInCart
-                ? "cursor-default bg-[#E8EFEA] text-[#2F6F57]"
-                : "bg-[#1F3D2B] text-white hover:bg-[#2A5239] shadow-md shadow-[#1F3D2B]/10 hover:shadow-lg hover:shadow-[#1F3D2B]/20"
+                ? "cursor-default bg-[#eef5ff] text-[#0071e3]"
+                : "bg-[#1d1d1f] text-white hover:bg-[#005bbf] shadow-md shadow-[#1d1d1f]/10 hover:shadow-lg hover:shadow-[#1d1d1f]/20"
             }`}
           >
             <ShoppingCart className="h-4 w-4" />
@@ -95,3 +95,4 @@ export default function ProductCard({ product }: ProductCardProps) {
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-type AdherenceSummaryProps = {
+﻿type AdherenceSummaryProps = {
   consistencyScore: number;
   streakDays: number;
   weeklyCompletionPercent: number;
@@ -9,7 +9,7 @@ export default function AdherenceSummary({ consistencyScore, streakDays, weeklyC
   const safeCompletion = Math.max(0, Math.min(100, Math.round(weeklyCompletionPercent)));
 
   return (
-    <section className="rounded-2xl border border-[#E2DDD4] bg-card-soft-gradient p-5 sm:p-6 shadow-card">
+    <section className="rounded-2xl border border-[#d9d9de] bg-card-soft-gradient p-5 sm:p-6 shadow-card">
       <h3 className="text-base sm:text-lg font-semibold text-[#1E4D3A]">Adherence Summary</h3>
       <div className="mt-4 space-y-3">
         <div className="rounded-xl bg-[#F7F4EE] p-4">
@@ -17,7 +17,7 @@ export default function AdherenceSummary({ consistencyScore, streakDays, weeklyC
           {safeConsistency > 0 ? (
             <p className="metric-number mt-1 text-2xl text-[#1E4D3A]">{safeConsistency}%</p>
           ) : (
-            <p className="mt-1 text-sm font-semibold text-[#2F6F57]">Start your first routine to generate a consistency score.</p>
+            <p className="mt-1 text-sm font-semibold text-[#0071e3]">Start your first routine to generate a consistency score.</p>
           )}
         </div>
         <div className="rounded-xl bg-[#F7F4EE] p-4">
@@ -25,7 +25,7 @@ export default function AdherenceSummary({ consistencyScore, streakDays, weeklyC
           <p className="metric-number mt-1 text-2xl text-[#1E4D3A]">{streakDays} days</p>
         </div>
         <div className="rounded-xl bg-[#F7F4EE] p-4">
-          <div className="mb-2 flex items-center justify-between text-sm text-[#2F6F57]">
+          <div className="mb-2 flex items-center justify-between text-sm text-[#0071e3]">
             <span>Weekly Completion %</span>
             <span className="metric-number text-[#1E4D3A]">{safeCompletion}%</span>
           </div>
@@ -40,3 +40,4 @@ export default function AdherenceSummary({ consistencyScore, streakDays, weeklyC
     </section>
   );
 }
+

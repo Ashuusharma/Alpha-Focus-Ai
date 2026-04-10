@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useContext, useEffect, useMemo, useState } from "react";
@@ -106,7 +106,7 @@ export default function RecoveryProgramPage() {
     return (
       <main className="af-page px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl">
-          <p className="text-sm text-[#6B665D]">Loading recovery planner...</p>
+          <p className="text-sm text-[#6e6e73]">Loading recovery planner...</p>
         </div>
       </main>
     );
@@ -125,19 +125,19 @@ export default function RecoveryProgramPage() {
                 Daily Execution Engine
               </span>
               <h1 className="mt-3 text-clinical-heading text-3xl font-extrabold tracking-tight md:text-4xl">Full Recovery Planner</h1>
-              <p className="mt-3 text-sm leading-7 text-[#6B665D]">View the complete protocol timeline, stay anchored to your current phase, and switch categories without leaving the premium dashboard shell.</p>
+              <p className="mt-3 text-sm leading-7 text-[#6e6e73]">View the complete protocol timeline, stay anchored to your current phase, and switch categories without leaving the premium dashboard shell.</p>
             </div>
             <div className="flex w-full flex-col gap-3 lg:max-w-sm">
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="af-stat-tile">
-                  <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#8C6A5A]">Current day</p>
-                  <p className="mt-2 text-3xl font-bold text-[#1F3D2B]">{programDay}</p>
-                  <p className="mt-1 text-xs text-[#6B665D]">Of 30-day protocol</p>
+                  <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#6e6e73]">Current day</p>
+                  <p className="mt-2 text-3xl font-bold text-[#1d1d1f]">{programDay}</p>
+                  <p className="mt-1 text-xs text-[#6e6e73]">Of 30-day protocol</p>
                 </div>
                 <div className="af-stat-tile">
-                  <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#8C6A5A]">Current phase</p>
-                  <p className="mt-2 text-base font-semibold text-[#1F3D2B]">{phaseName}</p>
-                  <p className="mt-1 text-xs text-[#6B665D]">{categoryLabel}</p>
+                  <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#6e6e73]">Current phase</p>
+                  <p className="mt-2 text-base font-semibold text-[#1d1d1f]">{phaseName}</p>
+                  <p className="mt-1 text-xs text-[#6e6e73]">{categoryLabel}</p>
                 </div>
               </div>
               <Link href="/dashboard" className="af-btn-soft px-4 py-3 text-sm text-center">Back to Dashboard</Link>
@@ -147,22 +147,22 @@ export default function RecoveryProgramPage() {
 
         <div className="grid gap-4 md:grid-cols-3">
           <div className="af-card-secondary p-4">
-            <div className="flex items-center gap-2 text-[#1F3D2B]">
-              <CalendarRange className="h-4 w-4 text-[#2F6F57]" />
+            <div className="flex items-center gap-2 text-[#1d1d1f]">
+              <CalendarRange className="h-4 w-4 text-[#0071e3]" />
               <span className="font-semibold">Protocol timing</span>
             </div>
             <p className="mt-2 text-sm text-[#5F5A51]">Use this screen when you need the full day-by-day view rather than the dashboard mission summary.</p>
           </div>
           <div className="af-card-secondary p-4">
-            <div className="flex items-center gap-2 text-[#1F3D2B]">
-              <Sparkles className="h-4 w-4 text-[#2F6F57]" />
+            <div className="flex items-center gap-2 text-[#1d1d1f]">
+              <Sparkles className="h-4 w-4 text-[#0071e3]" />
               <span className="font-semibold">Category switching</span>
             </div>
             <p className="mt-2 text-sm text-[#5F5A51]">Switch categories here to audit how each track maps into its own execution plan.</p>
           </div>
           <div className="af-card-secondary p-4">
-            <div className="flex items-center gap-2 text-[#1F3D2B]">
-              <Sparkles className="h-4 w-4 text-[#2F6F57]" />
+            <div className="flex items-center gap-2 text-[#1d1d1f]">
+              <Sparkles className="h-4 w-4 text-[#0071e3]" />
               <span className="font-semibold">Goal</span>
             </div>
             <p className="mt-2 text-sm text-[#5F5A51]">Keep this page focused on execution structure, not secondary analytics already covered on the dashboard.</p>
@@ -183,3 +183,4 @@ export default function RecoveryProgramPage() {
     </main>
   );
 }
+

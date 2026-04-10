@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
@@ -144,23 +144,23 @@ export default function ProtocolChecklist({
     const expanded = Boolean(expandedTaskIds[task.id]);
 
     return (
-      <div key={task.id} className="rounded-lg border border-[#E2DDD3] bg-white p-3">
+      <div key={task.id} className="rounded-lg border border-[#d9d9de] bg-white p-3">
         <button
           type="button"
           onClick={() => toggleExpanded(task.id)}
           className="flex w-full items-center justify-between gap-2 text-left"
         >
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-wide text-[#8C6A5A]">{toClock(slot, index)}</p>
-            <p className="mt-0.5 text-sm font-semibold text-[#1F3D2B]">{task.title || task.label}</p>
+            <p className="text-[11px] font-bold uppercase tracking-wide text-[#6e6e73]">{toClock(slot, index)}</p>
+            <p className="mt-0.5 text-sm font-semibold text-[#1d1d1f]">{task.title || task.label}</p>
           </div>
-          {expanded ? <ChevronDown className="h-4 w-4 text-[#6B665D]" /> : <ChevronRight className="h-4 w-4 text-[#6B665D]" />}
+          {expanded ? <ChevronDown className="h-4 w-4 text-[#6e6e73]" /> : <ChevronRight className="h-4 w-4 text-[#6e6e73]" />}
         </button>
 
         {expanded ? (
           <div className="mt-2">
-            {task.goal ? <p className="text-[11px] text-[#2F6F57]">Goal: {task.goal}</p> : null}
-            {task.ingredient ? <p className="mt-1 text-[11px] text-[#6B665D]">Ingredient: {task.ingredient}</p> : null}
+            {task.goal ? <p className="text-[11px] text-[#0071e3]">Goal: {task.goal}</p> : null}
+            {task.ingredient ? <p className="mt-1 text-[11px] text-[#6e6e73]">Ingredient: {task.ingredient}</p> : null}
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <button
                 type="button"
@@ -176,7 +176,7 @@ export default function ProtocolChecklist({
               >
                 Reset
               </button>
-              <span className="text-xs font-semibold text-[#2F6F57]">{Math.floor(runtime.remainingSec / 60)}:{String(runtime.remainingSec % 60).padStart(2, "0")}</span>
+              <span className="text-xs font-semibold text-[#0071e3]">{Math.floor(runtime.remainingSec / 60)}:{String(runtime.remainingSec % 60).padStart(2, "0")}</span>
 
               {slot === "morning" ? (
                 <button
@@ -210,30 +210,30 @@ export default function ProtocolChecklist({
     <section className="af-card rounded-2xl p-4 sm:p-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-wider text-[#8C6A5A]">Today&apos;s Mission</p>
-          <h2 className="text-lg font-bold text-[#1F3D2B]">Day {dayNumber} Protocol · {phaseName}</h2>
+          <p className="text-[11px] font-bold uppercase tracking-wider text-[#6e6e73]">Today&apos;s Mission</p>
+          <h2 className="text-lg font-bold text-[#1d1d1f]">Day {dayNumber} Protocol Â· {phaseName}</h2>
         </div>
-        <p className="text-xs text-[#6B665D]">Interactive routine engine</p>
+        <p className="text-xs text-[#6e6e73]">Interactive routine engine</p>
       </div>
 
-      <div className="mt-3 rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3">
-        <p className="text-xs font-semibold text-[#1F3D2B]">Goal: {dailyGoal}</p>
-        <p className="mt-1 text-xs text-[#2F6F57]">Expected result: {expectedResult}</p>
+      <div className="mt-3 rounded-xl border border-[#d9d9de] bg-[#F8F6F3] p-3">
+        <p className="text-xs font-semibold text-[#1d1d1f]">Goal: {dailyGoal}</p>
+        <p className="mt-1 text-xs text-[#0071e3]">Expected result: {expectedResult}</p>
       </div>
 
-      <div className="mt-3 rounded-xl border border-[#E2DDD3] bg-[#F8F6F3] p-3">
+      <div className="mt-3 rounded-xl border border-[#d9d9de] bg-[#F8F6F3] p-3">
         <div className="flex items-center justify-between">
-          <p className="text-xs font-semibold text-[#1F3D2B]">Daily Completion</p>
-          <p className="text-xs font-bold text-[#2F6F57]">{completion.completed} / {completion.total} tasks</p>
+          <p className="text-xs font-semibold text-[#1d1d1f]">Daily Completion</p>
+          <p className="text-xs font-bold text-[#0071e3]">{completion.completed} / {completion.total} tasks</p>
         </div>
         <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-[#E7E1D7]">
-          <div className="h-full rounded-full bg-gradient-to-r from-[#8C6A5A] to-[#2F6F57]" style={{ width: `${completion.percent}%` }} />
+          <div className="h-full rounded-full bg-gradient-to-r from-[#6e6e73] to-[#0071e3]" style={{ width: `${completion.percent}%` }} />
         </div>
       </div>
 
       <div className="mt-4 space-y-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-wider text-[#8C6A5A]">Morning</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-[#6e6e73]">Morning</p>
           <div className="mt-2 space-y-2">
             {morningTasks.map((task, index) => renderRow("morning", task, index))}
           </div>
@@ -241,13 +241,13 @@ export default function ProtocolChecklist({
         </div>
 
         <div>
-          <p className="text-xs font-bold uppercase tracking-wider text-[#8C6A5A]">Afternoon</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-[#6e6e73]">Afternoon</p>
           <div className="mt-2 space-y-2">
             {afternoonTasks.map((task, index) => renderRow("lifestyle", task, index))}
           </div>
 
-          <div className="mt-2 rounded-lg border border-[#E2DDD3] bg-white p-3">
-            <p className="text-xs font-semibold text-[#1F3D2B]">Hydration & Sleep Checkpoint</p>
+          <div className="mt-2 rounded-lg border border-[#d9d9de] bg-white p-3">
+            <p className="text-xs font-semibold text-[#1d1d1f]">Hydration & Sleep Checkpoint</p>
             <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
               <input
                 type="number"
@@ -270,8 +270,8 @@ export default function ProtocolChecklist({
                 className="rounded-lg border border-[#D7D1C6] bg-white px-2 py-1.5 text-sm"
               />
             </div>
-            <p className="mt-2 text-[11px] text-[#6B665D]">
-              {hydrationDone ? "✔ Hydration goal" : "○ Hydration pending"} · {sleepDone ? "✔ Sleep goal" : "○ Sleep pending"}
+            <p className="mt-2 text-[11px] text-[#6e6e73]">
+              {hydrationDone ? "âœ” Hydration goal" : "â—‹ Hydration pending"} Â· {sleepDone ? "âœ” Sleep goal" : "â—‹ Sleep pending"}
             </p>
             <div className="mt-2 flex gap-2">
               <button onClick={onSaveMetrics} disabled={!canSaveDraft || saving} className="af-btn-primary px-3 py-1.5 text-xs disabled:opacity-60">
@@ -285,7 +285,7 @@ export default function ProtocolChecklist({
         </div>
 
         <div>
-          <p className="text-xs font-bold uppercase tracking-wider text-[#8C6A5A]">Night</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-[#6e6e73]">Night</p>
           <div className="mt-2 space-y-2">
             {nightTasks.map((task, index) => renderRow("night", task, index))}
           </div>
@@ -295,3 +295,4 @@ export default function ProtocolChecklist({
     </section>
   );
 }
+

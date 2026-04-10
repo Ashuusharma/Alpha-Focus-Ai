@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -196,24 +196,24 @@ function getStatusMeta(presentationState: TaskPresentationState) {
   if (presentationState === "completed") {
     return {
       label: "Completed",
-      badgeClass: "bg-[#E8F4EE] text-[#2F6F57]",
-      cardClass: "ring-1 ring-[#2F6F57]/15 bg-[#FCFFFD]",
+      badgeClass: "bg-[#E8F4EE] text-[#0071e3]",
+      cardClass: "ring-1 ring-[#0071e3]/15 bg-[#FCFFFD]",
     };
   }
 
   if (presentationState === "in_progress") {
     return {
       label: "In Progress",
-      badgeClass: "bg-[#1F3D2B] text-white",
-      cardClass: "ring-2 ring-[#2F6F57]/20 bg-white shadow-lg",
+      badgeClass: "bg-[#1d1d1f] text-white",
+      cardClass: "ring-2 ring-[#0071e3]/20 bg-white shadow-lg",
     };
   }
 
   if (presentationState === "active") {
     return {
       label: "Active",
-      badgeClass: "bg-[#E8F4EE] text-[#1F3D2B]",
-      cardClass: "ring-2 ring-[#2F6F57]/20 bg-white shadow-lg",
+      badgeClass: "bg-[#E8F4EE] text-[#1d1d1f]",
+      cardClass: "ring-2 ring-[#0071e3]/20 bg-white shadow-lg",
     };
   }
 
@@ -253,7 +253,7 @@ function TaskCard({
   const completeDisabled = state.code !== "ready_complete" && !completed;
 
   const activeStyling = isActive 
-    ? "shadow-xl scale-[1.02] bg-gradient-to-br from-[#F4FAF6] to-white ring-2 ring-[#2F6F57]/30 z-10" 
+    ? "shadow-xl scale-[1.02] bg-gradient-to-br from-[#F4FAF6] to-white ring-2 ring-[#0071e3]/30 z-10" 
     : "shadow-md bg-white opacity-85 hover:opacity-100";
 
   return (
@@ -264,7 +264,7 @@ function TaskCard({
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
-              <span className="rounded-full bg-[#F8F7F4] px-3 py-1 text-[10px] font-black uppercase tracking-widest text-[#8C6A5A]">
+              <span className="rounded-full bg-[#F8F7F4] px-3 py-1 text-[10px] font-black uppercase tracking-widest text-[#6e6e73]">
                 {task.timeWindow.start} - {task.timeWindow.end}
               </span>
               <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wider ${statusMeta.badgeClass}`}>
@@ -272,24 +272,24 @@ function TaskCard({
               </span>
               {isActive && (
                 <span className="flex h-2 w-2 relative">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#2F6F57] opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#2F6F57]"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0071e3] opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#0071e3]"></span>
                 </span>
               )}
             </div>
-            <h5 className="text-2xl font-black leading-tight text-[#1F3D2B]">{task.title}</h5>
-            <div className="flex items-center gap-3 text-xs font-semibold text-[#6B665D]">
+            <h5 className="text-2xl font-black leading-tight text-[#1d1d1f]">{task.title}</h5>
+            <div className="flex items-center gap-3 text-xs font-semibold text-[#6e6e73]">
               <span className="flex items-center gap-1"><Clock3 className="h-3.5 w-3.5" /> {task.durationMin} min</span>
-              <span className="text-[#2F6F57] flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" /> +{task.reward} A$</span>
+              <span className="text-[#0071e3] flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" /> +{task.reward} A$</span>
             </div>
           </div>
-          <ChevronRight className={`h-5 w-5 text-[#8C6A5A] transition-transform duration-300 ${isActive ? "rotate-90" : ""}`} />
+          <ChevronRight className={`h-5 w-5 text-[#6e6e73] transition-transform duration-300 ${isActive ? "rotate-90" : ""}`} />
         </div>
 
         {!isActive ? (
           <div className="flex items-center justify-between gap-3 rounded-2xl bg-[#F8F7F4] px-5 py-4">
-            <p className="truncate text-sm font-semibold text-[#1F3D2B] flex-1">{task.goal}</p>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-[#8C6A5A] shrink-0 text-right">
+            <p className="truncate text-sm font-semibold text-[#1d1d1f] flex-1">{task.goal}</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[#6e6e73] shrink-0 text-right">
               {presentationState === "locked"
                 ? `Unlocks in ${formatCountdown(state.countdownSec)}`
                 : presentationState === "in_progress"
@@ -300,19 +300,19 @@ function TaskCard({
         ) : (
           <div className="flex flex-col gap-6 mt-2">
             
-            <div className="rounded-2xl bg-[#1F3D2B]/5 border border-[#1F3D2B]/10 p-5">
-              <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#2F6F57] mb-1">
+            <div className="rounded-2xl bg-[#1d1d1f]/5 border border-[#1d1d1f]/10 p-5">
+              <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#0071e3] mb-1">
                 Primary Goal
               </p>
-              <p className="text-sm font-bold text-[#1F3D2B]">{task.goal}</p>
+              <p className="text-sm font-bold text-[#1d1d1f]">{task.goal}</p>
             </div>
 
             <div>
-              <p className="mb-3 text-[11px] font-bold uppercase tracking-wider text-[#8C6A5A]">Execution Steps</p>
+              <p className="mb-3 text-[11px] font-bold uppercase tracking-wider text-[#6e6e73]">Execution Steps</p>
               <ul className="space-y-4">
                 {task.howToSteps.map((step, idx) => (
                   <li key={`${task.id}-step-${idx}`} className="flex items-start gap-4 text-sm text-[#3b3834]">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#E8F4EE] text-[11px] font-bold text-[#2F6F57] mt-0.5">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#E8F4EE] text-[11px] font-bold text-[#0071e3] mt-0.5">
                       {idx + 1}
                     </span>
                     <span className="leading-relaxed">{step}</span>
@@ -323,39 +323,39 @@ function TaskCard({
 
             <div className="grid gap-3 md:grid-cols-2">
               <div className="rounded-2xl bg-[#F8F7F4] p-4">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[#8C6A5A]">Why It Helps</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[#6e6e73]">Why It Helps</p>
                 <p className="mt-2 text-sm leading-relaxed text-[#3b3834]">{task.whyItHelps}</p>
               </div>
               <div className="rounded-2xl bg-[#FFF8F2] p-4">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[#8C6A5A]">Care Note</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[#6e6e73]">Care Note</p>
                 <p className="mt-2 text-sm leading-relaxed text-[#3b3834]">{task.caution}</p>
               </div>
             </div>
 
             <div className="rounded-2xl bg-[#F8F7F4] p-5 flex flex-col sm:flex-row gap-5">
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white shadow-sm border border-[#E2DDD3]">
-                <ShoppingBag className="h-6 w-6 text-[#8C6A5A]/50" />
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white shadow-sm border border-[#d9d9de]">
+                <ShoppingBag className="h-6 w-6 text-[#6e6e73]/50" />
               </div>
               <div className="flex-1 flex flex-col justify-center">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[#8C6A5A]">{task.product.ingredient}</p>
-                <p className="text-sm font-black text-[#1F3D2B] mt-0.5">{task.product.name}</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[#6e6e73]">{task.product.ingredient}</p>
+                <p className="text-sm font-black text-[#1d1d1f] mt-0.5">{task.product.name}</p>
                 
                 {!userHasProduct ? (
                   <div className="mt-4 flex flex-wrap items-center gap-3">
                     <Link href={`/shop?product=${encodeURIComponent(task.product.id)}`} className="rounded-xl bg-gradient-to-r from-green-600 to-green-500 px-5 py-2.5 text-[11px] font-bold uppercase tracking-wider text-white shadow-md hover:scale-105 active:scale-95 transition-all">
                       Buy Product
                     </Link>
-                    <button type="button" onClick={onSetProductOwnership} className="rounded-xl bg-white border border-[#E2DDD3] px-5 py-2.5 text-[11px] font-bold uppercase tracking-wider text-[#1F3D2B] hover:bg-[#F8F7F4] active:scale-95 transition-all">
+                    <button type="button" onClick={onSetProductOwnership} className="rounded-xl bg-white border border-[#d9d9de] px-5 py-2.5 text-[11px] font-bold uppercase tracking-wider text-[#1d1d1f] hover:bg-[#F8F7F4] active:scale-95 transition-all">
                       I have this
                     </button>
                     {!showHomeAlternative ? (
-                      <button type="button" onClick={onToggleHomeAlternative} className="rounded-xl underline px-2 py-2 text-[10px] uppercase font-bold tracking-widest text-[#8C6A5A] hover:text-[#1F3D2B] transition-all">
+                      <button type="button" onClick={onToggleHomeAlternative} className="rounded-xl underline px-2 py-2 text-[10px] uppercase font-bold tracking-widest text-[#6e6e73] hover:text-[#1d1d1f] transition-all">
                         Home Remedy?
                       </button>
                     ) : null}
                   </div>
                 ) : (
-                  <div className="mt-3 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-[#2F6F57]">
+                  <div className="mt-3 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-[#0071e3]">
                     <CheckCircle2 className="h-4 w-4" /> Ready in kit
                   </div>
                 )}
@@ -378,16 +378,16 @@ function TaskCard({
                 disabled={startDisabled}
                 className={`rounded-xl px-5 py-3.5 text-xs font-black uppercase tracking-wider transition-all duration-300 ${
                   presentationState === "in_progress"
-                    ? "bg-[#1F3D2B] text-white shadow-lg shadow-[#1F3D2B]/30"
+                    ? "bg-[#1d1d1f] text-white shadow-lg shadow-[#1d1d1f]/30"
                     : presentationState === "active"
-                      ? "bg-[#F8F7F4] text-[#1F3D2B] hover:bg-[#E2DDD3]"
+                      ? "bg-[#F8F7F4] text-[#1d1d1f] hover:bg-[#d9d9de]"
                       : "bg-[#F1EFEA] text-[#9B958B]"
                 } ${startDisabled ? "cursor-not-allowed opacity-50" : "active:scale-95 hover:scale-105"}`}
               >
                 {presentationState === "locked"
-                  ? `Locked • ${formatCountdown(state.countdownSec)}`
+                  ? `Locked  -  ${formatCountdown(state.countdownSec)}`
                   : presentationState === "in_progress"
-                    ? `Running • ${formatCountdown(runtime.remainingSec)}`
+                    ? `Running  -  ${formatCountdown(runtime.remainingSec)}`
                     : presentationState === "missed"
                       ? "Missed"
                       : runtime.startedAt
@@ -398,7 +398,7 @@ function TaskCard({
               <button
                 type="button"
                 onClick={onResetTimer}
-                className="rounded-xl px-4 py-3.5 text-xs font-black uppercase tracking-wider bg-white border border-[#E2DDD3] text-[#6B665D] hover:bg-[#F8F7F4] active:scale-95 transition-all"
+                className="rounded-xl px-4 py-3.5 text-xs font-black uppercase tracking-wider bg-white border border-[#d9d9de] text-[#6e6e73] hover:bg-[#F8F7F4] active:scale-95 transition-all"
               >
                 <RotateCcw className="h-4 w-4 mx-auto" />
               </button>
@@ -409,7 +409,7 @@ function TaskCard({
                 disabled={completeDisabled}
                 className={`rounded-xl px-6 py-3.5 text-xs font-black uppercase tracking-wider transition-all duration-300 ${
                   completed
-                    ? "bg-[#E8F4EE] text-[#2F6F57]"
+                    ? "bg-[#E8F4EE] text-[#0071e3]"
                     : completeDisabled
                       ? "bg-[#F1EFEA] text-[#9B958B] opacity-50"
                       : "bg-gradient-to-r from-green-600 to-green-500 text-white shadow-lg shadow-green-500/30 hover:scale-105 active:scale-95"
@@ -430,7 +430,7 @@ function TaskCard({
             )}
 
             {state.code === "ready_complete" && !completed ? (
-              <div className="flex items-center justify-center gap-2 rounded-xl bg-[#E8F4EE] px-4 py-3 text-[10px] font-black uppercase tracking-widest text-[#2F6F57]">
+              <div className="flex items-center justify-center gap-2 rounded-xl bg-[#E8F4EE] px-4 py-3 text-[10px] font-black uppercase tracking-widest text-[#0071e3]">
                 <TriangleAlert className="h-3.5 w-3.5" />
                 Verification unlocked for this time window
               </div>
@@ -855,25 +855,25 @@ export default function TreatmentPlan({
     <section className="af-card rounded-[2rem] border-none bg-white p-4 md:p-8 shadow-sm flex flex-col relative" id="daily-execution-engine">
       <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md pb-4 pt-2 mb-4 -mx-4 md:-mx-8 px-4 md:px-8 border-b border-[#F1ECE3] flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#8C6A5A]">Daily Protocol</p>
+          <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#6e6e73]">Daily Protocol</p>
           <h3 className="mt-1 text-2xl font-bold tracking-tight text-clinical-heading">
-            {mode === "mission" ? "Today's Mission" : "Recovery Planner"} · {categories.find((c) => c.id === selectedCategory)?.label || categoryLabel}
+            {mode === "mission" ? "Today's Mission" : "Recovery Planner"} Â· {categories.find((c) => c.id === selectedCategory)?.label || categoryLabel}
           </h3>
           <div className="mt-2 flex flex-wrap items-center gap-3">
-            <span className="flex items-center gap-1.5 rounded-full bg-[#F8F7F4] px-3 py-1 text-[11px] font-bold text-[#6B665D]">
+            <span className="flex items-center gap-1.5 rounded-full bg-[#F8F7F4] px-3 py-1 text-[11px] font-bold text-[#6e6e73]">
               DAY {execution.day} / {totalDays}
             </span>
-            <span className="flex items-center gap-1.5 rounded-full bg-[#E8F4EE] px-3 py-1 text-[11px] font-bold text-[#2F6F57]">
+            <span className="flex items-center gap-1.5 rounded-full bg-[#E8F4EE] px-3 py-1 text-[11px] font-bold text-[#0071e3]">
               PHASE {execution.phase}: {phaseName}
             </span>
-            <span className="flex items-center gap-1.5 rounded-full bg-[#F8F7F4] px-3 py-1 text-[11px] font-bold text-[#6B665D]">
+            <span className="flex items-center gap-1.5 rounded-full bg-[#F8F7F4] px-3 py-1 text-[11px] font-bold text-[#6e6e73]">
               IST {liveIndiaTime}
             </span>
-            <span className="flex items-center gap-1.5 rounded-full bg-[#FFF6E8] px-3 py-1 text-[11px] font-bold text-[#8C6A5A]">
+            <span className="flex items-center gap-1.5 rounded-full bg-[#FFF6E8] px-3 py-1 text-[11px] font-bold text-[#6e6e73]">
               {levelDisplay.label} Track
             </span>
           </div>
-          <p className="mt-3 max-w-2xl text-xs leading-relaxed text-[#6B665D]">
+          <p className="mt-3 max-w-2xl text-xs leading-relaxed text-[#6e6e73]">
             {levelDisplay.description} The planner uses India Standard Time for all task windows and spreads actions across the full day instead of stacking everything in one generic morning block.
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
@@ -892,7 +892,7 @@ export default function TreatmentPlan({
                   onClick={() => setToleranceMode(level)}
                   className={`rounded-2xl px-4 py-2 text-left transition-all ${
                     active
-                      ? "bg-[#1F3D2B] text-white shadow-lg"
+                      ? "bg-[#1d1d1f] text-white shadow-lg"
                       : "bg-[#F8F7F4] text-[#4B463F] hover:bg-[#EDE7DD]"
                   }`}
                 >
@@ -916,14 +916,14 @@ export default function TreatmentPlan({
                   setSelectedCategory(cat);
                   onCategoryChange?.(cat);
                 }}
-                className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${cat === selectedCategory ? "bg-[#1F3D2B] text-white shadow-lg" : "bg-[#F8F7F4] text-[#6B665D] hover:bg-[#E2DDD3]"}`}
+                className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${cat === selectedCategory ? "bg-[#1d1d1f] text-white shadow-lg" : "bg-[#F8F7F4] text-[#6e6e73] hover:bg-[#d9d9de]"}`}
               >
                 {categories.find((c) => c.id === cat)?.label || cat}
               </button>
             ))}
           </div>
         ) : (
-          <Link href="/recovery-program" className="group flex items-center gap-2 text-xs font-bold text-[#1F3D2B] transition-colors hover:text-[#2F6F57]">
+          <Link href="/recovery-program" className="group flex items-center gap-2 text-xs font-bold text-[#1d1d1f] transition-colors hover:text-[#0071e3]">
             Full Program <RotateCcw className="h-3.5 w-3.5 transition-transform duration-500 group-hover:rotate-180" />
           </Link>
         )}
@@ -932,8 +932,8 @@ export default function TreatmentPlan({
       <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-3">
         <div className="rounded-2xl bg-[#F8F7F4] p-5 md:col-span-2">
           <div className="flex items-center gap-2">
-            <div className="h-1.5 w-1.5 rounded-full bg-[#1F3D2B]" />
-            <p className="text-[12px] font-bold uppercase tracking-wider text-[#1F3D2B]">Objective Today</p>
+            <div className="h-1.5 w-1.5 rounded-full bg-[#1d1d1f]" />
+            <p className="text-[12px] font-bold uppercase tracking-wider text-[#1d1d1f]">Objective Today</p>
           </div>
           <p className="mt-2 text-md font-bold leading-snug text-clinical-heading">{execution.dailyGoal}</p>
           <p className="mt-1 text-xs italic text-clinical-body opacity-60">{execution.expectedOutcome}</p>
@@ -941,13 +941,13 @@ export default function TreatmentPlan({
 
         <div className="rounded-2xl bg-[#F8F7F4] p-5">
           <div className="mb-2 flex items-end justify-between">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[#1F3D2B]">Progress</p>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-[#1d1d1f]">Progress</p>
             <span className="text-lg font-bold text-clinical-heading">{progressPct}%</span>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-[#E2DDD3]">
-            <div className="h-full rounded-full bg-[#2F6F57] transition-all duration-1000" style={{ width: `${progressPct}%` }} />
+          <div className="h-2 overflow-hidden rounded-full bg-[#d9d9de]">
+            <div className="h-full rounded-full bg-[#0071e3] transition-all duration-1000" style={{ width: `${progressPct}%` }} />
           </div>
-          <div className="mt-3 space-y-1 text-[10px] font-bold uppercase tracking-widest text-[#8C6A5A]">
+          <div className="mt-3 space-y-1 text-[10px] font-bold uppercase tracking-widest text-[#6e6e73]">
             <p>Adherence today: {execution.adherenceScore}%</p>
             <p>Verified tasks: {completedToday} / {allTasks.length}</p>
           </div>
@@ -963,20 +963,20 @@ export default function TreatmentPlan({
           <div key={group.key}>
             <div className="mb-5 flex items-center justify-between gap-3">
               <div>
-                <h4 className="text-sm font-bold uppercase tracking-widest text-[#1F3D2B]">{group.label}</h4>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[#8C6A5A]">
+                <h4 className="text-sm font-bold uppercase tracking-widest text-[#1d1d1f]">{group.label}</h4>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#6e6e73]">
                   {group.tasks.length} task{group.tasks.length === 1 ? "" : "s"}
                 </p>
               </div>
-              <div className="rounded-full bg-[#F8F7F4] px-3 py-1 text-[10px] font-black uppercase tracking-wider text-[#6B665D]">
+              <div className="rounded-full bg-[#F8F7F4] px-3 py-1 text-[10px] font-black uppercase tracking-wider text-[#6e6e73]">
                 {group.tasks.some((task) => task.id === activeTaskId) ? "Current window" : "Queued"}
               </div>
             </div>
 
             <div className="flex gap-4 overflow-x-auto pb-6 -mx-4 px-4 md:mx-0 md:px-0 snap-x snap-mandatory md:flex-col md:overflow-visible hide-scrollbar">
               {group.tasks.length === 0 ? (
-                <div className="w-full rounded-[1.5rem] border-2 border-dashed border-[#E2DDD3] bg-[#FCFAF9] p-8 text-center">
-                  <p className="text-sm font-medium italic text-[#8C6A5A]">No mandatory clinical tasks scheduled for this period.</p>
+                <div className="w-full rounded-[1.5rem] border-2 border-dashed border-[#d9d9de] bg-[#FCFAF9] p-8 text-center">
+                  <p className="text-sm font-medium italic text-[#6e6e73]">No mandatory clinical tasks scheduled for this period.</p>
                 </div>
               ) : (
                 group.tasks.map((task) => {
@@ -1011,9 +1011,9 @@ export default function TreatmentPlan({
         ))}
       </div>
 
-      <div className="relative mt-16 flex flex-col items-center gap-6 overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#1F3D2B] via-[#162d20] to-[#0A1A12] p-8 text-white shadow-xl">
+      <div className="relative mt-16 flex flex-col items-center gap-6 overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#1d1d1f] via-[#162d20] to-[#0A1A12] p-8 text-white shadow-xl">
         <div className="absolute -right-32 -top-32 h-64 w-64 rounded-full bg-white/5 blur-2xl" />
-        <div className="absolute -bottom-24 -left-24 h-48 w-48 rounded-full bg-[#2F6F57]/20 blur-xl" />
+        <div className="absolute -bottom-24 -left-24 h-48 w-48 rounded-full bg-[#0071e3]/20 blur-xl" />
 
         <div className="relative z-10 text-center">
           <p className="mb-2 text-[11px] font-black uppercase tracking-[0.3em] text-[#E8F4EE]">Completion Milestone</p>
@@ -1053,7 +1053,7 @@ export default function TreatmentPlan({
             onClick={() => {
               document.getElementById('daily-execution-engine')?.scrollIntoView({ behavior: 'smooth' });
             }}
-            className="w-full bg-gradient-to-r from-[#2F6F57] to-[#1F3D2B] text-white rounded-2xl py-4 flex items-center justify-center gap-2 font-black uppercase tracking-widest text-sm shadow-lg active:scale-95 transition-transform"
+            className="w-full bg-gradient-to-r from-[#0071e3] to-[#1d1d1f] text-white rounded-2xl py-4 flex items-center justify-center gap-2 font-black uppercase tracking-widest text-sm shadow-lg active:scale-95 transition-transform"
           >
             Start Next Task <ChevronRight className="h-4 w-4" />
           </button>
@@ -1062,3 +1062,5 @@ export default function TreatmentPlan({
     </section>
   );
 }
+
+

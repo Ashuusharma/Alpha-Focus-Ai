@@ -1,58 +1,63 @@
-/* Premium Wellness Brand Color System - Sage & Cream Palette */
+/* Apple-inspired Global Theme Tokens */
 
 :root {
-  /* Primary Colors */
-  --color-primary: #1E4D3A;
-  --color-primary-light: #2F6F57;
-  --color-accent: #6E9F87;
-  --color-accent-light: #A9CBB7;
+  --primary-bg: #000000;
+  --secondary-bg: #f5f5f7;
+  --card-bg: #f5f5f7;
 
-  /* Semantic Colors */
-  --color-success: #16A34A;
-  --color-success-light: #DCFCE7;
-  --color-warning: #C9A227;
-  --color-warning-light: #F4EED7;
-  --color-error: #8C6A5A;
-  --color-error-light: #F1E6E1;
-  --color-info: #2F6F57;
-  --color-info-light: #E8EFEA;
+  --accent-blue: #0071e3;
+  --link-blue: #0066cc;
+  --link-blue-dark: #2997ff;
 
-  /* Backgrounds */
-  --color-bg-primary: #F4F1EB;
-  --color-bg-secondary: #E8E3DA;
-  --color-bg-tertiary: #FFFFFF;
+  --text-primary-dark: #ffffff;
+  --text-secondary-dark: #a7a7a7;
 
-  /* Text */
-  --color-text-primary: #1E4D3A;
-  --color-text-secondary: #2F6F57;
-  --color-text-tertiary: #6E9F87;
-  --color-text-inverse: #F4F1EB;
+  --text-primary-light: #1d1d1f;
+  --text-secondary-light: rgba(0, 0, 0, 0.8);
 
-  /* Borders */
-  --color-border: rgba(30,77,58,0.14);
-  --color-border-light: rgba(30,77,58,0.08);
+  --border-accent: 2px solid #0071e3;
+  --border-default: 1px solid rgba(0, 0, 0, 0.14);
 
-  /* Skeuomorphic surface system */
-  --surface-base: #F4EFE6;
-  --surface-raised: linear-gradient(180deg, #FFFDF9 0%, #F2EBDF 100%);
-  --surface-soft: linear-gradient(180deg, #FBF8F1 0%, #EEE6D8 100%);
-  --surface-pressed: linear-gradient(180deg, #E7DED0 0%, #F8F2E7 100%);
-  --surface-glow: rgba(255, 255, 255, 0.78);
-  --surface-outline: rgba(120, 97, 67, 0.16);
-  --shadow-raised: 18px 18px 38px rgba(130, 110, 84, 0.16), -10px -10px 24px rgba(255, 252, 245, 0.9);
-  --shadow-soft: 10px 10px 22px rgba(130, 110, 84, 0.1), -6px -6px 18px rgba(255, 252, 245, 0.82);
-  --shadow-pressed: inset 7px 7px 14px rgba(161, 139, 110, 0.16), inset -7px -7px 14px rgba(255, 252, 245, 0.88);
-  --shadow-button: 0 10px 18px rgba(31, 61, 43, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  --font-ui: "SF Pro Text", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-display: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+  --color-primary: var(--accent-blue);
+  --color-primary-light: #2997ff;
+  --color-accent: var(--accent-blue);
+  --color-accent-light: #2997ff;
+
+  --color-bg-primary: var(--primary-bg);
+  --color-bg-secondary: var(--secondary-bg);
+  --color-bg-tertiary: #ffffff;
+
+  --color-text-primary: var(--text-primary-light);
+  --color-text-secondary: var(--text-secondary-light);
+  --color-text-tertiary: rgba(0, 0, 0, 0.48);
+  --color-text-inverse: var(--text-primary-dark);
+
+  --color-border: rgba(0, 0, 0, 0.14);
+  --color-border-light: rgba(0, 0, 0, 0.08);
+
+  --surface-base: #000000;
+  --surface-raised: #f5f5f7;
+  --surface-soft: #ffffff;
+  --surface-pressed: #ededf2;
+  --surface-glow: rgba(255, 255, 255, 0.9);
+  --surface-outline: rgba(0, 0, 0, 0.16);
+
+  --shadow-raised: rgba(0, 0, 0, 0.22) 3px 5px 30px 0;
+  --shadow-soft: rgba(0, 0, 0, 0.16) 2px 4px 18px 0;
+  --shadow-pressed: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+  --shadow-button: none;
 }
 
-/* Dark Mode Support */
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-bg-primary: #F4F1EB;
-    --color-bg-secondary: #E8E3DA;
-    --color-bg-tertiary: #FFFFFF;
-    --color-text-primary: #1E4D3A;
-    --color-text-secondary: #2F6F57;
-    --color-border: rgba(30,77,58,0.14);
+    --color-bg-primary: #000000;
+    --color-bg-secondary: #000000;
+    --color-bg-tertiary: #272729;
+    --color-text-primary: var(--text-primary-dark);
+    --color-text-secondary: var(--text-secondary-dark);
+    --color-border: rgba(255, 255, 255, 0.14);
   }
 }

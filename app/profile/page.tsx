@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useContext, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -11,9 +11,9 @@ import { useUserStore } from "@/stores/useUserStore";
 import { hydrateUserData } from "@/lib/hydrateUserData";
 
 function formatDate(value?: string) {
-  if (!value) return "—";
+  if (!value) return "-";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
+  if (Number.isNaN(date.getTime())) return "-";
   return date.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
@@ -119,7 +119,7 @@ export default function ProfilePage() {
       id: `routine_${row.id}`,
       date: row.log_date,
       title: "Routine updated",
-      note: `AM: ${row.am_done ? "Done" : "Missed"} · PM: ${row.pm_done ? "Done" : "Missed"}`,
+      note: `AM: ${row.am_done ? "Done" : "Missed"} - PM: ${row.pm_done ? "Done" : "Missed"}`,
       href: "/dashboard",
       icon: Sparkles,
     })),
@@ -161,13 +161,13 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="af-page-shell px-4 py-20 text-[#1F3D2B]">
+    <div className="af-page-shell px-4 py-20 text-[#ffffff]">
       <div className="af-page-frame mx-auto w-full max-w-6xl">
         <div className="af-page-stack">
-        <section className="af-page-hero p-6 md:p-8">
+        <section className="nv-section-white">
           <div className="relative z-10 grid grid-cols-1 gap-6 md:grid-cols-[auto,1fr] md:items-center">
             <div className="flex h-24 w-24 items-center justify-center rounded-full border border-white/50 bg-white/70 shadow-[0_14px_30px_rgba(31,61,43,0.1)]">
-              <User className="h-10 w-10 text-[#6B665D]" />
+              <User className="h-10 w-10 text-[#6e6e73]" />
             </div>
             <div className="space-y-4">
               <div className="flex flex-wrap items-center gap-3">
@@ -179,15 +179,15 @@ export default function ProfilePage() {
               </div>
               <div>
                 <h1 className="text-clinical-heading text-3xl font-extrabold tracking-tight md:text-4xl">{displayName}</h1>
-                <p className="mt-2 max-w-2xl text-sm leading-7 text-[#6B665D]">Track your account identity, reward status, records, and trend movement from a profile page that now matches the upgraded dashboard shell.</p>
+                <p className="mt-2 max-w-2xl text-sm leading-7 text-[#6e6e73]">Track your account identity, reward status, records, and trend movement from a profile page that now matches the upgraded dashboard shell.</p>
               </div>
-              <div className="grid grid-cols-1 gap-3 text-sm text-[#6B665D] sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 text-sm text-[#6e6e73] sm:grid-cols-3">
                 <div className="af-stat-tile flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-[#2F6F57]" />
+                  <MapPin className="h-4 w-4 text-[#0071e3]" />
                   <span>{locationLabel}</span>
                 </div>
                 <div className="af-stat-tile flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-[#2F6F57]" />
+                  <Calendar className="h-4 w-4 text-[#0071e3]" />
                   <span>Member since {formatDate(joinedDate)}</span>
                 </div>
                 <div className="af-stat-tile flex items-center gap-2">
@@ -202,35 +202,35 @@ export default function ProfilePage() {
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <div className="af-card-secondary p-5">
             <div className="flex items-center justify-between">
-              <p className="text-sm text-[#6B665D]">Total scans</p>
-              <Camera className="h-4 w-4 text-[#2F6F57]" />
+              <p className="text-sm text-[#6e6e73]">Total scans</p>
+              <Camera className="h-4 w-4 text-[#0071e3]" />
             </div>
-            <p className="metric-number mt-3 text-4xl text-[#1F3D2B]">{totalScans}</p>
+            <p className="metric-number mt-3 text-4xl text-[#1d1d1f]">{totalScans}</p>
           </div>
           <div className="af-card-secondary p-5">
             <div className="flex items-center justify-between">
-              <p className="text-sm text-[#6B665D]">Average score</p>
-              <Sparkles className="h-4 w-4 text-[#2F6F57]" />
+              <p className="text-sm text-[#6e6e73]">Average score</p>
+              <Sparkles className="h-4 w-4 text-[#0071e3]" />
             </div>
-            <p className="metric-number mt-3 text-4xl text-[#1F3D2B]">{averageScore}%</p>
+            <p className="metric-number mt-3 text-4xl text-[#1d1d1f]">{averageScore}%</p>
           </div>
           <div className="af-card-secondary p-5">
             <div className="flex items-center justify-between">
-              <p className="text-sm text-[#6B665D]">Reports</p>
-              <FileText className="h-4 w-4 text-[#2F6F57]" />
+              <p className="text-sm text-[#6e6e73]">Reports</p>
+              <FileText className="h-4 w-4 text-[#0071e3]" />
             </div>
-            <p className="metric-number mt-3 text-4xl text-[#1F3D2B]">{reportsGenerated}</p>
+            <p className="metric-number mt-3 text-4xl text-[#1d1d1f]">{reportsGenerated}</p>
           </div>
           <div className="af-card-secondary p-5">
             <div className="flex items-center justify-between">
-              <p className="text-sm text-[#6B665D]">Streak</p>
+              <p className="text-sm text-[#6e6e73]">Streak</p>
               <Flame className="h-4 w-4 text-[#C27803]" />
             </div>
-            <p className="metric-number mt-3 text-4xl text-[#1F3D2B]">{streakCount}d</p>
+            <p className="metric-number mt-3 text-4xl text-[#1d1d1f]">{streakCount}d</p>
           </div>
         </div>
 
-        <section className="rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-2 shadow-sm">
+        <section className="nv-section-white p-2">
           <div className="flex flex-wrap gap-2">
             {[
               ["overview", "Overview"],
@@ -244,7 +244,7 @@ export default function ProfilePage() {
               <button
                 key={key}
                 onClick={() => setActiveTab(key as ProfileTab)}
-                className={`rounded-xl px-4 py-2 text-sm font-medium transition ${activeTab === key ? "bg-[#2F6F57] text-white shadow-md" : "bg-white/40 text-[#6B665D] hover:bg-white/80 hover:text-[#1F3D2B]"}`}
+                className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 ${activeTab === key ? "border border-[#0071e3] bg-[#eef5ff] text-[#1d1d1f] shadow-[0_10px_20px_rgba(11,18,32,0.1)]" : "border border-[#d9d9de] bg-white text-[#5e5e5e] hover:-translate-y-0.5 hover:text-[#000000]"}`}
               >
                 {label}
               </button>
@@ -257,54 +257,54 @@ export default function ProfilePage() {
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
               <MedicalCard className="p-5">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-[#6B665D]">Total scans</p>
-                <Camera className="h-4 w-4 text-[#2F6F57]" />
+                <p className="text-sm text-[#6e6e73]">Total scans</p>
+                <Camera className="h-4 w-4 text-[#0071e3]" />
               </div>
-              <p className="metric-number mt-3 text-4xl text-[#1F3D2B]">{totalScans}</p>
+              <p className="metric-number mt-3 text-4xl text-[#1d1d1f]">{totalScans}</p>
               </MedicalCard>
               <MedicalCard className="p-5">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-[#6B665D]">Average score</p>
-                <Sparkles className="h-4 w-4 text-[#2F6F57]" />
+                <p className="text-sm text-[#6e6e73]">Average score</p>
+                <Sparkles className="h-4 w-4 text-[#0071e3]" />
               </div>
-              <p className="metric-number mt-3 text-4xl text-[#1F3D2B]">{averageScore}%</p>
+              <p className="metric-number mt-3 text-4xl text-[#1d1d1f]">{averageScore}%</p>
               </MedicalCard>
               <MedicalCard className="p-5">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-[#6B665D]">Reports generated</p>
-                <FileText className="h-4 w-4 text-[#2F6F57]" />
+                <p className="text-sm text-[#6e6e73]">Reports generated</p>
+                <FileText className="h-4 w-4 text-[#0071e3]" />
               </div>
-              <p className="metric-number mt-3 text-4xl text-[#1F3D2B]">{reportsGenerated}</p>
+              <p className="metric-number mt-3 text-4xl text-[#1d1d1f]">{reportsGenerated}</p>
               </MedicalCard>
               <MedicalCard className="p-5">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-[#6B665D]">Streak</p>
+                <p className="text-sm text-[#6e6e73]">Streak</p>
                 <Flame className="h-4 w-4 text-[#C27803]" />
               </div>
-              <p className="metric-number mt-3 text-4xl text-[#1F3D2B]">{streakCount}d</p>
+              <p className="metric-number mt-3 text-4xl text-[#1d1d1f]">{streakCount}d</p>
               </MedicalCard>
             </div>
 
             <MedicalCard className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-[#1F3D2B]">Transformation Timeline</h3>
+                <h3 className="text-lg font-semibold text-[#1d1d1f]">Transformation Timeline</h3>
                 <StatusBadge variant="success">Data-linked journey</StatusBadge>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="rounded-xl border border-[#E2DDD4] bg-[#F8F6F3] p-4">
+                <div className="rounded-xl border border-[#d9d9de] bg-[#F8F6F3] p-4">
                   <p className="text-xs uppercase tracking-wider text-[#8C877D]">Day 0</p>
                   <p className="font-semibold mt-1">Baseline capture</p>
-                  <p className="text-xs text-[#6B665D] mt-1">Initial score {Math.max(0, averageScore - 18)}%</p>
+                  <p className="text-xs text-[#6e6e73] mt-1">Initial score {Math.max(0, averageScore - 18)}%</p>
                 </div>
-                <div className="rounded-xl border border-[#E2DDD4] bg-[#F8F6F3] p-4">
+                <div className="rounded-xl border border-[#d9d9de] bg-[#F8F6F3] p-4">
                   <p className="text-xs uppercase tracking-wider text-[#8C877D]">Day 14</p>
                   <p className="font-semibold mt-1">Protocol adaptation</p>
-                  <p className="text-xs text-[#6B665D] mt-1">Discipline trend {Math.max(0, streakCount * 4)}%</p>
+                  <p className="text-xs text-[#6e6e73] mt-1">Discipline trend {Math.max(0, streakCount * 4)}%</p>
                 </div>
-                <div className="rounded-xl border border-[#E2DDD4] bg-[#F8F6F3] p-4">
+                <div className="rounded-xl border border-[#d9d9de] bg-[#F8F6F3] p-4">
                   <p className="text-xs uppercase tracking-wider text-[#8C877D]">Day 30</p>
                   <p className="font-semibold mt-1">Transformation checkpoint</p>
-                  <p className="text-xs text-[#6B665D] mt-1">Projected confidence {Math.min(100, averageScore + 12)}%</p>
+                  <p className="text-xs text-[#6e6e73] mt-1">Projected confidence {Math.min(100, averageScore + 12)}%</p>
                 </div>
               </div>
             </MedicalCard>
@@ -313,11 +313,11 @@ export default function ProfilePage() {
 
         {activeTab === "scan-history" && (
           <section>
-            <h2 className="mb-4 text-xl font-semibold text-[#1F3D2B]">Scan History</h2>
+            <h2 className="mb-4 text-xl font-semibold text-[#1d1d1f]">Scan History</h2>
             <MedicalCard className="p-0">
               <div className="max-h-[420px] space-y-0 overflow-y-auto">
                 {timelineItems.length === 0 ? (
-                  <div className="p-6 text-sm text-[#6B665D]">No timeline entries yet. Complete an analysis to start your record.</div>
+                  <div className="p-6 text-sm text-[#6e6e73]">No timeline entries yet. Complete an analysis to start your record.</div>
                 ) : (
                   timelineItems.map((item) => {
                     const Icon = item.icon;
@@ -331,13 +331,13 @@ export default function ProfilePage() {
                         className={`w-full border-b border-white/40 p-5 text-left transition-colors ${canNavigate ? "hover:bg-white/40" : "cursor-default"}`}
                       >
                         <div className="flex items-start gap-3">
-                          <div className="mt-0.5 rounded-full border border-white/40 bg-white/40 p-2 text-[#2F6F57]">
+                          <div className="mt-0.5 rounded-full border border-white/40 bg-white/40 p-2 text-[#0071e3]">
                             <Icon className="h-4 w-4" />
                           </div>
                           <div className="space-y-1">
                             <p className="text-xs uppercase tracking-wide text-[#8C877D]">{formatDate(item.date)}</p>
-                            <p className="text-sm font-medium text-[#1F3D2B]">{item.title}</p>
-                            <p className="text-sm text-[#6B665D] line-clamp-2">{item.note}</p>
+                            <p className="text-sm font-medium text-[#1d1d1f]">{item.title}</p>
+                            <p className="text-sm text-[#6e6e73] line-clamp-2">{item.note}</p>
                           </div>
                         </div>
                       </button>
@@ -351,10 +351,10 @@ export default function ProfilePage() {
 
         {activeTab === "reports" && (
           <section>
-            <h2 className="mb-4 text-xl font-semibold text-[#1F3D2B]">Reports</h2>
+            <h2 className="mb-4 text-xl font-semibold text-[#1d1d1f]">Reports</h2>
             <MedicalCard className="p-5">
-              <p className="text-sm text-[#6B665D]">Total reports generated</p>
-              <p className="metric-number mt-2 text-4xl text-[#1F3D2B]">{reportsGenerated}</p>
+              <p className="text-sm text-[#6e6e73]">Total reports generated</p>
+              <p className="metric-number mt-2 text-4xl text-[#1d1d1f]">{reportsGenerated}</p>
               <button onClick={() => router.push("/result")} className="mt-4 rounded-xl bg-medical-gradient px-4 py-2 text-sm font-semibold text-[#F4F1EB]">
                 Open Latest Medical Report
               </button>
@@ -364,12 +364,12 @@ export default function ProfilePage() {
 
         {activeTab === "trends" && (
           <section>
-            <h2 className="mb-4 text-xl font-semibold text-[#1F3D2B]">Progress & Retention</h2>
+            <h2 className="mb-4 text-xl font-semibold text-[#1d1d1f]">Progress & Retention</h2>
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               <MedicalCard className="p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="font-semibold text-[#1F3D2B]">Alpha Score Progression</h3>
-                  <div className="flex items-center gap-2 text-sm text-[#2F6F57]">
+                  <h3 className="font-semibold text-[#1d1d1f]">Alpha Score Progression</h3>
+                  <div className="flex items-center gap-2 text-sm text-[#0071e3]">
                     <TrendingUp className="h-4 w-4" />
                     <span>+12% Last 30 Days</span>
                   </div>
@@ -377,13 +377,13 @@ export default function ProfilePage() {
                 <div className="h-64 w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={trendData.length > 0 ? trendData : [{ date: "Week 1", score: 60, consistency: 50 }, { date: "Week 2", score: 65, consistency: 60 }, { date: "Week 3", score: 72, consistency: 70 }, { date: "Week 4", score: 78, consistency: 85 }]}>
-                      <CartesianGrid stroke="#E2DDD4" strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "#6B665D", fontSize: 10 }} dy={10} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fill: "#6B665D", fontSize: 10 }} domain={[0, 100]} />
+                      <CartesianGrid stroke="#d9d9de" strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "#6e6e73", fontSize: 10 }} dy={10} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fill: "#6e6e73", fontSize: 10 }} domain={[0, 100]} />
                       <Tooltip 
                         contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                       />
-                      <Line type="monotone" dataKey="score" stroke="#2F6F57" strokeWidth={3} dot={{ r: 4, fill: "#2F6F57" }} activeDot={{ r: 6 }} name="Alpha Score" />
+                      <Line type="monotone" dataKey="score" stroke="#0071e3" strokeWidth={3} dot={{ r: 4, fill: "#0071e3" }} activeDot={{ r: 6 }} name="Alpha Score" />
                       <Line type="monotone" dataKey="consistency" stroke="#C9A227" strokeWidth={2} dot={false} strokeDasharray="5 5" name="Consistency" />
                     </LineChart>
                   </ResponsiveContainer>
@@ -391,41 +391,41 @@ export default function ProfilePage() {
               </MedicalCard>
 
               <MedicalCard className="p-6">
-                <h3 className="font-semibold text-[#1F3D2B] mb-4">Routine Comparison</h3>
+                <h3 className="font-semibold text-[#1d1d1f] mb-4">Routine Comparison</h3>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-[#F4EFE6] rounded-xl border border-[#E2DDD4]">
+                  <div className="flex items-center justify-between p-4 bg-[#f5f5f7] rounded-xl border border-[#d9d9de]">
                     <div>
-                      <p className="text-xs text-[#6B665D] uppercase tracking-wider">Current Protocol</p>
-                      <p className="font-bold text-[#1F3D2B]">Optimized for Barrier Repair</p>
+                      <p className="text-xs text-[#6e6e73] uppercase tracking-wider">Current Protocol</p>
+                      <p className="font-bold text-[#1d1d1f]">Optimized for Barrier Repair</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-[#6B665D]">Adherence</p>
-                      <p className="font-bold text-[#2F6F57]">92%</p>
+                      <p className="text-xs text-[#6e6e73]">Adherence</p>
+                      <p className="font-bold text-[#0071e3]">92%</p>
                     </div>
                   </div>
                   
-                  <div className="relative pl-4 border-l-2 border-[#E2DDD4]">
+                  <div className="relative pl-4 border-l-2 border-[#d9d9de]">
                     <div className="mb-4">
-                      <p className="text-xs text-[#6B665D] mb-1">Last Week</p>
+                      <p className="text-xs text-[#6e6e73] mb-1">Last Week</p>
                       <div className="flex items-center gap-2">
-                         <div className="flex-1 h-2 bg-[#E2DDD4] rounded-full overflow-hidden">
-                           <div className="h-full bg-[#2F6F57]" style={{ width: "85%" }}></div>
+                         <div className="flex-1 h-2 bg-[#d9d9de] rounded-full overflow-hidden">
+                           <div className="h-full bg-[#0071e3]" style={{ width: "85%" }}></div>
                          </div>
-                         <span className="text-xs font-semibold text-[#1F3D2B]">85%</span>
+                         <span className="text-xs font-semibold text-[#1d1d1f]">85%</span>
                       </div>
                     </div>
                     <div>
-                      <p className="text-xs text-[#6B665D] mb-1">Last Month</p>
+                      <p className="text-xs text-[#6e6e73] mb-1">Last Month</p>
                       <div className="flex items-center gap-2">
-                         <div className="flex-1 h-2 bg-[#E2DDD4] rounded-full overflow-hidden">
-                           <div className="h-full bg-[#8C6A5A]" style={{ width: "64%" }}></div>
+                         <div className="flex-1 h-2 bg-[#d9d9de] rounded-full overflow-hidden">
+                           <div className="h-full bg-[#6e6e73]" style={{ width: "64%" }}></div>
                          </div>
-                         <span className="text-xs font-semibold text-[#1F3D2B]">64%</span>
+                         <span className="text-xs font-semibold text-[#1d1d1f]">64%</span>
                       </div>
                     </div>
                   </div>
 
-                  <p className="text-xs text-[#6B665D] italic mt-4">
+                  <p className="text-xs text-[#6e6e73] italic mt-4">
                     "Consistent adherence correlates with a 40% faster visible improvement in skin texture."
                   </p>
                 </div>
@@ -436,17 +436,17 @@ export default function ProfilePage() {
 
         {activeTab === "challenges" && (
           <section>
-            <h2 className="mb-4 text-xl font-semibold text-[#1F3D2B]">Challenges</h2>
+            <h2 className="mb-4 text-xl font-semibold text-[#1d1d1f]">Challenges</h2>
             <MedicalCard className="p-5">
-              <p className="text-sm text-[#6B665D]">Keep your daily adherence to maintain your streak and improve recovery consistency.</p>
+              <p className="text-sm text-[#6e6e73]">Keep your daily adherence to maintain your streak and improve recovery consistency.</p>
               <div className="mt-3 grid grid-cols-2 gap-3">
                 <div className="rounded-xl border border-white/40 bg-white/40 p-4 shadow-sm">
                   <p className="text-xs text-[#8C877D]">Current streak</p>
-                  <p className="metric-number text-2xl text-[#1F3D2B]">{streakCount} days</p>
+                  <p className="metric-number text-2xl text-[#1d1d1f]">{streakCount} days</p>
                 </div>
                 <div className="rounded-xl border border-white/40 bg-white/40 p-4 shadow-sm">
                   <p className="text-xs text-[#8C877D]">Current tier</p>
-                  <p className="text-base font-semibold text-[#1F3D2B]">{tierLabel}</p>
+                  <p className="text-base font-semibold text-[#1d1d1f]">{tierLabel}</p>
                 </div>
               </div>
             </MedicalCard>
@@ -455,30 +455,30 @@ export default function ProfilePage() {
 
         {activeTab === "rewards" && (
           <section>
-            <h2 className="mb-4 text-xl font-semibold text-[#1F3D2B]">Alpha Sikka</h2>
+            <h2 className="mb-4 text-xl font-semibold text-[#1d1d1f]">Alpha Sikka</h2>
             <MedicalCard className="p-5">
-              <p className="text-sm text-[#6B665D]">Current Balance</p>
-              <p className="metric-number mt-2 text-4xl text-[#1F3D2B]">{currentBalance} A$</p>
-              <p className="mt-2 text-sm text-[#6B665D]">Lifetime Earned: {lifetimeEarned} A$ · Tier: {tierLabel}</p>
+              <p className="text-sm text-[#6e6e73]">Current Balance</p>
+              <p className="metric-number mt-2 text-4xl text-[#1d1d1f]">{currentBalance} A$</p>
+              <p className="mt-2 text-sm text-[#6e6e73]">Lifetime Earned: {lifetimeEarned} A$ - Tier: {tierLabel}</p>
             </MedicalCard>
           </section>
         )}
 
         {activeTab === "settings" && (
           <section>
-            <h2 className="mb-4 text-xl font-semibold text-[#1F3D2B]">Data Privacy Controls</h2>
+            <h2 className="mb-4 text-xl font-semibold text-[#1d1d1f]">Data Privacy Controls</h2>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <MedicalCard className="p-5">
                 <div className="flex items-center gap-2">
-                  <ShieldCheck className="h-5 w-5 text-[#2F6F57]" />
-                  <h3 className="font-semibold text-[#1F3D2B]">Privacy Actions</h3>
+                  <ShieldCheck className="h-5 w-5 text-[#0071e3]" />
+                  <h3 className="font-semibold text-[#1d1d1f]">Privacy Actions</h3>
                 </div>
-                <p className="mt-2 text-sm text-[#6B665D]">Manage consent, permissions, and policy details.</p>
+                <p className="mt-2 text-sm text-[#6e6e73]">Manage consent, permissions, and policy details.</p>
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <button onClick={() => router.push("/data-settings")} className="rounded-xl border border-white/40 bg-white/40 shadow-sm px-4 py-2 text-sm text-[#1F3D2B] hover:bg-white/60">
+                  <button onClick={() => router.push("/data-settings")} className="rounded-xl border border-white/40 bg-white/40 shadow-sm px-4 py-2 text-sm text-[#1d1d1f] hover:bg-white/60">
                     Data Settings
                   </button>
-                  <button onClick={() => router.push("/privacy-policy")} className="rounded-xl border border-white/40 bg-white/40 shadow-sm px-4 py-2 text-sm text-[#1F3D2B] hover:bg-white/60">
+                  <button onClick={() => router.push("/privacy-policy")} className="rounded-xl border border-white/40 bg-white/40 shadow-sm px-4 py-2 text-sm text-[#1d1d1f] hover:bg-white/60">
                     Privacy Policy
                   </button>
                 </div>
@@ -487,11 +487,11 @@ export default function ProfilePage() {
               <MedicalCard className="p-5">
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="h-5 w-5 text-[#C27803]" />
-                  <h3 className="font-semibold text-[#1F3D2B]">Cloud Data Control</h3>
+                  <h3 className="font-semibold text-[#1d1d1f]">Cloud Data Control</h3>
                 </div>
-                <p className="mt-2 text-sm text-[#6B665D]">Export your account snapshot or manage stored records in Supabase-backed settings.</p>
+                <p className="mt-2 text-sm text-[#6e6e73]">Export your account snapshot or manage stored records in Supabase-backed settings.</p>
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <button onClick={exportData} className="rounded-xl border border-white/40 bg-white/40 shadow-sm px-4 py-2 text-sm text-[#1F3D2B] hover:bg-white/60">
+                  <button onClick={exportData} className="rounded-xl border border-white/40 bg-white/40 shadow-sm px-4 py-2 text-sm text-[#1d1d1f] hover:bg-white/60">
                     Export Data
                   </button>
                   <button onClick={clearProfileData} className="rounded-xl border border-clinical-danger/50 bg-clinical-danger/10 px-4 py-2 text-sm text-clinical-danger hover:bg-clinical-danger/20">
@@ -507,3 +507,5 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+
