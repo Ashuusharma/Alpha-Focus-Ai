@@ -39,7 +39,7 @@ export default function TrackingPage() {
     : null;
 
   return (
-    <div className="af-page-shell report-page min-h-screen text-[#ffffff] px-4 py-8">
+    <div className="af-page-shell min-h-screen px-4 py-8 text-[#ffffff]">
       <div className="af-page-frame mx-auto max-w-6xl space-y-6">
         <section className="nv-section-white">
           <div className="relative z-10 space-y-5">
@@ -117,10 +117,10 @@ export default function TrackingPage() {
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-4">
-          <SleepTracker />
-          <HydrationTracker />
-          <MoodTracker />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="min-w-0"><SleepTracker /></div>
+          <div className="min-w-0"><HydrationTracker /></div>
+          <div className="min-w-0 md:col-span-2 xl:col-span-1"><MoodTracker /></div>
         </div>
       </div>
     </div>

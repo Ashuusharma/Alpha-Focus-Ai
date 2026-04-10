@@ -354,12 +354,12 @@ if (view === "list") {
           {/* Ladder / Roadmap Right Col */}
           <div className="lg:col-span-2 space-y-6">
              <div className="af-card-secondary p-6 flex flex-col h-full">
-               <div className="flex items-center justify-between mb-8 pb-4 border-b border-[#e3d8c8] overflow-x-auto gap-4 hide-scrollbar">
+               <div className="mb-8 flex flex-wrap items-center gap-3 border-b border-[#e3d8c8] pb-4">
                    {selectedChallenge.weeks.map((week, wIdx) => (
                       <button
                         key={wIdx}
                         onClick={() => setActiveWeek(wIdx)}
-                        className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-bold transition-all border ${
+                        className={`rounded-xl border px-4 py-2 text-sm font-bold transition-all ${
                            activeWeek === wIdx 
                           ? "bg-white border-[#0071e3] text-[#0071e3]"
                           : "bg-white border-[#d9d9de] text-[#1d1d1f] hover:text-[#1d1d1f]"

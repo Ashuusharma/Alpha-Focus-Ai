@@ -242,7 +242,7 @@ export default function HomeDashboard({
               <p className="text-white/80">Expected Result: Lower cortisol & better barrier repair.</p>
            </div>
            
-           <div className="relative z-10 bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20 min-w-[200px] text-center">
+            <div className="relative z-10 w-full rounded-xl border border-white/20 bg-white/10 p-4 text-center backdrop-blur-md md:w-auto md:min-w-[200px]">
               <p className="text-xs text-white/60 uppercase tracking-wider mb-1">Visible Change</p>
               <p className="text-2xl font-bold text-white">{expectedWindow || "4-6 Weeks"}</p>
            </div>

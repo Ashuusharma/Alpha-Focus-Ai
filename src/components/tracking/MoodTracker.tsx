@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useContext, useMemo, useState } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 import { AuthContext } from "@/contexts/AuthProvider";
 import { supabase } from "@/lib/supabaseClient";
 import { hydrateUserData } from "@/lib/hydrateUserData";
@@ -13,6 +13,25 @@ export default function MoodTracker() {
   const [mood, setMood] = useState<Mood>("neutral");
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const todayKey = useMemo(() => new Date().toISOString().slice(0, 10), []);
+
+  useEffect(() => {
+    const loadToday = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from("routine_logs")
+        .select("stress_level")
+        .eq("user_id", user.id)
+        .eq("log_date", todayKey)
+        .maybeSingle();
+
+      if (typeof data?.stress_level !== "number") return;
+      if (data.stress_level <= 3) setMood("calm");
+      else if (data.stress_level >= 7) setMood("stressed");
+      else setMood("neutral");
+    };
+
+    void loadToday();
+  }, [todayKey, user?.id]);
 
   const saveLog = async () => {
     if (!user) return;

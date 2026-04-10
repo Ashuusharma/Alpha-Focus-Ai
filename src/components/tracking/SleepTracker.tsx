@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useContext, useMemo, useState } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 import { AuthContext } from "@/contexts/AuthProvider";
 import { supabase } from "@/lib/supabaseClient";
 import { hydrateUserData } from "@/lib/hydrateUserData";
@@ -14,6 +14,29 @@ export default function SleepTracker() {
   const [savedAt, setSavedAt] = useState<string | null>(null);
 
   const todayKey = useMemo(() => new Date().toISOString().slice(0, 10), []);
+
+  useEffect(() => {
+    const loadToday = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from("routine_logs")
+        .select("sleep_hours,stress_level")
+        .eq("user_id", user.id)
+        .eq("log_date", todayKey)
+        .maybeSingle();
+
+      if (typeof data?.sleep_hours === "number") {
+        setHours(data.sleep_hours);
+      }
+
+      if (typeof data?.stress_level === "number") {
+        const inferredQuality = Math.max(1, Math.min(5, 6 - data.stress_level));
+        setQuality(inferredQuality);
+      }
+    };
+
+    void loadToday();
+  }, [todayKey, user?.id]);
 
   const saveLog = async () => {
     if (!user) return;

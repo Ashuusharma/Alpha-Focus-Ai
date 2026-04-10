@@ -81,6 +81,28 @@ export default function AlphaCreditsPage() {
     void refreshAlphaWallet(user.id).catch(() => undefined);
   }, [user?.id, alphaSummary, alphaTransactions.length]);
 
+  useEffect(() => {
+    if (!user) return;
+
+    const syncWallet = () => {
+      void refreshAlphaWallet(user.id).catch(() => undefined);
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        syncWallet();
+      }
+    };
+
+    window.addEventListener("focus", syncWallet);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      window.removeEventListener("focus", syncWallet);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [user?.id]);
+
   const summary = useMemo(() => toAlphaWalletSummary(alphaSummary), [alphaSummary]);
   const rewardCatalog = useMemo(() => getRewardCatalog(), []);
   
@@ -168,6 +190,7 @@ export default function AlphaCreditsPage() {
 
       const payload = (await response.json()) as { ok?: boolean; error?: string; message?: string };
       if (payload.ok) {
+        await refreshAlphaWallet(user.id).catch(() => undefined);
         const featuredProduct = getRewardFeaturedProduct(reward.discountPercent);
         const activeReward = createRewardUnlock({
           discountPercent: reward.discountPercent,
@@ -224,7 +247,9 @@ export default function AlphaCreditsPage() {
   const rewardRingOffset = circumference - (rewardProgress.percent / 100) * circumference;
 
   return (
-    <div className="af-page-shell w-full max-w-6xl mx-auto animate-in space-y-12 pb-24 fade-in duration-700 px-4 md:px-8 font-sans">
+    <div className="af-page-shell px-4 pb-24 pt-8 text-[#ffffff] md:px-8">
+      <main className="mx-auto w-full max-w-6xl animate-in fade-in font-sans duration-700">
+        <div className="af-page-stack gap-10 md:gap-12">
       
       {/* Toast Messages */}
       <AnimatePresence>
@@ -256,14 +281,14 @@ export default function AlphaCreditsPage() {
       />
 
       {/* SECTION 1: WALLET HERO */}
-      <section className="relative overflow-hidden rounded-[2.5rem] p-8 md:p-12 shadow-[0_20px_60px_-15px_rgba(26,54,38,0.4)] mt-4 md:mt-8 group">
+      <section className="relative mt-4 overflow-hidden rounded-[2.5rem] p-6 shadow-[0_20px_60px_-15px_rgba(26,54,38,0.4)] md:mt-8 md:p-12 group">
         <div className="absolute inset-0 bg-gradient-to-br from-[#0F1F15] via-[#0071e3] to-[#122419]" />
         
         {/* Soft Ambient Glows */}
         <div className="absolute top-0 right-0 w-[40rem] h-[40rem] bg-gradient-to-b from-[#22C55E]/10 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-[30rem] h-[30rem] bg-gradient-to-t from-[#FFD700]/5 to-transparent rounded-full blur-3xl translate-y-1/2 -translate-x-1/4 pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start justify-between gap-12">
+        <div className="relative z-10 flex min-w-0 flex-col items-center justify-between gap-10 md:flex-row md:items-start md:gap-12">
           
           {/* Left: Balance */}
           <div className="flex flex-col items-center md:items-start text-center md:text-left">
@@ -277,12 +302,12 @@ export default function AlphaCreditsPage() {
                 {completedCoreMissionCount}/{ALPHA_REWARD_SYSTEM.taskBonus.threshold} for +{ALPHA_REWARD_SYSTEM.taskBonus.amount} bonus
               </span>
             </div>
-            <div className="flex items-center gap-6 mb-2">
+            <div className="mb-2 flex items-center gap-4 sm:gap-6">
               <AlphaCoin size="hero" className="shadow-[0_0_40px_rgba(255,215,0,0.3)] transition-transform duration-500 group-hover:scale-105" />
               <div>
                 <p className="text-xs font-semibold uppercase tracking-widest text-[#A3BFA5] mb-1">Alpha Sikka Balance</p>
-                <div className="flex items-baseline gap-2 relative">
-                  <h1 className="text-6xl sm:text-[5rem] leading-none font-black tracking-tight text-white drop-shadow-md">
+                <div className="relative flex items-baseline gap-2">
+                  <h1 className="text-5xl leading-none font-black tracking-tight text-white drop-shadow-md sm:text-[5rem]">
                     {summary.current_balance}
                   </h1>
                   <span className="text-3xl font-bold text-white/50 mb-1">A$</span>
@@ -294,7 +319,7 @@ export default function AlphaCreditsPage() {
                         initial={{ opacity: 0, y: 10, scale: 0.5 }}
                         animate={{ opacity: 1, y: -40, scale: 1.1 }}
                         exit={{ opacity: 0, y: -60, scale: 1 }}
-                        className="absolute -top-4 left-full ml-4 text-3xl font-black text-[#FFD700] drop-shadow-lg whitespace-nowrap"
+                        className="absolute -top-7 right-0 text-xl font-black text-[#FFD700] drop-shadow-lg sm:-top-4 sm:-right-20 sm:text-3xl"
                       >
                         +{recentEarn} A$
                       </motion.div>
@@ -303,16 +328,16 @@ export default function AlphaCreditsPage() {
                 </div>
               </div>
             </div>
-            <p className="text-sm font-medium text-[#7A9984] mt-2 ml-[104px] hidden md:block">Earned through discipline & recovery</p>
+            <p className="mt-2 hidden text-sm font-medium text-[#7A9984] md:ml-[104px] md:block">Earned through discipline & recovery</p>
             {rewardProgress.next && (
-              <div className="mt-5 md:ml-[104px] inline-flex items-center gap-2 rounded-full border border-[#22C55E]/30 bg-[#22C55E]/10 px-4 py-2.5 text-sm font-bold shadow-[0_0_15px_rgba(34,197,94,0.1)]">
+              <div className="mt-5 inline-flex max-w-full items-center gap-2 rounded-full border border-[#22C55E]/30 bg-[#22C55E]/10 px-4 py-2.5 text-sm font-bold shadow-[0_0_15px_rgba(34,197,94,0.1)] md:ml-[104px]">
                 <span className="text-white">Only <span className="text-[#57D38C] font-black">{rewardProgress.remaining} A$</span> more to unlock <span className="text-[#F4D675]">{rewardProgress.next.discountPercent}% OFF</span></span>
               </div>
             )}
           </div>
 
           {/* Right: Next Reward Unlock Ring */}
-          <div className="flex items-center gap-6 bg-white/5 rounded-3xl p-6 border border-white/10 backdrop-blur-md w-full md:w-auto shadow-inner hover:bg-white/10 transition-colors">
+          <div className="flex w-full min-w-0 items-center gap-4 rounded-3xl border border-white/10 bg-white/5 p-4 shadow-inner backdrop-blur-md transition-colors hover:bg-white/10 sm:gap-6 sm:p-6 md:w-auto">
              <div className="relative w-28 h-28 shrink-0 flex items-center justify-center">
                <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
                   <circle cx="50" cy="50" r={radius} stroke="rgba(255,255,255,0.05)" strokeWidth="6" fill="none" />
@@ -336,13 +361,13 @@ export default function AlphaCreditsPage() {
                <span className="text-2xl font-black text-white">{rewardProgress.percent}%</span>
              </div>
              
-             <div className="pr-4">
-               <p className="text-2xl font-black text-white tracking-tight">
+             <div className="min-w-0 pr-2 sm:pr-4">
+               <p className="text-xl font-black tracking-tight text-white sm:text-2xl">
                   {rewardProgress.next ? `Next reward at ${rewardProgress.next.cost} A$` : 'All Rewards Unlocked!'}
                </p>
                <p className="text-[#A3BFA5] text-sm mt-1 font-medium">Keep completing protocols</p>
                {rewardProgress.next && (
-                 <p className="mt-3 text-xs font-bold uppercase tracking-[0.22em] text-[#FFE7A1]">{rewardProgress.remaining} A$ away from {rewardProgress.next.discountPercent}% OFF</p>
+                 <p className="mt-3 break-words text-xs font-bold uppercase tracking-[0.16em] text-[#FFE7A1] sm:tracking-[0.22em]">{rewardProgress.remaining} A$ away from {rewardProgress.next.discountPercent}% OFF</p>
                )}
              </div>
           </div>
@@ -351,7 +376,7 @@ export default function AlphaCreditsPage() {
 
       {/* SECTION 2: TODAY'S MISSIONS */}
       <section className="space-y-6">
-        <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
            <h2 className="text-3xl font-black text-[#111] tracking-tight">Earn Today</h2>
            <span className="hidden md:inline-flex rounded-full bg-[#F4F0E8] px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-[#6B6256]">Swipe on mobile</span>
         </div>
@@ -362,7 +387,7 @@ export default function AlphaCreditsPage() {
               <p className="text-xs font-black uppercase tracking-[0.2em] text-[#B47B00]">Reward Psychology Loop</p>
               <h3 className="mt-1 text-xl font-black text-[#111]">Complete {ALPHA_REWARD_SYSTEM.taskBonus.threshold} core missions today and trigger +{ALPHA_REWARD_SYSTEM.taskBonus.amount} A$.</h3>
             </div>
-            <div className="min-w-[220px] rounded-[1.5rem] bg-white px-4 py-3 shadow-sm">
+            <div className="rounded-[1.5rem] bg-white px-4 py-3 shadow-sm md:min-w-[220px]">
               <div className="mb-2 flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-[0.16em] text-[#7A6D5A]">Today's bonus</span>
                 <span className="text-sm font-black text-[#111]">{completedCoreMissionCount}/{ALPHA_REWARD_SYSTEM.taskBonus.threshold}</span>
@@ -372,7 +397,7 @@ export default function AlphaCreditsPage() {
           </div>
         </div>
 
-        <div className="flex gap-5 overflow-x-auto pb-2 snap-x md:grid md:grid-cols-2 md:overflow-visible">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
           {todayMissions.map((mission) => {
             const isCompleted = mission.status === "completed";
             const isAvailable = mission.status === "available";
@@ -382,7 +407,7 @@ export default function AlphaCreditsPage() {
               <motion.div 
                 key={mission.id} 
                 whileHover={!isCompleted ? { y: -4, scale: 1.01 } : {}}
-                className={`relative w-[85vw] shrink-0 snap-start rounded-[2rem] p-6 transition-all duration-300 flex flex-col justify-between shadow-sm md:w-auto ${
+                className={`relative min-w-0 rounded-[2rem] p-6 transition-all duration-300 flex flex-col justify-between shadow-sm ${
                   isCompleted ? "bg-[#F4F9F6] border border-green-100" :
                   isMissed ? "bg-[#FFF4F1] border border-[#FFD5CB]" :
                   isAvailable ? "bg-white border border-[#d9d9de] shadow-[0_8px_30px_rgb(0,0,0,0.04)]" :
@@ -390,8 +415,8 @@ export default function AlphaCreditsPage() {
                 }`}
               >
                 <div>
-                  <div className="flex justify-between items-start mb-5">
-                    <div className="flex items-center gap-4">
+                  <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-4">
                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${
                          isCompleted ? 'bg-green-100 text-green-600' : 
                          isMissed ? 'bg-[#FFE0D8] text-[#D14C1F]' :
@@ -399,13 +424,13 @@ export default function AlphaCreditsPage() {
                        }`}>
                           {isCompleted ? <CheckCircle className="w-6 h-6" /> : isMissed ? <ShieldAlert className="w-6 h-6" /> : <Clock3 className="w-6 h-6" />}
                        </div>
-                       <div>
-                         <h3 className="text-lg font-bold text-[#111] leading-tight">{mission.title}</h3>
+                       <div className="min-w-0">
+                         <h3 className="text-lg font-bold text-[#111] leading-tight break-words">{mission.title}</h3>
                          <p className="text-sm font-semibold text-[#666] mt-1">{mission.timeWindow.start} - {mission.timeWindow.end}</p>
                        </div>
                     </div>
                     
-                    <div className="flex items-center gap-1.5 bg-[#FFF9E6] border border-[#FFE899] rounded-xl px-3 py-1.5 text-sm font-black text-[#B47B00]">
+                    <div className="flex shrink-0 items-center gap-1.5 rounded-xl border border-[#FFE899] bg-[#FFF9E6] px-3 py-1.5 text-sm font-black text-[#B47B00]">
                       +{mission.reward} <AlphaCoin size="sm" />
                     </div>
                   </div>
@@ -478,7 +503,7 @@ export default function AlphaCreditsPage() {
         </div>
       </section>
 
-      <div className="grid gap-12 lg:grid-cols-[1.5fr_1fr]">
+      <div className="grid gap-10 lg:grid-cols-[1.5fr_1fr] lg:gap-12">
         <div className="space-y-12">
           {/* SECTION 4: REWARD LADDER (Horizontal Scroll) */}
           <section className="space-y-6">
@@ -486,32 +511,32 @@ export default function AlphaCreditsPage() {
                <h2 className="text-2xl font-black text-[#111] tracking-tight">Reward Ladder</h2>
             </div>
             
-            <div className="-mx-4 flex gap-4 overflow-x-auto px-4 pb-6 pt-2 snap-x scrollbar-hide md:mx-0 md:px-0">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-3">
               {rewardCatalog.map((reward) => {
                 const isUnlocked = summary.current_balance >= reward.cost;
                 const isNext = reward.id === rewardProgress.next?.id;
                 const progressVal = Math.min(100, Math.max(0, (summary.current_balance / reward.cost) * 100));
                 
                 return (
-                  <div 
+                  <div
                     key={reward.id} 
-                    className={`relative shrink-0 w-[280px] rounded-[2rem] p-6 snap-start flex flex-col transition-transform ${
+                    className={`relative min-w-0 rounded-[2rem] p-6 flex flex-col transition-transform ${
                       isUnlocked ? "bg-white border-2 border-green-500 shadow-[0_8px_20px_rgb(34,197,94,0.15)]" :
                       isNext ? "bg-white border-2 border-[#0071e3] shadow-[0_12px_30px_rgb(0,0,0,0.08)] scale-[1.02] z-10" :
                       "bg-[#F9F9F9] border border-[#d9d9de] shadow-sm opacity-80"
                     }`}
                   >
-                     <div className="flex justify-between items-start mb-6">
+                    <div className="mb-6 flex items-start justify-between gap-3">
                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isUnlocked ? 'bg-green-100 text-green-600' : isNext ? 'bg-[#0071e3] text-white' : 'bg-[#EAEAEA] text-[#999]'}`}>
                           {isUnlocked ? <UnlockIcon /> : <LockKeyhole className="w-5 h-5" />}
                        </div>
-                       {isNext && <span className="text-[10px] font-black uppercase tracking-wider bg-black text-white px-3 py-1.5 rounded-full">Next Reward</span>}
+                       {isNext && <span className="rounded-full bg-black px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white">Next Reward</span>}
                      </div>
 
                      <h3 className={`text-3xl font-black mb-1 ${isUnlocked ? 'text-green-600' : isNext ? 'text-[#0071e3]' : 'text-[#666]'}`}>
                        {reward.discountPercent}% OFF
                      </h3>
-                     <p className="text-sm font-bold text-[#999] mb-8">Required: {reward.cost} A$</p>
+                    <p className="mb-8 text-sm font-bold text-[#999]">Required: {reward.cost} A$</p>
 
                      <div className="mt-auto">
                         {!isUnlocked && (
@@ -541,21 +566,21 @@ export default function AlphaCreditsPage() {
                   const canRedeem = summary.current_balance >= reward.cost;
                   
                   return (
-                    <div key={`spend-${reward.id}`} className="bg-white border border-[#d9d9de] rounded-[2rem] p-6 shadow-sm flex justify-between items-center gap-4 hover:shadow-md transition-shadow">
-                       <div className="flex items-center gap-4">
+                    <div key={`spend-${reward.id}`} className="flex flex-wrap items-center justify-between gap-4 rounded-[2rem] border border-[#d9d9de] bg-white p-6 shadow-sm transition-shadow hover:shadow-md sm:flex-nowrap">
+                       <div className="flex min-w-0 items-center gap-4">
                          <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center border border-amber-100 shrink-0">
                             <Tag className="w-6 h-6 text-amber-600" />
                          </div>
-                         <div>
+                         <div className="min-w-0">
                            <p className="font-bold text-[#111]">Use {reward.cost} A$</p>
-                           <p className="text-sm font-semibold text-[#666] mt-0.5">-&gt; Get {reward.discountPercent}% off</p>
+                           <p className="mt-0.5 break-words text-sm font-semibold text-[#666]">-&gt; Get {reward.discountPercent}% off</p>
                          </div>
                        </div>
                        <motion.button
                          whileTap={canRedeem ? { scale: 0.95 } : {}}
                          onClick={() => void handleRedeem(reward)}
                          disabled={!canRedeem || redeemingId === reward.id}
-                         className={`shrink-0 px-5 py-2.5 rounded-full font-bold text-sm transition-colors ${
+                         className={`w-full shrink-0 rounded-full px-5 py-2.5 text-sm font-bold transition-colors sm:w-auto ${
                            canRedeem ? "bg-[#0071e3] text-white hover:bg-[#005bbf] shadow-md" : "bg-[#F0F0F0] text-[#999] cursor-not-allowed"
                          }`}
                        >
@@ -627,6 +652,8 @@ export default function AlphaCreditsPage() {
           </Link>
         </div>
       </div>
+        </div>
+      </main>
     </div>
   );
 }

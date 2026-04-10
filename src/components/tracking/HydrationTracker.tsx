@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useContext, useMemo, useState } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 import { AuthContext } from "@/contexts/AuthProvider";
 import { supabase } from "@/lib/supabaseClient";
 import { hydrateUserData } from "@/lib/hydrateUserData";
@@ -14,6 +14,24 @@ export default function HydrationTracker() {
 
   const percent = Math.max(0, Math.min(100, Math.round((intake / Math.max(1, target)) * 100)));
   const todayKey = useMemo(() => new Date().toISOString().slice(0, 10), []);
+
+  useEffect(() => {
+    const loadToday = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from("routine_logs")
+        .select("hydration_ml")
+        .eq("user_id", user.id)
+        .eq("log_date", todayKey)
+        .maybeSingle();
+
+      if (typeof data?.hydration_ml === "number") {
+        setIntake(data.hydration_ml);
+      }
+    };
+
+    void loadToday();
+  }, [todayKey, user?.id]);
 
   const saveLog = async () => {
     if (!user) return;
