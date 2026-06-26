@@ -1,18 +1,45 @@
 import { NextRequest, NextResponse } from "next/server";
-import { appendCollection, readCollection, writeCollection } from "@/lib/server/jsonDb";
-import { UserRecord, WeeklyReportRecord } from "@/lib/server/types";
 import { getRequestAuth } from "@/lib/auth/requestAuth";
 import { isRateLimited } from "@/lib/server/rateLimit";
 import { weeklyReportSchema } from "@/lib/server/validators";
 import { writeAuditLog } from "@/lib/server/auditLog";
+import { supabase } from "@/lib/supabaseClient";
 
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
-  const userId = request.nextUrl.searchParams.get("userId");
-  const reports = await readCollection<WeeklyReportRecord>("weeklyReports");
-  const filtered = userId ? reports.filter((item) => item.userId === userId) : reports;
-  return NextResponse.json({ reports: filtered });
+  const auth = await getRequestAuth(request);
+  if (!auth) {
+    return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  }
+
+  const { data, error } = await supabase
+    .from("clinical_reports")
+    .select("id,user_id,created_at,report_payload")
+    .eq("user_id", auth.userId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    return NextResponse.json({ ok: false, error: "weekly_report_fetch_failed" }, { status: 500 });
+  }
+
+  const reports = (data || []).map((row) => {
+    const payload = (row.report_payload || {}) as Record<string, unknown>;
+    return {
+      id: String(row.id),
+      userId: String(row.user_id),
+      createdAt: row.created_at || new Date().toISOString(),
+      strengths: Array.isArray(payload.strengths) ? payload.strengths : [],
+      risks: Array.isArray(payload.risks) ? payload.risks : [],
+      suggestedFocus: typeof payload.suggestedFocus === "string" ? payload.suggestedFocus : "",
+      avgSleep: Number(payload.avgSleep || 0),
+      avgHydration: Number(payload.avgHydration || 0),
+      compliance: Number(payload.compliance || 0),
+      scoreDelta: Number(payload.scoreDelta || 0),
+    };
+  });
+
+  return NextResponse.json({ reports });
 }
 
 export async function POST(request: NextRequest) {
@@ -27,7 +54,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
     }
 
-    const raw = (await request.json()) as Partial<WeeklyReportRecord>;
+    const raw = (await request.json()) as Record<string, unknown>;
     const parsed = weeklyReportSchema.safeParse(raw);
     if (!parsed.success) {
       await writeAuditLog({ action: "reports.weekly.write", userId: auth.userId, ok: false, route: "/api/reports/weekly", detail: "validation_failed" });
@@ -35,7 +62,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = parsed.data;
-    const report: WeeklyReportRecord = {
+    const report = {
       id: body.id || `weekly_${Date.now()}`,
       userId: auth.userId,
       createdAt: new Date().toISOString(),
@@ -48,18 +75,37 @@ export async function POST(request: NextRequest) {
       scoreDelta: Number(body.scoreDelta || 0),
     };
 
-    await appendCollection("weeklyReports", report);
+    const { data, error } = await supabase
+      .from("clinical_reports")
+      .insert({
+        user_id: auth.userId,
+        category: "weekly",
+        report_payload: {
+          strengths: report.strengths,
+          risks: report.risks,
+          suggestedFocus: report.suggestedFocus,
+          avgSleep: report.avgSleep,
+          avgHydration: report.avgHydration,
+          compliance: report.compliance,
+          scoreDelta: report.scoreDelta,
+        },
+      })
+      .select("id,created_at")
+      .single();
 
-    const users = await readCollection<UserRecord>("users");
-    const userIndex = users.findIndex((item) => item.id === report.userId);
-    if (userIndex >= 0) {
-      users[userIndex].weeklyReports = [report.id, ...users[userIndex].weeklyReports.filter((id) => id !== report.id)].slice(0, 52);
-      users[userIndex].updatedAt = new Date().toISOString();
-      await writeCollection("users", users);
+    if (error) {
+      await writeAuditLog({ action: "reports.weekly.write", userId: auth.userId, ok: false, route: "/api/reports/weekly", detail: "supabase_write_failed" });
+      return NextResponse.json({ ok: false, error: "weekly_report_failed" }, { status: 500 });
     }
 
+    const responseReport = {
+      ...report,
+      id: data?.id || report.id,
+      createdAt: data?.created_at || report.createdAt,
+    };
+
     await writeAuditLog({ action: "reports.weekly.write", userId: auth.userId, ok: true, route: "/api/reports/weekly" });
-    return NextResponse.json({ ok: true, report });
+    return NextResponse.json({ ok: true, report: responseReport });
   } catch (error) {
     return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "weekly_report_failed" }, { status: 500 });
   }

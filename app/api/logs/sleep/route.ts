@@ -1,18 +1,39 @@
 import { NextRequest, NextResponse } from "next/server";
-import { appendCollection, readCollection, writeCollection } from "@/lib/server/jsonDb";
-import { SleepLogRecord, UserRecord } from "@/lib/server/types";
 import { getRequestAuth } from "@/lib/auth/requestAuth";
 import { isRateLimited } from "@/lib/server/rateLimit";
 import { sleepLogSchema } from "@/lib/server/validators";
 import { writeAuditLog } from "@/lib/server/auditLog";
+import { supabase } from "@/lib/supabaseClient";
 
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
-  const userId = request.nextUrl.searchParams.get("userId");
-  const logs = await readCollection<SleepLogRecord>("sleepLogs");
-  const filtered = userId ? logs.filter((item) => item.userId === userId) : logs;
-  return NextResponse.json({ logs: filtered });
+  const auth = await getRequestAuth(request);
+  if (!auth) {
+    return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  }
+
+  const { data, error } = await supabase
+    .from("routine_logs")
+    .select("id,user_id,log_date,sleep_hours,created_at")
+    .eq("user_id", auth.userId)
+    .order("log_date", { ascending: false });
+
+  if (error) {
+    return NextResponse.json({ ok: false, error: "sleep_log_fetch_failed" }, { status: 500 });
+  }
+
+  const logs = (data || []).map((row) => ({
+    id: String(row.id),
+    userId: String(row.user_id),
+    date: String(row.log_date),
+    hours: Number(row.sleep_hours || 0),
+    quality: 0,
+    bedtime: undefined,
+    createdAt: row.created_at || new Date().toISOString(),
+  }));
+
+  return NextResponse.json({ logs });
 }
 
 export async function POST(request: NextRequest) {
@@ -27,7 +48,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
     }
 
-    const raw = (await request.json()) as Partial<SleepLogRecord>;
+    const raw = (await request.json()) as Record<string, unknown>;
     const parsed = sleepLogSchema.safeParse(raw);
     if (!parsed.success) {
       await writeAuditLog({ action: "logs.sleep.write", userId: auth.userId, ok: false, route: "/api/logs/sleep", detail: "validation_failed" });
@@ -35,7 +56,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = parsed.data;
-    const log: SleepLogRecord = {
+    const log = {
       id: body.id || `sleep_${Date.now()}`,
       userId: auth.userId,
       date: body.date || new Date().toISOString().slice(0, 10),
@@ -45,14 +66,20 @@ export async function POST(request: NextRequest) {
       createdAt: new Date().toISOString(),
     };
 
-    await appendCollection("sleepLogs", log);
+    const { error } = await supabase
+      .from("routine_logs")
+      .upsert(
+        {
+          user_id: auth.userId,
+          log_date: log.date,
+          sleep_hours: log.hours,
+        },
+        { onConflict: "user_id,log_date" }
+      );
 
-    const users = await readCollection<UserRecord>("users");
-    const userIndex = users.findIndex((item) => item.id === log.userId);
-    if (userIndex >= 0) {
-      users[userIndex].sleepLogs = [log.id, ...users[userIndex].sleepLogs.filter((id) => id !== log.id)].slice(0, 365);
-      users[userIndex].updatedAt = new Date().toISOString();
-      await writeCollection("users", users);
+    if (error) {
+      await writeAuditLog({ action: "logs.sleep.write", userId: auth.userId, ok: false, route: "/api/logs/sleep", detail: "supabase_write_failed" });
+      return NextResponse.json({ ok: false, error: "sleep_log_failed" }, { status: 500 });
     }
 
     await writeAuditLog({ action: "logs.sleep.write", userId: auth.userId, ok: true, route: "/api/logs/sleep" });

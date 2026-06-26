@@ -3,6 +3,10 @@
     {
       "path": "/api/notifications/scheduler",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/protocol/worker",
+      "schedule": "*/2 * * * *"
     }
   ]
 }

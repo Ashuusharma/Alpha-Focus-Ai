@@ -1,47 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readCollection, writeCollection } from "@/lib/server/jsonDb";
-import { UserRecord } from "@/lib/server/types";
 import { getRequestAuth } from "@/lib/auth/requestAuth";
 import { userSyncSchema } from "@/lib/server/validators";
 import { writeAuditLog } from "@/lib/server/auditLog";
+import { supabase } from "@/lib/supabaseClient";
 
 export const runtime = "nodejs";
 
-function toUserRecord(payload: Record<string, unknown>): UserRecord {
+function toProfileUpdate(payload: Record<string, unknown>) {
   const profile = (payload.profile || {}) as Record<string, unknown>;
-  const permissions = (payload.permissions || {}) as Record<string, unknown>;
-  const rawRecoveryProgramLevel = typeof payload.recoveryProgramLevel === "string" ? payload.recoveryProgramLevel : "intermediate";
-  const recoveryProgramLevel = rawRecoveryProgramLevel === "beginner"
-    ? "beginner"
-    : rawRecoveryProgramLevel === "advanced"
-      ? "advanced"
-      : "intermediate";
-
   return {
-    id: String(profile.id || "guest"),
-    name: String(profile.name || "Guest"),
+    full_name: typeof profile.name === "string" ? profile.name : undefined,
     city: typeof profile.city === "string" ? profile.city : undefined,
-    recoveryProgramLevel,
-    location: {
-      city: typeof profile.city === "string" ? profile.city : undefined,
-      climateEnabled: Boolean(permissions.location),
-    },
-    xp: Number((payload as { xp?: number }).xp || 0),
-    level: Number((payload as { level?: number }).level || 1),
-    permissions: {
-      location: Boolean(permissions.location),
-      notifications: Boolean(permissions.notifications),
-      sleepTracking: Boolean(permissions.sleepTracking),
-      hydrationTracking: Boolean(permissions.hydrationTracking),
-      moodTracking: Boolean(permissions.moodTracking),
-      consent: Boolean(permissions.consent),
-    },
-    sleepLogs: [],
-    hydrationLogs: [],
-    moodLogs: [],
-    scanHistory: [],
-    weeklyReports: [],
-    updatedAt: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   };
 }
 
@@ -59,32 +29,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, error: "invalid_payload" }, { status: 400 });
     }
 
-    const nextRecord = toUserRecord(parsed.data as unknown as Record<string, unknown>);
-    nextRecord.id = auth.userId;
-    nextRecord.name = auth.name;
+    const profileUpdate = toProfileUpdate(parsed.data as unknown as Record<string, unknown>);
 
-    const users = await readCollection<UserRecord>("users");
-    const existingIndex = users.findIndex((item) => item.id === nextRecord.id);
+    const { error } = await supabase
+      .from("profiles")
+      .upsert(
+        {
+          id: auth.userId,
+          full_name: profileUpdate.full_name || auth.name,
+          city: profileUpdate.city || null,
+          updated_at: profileUpdate.updated_at,
+        },
+        { onConflict: "id" }
+      );
 
-    if (existingIndex >= 0) {
-      users[existingIndex] = {
-        ...users[existingIndex],
-        ...nextRecord,
-        sleepLogs: users[existingIndex].sleepLogs,
-        hydrationLogs: users[existingIndex].hydrationLogs,
-        moodLogs: users[existingIndex].moodLogs,
-        scanHistory: users[existingIndex].scanHistory,
-        weeklyReports: users[existingIndex].weeklyReports,
-        updatedAt: new Date().toISOString(),
-      };
-    } else {
-      users.push(nextRecord);
+    if (error) {
+      await writeAuditLog({ action: "user.sync", userId: auth.userId, ok: false, route: "/api/user/sync", detail: "supabase_write_failed" });
+      return NextResponse.json({ ok: false, error: "sync_failed" }, { status: 500 });
     }
 
-    await writeCollection("users", users);
-
     await writeAuditLog({ action: "user.sync", userId: auth.userId, ok: true, route: "/api/user/sync" });
-    return NextResponse.json({ ok: true, userId: nextRecord.id });
+    return NextResponse.json({ ok: true, userId: auth.userId });
   } catch (error) {
     return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "sync_failed" }, { status: 500 });
   }

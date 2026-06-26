@@ -1,18 +1,46 @@
 import { NextRequest, NextResponse } from "next/server";
-import { appendCollection, readCollection, writeCollection } from "@/lib/server/jsonDb";
-import { ScanHistoryRecord, UserRecord } from "@/lib/server/types";
 import { getRequestAuth } from "@/lib/auth/requestAuth";
 import { isRateLimited } from "@/lib/server/rateLimit";
 import { scanHistorySchema } from "@/lib/server/validators";
 import { writeAuditLog } from "@/lib/server/auditLog";
+import { supabase } from "@/lib/supabaseClient";
 
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
-  const userId = request.nextUrl.searchParams.get("userId");
-  const scans = await readCollection<ScanHistoryRecord>("scanHistory");
-  const filtered = userId ? scans.filter((item) => item.userId === userId) : scans;
-  return NextResponse.json({ scans: filtered });
+  const auth = await getRequestAuth(request);
+  if (!auth) {
+    return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  }
+
+  const { data, error } = await supabase
+    .from("photo_scans")
+    .select("id,user_id,scan_date,image_url,captured_image_urls,analyzer_category,density_score,inflammation_score")
+    .eq("user_id", auth.userId)
+    .order("scan_date", { ascending: false });
+
+  if (error) {
+    return NextResponse.json({ ok: false, error: "scan_history_fetch_failed" }, { status: 500 });
+  }
+
+  const scans = (data || []).map((row) => {
+    const captured = Array.isArray(row.captured_image_urls)
+      ? row.captured_image_urls.filter((item): item is string => typeof item === "string")
+      : [];
+    const fallbackUrl = typeof row.image_url === "string" && row.image_url ? [row.image_url] : [];
+
+    return {
+      id: String(row.id),
+      userId: String(row.user_id),
+      scanDate: row.scan_date || new Date().toISOString(),
+      skinScore: Number(row.inflammation_score || 0),
+      hairScore: Number(row.density_score || 0),
+      imageUrls: captured.length > 0 ? captured : fallbackUrl,
+      analyzerType: row.analyzer_category || undefined,
+    };
+  });
+
+  return NextResponse.json({ scans });
 }
 
 export async function POST(request: NextRequest) {
@@ -27,7 +55,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
     }
 
-    const raw = (await request.json()) as Partial<ScanHistoryRecord>;
+    const raw = (await request.json()) as Record<string, unknown>;
     const parsed = scanHistorySchema.safeParse(raw);
     if (!parsed.success) {
       await writeAuditLog({ action: "scans.history.write", userId: auth.userId, ok: false, route: "/api/scans/history", detail: "validation_failed" });
@@ -36,7 +64,7 @@ export async function POST(request: NextRequest) {
 
     const body = parsed.data;
 
-    const scan: ScanHistoryRecord = {
+    const scan = {
       id: body.id || `scan_${Date.now()}`,
       userId: auth.userId,
       scanDate: body.scanDate || new Date().toISOString(),
@@ -46,18 +74,33 @@ export async function POST(request: NextRequest) {
       analyzerType: body.analyzerType,
     };
 
-    await appendCollection("scanHistory", scan);
+    const { data, error } = await supabase
+      .from("photo_scans")
+      .insert({
+        user_id: auth.userId,
+        scan_date: scan.scanDate,
+        image_url: scan.imageUrls[0] || null,
+        captured_image_urls: scan.imageUrls,
+        analyzer_category: scan.analyzerType || null,
+        density_score: scan.hairScore,
+        inflammation_score: scan.skinScore,
+      })
+      .select("id,scan_date")
+      .single();
 
-    const users = await readCollection<UserRecord>("users");
-    const userIndex = users.findIndex((item) => item.id === scan.userId);
-    if (userIndex >= 0) {
-      users[userIndex].scanHistory = [scan.id, ...users[userIndex].scanHistory.filter((id) => id !== scan.id)].slice(0, 200);
-      users[userIndex].updatedAt = new Date().toISOString();
-      await writeCollection("users", users);
+    if (error) {
+      await writeAuditLog({ action: "scans.history.write", userId: auth.userId, ok: false, route: "/api/scans/history", detail: "supabase_write_failed" });
+      return NextResponse.json({ ok: false, error: "scan_history_failed" }, { status: 500 });
     }
 
+    const responseScan = {
+      ...scan,
+      id: data?.id || scan.id,
+      scanDate: data?.scan_date || scan.scanDate,
+    };
+
     await writeAuditLog({ action: "scans.history.write", userId: auth.userId, ok: true, route: "/api/scans/history" });
-    return NextResponse.json({ ok: true, scan });
+    return NextResponse.json({ ok: true, scan: responseScan });
   } catch (error) {
     return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "scan_history_failed" }, { status: 500 });
   }

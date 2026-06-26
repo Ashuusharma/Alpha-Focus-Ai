@@ -98,6 +98,39 @@ export const galaxyAnalyzeSchema = z.object({
   answers: z.record(z.string(), z.string()).optional(),
 });
 
+export const protocolGenerateSchema = z.object({
+  category: z.string().max(60).optional(),
+  locale: z.string().max(20).optional(),
+  async: z.boolean().optional(),
+  priority: z.number().int().min(1).max(10).optional(),
+  answers: z.record(z.string(), z.string()).optional(),
+  analysis: z.object({
+    type: z.string().min(1).max(60),
+    confidence: z.number().min(0).max(100),
+    severity: z.enum(["low", "moderate", "high"]),
+    capturedPhotos: z.array(z.string()).max(6).optional(),
+    detectedIssues: z.array(
+      z.object({
+        name: z.string().min(1).max(120),
+        confidence: z.number().min(0).max(100),
+        impact: z.enum(["minor", "moderate", "significant"]),
+        description: z.string().min(1).max(600),
+        affectedArea: z.string().min(1).max(120),
+      })
+    ).max(20),
+  }).optional(),
+  environment: z.object({
+    uvIndex: z.number().min(0).max(20).optional(),
+    humidity: z.number().min(0).max(100).optional(),
+    aqi: z.number().min(0).max(1000).optional(),
+  }).optional(),
+  lifestyle: z.object({
+    sleepScore: z.number().min(0).max(100).optional(),
+    hydrationScore: z.number().min(0).max(100).optional(),
+    stressScore: z.number().min(0).max(100).optional(),
+  }).optional(),
+});
+
 export const alphaSikkaEarnSchema = z.object({
   action: z.enum([
     "daily_login",

@@ -18,7 +18,7 @@ export async function getRequestAuth(request: NextRequest): Promise<RequestAuth 
         name: payload.name,
       };
     } catch {
-      return null;
+      // Fallback to Supabase bearer token auth if custom cookie is stale/invalid.
     }
   }
 
