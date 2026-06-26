@@ -1,6 +1,8 @@
 import { z, ZodTypeAny } from "zod";
 import { ClinicalProfile } from "@/types/clinicalProfile";
 import { ProtocolReport, protocolReportSchema } from "@/types/protocolReport";
+import { buildRoutineIntelligence, RoutineIntelligence } from "@/lib/protocol/routineIntelligence";
+import { buildProductIntelligence, ProductIntelligence } from "@/lib/protocol/productIntelligence";
 
 export type ProtocolInput = {
   context: {
@@ -12,6 +14,28 @@ export type ProtocolInput = {
     overallSeverity: number;
     confidenceScore: number;
     assessmentCompletionPct: number;
+    adherenceScore?: number;
+    relapseRiskScore?: number;
+  };
+  canonicalProfile: {
+    demographics: {
+      ageRange?: string;
+      gender?: string;
+      skinType?: string;
+    };
+    protocolDecisions: {
+      category?: string;
+      toleranceMode: "beginner" | "intermediate" | "advanced";
+      currentPhase?: "Reset" | "Repair" | "Stabilize";
+      sourceVersion: string;
+      ownedProductIds: string[];
+    };
+    rewardContext: {
+      alphaBalance?: number;
+      streakCount?: number;
+      rewardTier?: string;
+      loyaltyLevel?: number;
+    };
   };
   concerns: Array<{
     title: string;
@@ -19,16 +43,23 @@ export type ProtocolInput = {
     confidence: number;
     evidence: string[];
   }>;
-  assessmentAnswers: Record<string, string>;
+  assessmentFacts: {
+    completionPct: number;
+    answerCount: number;
+    topSignals: string[];
+  };
   environment: {
     uvIndex?: number;
     humidity?: number;
     aqi?: number;
+    climateZone?: string;
   };
   lifestyle: {
     sleepScore?: number;
     hydrationScore?: number;
     stressScore?: number;
+    workMode?: string;
+    workoutFrequency?: string;
   };
   analysis: {
     analyzerType?: string;
@@ -36,9 +67,17 @@ export type ProtocolInput = {
     confidence?: number;
     detectedIssueCount?: number;
   };
+  routineIntelligence: RoutineIntelligence | null;
+  productIntelligence: ProductIntelligence;
 };
 
 export function buildProtocolInput(profile: ClinicalProfile): ProtocolInput {
+  const topSignals = profile.concerns
+    .slice(0, 6)
+    .flatMap((concern) => concern.evidence || [])
+    .filter(Boolean)
+    .slice(0, 12);
+
   return {
     context: {
       locale: profile.locale,
@@ -49,6 +88,28 @@ export function buildProtocolInput(profile: ClinicalProfile): ProtocolInput {
       overallSeverity: profile.overallSeverity,
       confidenceScore: profile.confidenceScore,
       assessmentCompletionPct: profile.assessment.completionPct,
+      adherenceScore: profile.clinicalScores?.adherenceScore,
+      relapseRiskScore: profile.clinicalScores?.relapseRiskScore,
+    },
+    canonicalProfile: {
+      demographics: {
+        ageRange: profile.demographics?.ageRange,
+        gender: profile.demographics?.gender,
+        skinType: profile.demographics?.skinType,
+      },
+      protocolDecisions: {
+        category: profile.protocolDecisions?.category || profile.category,
+        toleranceMode: profile.protocolDecisions?.toleranceMode || "intermediate",
+        currentPhase: profile.protocolDecisions?.currentPhase,
+        sourceVersion: profile.protocolDecisions?.sourceVersion || profile.metadata?.sourceVersion || "v2",
+        ownedProductIds: profile.protocolDecisions?.ownedProductIds || [],
+      },
+      rewardContext: {
+        alphaBalance: profile.rewardContext?.alphaBalance,
+        streakCount: profile.rewardContext?.streakCount,
+        rewardTier: profile.rewardContext?.rewardTier,
+        loyaltyLevel: profile.rewardContext?.loyaltyLevel,
+      },
     },
     concerns: profile.concerns.map((concern) => ({
       title: concern.title,
@@ -56,16 +117,23 @@ export function buildProtocolInput(profile: ClinicalProfile): ProtocolInput {
       confidence: concern.confidence,
       evidence: concern.evidence,
     })),
-    assessmentAnswers: profile.assessment.answers,
+    assessmentFacts: {
+      completionPct: profile.assessment.completionPct,
+      answerCount: profile.assessment.answerCount,
+      topSignals,
+    },
     environment: {
-      uvIndex: profile.signals.uvIndex,
-      humidity: profile.signals.humidity,
-      aqi: profile.signals.aqi,
+      uvIndex: profile.environment?.uvIndex ?? profile.signals.uvIndex,
+      humidity: profile.environment?.humidity ?? profile.signals.humidity,
+      aqi: profile.environment?.aqi ?? profile.signals.aqi,
+      climateZone: profile.environment?.climateZone,
     },
     lifestyle: {
-      sleepScore: profile.signals.sleepScore,
-      hydrationScore: profile.signals.hydrationScore,
-      stressScore: profile.signals.stressScore,
+      sleepScore: profile.lifestyleContext?.sleepScore ?? profile.signals.sleepScore,
+      hydrationScore: profile.lifestyleContext?.hydrationScore ?? profile.signals.hydrationScore,
+      stressScore: profile.lifestyleContext?.stressScore ?? profile.signals.stressScore,
+      workMode: profile.lifestyleContext?.workMode,
+      workoutFrequency: profile.lifestyleContext?.workoutFrequency,
     },
     analysis: {
       analyzerType: profile.photo?.analyzerType,
@@ -73,6 +141,21 @@ export function buildProtocolInput(profile: ClinicalProfile): ProtocolInput {
       confidence: profile.photo?.confidence,
       detectedIssueCount: profile.photo?.detectedIssueCount,
     },
+    routineIntelligence: buildRoutineIntelligence({
+      category: profile.category,
+      toleranceMode: profile.protocolDecisions?.toleranceMode,
+      adherenceScore: profile.clinicalScores?.adherenceScore,
+      relapseRiskScore: profile.clinicalScores?.relapseRiskScore,
+      climateZone: profile.environment?.climateZone,
+      ownedProductIds: profile.protocolDecisions?.ownedProductIds,
+      severity: profile.overallSeverity,
+    }),
+    productIntelligence: buildProductIntelligence({
+      category: profile.category,
+      severity: profile.overallSeverity,
+      toleranceMode: profile.protocolDecisions?.toleranceMode,
+      ownedProductIds: profile.protocolDecisions?.ownedProductIds,
+    }),
   };
 }
 

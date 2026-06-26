@@ -6,9 +6,13 @@ create table if not exists public.protocol_reports (
   user_id uuid not null references auth.users(id) on delete cascade,
   source_category text,
   source_locale text not null default 'en-IN',
-  source_version text not null default 'v1',
+  source_version text not null default 'v2',
   model_name text,
-  status text not null default 'generating' check (status in ('generating', 'ready', 'archived', 'failed')),
+  prompt_version text,
+  cache_key text,
+  token_usage jsonb,
+  cost_estimate numeric(12,6),
+  status text not null default 'queued' check (status in ('queued', 'generating', 'processing', 'ready', 'archived', 'failed')),
   clinical_profile jsonb not null default '{}'::jsonb,
   protocol_input jsonb not null default '{}'::jsonb,
   report_payload jsonb not null default '{}'::jsonb,
@@ -18,6 +22,24 @@ create table if not exists public.protocol_reports (
   generated_at timestamptz,
   archived_at timestamptz
 );
+
+alter table if exists public.protocol_reports add column if not exists prompt_version text;
+alter table if exists public.protocol_reports add column if not exists cache_key text;
+alter table if exists public.protocol_reports add column if not exists token_usage jsonb;
+alter table if exists public.protocol_reports add column if not exists cost_estimate numeric(12,6);
+
+do $$
+begin
+  alter table public.protocol_reports
+    drop constraint if exists protocol_reports_status_check;
+
+  alter table public.protocol_reports
+    add constraint protocol_reports_status_check
+    check (status in ('queued', 'generating', 'processing', 'ready', 'archived', 'failed'));
+exception
+  when undefined_table then null;
+end
+$$;
 
 create index if not exists idx_protocol_reports_user_created
   on public.protocol_reports(user_id, created_at desc);

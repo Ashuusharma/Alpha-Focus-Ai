@@ -13,6 +13,9 @@ import {
 } from "@/lib/server/alphaSikkaServer";
 import { ALPHA_CORE_DAILY_ACTIONS, ALPHA_REWARD_SYSTEM } from "@/lib/alphaRewardSystem";
 import { invalidateRequestCache, invalidateRequestCachePrefix } from "@/lib/server/requestCache";
+import { createNotification } from "@/lib/notifications/notificationEngine";
+import { verifyAndCompleteExecutionTask, verifyExecutionDayCompletion } from "@/lib/server/executionSession";
+import { type CategoryId } from "@/lib/questions";
 
 export const runtime = "nodejs";
 
@@ -51,7 +54,7 @@ type ActionRow = {
 
 function getSupabaseConfig() {
   const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!baseUrl || !serviceKey) return null;
   return {
     baseUrl: baseUrl.replace(/\/$/, ""),
@@ -226,6 +229,33 @@ function getDateDiffDays(previousDate: string, nextDate: string) {
   return Math.floor((next - previous) / 86_400_000);
 }
 
+async function maybeCreateStreakRiskNotification(input: {
+  userId: string;
+  baseUrl: string;
+  serviceKey: string;
+  activityDate: string;
+}) {
+  const streakState = await fetchStreakState(input.baseUrl, input.serviceKey, input.userId);
+  const lastActivityDate = streakState?.last_activity_date;
+  if (!lastActivityDate) return;
+
+  const gapDays = Math.max(0, getDateDiffDays(lastActivityDate, input.activityDate) - 1);
+  const atRisk = gapDays >= 1;
+  if (!atRisk) return;
+
+  await createNotification({
+    userId: input.userId,
+    eventType: "streak_at_risk",
+    dedupeKey: `streak_at_risk:${input.activityDate}`,
+    metadata: {
+      gapDays,
+      lastActivityDate,
+      activityDate: input.activityDate,
+      graceDays: ALPHA_REWARD_SYSTEM.penalties.graceDays,
+    },
+  });
+}
+
 export async function POST(request: NextRequest) {
   try {
     const authUser = await getSupabaseRequestUser(request);
@@ -264,9 +294,21 @@ export async function POST(request: NextRequest) {
 
     let amount = computeAwardAmount(action, body.metadata);
 
+    const taskCategory = typeof body.metadata?.category === "string" ? body.metadata.category : null;
+    const taskDayNumber = Number(body.metadata?.dayNumber || 0);
+    const taskId = typeof body.metadata?.taskId === "string" ? body.metadata.taskId : "";
+    const isRecovery = body.metadata?.isRecovery === true;
+
     let penaltyApplied = 0;
 
     if (action === "daily_login") {
+      await maybeCreateStreakRiskNotification({
+        userId: supabaseUserId,
+        baseUrl: config.baseUrl,
+        serviceKey: config.serviceKey,
+        activityDate,
+      });
+
       const streakState = await fetchStreakState(config.baseUrl, config.serviceKey, supabaseUserId);
       const lastActivityDate = streakState?.last_activity_date;
       if (lastActivityDate) {
@@ -307,24 +349,75 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === "treatment_task_completed") {
-      const timerCompleted = body.metadata?.timerCompleted === true;
-      const withinWindow = body.metadata?.withinWindow === true;
-      const completedOnce = body.metadata?.completedOnce === true;
-      const cooldownLock = body.metadata?.cooldownLock === true;
-      const isRecovery = body.metadata?.isRecovery === true;
-
-      if (!isRecovery && (!timerCompleted || !withinWindow || !completedOnce || !cooldownLock)) {
-        return NextResponse.json({ ok: false, error: "reward_policy_violation" }, { status: 400 });
+      const referenceIdForVerify = referenceId || body.referenceId;
+      if (!referenceIdForVerify || !taskCategory || !taskId || !Number.isInteger(taskDayNumber) || taskDayNumber < 1 || taskDayNumber > 30) {
+        return NextResponse.json({ ok: false, error: "invalid_execution_context" }, { status: 400 });
       }
+
+      const verification = await verifyAndCompleteExecutionTask({
+        userId: supabaseUserId,
+        referenceId: referenceIdForVerify,
+        category: taskCategory as CategoryId,
+        dayNumber: taskDayNumber,
+        taskId,
+        isRecovery,
+      });
+
+      if (!verification.ok) {
+        const status = verification.statusCode || 400;
+        const shouldReturnOk = verification.error === "execution_session_already_completed";
+        return NextResponse.json(
+          {
+            ok: shouldReturnOk,
+            error: verification.error || "reward_policy_violation",
+            verification: {
+              timerCompleted: verification.timerCompleted || false,
+              withinWindow: verification.withinWindow || false,
+              cooldownLock: verification.cooldownLock || false,
+              productVerified: verification.productVerified || false,
+            },
+          },
+          { status: shouldReturnOk ? 200 : status }
+        );
+      }
+
+      body.metadata = {
+        ...(body.metadata || {}),
+        timerCompleted: verification.timerCompleted || false,
+        withinWindow: verification.withinWindow || false,
+        completedOnce: verification.completedOnce || false,
+        cooldownLock: verification.cooldownLock || false,
+        productVerified: verification.productVerified || false,
+        trustScore: verification.trustScore || 0,
+        trustLabel: verification.trustLabel || "Needs Review",
+        trustFactors: verification.trustFactors || {},
+      };
     }
 
     if (action === "treatment_day_completed") {
-      const allTasksVerified = body.metadata?.allTasksVerified === true;
-      const completedOnce = body.metadata?.completedOnce === true;
-      const cooldownLock = body.metadata?.cooldownLock === true;
-      if (!allTasksVerified || !completedOnce || !cooldownLock) {
+      if (!taskCategory || !Number.isInteger(taskDayNumber) || taskDayNumber < 1 || taskDayNumber > 30) {
+        return NextResponse.json({ ok: false, error: "invalid_execution_context" }, { status: 400 });
+      }
+
+      const dayVerification = await verifyExecutionDayCompletion({
+        userId: supabaseUserId,
+        category: taskCategory as CategoryId,
+        dayNumber: taskDayNumber,
+      });
+
+      const allTasksVerified = dayVerification.ok && dayVerification.allTasksVerified;
+      if (!allTasksVerified) {
         return NextResponse.json({ ok: false, error: "reward_policy_violation" }, { status: 400 });
       }
+
+      body.metadata = {
+        ...(body.metadata || {}),
+        allTasksVerified: true,
+        completedOnce: true,
+        cooldownLock: true,
+        completedCount: dayVerification.completedCount,
+        expectedCount: dayVerification.expectedCount,
+      };
     }
 
     if (rule.category === "discipline") {

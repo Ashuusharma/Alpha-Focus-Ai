@@ -155,6 +155,20 @@ async function awardDayReward(referenceId: string, metadata: Record<string, unkn
   });
 }
 
+async function registerExecutionStart(input: {
+  referenceId: string;
+  category: CategoryId;
+  dayNumber: number;
+  taskId: string;
+}) {
+  const headers = await getSupabaseAuthHeaders({ "Content-Type": "application/json" });
+  await fetch("/api/execution/start", {
+    method: "POST",
+    headers,
+    body: JSON.stringify(input),
+  });
+}
+
 function taskWindowState(task: DailyExecutionTask, nowTzMinutes: number, runtime: TaskRuntime, completed: boolean): TaskWindowStatus {
   const startMin = parseHHMM(task.timeWindow.start);
   const endMin = parseHHMM(task.timeWindow.end);
@@ -764,6 +778,16 @@ export default function TreatmentPlan({
     const state = taskState(task);
     if (state.code === "locked" || state.code === "missed" || state.code === "completed") return;
 
+    const wasRunning = taskRuntime[task.id]?.running ?? false;
+    if (!wasRunning && selectedCategory) {
+      void registerExecutionStart({
+        referenceId: `daily-execution:${task.id}`,
+        category: selectedCategory,
+        dayNumber: selectedDay,
+        taskId: task.id,
+      });
+    }
+
     setTaskRuntime((prev) => {
       const existing = prev[task.id] || { running: false, remainingSec: task.durationMin * 60, startedAt: null };
       return {
@@ -786,6 +810,7 @@ export default function TreatmentPlan({
 
   const completeTask = async (task: DailyExecutionTask, asRecovery = false) => {
     if (completedTaskKeys[task.id]) return;
+    if (!selectedCategory) return;
 
     const runtime = taskRuntime[task.id] || { running: false, remainingSec: task.durationMin * 60, startedAt: null };
     const state = taskState(task);
@@ -808,6 +833,9 @@ export default function TreatmentPlan({
       cooldownLock: true,
       completedOnce: true,
       isRecovery: false,
+      category: selectedCategory,
+      dayNumber: selectedDay,
+      taskId: task.id,
       completedAt,
       timezone,
     });
@@ -826,6 +854,8 @@ export default function TreatmentPlan({
       allTasksVerified: true,
       cooldownLock: true,
       completedOnce: true,
+      category: selectedCategory,
+      dayNumber: execution.day,
       completedAt,
       adherenceScore: execution.adherenceScore,
     });

@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 
 async function fetchProfileName(userId: string) {
   const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!baseUrl || !serviceKey) return null;
 
   const url = new URL(`${baseUrl.replace(/\/$/, "")}/rest/v1/profiles`);

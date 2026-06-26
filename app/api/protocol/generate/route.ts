@@ -6,7 +6,7 @@ import { isRateLimited } from "@/lib/server/rateLimit";
 import { AnalysisResult } from "@/lib/analyzeImage";
 import { buildClinicalProfileFromAssessmentAndAnalysis } from "@/lib/clinical/buildClinicalProfileFromAssessmentAndAnalysis";
 import { buildProtocolInput } from "@/lib/protocol/contract";
-import { generateProtocolReportFromAI } from "@/lib/protocol/generationEngine";
+import { generateProtocolWithOrchestrator } from "@/lib/ai/ProtocolOrchestrator";
 import {
   insertProtocolGenerationJob,
   insertProtocolReport,
@@ -60,8 +60,16 @@ export async function POST(request: NextRequest) {
       userId: auth.userId,
       locale: body.locale || "en-IN",
       category: body.category,
+      demographics: body.demographics,
       environment: body.environment,
       lifestyle: body.lifestyle,
+      protocolContext: {
+        toleranceMode: body.programContext?.toleranceMode,
+        adherenceScore: body.programContext?.adherenceScore,
+        relapseRiskScore: body.programContext?.relapseRiskScore,
+        ownedProductIds: body.programContext?.ownedProductIds,
+      },
+      rewardContext: body.rewardContext,
     });
 
     const protocolInput = buildProtocolInput(profile);
@@ -70,9 +78,9 @@ export async function POST(request: NextRequest) {
       user_id: auth.userId,
       source_category: body.category,
       source_locale: body.locale || "en-IN",
-      source_version: "v1",
+      source_version: "v2",
       model_name: "pending",
-      status: "generating",
+      status: body.async !== false ? "queued" : "generating",
       clinical_profile: profile,
       protocol_input: protocolInput,
       report_payload: {},
@@ -105,16 +113,26 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const generated = await generateProtocolReportFromAI(protocolInput);
+    await updateProtocolReport(reportRow.id, {
+      status: "processing",
+      modelName: "pending",
+      fallbackUsed: false,
+    });
+
+    const generated = await generateProtocolWithOrchestrator(protocolInput);
 
     await updateProtocolReport(reportRow.id, {
       status: "ready",
       modelName: generated.model,
-      fallbackUsed: generated.usedFallback,
+      fallbackUsed: generated.status !== "ok",
       reportPayload: generated.report,
+      promptVersion: generated.promptVersion,
+      cacheKey: generated.cacheKey,
+      tokenUsage: generated.tokenUsage,
+      costEstimate: generated.costEstimateUsd,
     });
 
-    await writeAuditLog({ action: "protocol.generate", userId: auth.userId, ok: true, route: "/api/protocol/generate", detail: generated.usedFallback ? "fallback" : "ai" });
+    await writeAuditLog({ action: "protocol.generate", userId: auth.userId, ok: true, route: "/api/protocol/generate", detail: generated.status !== "ok" ? "fallback" : "ai" });
 
     return NextResponse.json({
       ok: true,
@@ -122,7 +140,14 @@ export async function POST(request: NextRequest) {
       reportId: reportRow.id,
       jobId: job.id,
       report: generated.report,
-      source: generated.usedFallback ? "fallback" : "ai",
+      source: generated.status !== "ok" ? "fallback" : "ai",
+      orchestrator: {
+        model: generated.model,
+        promptVersion: generated.promptVersion,
+        cacheHit: generated.cacheHit,
+        tokenUsage: generated.tokenUsage,
+        costEstimateUsd: generated.costEstimateUsd,
+      },
     });
   } catch (error) {
     return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "protocol_generate_failed" }, { status: 500 });

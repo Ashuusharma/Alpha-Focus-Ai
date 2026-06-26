@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { aiAdviceSchema } from "@/lib/server/validators";
 import { writeAuditLog } from "@/lib/server/auditLog";
+import { getRequestAuth } from "@/lib/auth/requestAuth";
 
 type AdviceRequest = {
   issues: string[];
@@ -41,6 +42,7 @@ type CacheValue = {
 const responseCache = new Map<string, CacheValue>();
 const requestWindowByIp = new Map<string, number[]>();
 const usageByDay = new Map<string, number>();
+const requestsByActorPerDay = new Map<string, number>();
 
 function envNumber(name: string, fallback: number): number {
   const raw = process.env[name];
@@ -58,8 +60,16 @@ function getClientIp(req: NextRequest): string {
   return "local";
 }
 
+function getActorKey(userId: string | null, ip: string): string {
+  return userId ? `user:${userId}` : `ip:${ip}`;
+}
+
 function makeCacheKey(body: AdviceRequest): string {
   return createHash("sha1").update(JSON.stringify(body)).digest("hex");
+}
+
+function makeScopedCacheKey(actorKey: string, body: AdviceRequest): string {
+  return createHash("sha1").update(`${actorKey}:${JSON.stringify(body)}`).digest("hex");
 }
 
 function checkRateLimit(ip: string): boolean {
@@ -73,6 +83,24 @@ function checkRateLimit(ip: string): boolean {
   requestWindowByIp.set(ip, fresh);
 
   return fresh.length <= maxPerMinute;
+}
+
+function checkDailyRequestLimit(actorKey: string): boolean {
+  const maxPerDay = envNumber("AI_DAILY_MAX_REQUESTS_PER_ACTOR", 60);
+  const day = getTodayKey();
+  const key = `${day}:${actorKey}`;
+  const current = requestsByActorPerDay.get(key) ?? 0;
+  if (current >= maxPerDay) return false;
+  requestsByActorPerDay.set(key, current + 1);
+  return true;
+}
+
+function isValidAdviceResponse(value: AdviceResponse): boolean {
+  if (!value || typeof value.summary !== "string" || !Array.isArray(value.actions)) return false;
+  const summary = value.summary.trim();
+  if (summary.length < 8 || summary.length > 1200) return false;
+  if (value.actions.length === 0 || value.actions.length > 4) return false;
+  return value.actions.every((line) => typeof line === "string" && line.trim().length >= 4 && line.length <= 220);
 }
 
 function estimateCostUsd(prompt: string): number {
@@ -140,6 +168,8 @@ function normalizeActions(actions: unknown): string[] {
 
 export async function POST(req: NextRequest) {
   try {
+    const auth = await getRequestAuth(req);
+    const authUserId = auth?.userId || null;
     const raw = (await req.json()) as AdviceRequest;
     const validated = aiAdviceSchema.safeParse(raw);
     if (!validated.success) {
@@ -154,6 +184,7 @@ export async function POST(req: NextRequest) {
     }
 
     const ip = getClientIp(req);
+    const actorKey = getActorKey(authUserId, ip);
     if (!checkRateLimit(ip)) {
       const fallback = buildFallback(body);
       await writeAuditLog({ action: "ai.advice", userId: ip, ok: false, route: "/api/ai/advice", detail: "rate_limited_fallback" });
@@ -166,9 +197,27 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const cacheKey = makeCacheKey(body);
+    if (!checkDailyRequestLimit(actorKey)) {
+      const fallback = buildFallback(body);
+      await writeAuditLog({ action: "ai.advice", userId: actorKey, ok: false, route: "/api/ai/advice", detail: "daily_limit_fallback" });
+      return NextResponse.json({ ...fallback, meta: { cached: false } });
+    }
+
+    const maxChars = envNumber("AI_MAX_PROMPT_INPUT_CHARS", 6000);
+    const estimatedChars = JSON.stringify({
+      issues: body.issues,
+      answers: body.answers || {},
+      environment: body.environment || {},
+      lifestyle: body.lifestyle || {},
+    }).length;
+    if (estimatedChars > maxChars) {
+      await writeAuditLog({ action: "ai.advice", userId: actorKey, ok: false, route: "/api/ai/advice", detail: "payload_too_large" });
+      return NextResponse.json({ error: "payload_too_large" }, { status: 413 });
+    }
+
+    const cacheKey = makeScopedCacheKey(actorKey, body);
     const cached = responseCache.get(cacheKey);
-    if (cached && cached.expiresAt > Date.now()) {
+    if (cached && cached.expiresAt > Date.now() && isValidAdviceResponse(cached.value)) {
       await writeAuditLog({ action: "ai.advice", userId: ip, ok: true, route: "/api/ai/advice", detail: "cache_hit" });
       return NextResponse.json({ ...cached.value, meta: { ...(cached.value.meta ?? {}), cached: true } });
     }
@@ -282,6 +331,12 @@ export async function POST(req: NextRequest) {
     };
 
     usageByDay.set(today, spent + estimatedCost);
+
+    if (!isValidAdviceResponse(response)) {
+      const fallback = buildFallback(body);
+      await writeAuditLog({ action: "ai.advice", userId: actorKey, ok: false, route: "/api/ai/advice", detail: "response_validation_failed" });
+      return NextResponse.json(fallback);
+    }
 
     const ttlSec = envNumber("AI_CACHE_TTL_SEC", 1800);
     responseCache.set(cacheKey, {

@@ -103,6 +103,11 @@ export const protocolGenerateSchema = z.object({
   locale: z.string().max(20).optional(),
   async: z.boolean().optional(),
   priority: z.number().int().min(1).max(10).optional(),
+  demographics: z.object({
+    ageRange: z.string().max(40).optional(),
+    gender: z.string().max(40).optional(),
+    skinType: z.string().max(40).optional(),
+  }).optional(),
   answers: z.record(z.string(), z.string()).optional(),
   analysis: z.object({
     type: z.string().min(1).max(60),
@@ -123,11 +128,26 @@ export const protocolGenerateSchema = z.object({
     uvIndex: z.number().min(0).max(20).optional(),
     humidity: z.number().min(0).max(100).optional(),
     aqi: z.number().min(0).max(1000).optional(),
+    climateZone: z.string().max(60).optional(),
   }).optional(),
   lifestyle: z.object({
     sleepScore: z.number().min(0).max(100).optional(),
     hydrationScore: z.number().min(0).max(100).optional(),
     stressScore: z.number().min(0).max(100).optional(),
+    workMode: z.string().max(80).optional(),
+    workoutFrequency: z.string().max(80).optional(),
+  }).optional(),
+  programContext: z.object({
+    toleranceMode: z.enum(["beginner", "intermediate", "advanced"]).optional(),
+    adherenceScore: z.number().min(0).max(100).optional(),
+    relapseRiskScore: z.number().min(0).max(100).optional(),
+    ownedProductIds: z.array(z.string().min(1).max(120)).max(80).optional(),
+  }).optional(),
+  rewardContext: z.object({
+    alphaBalance: z.number().int().min(0).optional(),
+    streakCount: z.number().int().min(0).optional(),
+    rewardTier: z.string().max(80).optional(),
+    loyaltyLevel: z.number().int().min(0).optional(),
   }).optional(),
 });
 

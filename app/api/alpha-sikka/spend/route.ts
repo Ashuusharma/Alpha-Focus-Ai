@@ -23,7 +23,7 @@ type TxRow = {
 
 function getSupabaseConfig() {
   const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!baseUrl || !serviceKey) return null;
   return {
     baseUrl: baseUrl.replace(/\/$/, ""),
@@ -158,6 +158,11 @@ export async function POST(request: NextRequest) {
 
     const body = parsed.data;
 
+    if (body.category === "redemption" && (!body.referenceId || body.referenceId.trim().length < 8)) {
+      await writeAuditLog({ action: "checkout.spend", userId: authUser.id, ok: false, route: "/api/alpha-sikka/spend", detail: "missing_reference_id" });
+      return NextResponse.json({ ok: false, error: "reference_id_required" }, { status: 400 });
+    }
+
     if (body.category === "redemption" && Number.isFinite(body.cartTotal)) {
       const isValid = await validateRedemption({
         baseUrl: config.baseUrl,
@@ -168,6 +173,7 @@ export async function POST(request: NextRequest) {
       });
 
       if (!isValid) {
+        await writeAuditLog({ action: "checkout.spend", userId: authUser.id, ok: false, route: "/api/alpha-sikka/spend", detail: "redemption_validation_failed" });
         return NextResponse.json(
           {
             ok: false,
@@ -192,6 +198,10 @@ export async function POST(request: NextRequest) {
 
     if (!insertResponse.ok) {
       const detail = await insertResponse.text();
+      if (detail.toLowerCase().includes("duplicate") || detail.toLowerCase().includes("unique")) {
+        await writeAuditLog({ action: "checkout.spend", userId: authUser.id, ok: false, route: "/api/alpha-sikka/spend", detail: "duplicate_reference" });
+        return NextResponse.json({ ok: false, error: "duplicate_reference" }, { status: 409 });
+      }
       if (detail.toLowerCase().includes("insufficient balance")) {
         const latestSummary = await fetchSummary(config.baseUrl, config.serviceKey, authUser.id);
         return NextResponse.json(
@@ -212,6 +222,9 @@ export async function POST(request: NextRequest) {
     const lifetimeEarned = Number(summary?.lifetime_earned || 0);
 
     await writeAuditLog({ action: "alpha_sikka.spend", userId: authUser.id, ok: true, route: "/api/alpha-sikka/spend" });
+    if (body.category === "redemption") {
+      await writeAuditLog({ action: "checkout.completed", userId: authUser.id, ok: true, route: "/api/alpha-sikka/spend", detail: body.referenceId });
+    }
     invalidateRequestCache(`alpha-summary:${authUser.id}`);
     invalidateRequestCachePrefix(`dashboard:${authUser.id}`);
 

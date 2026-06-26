@@ -13,7 +13,11 @@ type ProtocolReportRowInsert = {
   source_locale: string;
   source_version: string;
   model_name?: string;
-  status: "generating" | "ready" | "failed" | "archived";
+  prompt_version?: string;
+  cache_key?: string;
+  token_usage?: Record<string, unknown>;
+  cost_estimate?: number;
+  status: "queued" | "generating" | "processing" | "ready" | "failed" | "archived";
   clinical_profile: ClinicalProfile;
   protocol_input: ProtocolInput;
   report_payload: Record<string, unknown>;
@@ -194,27 +198,117 @@ export async function markProtocolJobFailed(jobId: string, error: string, attemp
 }
 
 export async function updateProtocolReport(reportId: string, input: {
-  status: "generating" | "ready" | "failed" | "archived";
+  status: "queued" | "generating" | "processing" | "ready" | "failed" | "archived";
   modelName: string;
   fallbackUsed: boolean;
-  reportPayload: ProtocolReport;
+  reportPayload?: ProtocolReport;
+  promptVersion?: string;
+  cacheKey?: string;
+  tokenUsage?: Record<string, unknown>;
+  costEstimate?: number;
 }): Promise<void> {
   const config = getConfig();
   if (!config) throw new Error("supabase_not_configured");
+
+  const body: Record<string, unknown> = {
+    status: input.status,
+    model_name: input.modelName,
+    fallback_used: input.fallbackUsed,
+    prompt_version: input.promptVersion,
+    cache_key: input.cacheKey,
+    token_usage: input.tokenUsage,
+    cost_estimate: input.costEstimate,
+    generated_at: input.status === "ready" ? new Date().toISOString() : undefined,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (input.reportPayload) {
+    body.report_payload = input.reportPayload;
+  }
 
   await request<Array<{ id: string }>>(
     config,
     `protocol_reports?id=eq.${reportId}&select=id`,
     {
       method: "PATCH",
-      body: JSON.stringify({
-        status: input.status,
-        model_name: input.modelName,
-        fallback_used: input.fallbackUsed,
-        report_payload: input.reportPayload,
-        generated_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }),
+      body: JSON.stringify(body),
     }
   );
+}
+
+export async function fetchProtocolReportById(input: {
+  reportId: string;
+  userId: string;
+  sourceVersion?: string;
+}): Promise<null | {
+  id: string;
+  user_id: string;
+  source_version: string;
+  status: string;
+  report_payload: ProtocolReport | Record<string, unknown>;
+  created_at: string;
+  generated_at: string | null;
+}> {
+  const config = getConfig();
+  if (!config) throw new Error("supabase_not_configured");
+
+  const version = input.sourceVersion || "v1";
+  const path = [
+    "protocol_reports",
+    "?select=id,user_id,source_version,status,report_payload,created_at,generated_at",
+    `&id=eq.${input.reportId}`,
+    `&user_id=eq.${input.userId}`,
+    `&source_version=eq.${version}`,
+    "&limit=1",
+  ].join("");
+
+  const rows = await request<Array<{
+    id: string;
+    user_id: string;
+    source_version: string;
+    status: string;
+    report_payload: ProtocolReport | Record<string, unknown>;
+    created_at: string;
+    generated_at: string | null;
+  }>>(config, path, { method: "GET" });
+
+  return rows[0] || null;
+}
+
+export async function fetchLatestProtocolReportForUser(input: {
+  userId: string;
+  sourceVersion?: string;
+}): Promise<null | {
+  id: string;
+  user_id: string;
+  source_version: string;
+  status: string;
+  report_payload: ProtocolReport | Record<string, unknown>;
+  created_at: string;
+  generated_at: string | null;
+}> {
+  const config = getConfig();
+  if (!config) throw new Error("supabase_not_configured");
+
+  const version = input.sourceVersion || "v2";
+  const path = [
+    "protocol_reports",
+    "?select=id,user_id,source_version,status,report_payload,created_at,generated_at",
+    `&user_id=eq.${input.userId}`,
+    `&source_version=eq.${version}`,
+    "&order=created_at.desc",
+    "&limit=1",
+  ].join("");
+
+  const rows = await request<Array<{
+    id: string;
+    user_id: string;
+    source_version: string;
+    status: string;
+    report_payload: ProtocolReport | Record<string, unknown>;
+    created_at: string;
+    generated_at: string | null;
+  }>>(config, path, { method: "GET" });
+
+  return rows[0] || null;
 }

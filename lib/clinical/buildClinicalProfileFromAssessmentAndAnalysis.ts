@@ -9,15 +9,35 @@ type BuildClinicalProfileOptions = {
   userId: string;
   locale?: string;
   category?: string;
+  demographics?: {
+    ageRange?: string;
+    gender?: string;
+    skinType?: string;
+  };
   environment?: {
     uvIndex?: number;
     humidity?: number;
     aqi?: number;
+    climateZone?: string;
   };
   lifestyle?: {
     sleepScore?: number;
     hydrationScore?: number;
     stressScore?: number;
+    workMode?: string;
+    workoutFrequency?: string;
+  };
+  protocolContext?: {
+    toleranceMode?: "beginner" | "intermediate" | "advanced";
+    adherenceScore?: number;
+    relapseRiskScore?: number;
+    ownedProductIds?: string[];
+  };
+  rewardContext?: {
+    alphaBalance?: number;
+    streakCount?: number;
+    rewardTier?: string;
+    loyaltyLevel?: number;
   };
   appBuild?: string;
 };
@@ -37,6 +57,12 @@ function average(values: number[]): number {
   if (values.length === 0) return 0;
   const total = values.reduce((sum, value) => sum + value, 0);
   return Math.round(total / values.length);
+}
+
+function phaseFromDay(dayNumber: number): "Reset" | "Repair" | "Stabilize" {
+  if (dayNumber <= 7) return "Reset";
+  if (dayNumber <= 14) return "Repair";
+  return "Stabilize";
 }
 
 function computeAssessmentSeverity(answers: Record<string, string>): number {
@@ -127,6 +153,10 @@ export function buildClinicalProfileFromAssessmentAndAnalysis(
   const concerns = buildConcernList(answers, analysis);
 
   const completionPct = clamp(Math.round((answerCount / 24) * 100));
+  const toleranceMode = options.protocolContext?.toleranceMode || "intermediate";
+  const adherenceScore = clamp(Math.round(Number(options.protocolContext?.adherenceScore || 0)));
+  const relapseRiskScore = clamp(Math.round(Number(options.protocolContext?.relapseRiskScore || Math.max(0, 100 - adherenceScore))));
+  const dayNumberGuess = Math.max(1, Math.min(30, Math.round(Math.max(1, adherenceScore / 4))));
 
   const parsed = clinicalProfileSchema.parse({
     userId: options.userId,
@@ -149,6 +179,43 @@ export function buildClinicalProfileFromAssessmentAndAnalysis(
       humidity: options.environment?.humidity,
       aqi: options.environment?.aqi,
     },
+    demographics: {
+      ageRange: options.demographics?.ageRange,
+      gender: options.demographics?.gender,
+      skinType: options.demographics?.skinType,
+    },
+    environment: {
+      uvIndex: options.environment?.uvIndex,
+      humidity: options.environment?.humidity,
+      aqi: options.environment?.aqi,
+      climateZone: options.environment?.climateZone,
+    },
+    clinicalScores: {
+      overallSeverity,
+      confidenceScore,
+      adherenceScore,
+      relapseRiskScore,
+    },
+    protocolDecisions: {
+      category: options.category,
+      toleranceMode,
+      currentPhase: phaseFromDay(dayNumberGuess),
+      sourceVersion: "v2",
+      ownedProductIds: options.protocolContext?.ownedProductIds || [],
+    },
+    lifestyleContext: {
+      sleepScore: options.lifestyle?.sleepScore,
+      hydrationScore: options.lifestyle?.hydrationScore,
+      stressScore: options.lifestyle?.stressScore,
+      workMode: options.lifestyle?.workMode,
+      workoutFrequency: options.lifestyle?.workoutFrequency,
+    },
+    rewardContext: {
+      alphaBalance: options.rewardContext?.alphaBalance,
+      streakCount: options.rewardContext?.streakCount,
+      rewardTier: options.rewardContext?.rewardTier,
+      loyaltyLevel: options.rewardContext?.loyaltyLevel,
+    },
     photo: analysis
       ? {
           analyzerType: analysis.type,
@@ -160,7 +227,7 @@ export function buildClinicalProfileFromAssessmentAndAnalysis(
         }
       : undefined,
     metadata: {
-      sourceVersion: "v1",
+      sourceVersion: "v2",
       appBuild: options.appBuild,
     },
   });

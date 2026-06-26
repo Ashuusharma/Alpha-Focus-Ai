@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { galaxyAnalyzeSchema } from "@/lib/server/validators";
 import { isRateLimited } from "@/lib/server/rateLimit";
 import { writeAuditLog } from "@/lib/server/auditLog";
+import { getRequestAuth } from "@/lib/auth/requestAuth";
 
 type InputPayload = {
   images: string[];
@@ -25,12 +26,79 @@ type GalaxyHotspot = {
   severity?: "low" | "medium" | "high";
 };
 
+const ALLOWED_IMAGE_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
+const MAX_IMAGE_BYTES = 6 * 1024 * 1024;
+const MAX_TOTAL_IMAGE_BYTES = 15 * 1024 * 1024;
+
+type ParsedDataUrl = {
+  mime: string;
+  base64: string;
+  bytes: Buffer;
+};
+
+function parseDataUrl(dataUrl: string): ParsedDataUrl | null {
+  const marker = ";base64,";
+  if (!dataUrl.startsWith("data:image/")) return null;
+  const markerIndex = dataUrl.indexOf(marker);
+  if (markerIndex <= 5) return null;
+
+  const mime = String(dataUrl.slice(5, markerIndex) || "").toLowerCase();
+  const base64 = String(dataUrl.slice(markerIndex + marker.length) || "");
+  let bytes: Buffer;
+  try {
+    bytes = Buffer.from(base64, "base64");
+  } catch {
+    return null;
+  }
+
+  return { mime, base64, bytes };
+}
+
+function hasValidSignature(mime: string, bytes: Buffer): boolean {
+  if (mime === "image/jpeg") {
+    return bytes.length > 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+  }
+
+  if (mime === "image/png") {
+    return (
+      bytes.length > 8 &&
+      bytes[0] === 0x89 &&
+      bytes[1] === 0x50 &&
+      bytes[2] === 0x4e &&
+      bytes[3] === 0x47 &&
+      bytes[4] === 0x0d &&
+      bytes[5] === 0x0a &&
+      bytes[6] === 0x1a &&
+      bytes[7] === 0x0a
+    );
+  }
+
+  if (mime === "image/webp") {
+    return (
+      bytes.length > 12 &&
+      bytes[0] === 0x52 &&
+      bytes[1] === 0x49 &&
+      bytes[2] === 0x46 &&
+      bytes[3] === 0x46 &&
+      bytes[8] === 0x57 &&
+      bytes[9] === 0x45 &&
+      bytes[10] === 0x42 &&
+      bytes[11] === 0x50
+    );
+  }
+
+  return false;
+}
+
 function dataUrlToBlob(dataUrl: string): Blob {
-  const [meta, content] = dataUrl.split(",");
-  const mimeMatch = /data:(.*?);base64/.exec(meta);
-  const mime = mimeMatch?.[1] || "image/jpeg";
-  const buffer = Buffer.from(content, "base64");
-  return new Blob([buffer], { type: mime });
+  const parsed = parseDataUrl(dataUrl);
+  if (!parsed) {
+    throw new Error("invalid_data_url");
+  }
+  const mime = parsed.mime;
+  const view = parsed.bytes;
+  const arrayBuffer = view.buffer.slice(view.byteOffset, view.byteOffset + view.byteLength) as ArrayBuffer;
+  return new Blob([arrayBuffer], { type: mime });
 }
 
 function toNumber(value: unknown, fallback = 0): number {
@@ -240,9 +308,12 @@ function defaultIssuesForCategories(categories: string[]): GalaxyIssue[] {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await getRequestAuth(request);
+    const actor = auth?.userId || request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+
     const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
-    if (isRateLimited(`galaxy:analyze:${ip}`, 20, 60_000)) {
-      await writeAuditLog({ action: "galaxy.analyze", userId: ip, ok: false, route: "/api/galaxy/analyze", detail: "rate_limited" });
+    if (isRateLimited(`galaxy:analyze:${actor}`, 20, 60_000)) {
+      await writeAuditLog({ action: "galaxy.analyze", userId: actor, ok: false, route: "/api/galaxy/analyze", detail: "rate_limited" });
       return NextResponse.json({ error: "rate_limited" }, { status: 429 });
     }
 
@@ -259,12 +330,42 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No images provided" }, { status: 400 });
     }
 
+    let totalBytes = 0;
+    for (const imageData of body.images) {
+      const parsedData = parseDataUrl(imageData);
+      if (!parsedData) {
+        await writeAuditLog({ action: "upload.image", userId: actor, ok: false, route: "/api/galaxy/analyze", detail: "invalid_data_url" });
+        return NextResponse.json({ error: "invalid_image_data_url" }, { status: 400 });
+      }
+
+      if (!ALLOWED_IMAGE_MIME.has(parsedData.mime)) {
+        await writeAuditLog({ action: "upload.image", userId: actor, ok: false, route: "/api/galaxy/analyze", detail: "mime_rejected" });
+        return NextResponse.json({ error: "invalid_image_mime" }, { status: 415 });
+      }
+
+      if (parsedData.bytes.length <= 0 || parsedData.bytes.length > MAX_IMAGE_BYTES) {
+        await writeAuditLog({ action: "upload.image", userId: actor, ok: false, route: "/api/galaxy/analyze", detail: "image_size_rejected" });
+        return NextResponse.json({ error: "image_too_large" }, { status: 413 });
+      }
+
+      if (!hasValidSignature(parsedData.mime, parsedData.bytes)) {
+        await writeAuditLog({ action: "upload.image", userId: actor, ok: false, route: "/api/galaxy/analyze", detail: "signature_rejected" });
+        return NextResponse.json({ error: "invalid_image_signature" }, { status: 400 });
+      }
+
+      totalBytes += parsedData.bytes.length;
+      if (totalBytes > MAX_TOTAL_IMAGE_BYTES) {
+        await writeAuditLog({ action: "upload.image", userId: actor, ok: false, route: "/api/galaxy/analyze", detail: "total_upload_size_rejected" });
+        return NextResponse.json({ error: "total_upload_too_large" }, { status: 413 });
+      }
+    }
+
     const apiKey = process.env.GALAXY_API_KEY || process.env.GALAXY_BEARER_TOKEN;
     const apiUrl = process.env.GALAXY_API_URL || "https://api.galaxy.ai/photo-analyzer";
 
     if (!apiKey) {
       const categories = body.categories || [body.analyzerType];
-      await writeAuditLog({ action: "galaxy.analyze", userId: ip, ok: true, route: "/api/galaxy/analyze", detail: "fallback_no_key" });
+      await writeAuditLog({ action: "galaxy.analyze", userId: actor, ok: true, route: "/api/galaxy/analyze", detail: "fallback_no_key" });
       return NextResponse.json({
         provider: "galaxy-ai",
         issues: defaultIssuesForCategories(categories),
@@ -330,7 +431,7 @@ export async function POST(request: NextRequest) {
         ? Math.round(normalizedIssues.reduce((sum, issue) => sum + issue.confidence, 0) / normalizedIssues.length)
         : 75;
 
-    await writeAuditLog({ action: "galaxy.analyze", userId: ip, ok: true, route: "/api/galaxy/analyze", detail: "analyze_success" });
+    await writeAuditLog({ action: "galaxy.analyze", userId: actor, ok: true, route: "/api/galaxy/analyze", detail: "analyze_success" });
 
     return NextResponse.json({
       provider: "galaxy-ai",

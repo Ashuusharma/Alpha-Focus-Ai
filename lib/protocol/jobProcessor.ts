@@ -1,4 +1,4 @@
-import { generateProtocolReportFromAI } from "@/lib/protocol/generationEngine";
+import { generateProtocolWithOrchestrator } from "@/lib/ai/ProtocolOrchestrator";
 import {
   fetchNextQueuedProtocolJob,
   markProtocolJobCompleted,
@@ -18,17 +18,29 @@ export async function processNextProtocolJob(): Promise<{ ok: boolean; processed
   try {
     await markProtocolJobProcessing(job.id, Number(job.attempts || 0));
 
+    if (job.report_id) {
+      await updateProtocolReport(job.report_id, {
+        status: "processing",
+        modelName: "pending",
+        fallbackUsed: false,
+      });
+    }
+
     const input = (job.input_payload?.protocolInput || job.input_payload?.input || null) as ProtocolInput | null;
     if (!input) throw new Error("protocol_input_missing");
 
-    const generated = await generateProtocolReportFromAI(input);
+    const generated = await generateProtocolWithOrchestrator(input);
 
     if (job.report_id) {
       await updateProtocolReport(job.report_id, {
         status: "ready",
         modelName: generated.model,
-        fallbackUsed: generated.usedFallback,
+        fallbackUsed: generated.status !== "ok",
         reportPayload: generated.report,
+        promptVersion: generated.promptVersion,
+        cacheKey: generated.cacheKey,
+        tokenUsage: generated.tokenUsage,
+        costEstimate: generated.costEstimateUsd,
       });
     }
 
@@ -39,7 +51,7 @@ export async function processNextProtocolJob(): Promise<{ ok: boolean; processed
       userId: job.user_id,
       ok: true,
       route: "/api/protocol/worker",
-      detail: generated.usedFallback ? "fallback" : "ai",
+      detail: generated.status !== "ok" ? "fallback" : "ai",
     });
 
     return { ok: true, processed: true, jobId };
@@ -49,6 +61,14 @@ export async function processNextProtocolJob(): Promise<{ ok: boolean; processed
     const message = error instanceof Error ? error.message : "protocol_job_failed";
 
     await markProtocolJobFailed(job.id, message, attempts, maxAttempts);
+
+    if (job.report_id) {
+      await updateProtocolReport(job.report_id, {
+        status: "failed",
+        modelName: "failed",
+        fallbackUsed: true,
+      });
+    }
 
     await writeAuditLog({
       action: "protocol.job.process",
