@@ -8,6 +8,7 @@ import {
   getCachedProtocolPayload,
   getProtocolGovernanceConfig,
   selectProtocolModel,
+  recordProtocolRunMetrics,
   setCachedProtocolPayload,
   trimPromptToLimit,
 } from "@/lib/ai/protocolGovernance";
@@ -112,6 +113,7 @@ function fallbackResult(input: ProtocolInput, model: string, promptVersion: stri
 }
 
 export async function generateProtocolWithOrchestrator(input: ProtocolInput): Promise<ProtocolOrchestratorResult> {
+  const startedAt = Date.now();
   const config = getProtocolGovernanceConfig();
   const promptVersion = config.promptVersion;
   const cacheKey = buildProtocolCacheKey(input, promptVersion);
@@ -179,6 +181,14 @@ export async function generateProtocolWithOrchestrator(input: ProtocolInput): Pr
         completionTokens: parsed.completionTokens,
       });
 
+      recordProtocolRunMetrics({
+        ok: true,
+        promptTokens: usage.promptTokens,
+        completionTokens: usage.completionTokens,
+        costEstimateUsd: usage.costEstimateUsd,
+        latencyMs: Date.now() - startedAt,
+      });
+
       return {
         report,
         status: "ok",
@@ -197,6 +207,14 @@ export async function generateProtocolWithOrchestrator(input: ProtocolInput): Pr
       lastError = error instanceof Error ? error.message : "ai_runtime_error";
     }
   }
+
+  recordProtocolRunMetrics({
+    ok: false,
+    promptTokens: 0,
+    completionTokens: 0,
+    costEstimateUsd: 0,
+    latencyMs: Date.now() - startedAt,
+  });
 
   return fallbackResult(input, selected.model, promptVersion, cacheKey, lastError);
 }

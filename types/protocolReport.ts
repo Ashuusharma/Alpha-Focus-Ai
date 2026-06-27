@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+export const PROTOCOL_REPORT_SCHEMA_VERSION = "protocol_report.v2.0.0";
+
 export const protocolIssueSummarySchema = z.object({
   whatWasDetected: z.array(z.string().min(1).max(240)).min(1).max(3),
   whyItHappens: z.array(z.string().min(1).max(240)).min(1).max(3),
@@ -78,6 +80,7 @@ export const protocolWeeklyMilestoneSchema = z.object({
 }).strict();
 
 export const protocolReportSchema = z.object({
+  schemaVersion: z.string().default(PROTOCOL_REPORT_SCHEMA_VERSION),
   issueSummary: protocolIssueSummarySchema,
   mainResolvingIngredients: z.array(protocolMainIngredientSchema).min(1).max(12),
   monthlyRecoveryPlan: protocolMonthlyRecoveryPlanSchema,

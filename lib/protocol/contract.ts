@@ -3,6 +3,15 @@ import { ClinicalProfile } from "@/types/clinicalProfile";
 import { ProtocolReport, protocolReportSchema } from "@/types/protocolReport";
 import { buildRoutineIntelligence, RoutineIntelligence } from "@/lib/protocol/routineIntelligence";
 import { buildProductIntelligence, ProductIntelligence } from "@/lib/protocol/productIntelligence";
+import { getCategoryKnowledgePack } from "@/knowledge";
+import { getIngredientIntelligence } from "@/ingredients";
+import { CategoryKnowledgePack } from "@/knowledge/types";
+import { IngredientIntelligence } from "@/ingredients/types";
+import { buildProtocolKnowledgeGraph, ProtocolKnowledgeGraph } from "@/lib/protocol/knowledgeGraph";
+import { buildExplainabilityReport, ExplainabilityReport } from "@/lib/protocol/explainability";
+import { buildProtocolVersions, ProtocolEngineVersions } from "@/lib/protocol/versioning";
+import { CLINICAL_PROFILE_SCHEMA_VERSION } from "@/types/clinicalProfile";
+import { PROTOCOL_REPORT_SCHEMA_VERSION } from "@/types/protocolReport";
 
 export type ProtocolInput = {
   context: {
@@ -69,6 +78,11 @@ export type ProtocolInput = {
   };
   routineIntelligence: RoutineIntelligence | null;
   productIntelligence: ProductIntelligence;
+  knowledgePack: CategoryKnowledgePack | null;
+  ingredientIntelligence: IngredientIntelligence[];
+  knowledgeGraph: ProtocolKnowledgeGraph;
+  explainability: ExplainabilityReport;
+  protocolVersions: ProtocolEngineVersions;
 };
 
 export function buildProtocolInput(profile: ClinicalProfile): ProtocolInput {
@@ -77,6 +91,48 @@ export function buildProtocolInput(profile: ClinicalProfile): ProtocolInput {
     .flatMap((concern) => concern.evidence || [])
     .filter(Boolean)
     .slice(0, 12);
+
+  const knowledgePack = getCategoryKnowledgePack(profile.category);
+  const ingredientIntelligence = getIngredientIntelligence(knowledgePack?.ingredientPriorities || []);
+
+  const productIntelligence = buildProductIntelligence({
+    category: profile.category,
+    severity: profile.overallSeverity,
+    toleranceMode: profile.protocolDecisions?.toleranceMode,
+    ownedProductIds: profile.protocolDecisions?.ownedProductIds,
+  });
+
+  const routineIntelligence = buildRoutineIntelligence({
+    category: profile.category,
+    toleranceMode: profile.protocolDecisions?.toleranceMode,
+    adherenceScore: profile.clinicalScores?.adherenceScore,
+    relapseRiskScore: profile.clinicalScores?.relapseRiskScore,
+    climateZone: profile.environment?.climateZone,
+    ownedProductIds: profile.protocolDecisions?.ownedProductIds,
+    severity: profile.overallSeverity,
+  });
+
+  const weeklyMilestones = routineIntelligence?.weeklyMilestones.map((item) => `Week ${item.week}: ${item.focus}`) || [];
+  const knowledgeGraph = buildProtocolKnowledgeGraph({
+    category: profile.category,
+    issueTitles: profile.concerns.map((item) => item.title),
+    knowledgePack,
+    ingredients: ingredientIntelligence,
+    selectedProducts: productIntelligence.selectedProducts.map((item) => ({ name: item.name })),
+    weeklyMilestones,
+  });
+
+  const explainability = buildExplainabilityReport({
+    productIntelligence,
+    knowledgeGraph,
+  });
+
+  const protocolVersions = buildProtocolVersions(
+    profile.protocolDecisions?.sourceVersion || profile.metadata?.sourceVersion || "v2",
+    knowledgePack?.version,
+    CLINICAL_PROFILE_SCHEMA_VERSION,
+    PROTOCOL_REPORT_SCHEMA_VERSION
+  );
 
   return {
     context: {
@@ -141,21 +197,13 @@ export function buildProtocolInput(profile: ClinicalProfile): ProtocolInput {
       confidence: profile.photo?.confidence,
       detectedIssueCount: profile.photo?.detectedIssueCount,
     },
-    routineIntelligence: buildRoutineIntelligence({
-      category: profile.category,
-      toleranceMode: profile.protocolDecisions?.toleranceMode,
-      adherenceScore: profile.clinicalScores?.adherenceScore,
-      relapseRiskScore: profile.clinicalScores?.relapseRiskScore,
-      climateZone: profile.environment?.climateZone,
-      ownedProductIds: profile.protocolDecisions?.ownedProductIds,
-      severity: profile.overallSeverity,
-    }),
-    productIntelligence: buildProductIntelligence({
-      category: profile.category,
-      severity: profile.overallSeverity,
-      toleranceMode: profile.protocolDecisions?.toleranceMode,
-      ownedProductIds: profile.protocolDecisions?.ownedProductIds,
-    }),
+    routineIntelligence,
+    productIntelligence,
+    knowledgePack,
+    ingredientIntelligence,
+    knowledgeGraph,
+    explainability,
+    protocolVersions,
   };
 }
 

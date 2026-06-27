@@ -1,5 +1,6 @@
 import { ProtocolInput } from "@/lib/protocol/contract";
 import { ProtocolReport } from "@/types/protocolReport";
+import { PROTOCOL_REPORT_SCHEMA_VERSION } from "@/types/protocolReport";
 
 function severityLabel(score: number): string {
   if (score >= 75) return "High";
@@ -21,6 +22,7 @@ export function buildFallbackProtocolReport(input: ProtocolInput): ProtocolRepor
   const baseEvidence = primary?.evidence?.slice(0, 3) || input.assessmentFacts.topSignals.slice(0, 3);
 
   return {
+    schemaVersion: PROTOCOL_REPORT_SCHEMA_VERSION,
     issueSummary: {
       whatWasDetected: [
         `Your top priority is ${primary?.title || categoryLabel}.`,

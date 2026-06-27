@@ -7,7 +7,12 @@ import { AnalysisResult } from "@/lib/analyzeImage";
 import { buildClinicalProfileFromAssessmentAndAnalysis } from "@/lib/clinical/buildClinicalProfileFromAssessmentAndAnalysis";
 import { buildProtocolInput } from "@/lib/protocol/contract";
 import { generateProtocolWithOrchestrator } from "@/lib/ai/ProtocolOrchestrator";
+import { evaluateProtocolQuality } from "@/lib/protocol/qualityEvaluation";
+import { buildProtocolVersions } from "@/lib/protocol/versioning";
+import { CLINICAL_PROFILE_SCHEMA_VERSION } from "@/types/clinicalProfile";
+import { PROTOCOL_REPORT_SCHEMA_VERSION } from "@/types/protocolReport";
 import {
+  countPendingProtocolJobsForUser,
   insertProtocolGenerationJob,
   insertProtocolReport,
   protocolRepoReady,
@@ -15,6 +20,17 @@ import {
 } from "@/lib/server/protocolRepository";
 
 export const runtime = "nodejs";
+
+function hasFinalInput(body: {
+  finalSubmission?: boolean;
+  answers?: Record<string, string>;
+  analysis?: { detectedIssues?: Array<unknown> } | null;
+}) {
+  if (body.finalSubmission) return true;
+  const answerCount = Object.keys(body.answers || {}).length;
+  const issueCount = body.analysis?.detectedIssues?.length || 0;
+  return answerCount >= 8 || issueCount > 0;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,6 +56,18 @@ export async function POST(request: NextRequest) {
     }
 
     const body = parsed.data;
+
+    if (!hasFinalInput(body)) {
+      await writeAuditLog({ action: "protocol.generate", userId: auth.userId, ok: false, route: "/api/protocol/generate", detail: "final_input_required" });
+      return NextResponse.json({ ok: false, error: "final_input_required" }, { status: 400 });
+    }
+
+    const pendingJobs = await countPendingProtocolJobsForUser(auth.userId);
+    if (pendingJobs >= 3) {
+      await writeAuditLog({ action: "protocol.generate", userId: auth.userId, ok: false, route: "/api/protocol/generate", detail: "queue_busy" });
+      return NextResponse.json({ ok: false, error: "queue_busy" }, { status: 429 });
+    }
+
     const answers = body.answers || {};
 
     const analysis: AnalysisResult | null = body.analysis
@@ -85,6 +113,21 @@ export async function POST(request: NextRequest) {
       protocol_input: protocolInput,
       report_payload: {},
       fallback_used: false,
+      ai_quality_scores: {
+        coverage: 0,
+        consistency: 0,
+        productMatch: 0,
+        routineCompleteness: 0,
+        indianAdaptation: 0,
+        safetyRules: 0,
+        promptConfidence: 0,
+        missingInformation: 100,
+        personalizationDepth: 0,
+        explainabilityScore: 0,
+      },
+      protocol_versions: protocolInput.protocolVersions,
+      clinical_profile_schema_version: CLINICAL_PROFILE_SCHEMA_VERSION,
+      report_schema_version: PROTOCOL_REPORT_SCHEMA_VERSION,
     });
 
     const asyncMode = body.async !== false;
@@ -120,6 +163,13 @@ export async function POST(request: NextRequest) {
     });
 
     const generated = await generateProtocolWithOrchestrator(protocolInput);
+    const quality = evaluateProtocolQuality({ protocolInput, report: generated.report });
+    const protocolVersions = buildProtocolVersions(
+      generated.promptVersion,
+      protocolInput.knowledgePack?.version,
+      CLINICAL_PROFILE_SCHEMA_VERSION,
+      PROTOCOL_REPORT_SCHEMA_VERSION
+    );
 
     await updateProtocolReport(reportRow.id, {
       status: "ready",
@@ -130,6 +180,10 @@ export async function POST(request: NextRequest) {
       cacheKey: generated.cacheKey,
       tokenUsage: generated.tokenUsage,
       costEstimate: generated.costEstimateUsd,
+      aiQualityScores: quality,
+      protocolVersions,
+      clinicalProfileSchemaVersion: CLINICAL_PROFILE_SCHEMA_VERSION,
+      reportSchemaVersion: PROTOCOL_REPORT_SCHEMA_VERSION,
     });
 
     await writeAuditLog({ action: "protocol.generate", userId: auth.userId, ok: true, route: "/api/protocol/generate", detail: generated.status !== "ok" ? "fallback" : "ai" });

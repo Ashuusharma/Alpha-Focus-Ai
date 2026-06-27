@@ -12,6 +12,8 @@ create table if not exists public.protocol_reports (
   cache_key text,
   token_usage jsonb,
   cost_estimate numeric(12,6),
+  ai_quality_scores jsonb,
+  protocol_versions jsonb,
   status text not null default 'queued' check (status in ('queued', 'generating', 'processing', 'ready', 'archived', 'failed')),
   clinical_profile jsonb not null default '{}'::jsonb,
   protocol_input jsonb not null default '{}'::jsonb,
@@ -27,6 +29,8 @@ alter table if exists public.protocol_reports add column if not exists prompt_ve
 alter table if exists public.protocol_reports add column if not exists cache_key text;
 alter table if exists public.protocol_reports add column if not exists token_usage jsonb;
 alter table if exists public.protocol_reports add column if not exists cost_estimate numeric(12,6);
+alter table if exists public.protocol_reports add column if not exists ai_quality_scores jsonb;
+alter table if exists public.protocol_reports add column if not exists protocol_versions jsonb;
 
 do $$
 begin

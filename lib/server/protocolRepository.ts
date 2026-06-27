@@ -1,6 +1,8 @@
 import { ProtocolInput } from "@/lib/protocol/contract";
 import { ClinicalProfile } from "@/types/clinicalProfile";
 import { ProtocolReport } from "@/types/protocolReport";
+import { ProtocolQualityScores } from "@/lib/protocol/qualityEvaluation";
+import { ProtocolEngineVersions } from "@/lib/protocol/versioning";
 
 type SupabaseConfig = {
   baseUrl: string;
@@ -17,6 +19,10 @@ type ProtocolReportRowInsert = {
   cache_key?: string;
   token_usage?: Record<string, unknown>;
   cost_estimate?: number;
+  ai_quality_scores?: ProtocolQualityScores;
+  protocol_versions?: ProtocolEngineVersions;
+  clinical_profile_schema_version?: string;
+  report_schema_version?: string;
   status: "queued" | "generating" | "processing" | "ready" | "failed" | "archived";
   clinical_profile: ClinicalProfile;
   protocol_input: ProtocolInput;
@@ -206,6 +212,10 @@ export async function updateProtocolReport(reportId: string, input: {
   cacheKey?: string;
   tokenUsage?: Record<string, unknown>;
   costEstimate?: number;
+  aiQualityScores?: ProtocolQualityScores;
+  protocolVersions?: ProtocolEngineVersions;
+  clinicalProfileSchemaVersion?: string;
+  reportSchemaVersion?: string;
 }): Promise<void> {
   const config = getConfig();
   if (!config) throw new Error("supabase_not_configured");
@@ -218,6 +228,10 @@ export async function updateProtocolReport(reportId: string, input: {
     cache_key: input.cacheKey,
     token_usage: input.tokenUsage,
     cost_estimate: input.costEstimate,
+    ai_quality_scores: input.aiQualityScores,
+    protocol_versions: input.protocolVersions,
+    clinical_profile_schema_version: input.clinicalProfileSchemaVersion,
+    report_schema_version: input.reportSchemaVersion,
     generated_at: input.status === "ready" ? new Date().toISOString() : undefined,
     updated_at: new Date().toISOString(),
   };
@@ -246,6 +260,10 @@ export async function fetchProtocolReportById(input: {
   source_version: string;
   status: string;
   report_payload: ProtocolReport | Record<string, unknown>;
+  ai_quality_scores?: ProtocolQualityScores;
+  protocol_versions?: ProtocolEngineVersions;
+  clinical_profile_schema_version?: string;
+  report_schema_version?: string;
   created_at: string;
   generated_at: string | null;
 }> {
@@ -255,7 +273,7 @@ export async function fetchProtocolReportById(input: {
   const version = input.sourceVersion || "v1";
   const path = [
     "protocol_reports",
-    "?select=id,user_id,source_version,status,report_payload,created_at,generated_at",
+    "?select=id,user_id,source_version,status,report_payload,ai_quality_scores,protocol_versions,clinical_profile_schema_version,report_schema_version,created_at,generated_at",
     `&id=eq.${input.reportId}`,
     `&user_id=eq.${input.userId}`,
     `&source_version=eq.${version}`,
@@ -268,11 +286,46 @@ export async function fetchProtocolReportById(input: {
     source_version: string;
     status: string;
     report_payload: ProtocolReport | Record<string, unknown>;
+    ai_quality_scores?: ProtocolQualityScores;
+    protocol_versions?: ProtocolEngineVersions;
+    clinical_profile_schema_version?: string;
+    report_schema_version?: string;
     created_at: string;
     generated_at: string | null;
   }>>(config, path, { method: "GET" });
 
   return rows[0] || null;
+}
+
+export async function countPendingProtocolJobsForUser(userId: string): Promise<number> {
+  const config = getConfig();
+  if (!config) throw new Error("supabase_not_configured");
+
+  const path = [
+    "protocol_generation_jobs",
+    "?select=id",
+    `&user_id=eq.${userId}`,
+    "&status=in.(queued,processing,retry_scheduled)",
+    "&limit=50",
+  ].join("");
+
+  const rows = await request<Array<{ id: string }>>(config, path, { method: "GET" });
+  return rows.length;
+}
+
+export async function countPendingProtocolJobsTotal(): Promise<number> {
+  const config = getConfig();
+  if (!config) throw new Error("supabase_not_configured");
+
+  const path = [
+    "protocol_generation_jobs",
+    "?select=id",
+    "&status=in.(queued,processing,retry_scheduled)",
+    "&limit=200",
+  ].join("");
+
+  const rows = await request<Array<{ id: string }>>(config, path, { method: "GET" });
+  return rows.length;
 }
 
 export async function fetchLatestProtocolReportForUser(input: {
@@ -284,6 +337,10 @@ export async function fetchLatestProtocolReportForUser(input: {
   source_version: string;
   status: string;
   report_payload: ProtocolReport | Record<string, unknown>;
+  ai_quality_scores?: ProtocolQualityScores;
+  protocol_versions?: ProtocolEngineVersions;
+  clinical_profile_schema_version?: string;
+  report_schema_version?: string;
   created_at: string;
   generated_at: string | null;
 }> {
@@ -293,7 +350,7 @@ export async function fetchLatestProtocolReportForUser(input: {
   const version = input.sourceVersion || "v2";
   const path = [
     "protocol_reports",
-    "?select=id,user_id,source_version,status,report_payload,created_at,generated_at",
+    "?select=id,user_id,source_version,status,report_payload,ai_quality_scores,protocol_versions,clinical_profile_schema_version,report_schema_version,created_at,generated_at",
     `&user_id=eq.${input.userId}`,
     `&source_version=eq.${version}`,
     "&order=created_at.desc",
@@ -306,6 +363,10 @@ export async function fetchLatestProtocolReportForUser(input: {
     source_version: string;
     status: string;
     report_payload: ProtocolReport | Record<string, unknown>;
+    ai_quality_scores?: ProtocolQualityScores;
+    protocol_versions?: ProtocolEngineVersions;
+    clinical_profile_schema_version?: string;
+    report_schema_version?: string;
     created_at: string;
     generated_at: string | null;
   }>>(config, path, { method: "GET" });

@@ -8,6 +8,10 @@ import {
 } from "@/lib/server/protocolRepository";
 import { ProtocolInput } from "@/lib/protocol/contract";
 import { writeAuditLog } from "@/lib/server/auditLog";
+import { evaluateProtocolQuality } from "@/lib/protocol/qualityEvaluation";
+import { buildProtocolVersions } from "@/lib/protocol/versioning";
+import { CLINICAL_PROFILE_SCHEMA_VERSION } from "@/types/clinicalProfile";
+import { PROTOCOL_REPORT_SCHEMA_VERSION } from "@/types/protocolReport";
 
 export async function processNextProtocolJob(): Promise<{ ok: boolean; processed: boolean; jobId?: string; error?: string }> {
   const job = await fetchNextQueuedProtocolJob();
@@ -23,6 +27,8 @@ export async function processNextProtocolJob(): Promise<{ ok: boolean; processed
         status: "processing",
         modelName: "pending",
         fallbackUsed: false,
+        clinicalProfileSchemaVersion: CLINICAL_PROFILE_SCHEMA_VERSION,
+        reportSchemaVersion: PROTOCOL_REPORT_SCHEMA_VERSION,
       });
     }
 
@@ -30,6 +36,8 @@ export async function processNextProtocolJob(): Promise<{ ok: boolean; processed
     if (!input) throw new Error("protocol_input_missing");
 
     const generated = await generateProtocolWithOrchestrator(input);
+    const quality = evaluateProtocolQuality({ protocolInput: input, report: generated.report });
+    const protocolVersions = buildProtocolVersions(generated.promptVersion, input.knowledgePack?.version);
 
     if (job.report_id) {
       await updateProtocolReport(job.report_id, {
@@ -41,6 +49,10 @@ export async function processNextProtocolJob(): Promise<{ ok: boolean; processed
         cacheKey: generated.cacheKey,
         tokenUsage: generated.tokenUsage,
         costEstimate: generated.costEstimateUsd,
+        aiQualityScores: quality,
+        protocolVersions,
+        clinicalProfileSchemaVersion: CLINICAL_PROFILE_SCHEMA_VERSION,
+        reportSchemaVersion: PROTOCOL_REPORT_SCHEMA_VERSION,
       });
     }
 
@@ -67,6 +79,8 @@ export async function processNextProtocolJob(): Promise<{ ok: boolean; processed
         status: "failed",
         modelName: "failed",
         fallbackUsed: true,
+        clinicalProfileSchemaVersion: CLINICAL_PROFILE_SCHEMA_VERSION,
+        reportSchemaVersion: PROTOCOL_REPORT_SCHEMA_VERSION,
       });
     }
 

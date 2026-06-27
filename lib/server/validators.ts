@@ -99,6 +99,7 @@ export const galaxyAnalyzeSchema = z.object({
 });
 
 export const protocolGenerateSchema = z.object({
+  finalSubmission: z.boolean().optional(),
   category: z.string().max(60).optional(),
   locale: z.string().max(20).optional(),
   async: z.boolean().optional(),

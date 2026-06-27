@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+export const CLINICAL_PROFILE_SCHEMA_VERSION = "clinical_profile.v2.1.0";
+
 const toleranceModeSchema = z.enum(["beginner", "intermediate", "advanced"]);
 
 export const clinicalConcernSchema = z.object({
@@ -102,9 +104,10 @@ export const clinicalProfileSchema = z.object({
   rewardContext: rewardContextSchema,
   photo: photoSignalSchema.optional(),
   metadata: z.object({
+    schemaVersion: z.string().default(CLINICAL_PROFILE_SCHEMA_VERSION),
     sourceVersion: z.string().default("v2"),
     appBuild: z.string().optional(),
-  }).default({ sourceVersion: "v2" }),
+  }).default({ schemaVersion: CLINICAL_PROFILE_SCHEMA_VERSION, sourceVersion: "v2" }),
 });
 
 export type ClinicalConcern = z.infer<typeof clinicalConcernSchema>;

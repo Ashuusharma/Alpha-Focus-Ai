@@ -38,6 +38,42 @@ const COST_PER_1K_TOKENS_USD: Record<ProtocolModelTier, { input: number; output:
 
 const protocolCache = new Map<string, { expiresAt: number; payload: unknown }>();
 
+type GovernanceMetrics = {
+  successfulRequests: number;
+  failedRequests: number;
+  cacheHits: number;
+  cacheMisses: number;
+  totalPromptTokens: number;
+  totalCompletionTokens: number;
+  totalCostEstimateUsd: number;
+  totalLatencyMs: number;
+  lastSuccessfulRequestAt: string | null;
+};
+
+const governanceMetrics: GovernanceMetrics = {
+  successfulRequests: 0,
+  failedRequests: 0,
+  cacheHits: 0,
+  cacheMisses: 0,
+  totalPromptTokens: 0,
+  totalCompletionTokens: 0,
+  totalCostEstimateUsd: 0,
+  totalLatencyMs: 0,
+  lastSuccessfulRequestAt: null,
+};
+
+export type ProtocolGovernanceHealth = {
+  cacheEntries: number;
+  cacheHitRatePct: number;
+  successfulRequests: number;
+  failedRequests: number;
+  averageInputTokens: number;
+  averageOutputTokens: number;
+  averageCostPerReportUsd: number;
+  averageLatencyMs: number;
+  lastSuccessfulRequestAt: string | null;
+};
+
 function sanitizeText(value: string): string {
   return value.replace(/\s+/g, " ").trim().slice(0, 280);
 }
@@ -68,6 +104,7 @@ function buildCompactInput(input: ProtocolInput): ProtocolInput {
     routineIntelligence: input.routineIntelligence
       ? {
           category: input.routineIntelligence.category,
+          knowledgeVersion: input.routineIntelligence.knowledgeVersion,
           dayNumber: input.routineIntelligence.dayNumber,
           phase: input.routineIntelligence.phase,
           toleranceMode: input.routineIntelligence.toleranceMode,
@@ -78,9 +115,33 @@ function buildCompactInput(input: ProtocolInput): ProtocolInput {
           missingProductIds: input.routineIntelligence.missingProductIds,
           weeklyMilestones: input.routineIntelligence.weeklyMilestones,
           quality: input.routineIntelligence.quality,
+          homeCarePriority: input.routineIntelligence.homeCarePriority,
         }
       : null,
     productIntelligence: input.productIntelligence,
+    knowledgePack: input.knowledgePack
+      ? {
+          category: input.knowledgePack.category,
+          version: input.knowledgePack.version,
+          clinicalOverview: input.knowledgePack.clinicalOverview,
+          commonCauses: input.knowledgePack.commonCauses,
+          severityStages: input.knowledgePack.severityStages,
+          recoveryGoals: input.knowledgePack.recoveryGoals,
+          weeklyObjectives: input.knowledgePack.weeklyObjectives,
+          routineTemplates: input.knowledgePack.routineTemplates,
+          ingredientPriorities: input.knowledgePack.ingredientPriorities,
+          lifestyleGuidance: input.knowledgePack.lifestyleGuidance,
+          indianAdaptations: input.knowledgePack.indianAdaptations,
+          contraindications: input.knowledgePack.contraindications,
+          escalationCriteria: input.knowledgePack.escalationCriteria,
+          expectedTimeline: input.knowledgePack.expectedTimeline,
+          confidenceRules: input.knowledgePack.confidenceRules,
+        }
+      : null,
+    ingredientIntelligence: input.ingredientIntelligence,
+    knowledgeGraph: input.knowledgeGraph,
+    explainability: input.explainability,
+    protocolVersions: input.protocolVersions,
   };
 }
 
@@ -89,11 +150,7 @@ export function getProtocolGovernanceConfig(): ProtocolGovernanceConfig {
 }
 
 export function selectProtocolModel(input: ProtocolInput): { tier: ProtocolModelTier; model: string } {
-  const highSeverity = input.scores.overallSeverity >= 70;
-  const lowConfidence = input.scores.confidenceScore < 55;
-  const manyConcerns = input.concerns.length >= 4;
-  const tier: ProtocolModelTier = highSeverity || lowConfidence || manyConcerns ? "mini" : "nano";
-  return { tier, model: MODEL_BY_TIER[tier] };
+  return { tier: "mini", model: MODEL_BY_TIER.mini };
 }
 
 export function buildProtocolCacheKey(input: ProtocolInput, promptVersion: string): string {
@@ -109,8 +166,10 @@ export function getCachedProtocolPayload(cacheKey: string): unknown | null {
   if (!found) return null;
   if (Date.now() > found.expiresAt) {
     protocolCache.delete(cacheKey);
+    governanceMetrics.cacheMisses += 1;
     return null;
   }
+  governanceMetrics.cacheHits += 1;
   return found.payload;
 }
 
@@ -119,6 +178,45 @@ export function setCachedProtocolPayload(cacheKey: string, payload: unknown, ttl
     payload,
     expiresAt: Date.now() + Math.max(1_000, ttlMs),
   });
+}
+
+export function recordProtocolRunMetrics(input: {
+  ok: boolean;
+  promptTokens: number;
+  completionTokens: number;
+  costEstimateUsd: number;
+  latencyMs: number;
+}): void {
+  if (input.ok) {
+    governanceMetrics.successfulRequests += 1;
+    governanceMetrics.totalPromptTokens += Math.max(0, input.promptTokens || 0);
+    governanceMetrics.totalCompletionTokens += Math.max(0, input.completionTokens || 0);
+    governanceMetrics.totalCostEstimateUsd += Math.max(0, input.costEstimateUsd || 0);
+    governanceMetrics.totalLatencyMs += Math.max(0, input.latencyMs || 0);
+    governanceMetrics.lastSuccessfulRequestAt = new Date().toISOString();
+    return;
+  }
+
+  governanceMetrics.failedRequests += 1;
+}
+
+export function getProtocolGovernanceHealth(): ProtocolGovernanceHealth {
+  const successfulRequests = Math.max(0, governanceMetrics.successfulRequests);
+  const cacheEntries = protocolCache.size;
+
+  return {
+    cacheEntries,
+    cacheHitRatePct: governanceMetrics.cacheHits + governanceMetrics.cacheMisses > 0
+      ? Math.round((governanceMetrics.cacheHits / (governanceMetrics.cacheHits + governanceMetrics.cacheMisses)) * 100)
+      : 0,
+    successfulRequests,
+    failedRequests: governanceMetrics.failedRequests,
+    averageInputTokens: successfulRequests > 0 ? Math.round(governanceMetrics.totalPromptTokens / successfulRequests) : 0,
+    averageOutputTokens: successfulRequests > 0 ? Math.round(governanceMetrics.totalCompletionTokens / successfulRequests) : 0,
+    averageCostPerReportUsd: successfulRequests > 0 ? Number((governanceMetrics.totalCostEstimateUsd / successfulRequests).toFixed(6)) : 0,
+    averageLatencyMs: successfulRequests > 0 ? Math.round(governanceMetrics.totalLatencyMs / successfulRequests) : 0,
+    lastSuccessfulRequestAt: governanceMetrics.lastSuccessfulRequestAt,
+  };
 }
 
 export function estimateProtocolUsageMetrics(input: {
@@ -155,6 +253,8 @@ export function buildProtocolPrompt(input: ProtocolInput): string {
     "- Use concise and practical language for India daily-life constraints",
     "- Keep all recommendations behavior-safe and adherence-oriented",
     "- Never choose or invent products; only explain products present in productIntelligence.selectedProducts",
+    "- Respect knowledgePack, ingredientIntelligence, knowledgeGraph, and explainability context as source of truth",
+    "- Keep outputs consistent with protocolVersions metadata",
     "Clinical input JSON:",
     JSON.stringify(compact),
   ].join("\n");

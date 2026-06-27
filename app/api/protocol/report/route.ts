@@ -60,6 +60,12 @@ export async function GET(request: NextRequest) {
         generatedAt: row.generated_at,
         createdAt: row.created_at,
         payload,
+        metadata: {
+          aiQualityScores: row.ai_quality_scores || null,
+          protocolVersions: row.protocol_versions || null,
+          clinicalProfileSchemaVersion: row.clinical_profile_schema_version || null,
+          reportSchemaVersion: row.report_schema_version || null,
+        },
       },
     });
   } catch (error) {

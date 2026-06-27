@@ -5,6 +5,7 @@ import {
   generateDailyExecutionPayload,
   generateDailyProtocolMeta,
 } from "@/lib/protocolTemplates";
+import { getCategoryKnowledgePack } from "@/knowledge";
 
 export type RoutineQuality = {
   score: number;
@@ -13,6 +14,7 @@ export type RoutineQuality = {
 
 export type RoutineIntelligence = {
   category?: string;
+  knowledgeVersion?: string;
   dayNumber: number;
   phase: "Reset" | "Repair" | "Stabilize";
   toleranceMode: ProtocolToleranceMode;
@@ -33,6 +35,7 @@ export type RoutineIntelligence = {
     relapseGuardrail: string;
   }>;
   quality: RoutineQuality;
+  homeCarePriority: string[];
 };
 
 function clamp(value: number, min = 0, max = 100) {
@@ -104,6 +107,7 @@ export function buildRoutineIntelligence(input: {
   if (!clinicalCategory) return null;
 
   const toleranceMode = normalizeTolerance(input.toleranceMode);
+  const knowledgePack = getCategoryKnowledgePack(input.category);
   const adherenceScore = clamp(Math.round(input.adherenceScore || 0));
   const relapseRiskScore = clamp(
     Math.round(
@@ -148,11 +152,12 @@ export function buildRoutineIntelligence(input: {
     const meta = generateDailyProtocolMeta(clinicalCategory as CategoryId, startDay);
     const week = index + 1;
     const adherenceTarget = week <= 2 ? ">=75%" : ">=85%";
+    const weeklyFocusFromPack = knowledgePack?.weeklyObjectives[index] || knowledgePack?.weeklyObjectives[0];
 
     return {
       week,
       phase: meta?.phaseName || (week === 1 ? "Reset" : week === 2 ? "Repair" : "Stabilize"),
-      focus: meta?.dailyGoal || "Sustain consistent execution windows.",
+      focus: weeklyFocusFromPack || meta?.dailyGoal || "Sustain consistent execution windows.",
       adherenceTarget,
       relapseGuardrail:
         relapseRiskScore >= 60
@@ -171,6 +176,7 @@ export function buildRoutineIntelligence(input: {
 
   return {
     category: input.category,
+    knowledgeVersion: knowledgePack?.version,
     dayNumber,
     phase: today.phase,
     toleranceMode,
@@ -185,5 +191,6 @@ export function buildRoutineIntelligence(input: {
     missingProductIds,
     weeklyMilestones,
     quality,
+    homeCarePriority: knowledgePack?.lifestyleGuidance?.slice(0, 4) || [],
   };
 }
