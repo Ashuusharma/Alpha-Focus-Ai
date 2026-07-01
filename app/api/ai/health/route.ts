@@ -2,28 +2,22 @@ import { NextRequest, NextResponse } from "next/server";
 import { getRequestAuth } from "@/lib/auth/requestAuth";
 import { isRateLimited } from "@/lib/server/rateLimit";
 import { protocolRepoReady, countPendingProtocolJobsTotal } from "@/lib/server/protocolRepository";
-import { getProtocolGovernanceHealth } from "@/lib/ai/protocolGovernance";
+import { getProtocolGovernanceConfig, getProtocolGovernanceHealth } from "@/lib/ai/protocolGovernance";
+import { getAIConfig } from "@/lib/ai/config";
+import { getOpenAIClient } from "@/lib/ai/openai";
+import { getServerEnvStatus } from "@/lib/server/env";
+import { buildProtocolVersions } from "@/lib/protocol/versioning";
 
 export const runtime = "nodejs";
 
-async function checkOpenAIReachable(baseUrl: string, apiKey: string): Promise<{ reachable: boolean; status: number | null }> {
+async function checkOpenAIReachable(model: string): Promise<{ reachable: boolean; modelAvailable: boolean; status: number | null }> {
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
-
-    const res = await fetch(`${baseUrl}/models`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-      },
-      cache: "no-store",
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeout);
-    return { reachable: res.ok, status: res.status };
+    const client = getOpenAIClient();
+    const models = await client.models.list();
+    const hasModel = Array.isArray(models.data) && models.data.some((item) => item.id === model);
+    return { reachable: true, modelAvailable: hasModel, status: 200 };
   } catch {
-    return { reachable: false, status: null };
+    return { reachable: false, modelAvailable: false, status: null };
   }
 }
 
@@ -37,14 +31,20 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
   }
 
-  const apiKey = process.env.OPENAI_API_KEY || process.env.AI_API_KEY || "";
-  const baseUrl = (process.env.OPENAI_BASE_URL || process.env.AI_BASE_URL || "https://api.openai.com/v1").replace(/\/$/, "");
-  const model = process.env.PROTOCOL_AI_MODEL_MINI || "gpt-5.4-mini";
+  const serverEnv = getServerEnvStatus();
+  const config = getProtocolGovernanceConfig();
+  const aiConfig = (() => {
+    try {
+      return getAIConfig();
+    } catch {
+      return null;
+    }
+  })();
 
-  const openAiConfigured = Boolean(apiKey);
-  const openAiProbe = openAiConfigured
-    ? await checkOpenAIReachable(baseUrl, apiKey)
-    : { reachable: false, status: null };
+  const model = aiConfig?.model || "gpt-5.4-mini";
+  const openAiProbe = aiConfig
+    ? await checkOpenAIReachable(model)
+    : { reachable: false, modelAvailable: false, status: null };
 
   const governance = getProtocolGovernanceHealth();
   const queueDepth = protocolRepoReady() ? await countPendingProtocolJobsTotal() : -1;
@@ -55,12 +55,18 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     ok: true,
     health: {
-      openAiConfigured,
+      openAiConfigured: serverEnv.openAiConfigured,
       apiReachable: openAiProbe.reachable,
       apiStatus: openAiProbe.status,
-      modelAvailable: openAiProbe.reachable,
+      modelAvailable: openAiProbe.modelAvailable,
       model,
       rateLimitStatus: "ok",
+      promptVersion: config.promptVersion,
+      workerStatus: process.env.PROTOCOL_WORKER_SECRET?.trim() ? "configured" : "missing_secret",
+      protocolVersion: buildProtocolVersions(config.promptVersion).protocolEngine,
+      supabaseConnected: protocolRepoReady() && serverEnv.supabaseConfigured,
+      vapidConfigured: serverEnv.vapidConfigured,
+      schedulerConfigured: serverEnv.schedulerConfigured,
       cacheStatus: {
         entries: governance.cacheEntries,
         hitRatePct: governance.cacheHitRatePct,

@@ -5,11 +5,27 @@ import { ProtocolToleranceMode } from "@/lib/protocolTemplates";
 export type ProductIntelligenceSelection = {
   productId: string;
   name: string;
-  ingredient: string;
+  ingredients: Array<{ name: string; concentration: string; purpose: string }>;
+  category: CategoryId;
   tierLabel: string;
   whySelected: string;
   usage: string;
   ownedByUser: boolean;
+  suitableSeverity: { min: number; max: number; label: string };
+  suitableSkinOrHairType: string[];
+  compatibleProducts: string[];
+  incompatibleProducts: string[];
+  applicationMethod: string;
+  quantity: string;
+  frequency: string;
+  targetArea: string;
+  precautions: string[];
+  storage: string;
+  expectedTimeline: string;
+  expectedBenefit: string;
+  faq: Array<{ question: string; answer: string }>;
+  evidenceLevel: "clinical" | "established" | "anecdotal";
+  version: string;
 };
 
 export type ProductIntelligence = {
@@ -55,14 +71,30 @@ export function buildProductIntelligence(input: {
         ? [catalog[0]]
         : [];
 
-  const selectedProducts = selectedRaw.map((item, index) => ({
+  const selectedProducts: ProductIntelligenceSelection[] = selectedRaw.map((item, index) => ({
     productId: item.id,
     name: item.name,
-    ingredient: item.ingredient,
+    ingredients: item.ingredients,
+    category: item.category,
     tierLabel: index === 0 ? "Core Protocol" : "Clinical Booster",
     whySelected: item.why,
     usage: item.usage,
     ownedByUser: ownedProducts.has(item.id),
+    suitableSeverity: item.suitableSeverity,
+    suitableSkinOrHairType: item.suitableSkinOrHairType,
+    compatibleProducts: item.compatibleProducts,
+    incompatibleProducts: item.incompatibleProducts,
+    applicationMethod: item.applicationMethod,
+    quantity: item.quantity,
+    frequency: item.frequency,
+    targetArea: item.targetArea,
+    precautions: item.precautions,
+    storage: item.storage,
+    expectedTimeline: item.expectedTimeline,
+    expectedBenefit: item.expectedBenefit,
+    faq: item.faq,
+    evidenceLevel: item.evidenceLevel,
+    version: item.version,
   }));
 
   const ownedCount = selectedProducts.filter((item) => item.ownedByUser).length;
@@ -76,6 +108,6 @@ export function buildProductIntelligence(input: {
     toleranceMode,
     ownershipCoveragePct,
     selectedProducts,
-    explanationGuardrail: "Products are selected by deterministic clinical logic. GPT must explain selected products only and must not introduce new products.",
+    explanationGuardrail: "Products are selected by deterministic clinical logic with all fields pre-populated from product catalog. GPT must explain selected products only and must not introduce new products or modify any deterministic fields.",
   };
 }

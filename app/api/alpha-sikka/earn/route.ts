@@ -542,6 +542,7 @@ export async function POST(request: NextRequest) {
       toast: `${amount + taskBonus + streakBonus - penaltyApplied >= 0 ? "+" : "-"}${Math.abs(amount + taskBonus + streakBonus - penaltyApplied)} A$ ${penaltyApplied > 0 ? "net" : "earned"}`,
     });
   } catch (error) {
-    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "alpha_sikka_earn_failed" }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "alpha_sikka_earn_failed" }, { status: 500 });
   }
 }
+

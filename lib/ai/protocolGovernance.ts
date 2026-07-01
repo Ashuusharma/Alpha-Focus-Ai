@@ -125,11 +125,16 @@ function buildCompactInput(input: ProtocolInput): ProtocolInput {
           version: input.knowledgePack.version,
           clinicalOverview: input.knowledgePack.clinicalOverview,
           commonCauses: input.knowledgePack.commonCauses,
+          thirtyDayPlan: input.knowledgePack.thirtyDayPlan,
           severityStages: input.knowledgePack.severityStages,
           recoveryGoals: input.knowledgePack.recoveryGoals,
           weeklyObjectives: input.knowledgePack.weeklyObjectives,
           routineTemplates: input.knowledgePack.routineTemplates,
           ingredientPriorities: input.knowledgePack.ingredientPriorities,
+          productMapping: input.knowledgePack.productMapping,
+          homeCareGuidance: input.knowledgePack.homeCareGuidance,
+          dietGuidance: input.knowledgePack.dietGuidance,
+          commonMistakes: input.knowledgePack.commonMistakes,
           lifestyleGuidance: input.knowledgePack.lifestyleGuidance,
           indianAdaptations: input.knowledgePack.indianAdaptations,
           contraindications: input.knowledgePack.contraindications,
@@ -142,6 +147,28 @@ function buildCompactInput(input: ProtocolInput): ProtocolInput {
     knowledgeGraph: input.knowledgeGraph,
     explainability: input.explainability,
     protocolVersions: input.protocolVersions,
+  };
+}
+
+function buildCanonicalClinicalProfileForPrompt(input: ProtocolInput): Record<string, unknown> {
+  const compact = buildCompactInput(input);
+
+  return {
+    context: compact.context,
+    scores: compact.scores,
+    canonicalProfile: compact.canonicalProfile,
+    concerns: compact.concerns,
+    assessmentFacts: compact.assessmentFacts,
+    environment: compact.environment,
+    lifestyle: compact.lifestyle,
+    analysis: compact.analysis,
+    routineIntelligence: compact.routineIntelligence,
+    productIntelligence: compact.productIntelligence,
+    knowledgePack: compact.knowledgePack,
+    ingredientIntelligence: compact.ingredientIntelligence,
+    knowledgeGraph: compact.knowledgeGraph,
+    explainability: compact.explainability,
+    protocolVersions: compact.protocolVersions,
   };
 }
 
@@ -242,21 +269,45 @@ export function estimateProtocolUsageMetrics(input: {
 }
 
 export function buildProtocolPrompt(input: ProtocolInput): string {
-  const compact = buildCompactInput(input);
+  const canonicalClinicalProfile = buildCanonicalClinicalProfileForPrompt(input);
+
   return [
     "You are ALPHA FOCUS Clinical AI Protocol Pipeline V2.",
-    "Return valid JSON only. Do not include markdown, prose, or extra keys.",
-    "Required top-level keys exactly:",
-    "issueSummary, mainResolvingIngredients, monthlyRecoveryPlan, thingsToAvoid, recommendedProducts, dietPlan, motivation, expectedTimeline, weeklyMilestones, confidenceNotes",
-    "Safety and quality constraints:",
-    "- No diagnosis claims and no guaranteed outcomes",
-    "- Use concise and practical language for India daily-life constraints",
-    "- Keep all recommendations behavior-safe and adherence-oriented",
-    "- Never choose or invent products; only explain products present in productIntelligence.selectedProducts",
-    "- Respect knowledgePack, ingredientIntelligence, knowledgeGraph, and explainability context as source of truth",
-    "- Keep outputs consistent with protocolVersions metadata",
-    "Clinical input JSON:",
-    JSON.stringify(compact),
+    "Task: transform the supplied canonical ClinicalProfile into protocol report JSON.",
+    "Deterministic pipeline remains the source of truth. Do not recompute rules or invent data.",
+    "Return valid JSON only. No markdown, no prose, no code fences, no extra keys.",
+    "Use only data from canonical ClinicalProfile. If data is missing, use conservative safe phrasing without inventing products, ingredients, routines, diagnoses, or severity.",
+    "JSON schema instructions:",
+    "{",
+    '  "issueSummary": { "whatWasDetected": string[], "whyItHappens": string[], "whyConsistencyMatters": string[] },',
+    '  "mainResolvingIngredients": [{ "ingredient": string, "purpose": string, "targets": string[], "whyItWorks": string, "expectedTimeline": string, "safetyNotes": string[] }],',
+    '  "monthlyRecoveryPlan": {',
+    '    "morning": [{ "title": string, "purpose": string, "why": string, "steps": string[], "timing": string, "amount"?: string, "frequency": string, "expectedImprovement": string, "mistakesToAvoid": string[], "escalationCues": string[] }],',
+    '    "afternoon": [same item schema],',
+    '    "night": [same item schema],',
+    '    "weekly": [same item schema]',
+    "  },",
+    '  "thingsToAvoid": {',
+    '    "food": [{ "item": string, "whyAvoid": string, "effectOnRecovery": string, "betterAlternative": string }],',
+    '    "habits": [same item schema],',
+    '    "environment": [same item schema],',
+    '    "productMistakes": [same item schema]',
+    "  },",
+    '  "recommendedProducts": [{ "productId": string, "name": string, "ingredientMatch"?: string, "whyRecommended": string, "howToUse": string, "applicationArea": string, "amount": string, "timing": string, "expectedImprovement": string, "compatibilityWithCurrentRoutine": string }],',
+    '  "dietPlan": { "breakfast": string[], "lunch": string[], "dinner": string[], "snacks": string[], "hydration": string, "wellnessGuidance": string[] },',
+    '  "motivation": string,',
+    '  "expectedTimeline": [{ "week": 1|2|3|4, "expectedImprovements": string[], "possibleSetbacks": string[], "continueDoing": string[] }],',
+    '  "weeklyMilestones": [{ "week": 1|2|3|4, "milestone": string, "adherenceTarget": string }],',
+    '  "confidenceNotes": string[]',
+    "}",
+    "Hard constraints:",
+    "- recommendedProducts must reference productIntelligence.selectedProducts only",
+    "- mainResolvingIngredients must align to ingredientIntelligence and knowledgePack.ingredientPriorities",
+    "- monthlyRecoveryPlan must align to routineIntelligence and knowledgePack.routineTemplates",
+    "- thingsToAvoid and dietPlan must align to knowledgePack contraindications/lifestyle guidance",
+    "- Keep wording concise, clinically safe, and practical",
+    "Canonical ClinicalProfile JSON:",
+    JSON.stringify(canonicalClinicalProfile),
   ].join("\n");
 }
 

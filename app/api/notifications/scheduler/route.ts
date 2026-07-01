@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "notifications_scheduler_failed" }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "notifications_scheduler_failed" }, { status: 500 });
   }
 }
+

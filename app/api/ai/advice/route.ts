@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { aiAdviceSchema } from "@/lib/server/validators";
 import { writeAuditLog } from "@/lib/server/auditLog";
 import { getRequestAuth } from "@/lib/auth/requestAuth";
+import { getAIConfig } from "@/lib/ai/config";
 
 type AdviceRequest = {
   issues: string[];
@@ -222,9 +223,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ...cached.value, meta: { ...(cached.value.meta ?? {}), cached: true } });
     }
 
-    const model = process.env.AI_MODEL || "gpt-4o-mini";
-    const apiKey = process.env.AI_API_KEY;
-    const baseUrl = process.env.AI_BASE_URL || "https://api.openai.com/v1";
+    let aiConfig: { apiKey: string; model: string; baseUrl: string } | null = null;
+    try {
+      aiConfig = getAIConfig();
+    } catch {
+      aiConfig = null;
+    }
+
+    const model = aiConfig?.model || "gpt-5.4-mini";
+    const apiKey = aiConfig?.apiKey;
+    const baseUrl = aiConfig?.baseUrl || "https://api.openai.com/v1";
     const maxTokens = envNumber("AI_MAX_TOKENS", 320);
 
     const dailyBudget = envNumber("AI_DAILY_BUDGET_USD", 0.5);

@@ -241,6 +241,6 @@ export async function POST(request: NextRequest) {
       toast: `-${body.amount} A$ spent`,
     });
   } catch (error) {
-    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "alpha_sikka_spend_failed" }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "alpha_sikka_spend_failed" }, { status: 500 });
   }
 }

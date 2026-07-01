@@ -20,6 +20,61 @@ export function buildFallbackProtocolReport(input: ProtocolInput): ProtocolRepor
   const severityText = severityLabel(input.scores.overallSeverity).toLowerCase();
   const confidenceText = confidenceLabel(input.scores.confidenceScore).toLowerCase();
   const baseEvidence = primary?.evidence?.slice(0, 3) || input.assessmentFacts.topSignals.slice(0, 3);
+  const deterministicIngredients = input.ingredientIntelligence.slice(0, 3);
+  const deterministicProducts = input.productIntelligence.selectedProducts;
+  const deterministicRoutines = input.knowledgePack?.routineTemplates;
+
+  const ingredientSection =
+    deterministicIngredients.length > 0
+      ? deterministicIngredients.map((item) => ({
+          ingredient: item.displayName,
+          purpose: item.whatItDoes[0] || "Support recovery pathway.",
+          targets: item.idealCategories.slice(0, 4),
+          whyItWorks: item.whatItDoes.join(" "),
+          expectedTimeline: item.expectedTimeline,
+          safetyNotes: item.safetyNotes.slice(0, 4),
+        }))
+      : [
+          {
+            ingredient: "Niacinamide",
+            purpose: "Calm inflammation and support barrier balance.",
+            targets: [categoryLabel],
+            whyItWorks: "Supports barrier resilience while reducing visible reactivity.",
+            expectedTimeline: "Visible stability improvement across weeks 2-4.",
+            safetyNotes: ["Patch-test first", "Introduce gradually"],
+          },
+        ];
+
+  const productSection =
+    deterministicProducts.length > 0
+      ? deterministicProducts.map((product) => ({
+          productId: product.productId,
+          name: product.name,
+          ingredientMatch: product.ingredients.map((ing) => `${ing.name} ${ing.concentration}`).join(", "),
+          whyRecommended: product.whySelected,
+          howToUse: product.usage,
+          applicationArea: "Concern-priority zone",
+          amount: "As labeled for one application",
+          timing: "Follow routine window guidance",
+          expectedImprovement: "Steadier symptom control with consistent use",
+          compatibilityWithCurrentRoutine: product.ownedByUser
+            ? "Already in current routine and compatible when used as directed"
+            : "Compatible with current routine when introduced one at a time",
+        }))
+      : [
+          {
+            productId: "core-cleanser",
+            name: "Barrier-Friendly Cleanser",
+            ingredientMatch: "Ceramides",
+            whyRecommended: "Supports cleansing without stripping.",
+            howToUse: "Use on damp skin, then rinse gently.",
+            applicationArea: "Target concern zone and surrounding skin",
+            amount: "Coin-sized",
+            timing: "AM + PM",
+            expectedImprovement: "Lower irritation baseline over 1-2 weeks",
+            compatibilityWithCurrentRoutine: "Compatible with most routines and active stacks",
+          },
+        ];
 
   return {
     schemaVersion: PROTOCOL_REPORT_SCHEMA_VERSION,
@@ -41,72 +96,78 @@ export function buildFallbackProtocolReport(input: ProtocolInput): ProtocolRepor
       ],
     },
     mainResolvingIngredients: [
-      {
-        ingredient: "Niacinamide",
-        purpose: "Calm inflammation and support barrier balance.",
-        howItHelps: "Reduces visible reactivity while improving tolerance.",
-        expectedRecoveryBenefit: "Lower flare frequency in weeks 2-4.",
-      },
-      {
-        ingredient: "Ceramides",
-        purpose: "Repair and maintain skin barrier integrity.",
-        howItHelps: "Decreases irritation from active routines.",
-        expectedRecoveryBenefit: "Improved comfort and adherence consistency.",
-      },
-      {
-        ingredient: "Targeted Active",
-        purpose: `Address ${primary?.title || categoryLabel} directly.`,
-        howItHelps: "Works on root pattern instead of surface-only suppression.",
-        expectedRecoveryBenefit: "Visible severity trend-down by week 4.",
-      },
+      ...ingredientSection,
     ],
     monthlyRecoveryPlan: {
       morning: [
         {
-          stepTitle: "Morning cleanse",
-          reason: "Remove overnight buildup without stripping barrier.",
-          exactlyHowToPerform: "Use a gentle cleanser for 30-40 seconds, rinse with lukewarm water, and pat dry.",
-          time: "6:00-9:00 AM",
-          quantity: "Coin-sized",
-          applicationArea: "Target concern zone and surrounding area",
-          commonMistakes: ["Using hot water", "Over-scrubbing"],
-          expectedBenefit: "Lower irritation baseline through the day.",
+          title: deterministicRoutines?.morning?.[0] || "Morning reset",
+          purpose: "Start the day with low-irritation consistency.",
+          why: "Early consistency reduces cumulative inflammation and prevents trigger stacking.",
+          steps: [
+            "Cleanse gently for 30-40 seconds with lukewarm water.",
+            "Apply prescribed core product in a thin, even layer.",
+            "Protect barrier before sun or pollution exposure.",
+          ],
+          timing: "6:00-9:00 AM",
+          amount: "Coin-sized cleanser; thin treatment layer",
+          frequency: "Daily",
+          expectedImprovement: "Lower daytime reactivity and better routine adherence.",
+          mistakesToAvoid: ["Using hot water", "Rubbing aggressively", "Stacking multiple new actives"],
+          escalationCues: ["Persistent burning", "Worsening redness beyond 72 hours"],
         },
       ],
       afternoon: [
         {
-          stepTitle: "Hydration reset",
-          reason: "Midday dehydration worsens inflammation signaling.",
-          exactlyHowToPerform: "Drink water and avoid touching or rubbing affected areas.",
-          time: "1:00-4:00 PM",
-          quantity: "400-600 ml water",
-          applicationArea: "Whole body hydration behavior",
-          commonMistakes: ["Skipping water windows", "High-sugar drinks"],
-          expectedBenefit: "Improved recovery consistency by evening.",
+          title: deterministicRoutines?.afternoon?.[0] || "Afternoon control window",
+          purpose: "Reduce mid-day trigger accumulation.",
+          why: "Hydration and friction control protect recovery momentum.",
+          steps: [
+            "Complete one hydration window.",
+            "Avoid touching or picking affected zones.",
+          ],
+          timing: "1:00-4:00 PM",
+          amount: "400-600 ml water",
+          frequency: "Daily",
+          expectedImprovement: "Smoother evening baseline and fewer flare spikes.",
+          mistakesToAvoid: ["Skipping hydration", "High-sugar drinks"],
+          escalationCues: ["Sudden swelling", "Rapid spread of irritation"],
         },
       ],
       night: [
         {
-          stepTitle: "Night treatment",
-          reason: "Night window allows longer, uninterrupted repair.",
-          exactlyHowToPerform: "Apply treatment in a thin, even layer, then seal with moisturizer after 3-5 minutes.",
-          time: "8:00-11:00 PM",
-          quantity: "Pea-sized active + thin moisturizer",
-          applicationArea: "Concern-priority regions",
-          commonMistakes: ["Applying too much", "Layering many new actives"],
-          expectedBenefit: "Steadier weekly improvement in visible symptoms.",
+          title: deterministicRoutines?.night?.[0] || "Night repair block",
+          purpose: "Use uninterrupted repair window for treatment response.",
+          why: "Night recovery supports barrier restoration and symptom trend-down.",
+          steps: [
+            "Apply treatment to clean, dry skin.",
+            "Wait 3-5 minutes before moisturizer.",
+            "Keep the routine simple and consistent.",
+          ],
+          timing: "8:00-11:00 PM",
+          amount: "Pea-sized active + thin moisturizer",
+          frequency: "Daily or as tolerated",
+          expectedImprovement: "Steadier week-over-week visible improvement.",
+          mistakesToAvoid: ["Over-application", "Mixing conflicting actives"],
+          escalationCues: ["Barrier breakdown", "Persistent irritation despite reduced frequency"],
         },
       ],
       weekly: [
         {
-          stepTitle: "Weekly reset review",
-          reason: "Protocol tuning prevents plateau and relapse.",
-          exactlyHowToPerform: "Review adherence, identify 1 trigger, and adjust only one variable for the next week.",
-          time: "Weekend",
-          quantity: "10-15 minutes",
-          applicationArea: "Routine behavior and trigger log",
-          commonMistakes: ["Changing everything at once", "Skipping tracking"],
-          expectedBenefit: "Higher precision and lower regression risk.",
+          title: "Weekly review and tune",
+          purpose: "Prevent relapse and detect drift early.",
+          why: "Small weekly adjustments outperform large reactive changes.",
+          steps: [
+            "Review adherence for the week.",
+            "Identify one trigger pattern.",
+            "Adjust one variable for next week only.",
+          ],
+          timing: "Weekend",
+          amount: "10-15 minutes",
+          frequency: "Weekly",
+          expectedImprovement: "Higher precision and lower regression risk.",
+          mistakesToAvoid: ["Changing everything at once", "Skipping tracking"],
+          escalationCues: ["No improvement after 4 weeks", "Symptoms worsening despite adherence"],
         },
       ],
     },
@@ -114,61 +175,47 @@ export function buildFallbackProtocolReport(input: ProtocolInput): ProtocolRepor
       food: [
         {
           item: "Frequent high-sugar snacking",
-          whyItDelaysRecovery: "Can amplify inflammatory load and recovery volatility.",
+          whyAvoid: "Can destabilize inflammatory pathways and increase volatility.",
+          effectOnRecovery: "Slower trend-down and less predictable response.",
+          betterAlternative: "Protein + fiber snacks with low added sugar.",
         },
       ],
       habits: [
         {
           item: "Inconsistent sleep timing",
-          whyItDelaysRecovery: "Disrupts repair hormones and increases stress signals.",
+          whyAvoid: "Disrupts repair signaling and stress regulation.",
+          effectOnRecovery: "Reduced overnight recovery quality.",
+          betterAlternative: "Fixed sleep/wake window with gradual adjustment.",
         },
       ],
       environment: [
         {
           item: "Excess heat/friction exposure",
-          whyItDelaysRecovery: "Increases irritation and barrier stress.",
+          whyAvoid: "Increases barrier stress and local inflammation.",
+          effectOnRecovery: "Higher irritation baseline and slower stabilization.",
+          betterAlternative: "Reduce friction and keep temperature exposure moderate.",
         },
       ],
       productMistakes: [
         {
           item: "Introducing multiple products in one week",
-          whyItDelaysRecovery: "Makes adverse reactions hard to detect and control.",
+          whyAvoid: "Obscures root cause when irritation appears.",
+          effectOnRecovery: "Longer troubleshooting cycle and lower adherence.",
+          betterAlternative: "Introduce one change at a time every 7 days.",
         },
       ],
     },
-    recommendedProducts: [
-      {
-        productId: "core-cleanser",
-        name: "Barrier-Friendly Cleanser",
-        ingredientMatch: "Ceramides",
-        whyRecommended: "Supports daily cleansing without stripping.",
-        howToUse: "Use morning and night on damp skin.",
-        howMuch: "Coin-sized",
-        whenToUse: "AM + PM",
-        expectedTimeline: "Comfort improvement in 7-10 days",
-        commonMistakes: ["Using too much pressure"],
-      },
-      {
-        productId: "core-treatment",
-        name: "Target Active",
-        ingredientMatch: "Issue-specific active",
-        whyRecommended: `Directly addresses ${primary?.title || categoryLabel}.`,
-        howToUse: "Apply on dry skin in a thin layer at night.",
-        howMuch: "Pea-sized",
-        whenToUse: "PM",
-        expectedTimeline: "Visible trend change by weeks 3-4",
-        commonMistakes: ["Over-application", "Mixing incompatible actives"],
-      },
-    ],
+    recommendedProducts: productSection,
     dietPlan: {
       breakfast: ["Protein-rich breakfast", "Fiber source", "Low sugar beverage"],
       lunch: ["Balanced plate with vegetables", "Lean protein", "Hydration"],
       dinner: ["Early light dinner", "Protein + vegetables", "Lower processed carbs"],
       snacks: ["Nuts/seeds", "Fruit", "Unsweetened yogurt"],
       hydration: "Target 2.5-3.0L water daily unless medically restricted.",
-      weeklyNutritionGoals: [
+      wellnessGuidance: [
         "5+ days with stable meal timing",
         "Limit high-sugar snacks to <=2 days/week",
+        "Maintain sleep, hydration, and stress rhythm to support recovery",
       ],
     },
     motivation: "Small daily wins compound into visible recovery. Do not chase perfection; chase consistency.",

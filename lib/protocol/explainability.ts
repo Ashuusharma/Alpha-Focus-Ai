@@ -20,7 +20,7 @@ export function buildExplainabilityReport(input: {
     recommendation: product.name,
     reasons: [
       `Selected by deterministic product intelligence (${input.productIntelligence.selectionSource}).`,
-      `Matched ingredient path for this category: ${product.ingredient}.`,
+      `Contains: ${product.ingredients.map((ing) => ing.name).join(", ")}.`,
       product.ownedByUser ? "Already owned by user, supports immediate adherence." : "Not owned, keep fallback route active until available.",
     ],
   }));

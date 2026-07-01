@@ -446,9 +446,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error: "Galaxy analyze failed",
-        detail: error instanceof Error ? error.message : "Unknown error",
+        detail: "Unknown error",
       },
       { status: 500 }
     );
   }
 }
+

@@ -12,6 +12,7 @@ import {
   setCachedProtocolPayload,
   trimPromptToLimit,
 } from "@/lib/ai/protocolGovernance";
+import { getAIConfig } from "@/lib/ai/config";
 
 type OrchestratorStatus = "ok" | "fallback";
 
@@ -57,7 +58,7 @@ async function callChatCompletions(input: {
         messages: [
           {
             role: "system",
-            content: "You generate safe, practical, strictly structured recovery protocols. Output valid JSON only.",
+            content: "You are a deterministic clinical JSON transformer. Use only supplied canonical ClinicalProfile context. Never invent products, ingredients, routines, diagnosis, severity, or extra keys. Output valid JSON only.",
           },
           {
             role: "user",
@@ -141,10 +142,11 @@ export async function generateProtocolWithOrchestrator(input: ProtocolInput): Pr
     }
   }
 
-  const apiKey = process.env.OPENAI_API_KEY || process.env.AI_API_KEY;
-  const baseUrl = (process.env.OPENAI_BASE_URL || process.env.AI_BASE_URL || "https://api.openai.com/v1").replace(/\/$/, "");
-  if (!apiKey) {
-    return fallbackResult(input, "fallback-template-v2", promptVersion, cacheKey, "ai_key_missing");
+  let aiConfig: { apiKey: string; baseUrl: string; model: string };
+  try {
+    aiConfig = getAIConfig();
+  } catch {
+    return fallbackResult(input, "fallback-template-v2", promptVersion, cacheKey, "ai_config_missing");
   }
 
   const selected = selectProtocolModel(input);
@@ -156,8 +158,8 @@ export async function generateProtocolWithOrchestrator(input: ProtocolInput): Pr
   for (let attempt = 0; attempt <= config.maxRetries; attempt += 1) {
     try {
       const response = await callChatCompletions({
-        apiKey,
-        baseUrl,
+        apiKey: aiConfig.apiKey,
+        baseUrl: aiConfig.baseUrl,
         model: selected.model,
         prompt,
         timeoutMs: config.timeoutMs,

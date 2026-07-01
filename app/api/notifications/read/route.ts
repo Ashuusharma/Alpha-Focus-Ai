@@ -42,6 +42,7 @@ export async function POST(request: NextRequest) {
     await writeAuditLog({ action: "notifications.read", userId: auth.userId, ok: true, route: "/api/notifications/read" });
     return NextResponse.json({ ok: true });
   } catch (error) {
-    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "notifications_read_failed" }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "notifications_read_failed" }, { status: 500 });
   }
 }
+

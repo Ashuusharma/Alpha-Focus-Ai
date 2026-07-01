@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
     await writeAuditLog({ action: "user.sync", userId: auth.userId, ok: true, route: "/api/user/sync" });
     return NextResponse.json({ ok: true, userId: auth.userId });
   } catch (error) {
-    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "sync_failed" }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "sync_failed" }, { status: 500 });
   }
 }
+

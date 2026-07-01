@@ -83,6 +83,7 @@ export async function POST(request: NextRequest) {
     await writeAuditLog({ action: "logs.hydration.write", userId: auth.userId, ok: true, route: "/api/logs/hydration" });
     return NextResponse.json({ ok: true, log });
   } catch (error) {
-    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "hydration_log_failed" }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "hydration_log_failed" }, { status: 500 });
   }
 }
+

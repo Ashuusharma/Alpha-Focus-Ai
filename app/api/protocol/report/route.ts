@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
         },
       },
     });
-  } catch (error) {
-    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "protocol_report_fetch_failed" }, { status: 500 });
+  } catch {
+    return NextResponse.json({ ok: false, error: "protocol_report_fetch_failed" }, { status: 500 });
   }
 }

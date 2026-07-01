@@ -87,6 +87,7 @@ export async function POST(request: NextRequest) {
     await writeAuditLog({ action: "logs.mood.write", userId: auth.userId, ok: true, route: "/api/logs/mood" });
     return NextResponse.json({ ok: true, log });
   } catch (error) {
-    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "mood_log_failed" }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "mood_log_failed" }, { status: 500 });
   }
 }
+

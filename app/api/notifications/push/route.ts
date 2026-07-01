@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
       subscriptionCount: subscriptions.subscriptions.length,
     });
   } catch (error) {
-    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "push_status_failed" }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "push_status_failed" }, { status: 500 });
   }
 }
 
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     await writeAuditLog({ action: "notifications.push.subscribe", userId: auth.userId, ok: true, route: "/api/notifications/push" });
     return NextResponse.json({ ok: true, subscriptionCount: result.subscriptions.length });
   } catch (error) {
-    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "push_subscribe_failed" }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "push_subscribe_failed" }, { status: 500 });
   }
 }
 
@@ -105,6 +105,6 @@ export async function DELETE(request: NextRequest) {
     await writeAuditLog({ action: "notifications.push.unsubscribe", userId: auth.userId, ok: true, route: "/api/notifications/push" });
     return NextResponse.json({ ok: true, subscriptionCount: result.subscriptions.length });
   } catch (error) {
-    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "push_unsubscribe_failed" }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "push_unsubscribe_failed" }, { status: 500 });
   }
 }

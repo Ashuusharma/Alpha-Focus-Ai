@@ -8,28 +8,24 @@ export default function TestAuth() {
   const [password, setPassword] = useState("");
 
   const signUp = async () => {
-    const { data, error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signUp({
       email,
       password,
     });
-
-    console.log("SIGNUP:", data, error);
     alert(error ? error.message : "Signup success!");
   };
 
   const signIn = async () => {
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-
-    console.log("LOGIN:", data, error);
     alert(error ? error.message : "Login success!");
   };
 
   const getUser = async () => {
     const { data } = await supabase.auth.getUser();
-    console.log("CURRENT USER:", data);
+    alert(data?.user ? "User session active" : "No active user");
   };
 
   const insertProfile = async () => {

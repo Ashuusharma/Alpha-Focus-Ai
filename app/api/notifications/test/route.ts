@@ -59,6 +59,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true, skipped: "skipped" in result ? result.skipped : null });
   } catch (error) {
-    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "notifications_test_failed" }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "notifications_test_failed" }, { status: 500 });
   }
 }

@@ -238,7 +238,7 @@ function buildRecommendations(category: CategoryId, severity: number) {
       usage_note: product.usage,
       shopify_handle: product.shopifyHandle,
       price_inr: product.priceInr,
-      ingredient: product.ingredient,
+      ingredient: product.ingredients.map((ing) => `${ing.name} ${ing.concentration}`).join(", "),
       benefits: product.benefits,
     }));
   }

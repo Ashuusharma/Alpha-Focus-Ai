@@ -107,6 +107,7 @@ export async function POST(request: NextRequest) {
     await writeAuditLog({ action: "reports.weekly.write", userId: auth.userId, ok: true, route: "/api/reports/weekly" });
     return NextResponse.json({ ok: true, report: responseReport });
   } catch (error) {
-    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "weekly_report_failed" }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "weekly_report_failed" }, { status: 500 });
   }
 }
+

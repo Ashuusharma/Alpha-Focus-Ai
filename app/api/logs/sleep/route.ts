@@ -85,6 +85,7 @@ export async function POST(request: NextRequest) {
     await writeAuditLog({ action: "logs.sleep.write", userId: auth.userId, ok: true, route: "/api/logs/sleep" });
     return NextResponse.json({ ok: true, log });
   } catch (error) {
-    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "sleep_log_failed" }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "sleep_log_failed" }, { status: 500 });
   }
 }
+

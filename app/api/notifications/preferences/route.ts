@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ ok: true, preferences: result.preferences });
   } catch (error) {
-    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "preferences_read_failed" }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "preferences_read_failed" }, { status: 500 });
   }
 }
 
@@ -63,6 +63,7 @@ export async function PATCH(request: NextRequest) {
     await writeAuditLog({ action: "notifications.preferences", userId: auth.userId, ok: true, route: "/api/notifications/preferences" });
     return NextResponse.json({ ok: true, preferences: result.preferences });
   } catch (error) {
-    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "preferences_update_failed" }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "preferences_update_failed" }, { status: 500 });
   }
 }
+

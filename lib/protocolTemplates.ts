@@ -90,6 +90,23 @@ type GuidedAction = {
   caution?: string;
 };
 
+type RoutineTaskProduct = {
+  id: string;
+  name: string;
+  ingredient: string;
+  required: boolean;
+  tierLabel: string;
+  whyRecommended: string;
+  howToUse: string;
+};
+
+type TaskRewardMetadata = {
+  points: number;
+  reason: string;
+  streakEligible: boolean;
+  ownershipBonus: number;
+};
+
 export type DailyProtocolMeta = {
   phaseName: "Reset" | "Repair" | "Stabilize";
   dailyGoal: string;
@@ -99,11 +116,27 @@ export type DailyProtocolMeta = {
 export type DailyExecutionTask = {
   id: string;
   title: string;
+  purpose: string;
+  preparation: string;
+  stepByStepInstructions: string[];
   timeWindow: { start: string; end: string };
+  timing: string;
   durationMin: number;
+  duration: number;
   goal: string;
   whyItHelps: string;
   howToSteps: string[];
+  targetArea: string;
+  amount: string;
+  recommendedProducts: RoutineTaskProduct[];
+  prerequisiteTasks: string[];
+  expectedBenefit: string;
+  expectedTimeline: string;
+  commonMistakes: string[];
+  safetyNotes: string[];
+  IndianLifestyleTip: string;
+  completionRequirements: string[];
+  rewardMetadata: TaskRewardMetadata;
   product: {
     id: string;
     name: string;
@@ -1589,6 +1622,163 @@ function splitHowToSteps(howTo?: string) {
     .slice(0, 5);
 }
 
+function stripStepPrefix(step: string) {
+  return step.replace(/^\d+\.\s*/, "");
+}
+
+function getCategoryTargetArea(category: CategoryId) {
+  const map: Record<string, string> = {
+    acne: "Face and acne-prone zones",
+    dark_circles: "Under-eye area and orbital bone",
+    hair_loss: "Scalp partitions and thinning zones",
+    scalp_health: "Scalp and flake-prone areas",
+    beard_growth: "Beard line, patchy zones, and skin under the beard",
+    body_acne: "Chest, back, shoulders, and sweat-prone body zones",
+    body_odor: "Underarms and sweat-prone body zones",
+    lip_care: "Lips and lip border",
+    anti_aging: "Face, neck, and sun-exposed areas",
+    skin_dullness: "Face and sun-exposed skin",
+    energy_fatigue: "Whole-day routine and recovery rhythm",
+    fitness_recovery: "Muscles, hydration, and post-workout recovery",
+  };
+
+  return map[category] || "Concern-priority area";
+}
+
+function getIndianLifestyleTip(slot: ProtocolTask["slot"], profile: CategoryRecoveryProfile, dayNumber: number) {
+  const baseTip = profile.homeCarePrinciples[0] || "Keep the routine simple and consistent.";
+
+  if (slot === "morning") {
+    return `${baseTip} For Indian commute and humidity, do the step before leaving home and recheck after sweat exposure.`;
+  }
+
+  if (slot === "lifestyle") {
+    return `${baseTip} Pair this with a fixed meal, hydration, or tracking window so it survives family and work routines.`;
+  }
+
+  if (slot === "weekly") {
+    return `${baseTip} Use a fixed weekend review slot and compare photos in the same light each time.`;
+  }
+
+  return `${baseTip} Keep the night routine after dinner and before late screen time on Day ${dayNumber}.`;
+}
+
+function buildPreparation(task: ProtocolTask, profile: CategoryRecoveryProfile, slot: ProtocolTask["slot"]) {
+  const steps: string[] = [];
+
+  if (slot === "morning") steps.push("Wash hands and start with clean, dry skin.");
+  if (slot === "lifestyle") steps.push("Keep water, notes, or meal support ready before starting.");
+  if (slot === "night") steps.push("Complete cleansing first and let the area dry fully.");
+  if (slot === "weekly") steps.push("Set aside a quiet 10-minute review window.");
+  if (task.product?.name) steps.push(`Keep ${task.product.name} nearby.`);
+  else if (task.recommendedProduct) steps.push(`Keep ${task.recommendedProduct} nearby.`);
+
+  if (steps.length === 0) steps.push(profile.homeCarePrinciples[0] || "Prepare a calm, clean routine window.");
+
+  return steps.join(" ");
+}
+
+function buildCompletionRequirements(task: ProtocolTask, slot: ProtocolTask["slot"], window: { start: string; end: string }) {
+  const requirements = [
+    `Complete the task within ${window.start}-${window.end}.`,
+    "Use only the listed routine steps and do not stack extra new products.",
+  ];
+
+  if (slot === "weekly") {
+    requirements.push("Record a quick progress check or photo comparison.");
+  }
+
+  if (task.label.toLowerCase().includes("baseline") || task.label.toLowerCase().includes("briefing")) {
+    requirements.push("Capture the starting reference exactly once.");
+  }
+
+  return requirements;
+}
+
+function buildRecommendedProducts(
+  task: ProtocolTask,
+  productName: string,
+  productIngredient: string,
+  productId: string,
+  matchedProduct: { name: string; ingredient: string; usage: string; tierLabel: string; why: string } | null,
+  required: boolean
+): RoutineTaskProduct[] {
+  const primaryProduct = matchedProduct || {
+    name: productName,
+    ingredient: productIngredient || "Targeted support",
+    usage: task.howTo || "Use exactly as directed.",
+    tierLabel: task.slot === "weekly" ? "Weekly Support" : "Core Protocol",
+    why: task.whyItHelps || task.why || "Supports the routine objective.",
+  };
+
+  return [
+    {
+      id: productId,
+      name: primaryProduct.name,
+      ingredient: primaryProduct.ingredient,
+      required,
+      tierLabel: primaryProduct.tierLabel,
+      whyRecommended: primaryProduct.why,
+      howToUse: primaryProduct.usage,
+    },
+  ];
+}
+
+function buildPrerequisiteTasks(task: ProtocolTask, slot: ProtocolTask["slot"], dayNumber: number) {
+  if (task.id.includes("anchor") || task.id.includes("briefing") || task.id.includes("baseline")) {
+    return [];
+  }
+
+  if (slot === "morning") {
+    return [`Review the morning anchor before this step on Day ${dayNumber}.`];
+  }
+
+  if (slot === "lifestyle") {
+    return ["Finish the morning slot before doing this support task."];
+  }
+
+  if (slot === "night") {
+    return ["Complete the daytime routine first and then do this step."];
+  }
+
+  return ["Complete the current week's daily routine before the review step."];
+}
+
+function buildRewardMetadata(task: ProtocolTask, reward: number, ownershipBonus: number): TaskRewardMetadata {
+  return {
+    points: reward,
+    reason: task.slot === "weekly" ? "Weekly review work is rewarded more heavily to reinforce consistency." : "Daily consistency is rewarded to support adherence.",
+    streakEligible: true,
+    ownershipBonus,
+  };
+}
+
+function buildCommonMistakes(task: ProtocolTask, slot: ProtocolTask["slot"], profile: CategoryRecoveryProfile) {
+  const mistakes = [
+    "Skipping the routine window and trying to make up later with a bigger session.",
+    "Adding extra products that are not part of the protocol.",
+  ];
+
+  if (slot === "night") mistakes.push("Using the step on damp skin when it should be applied to dry skin.");
+  if (slot === "weekly") mistakes.push("Reviewing progress without comparing the same lighting or conditions.");
+  if (task.caution) mistakes.push(task.caution);
+  if (profile.whenToEscalate.length > 0) mistakes.push(profile.whenToEscalate[0]);
+
+  return Array.from(new Set(mistakes)).slice(0, 5);
+}
+
+function buildSafetyNotes(task: ProtocolTask, profile: CategoryRecoveryProfile) {
+  const notes = [
+    "Patch test if the routine uses any new product or active.",
+    "Stop the step if burning or irritation becomes worse.",
+  ];
+
+  if (task.caution) notes.push(task.caution);
+  if (profile.whenToEscalate.length > 1) notes.push(profile.whenToEscalate[1]);
+
+  return Array.from(new Set(notes)).slice(0, 5);
+}
+
 function fallbackByCategory(category: CategoryId): string[] {
   const map: Record<string, string[]> = {
     acne: ["Use chilled clean water compress for 2 minutes", "Apply pure aloe gel on inflamed zones", "Avoid picking and reduce high-glycemic snacks"],
@@ -1630,24 +1820,64 @@ function mapProtocolTaskToExecutionTask(
   );
   const productName = matchedProduct?.name || task.recommendedProduct || `${label} support product`;
   const productId = matchedProduct?.id || sanitizeProductId(`${category}-${task.id}-${productName}`);
-  const ingredient = matchedProduct?.ingredient || task.ingredient || inferIngredient({
+  const ingredient = matchedProduct ? matchedProduct.ingredients.map((ing) => `${ing.name} ${ing.concentration}`).join(", ") : task.ingredient || inferIngredient({
     label,
     howTo: task.howTo || "",
     whyItHelps: task.whyItHelps || task.why || "",
     product: productName,
   });
+  const profile = getCategoryRecoveryProfile(category) || getCategoryRecoveryProfile("acne")!;
 
   const window = task.timeWindow || slotWindow(task.slot, level, dayNumber, taskIndexInSlot, slotTaskCount);
   const required = task.slot !== "lifestyle";
+  const reward = Number.isFinite(Number(task.reward)) ? Number(task.reward) : task.slot === "weekly" ? 4 : 2;
+  const ownershipBonus = ownedProductIds.has(productId) ? 1 : 0;
+  const stepInstructions = task.howToSteps?.length ? task.howToSteps.map(stripStepPrefix) : splitHowToSteps(task.howTo).map(stripStepPrefix);
 
   return {
     id: `${category}:${dayNumber}:${task.id}`,
     title: label,
+    purpose: task.goal || label,
+    preparation: buildPreparation(task, profile, task.slot),
+    stepByStepInstructions: stepInstructions,
     timeWindow: window,
+    timing: `${window.start}-${window.end}`,
     durationMin: Math.max(1, Number(task.durationMin || (task.slot === "lifestyle" ? 5 : 3))),
+    duration: Math.max(1, Number(task.durationMin || (task.slot === "lifestyle" ? 5 : 3))),
     goal: task.goal || "Daily recovery objective",
     whyItHelps: task.whyItHelps || task.why || "Supports recovery consistency and reduces symptom volatility.",
-    howToSteps: task.howToSteps?.length ? task.howToSteps : splitHowToSteps(task.howTo),
+    howToSteps: stepInstructions,
+    targetArea: getCategoryTargetArea(category),
+    amount: task.slot === "weekly" ? "One focused review session" : task.product?.required ? "Use the labeled product amount" : "Use the minimum routine amount needed",
+    recommendedProducts: buildRecommendedProducts(
+      task,
+      productName,
+      ingredient,
+      productId,
+      matchedProduct
+        ? {
+            name: matchedProduct.name,
+            ingredient: matchedProduct.ingredients.map((ing) => `${ing.name} ${ing.concentration}`).join(", "),
+            usage: matchedProduct.usage,
+            tierLabel: matchedProduct.tierLabel,
+            why: matchedProduct.why,
+          }
+        : null,
+      required
+    ),
+    prerequisiteTasks: buildPrerequisiteTasks(task, task.slot, dayNumber),
+    expectedBenefit: task.expectedImprovement || "Steadier recovery with consistent execution.",
+    expectedTimeline:
+      task.slot === "weekly"
+        ? "Same-day review with next-week carryover when repeated consistently."
+        : dayNumber <= 7
+          ? "Within 3-7 days of steady use."
+          : "Over the next 1-2 weeks with repeated adherence.",
+    commonMistakes: buildCommonMistakes(task, task.slot, profile),
+    safetyNotes: buildSafetyNotes(task, profile),
+    IndianLifestyleTip: getIndianLifestyleTip(task.slot, profile, dayNumber),
+    completionRequirements: buildCompletionRequirements(task, task.slot, window),
+    rewardMetadata: buildRewardMetadata(task, reward, ownershipBonus),
     product: {
       id: productId,
       name: productName,
@@ -1656,7 +1886,7 @@ function mapProtocolTaskToExecutionTask(
     },
     userHasProduct: ownedProductIds.has(productId),
     fallbackHomeRemedy: task.fallbackHomeRemedy?.length ? task.fallbackHomeRemedy : fallbackByCategory(category),
-    reward: Number.isFinite(Number(task.reward)) ? Number(task.reward) : task.slot === "weekly" ? 4 : 2,
+    reward,
     caution: task.caution || "Patch test and stop if irritation worsens.",
     unlockCondition: task.unlockCondition || { type: "time", value: `${window.start}-${window.end}` },
   };

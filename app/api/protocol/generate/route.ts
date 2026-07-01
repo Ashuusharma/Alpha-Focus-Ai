@@ -153,6 +153,10 @@ export async function POST(request: NextRequest) {
         status: "queued",
         reportId: reportRow.id,
         jobId: job.id,
+        progress: 0,
+        queuePosition: pendingJobs + 1,
+        estimatedWait: (pendingJobs + 1) * 30,
+        reportStatus: "queued",
       });
     }
 
@@ -193,6 +197,8 @@ export async function POST(request: NextRequest) {
       status: "completed",
       reportId: reportRow.id,
       jobId: job.id,
+      progress: 100,
+      reportStatus: "ready",
       report: generated.report,
       source: generated.status !== "ok" ? "fallback" : "ai",
       orchestrator: {
@@ -203,7 +209,7 @@ export async function POST(request: NextRequest) {
         costEstimateUsd: generated.costEstimateUsd,
       },
     });
-  } catch (error) {
-    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "protocol_generate_failed" }, { status: 500 });
+  } catch {
+    return NextResponse.json({ ok: false, error: "protocol_generate_failed" }, { status: 500 });
   }
 }

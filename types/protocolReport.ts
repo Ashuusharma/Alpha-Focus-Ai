@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const PROTOCOL_REPORT_SCHEMA_VERSION = "protocol_report.v2.0.0";
+export const PROTOCOL_REPORT_SCHEMA_VERSION = "protocol_report.v2.1.0";
 
 export const protocolIssueSummarySchema = z.object({
   whatWasDetected: z.array(z.string().min(1).max(240)).min(1).max(3),
@@ -11,31 +11,37 @@ export const protocolIssueSummarySchema = z.object({
 export const protocolMainIngredientSchema = z.object({
   ingredient: z.string().min(1).max(120),
   purpose: z.string().min(1).max(220),
-  howItHelps: z.string().min(1).max(220),
-  expectedRecoveryBenefit: z.string().min(1).max(220),
+  targets: z.array(z.string().min(1).max(140)).min(1).max(8),
+  whyItWorks: z.string().min(1).max(280),
+  expectedTimeline: z.string().min(1).max(180),
+  safetyNotes: z.array(z.string().min(1).max(220)).min(1).max(10),
 }).strict();
 
-export const protocolActionStepSchema = z.object({
-  stepTitle: z.string().min(1).max(120),
-  reason: z.string().min(1).max(240),
-  exactlyHowToPerform: z.string().min(1).max(500),
-  time: z.string().min(1).max(80),
-  quantity: z.string().min(1).max(80),
-  applicationArea: z.string().min(1).max(120),
-  commonMistakes: z.array(z.string().min(1).max(180)).min(1).max(8),
-  expectedBenefit: z.string().min(1).max(220),
+export const protocolRoutineStepSchema = z.object({
+  title: z.string().min(1).max(120),
+  purpose: z.string().min(1).max(220),
+  why: z.string().min(1).max(280),
+  steps: z.array(z.string().min(1).max(280)).min(1).max(10),
+  timing: z.string().min(1).max(120),
+  amount: z.string().min(1).max(120).optional(),
+  frequency: z.string().min(1).max(120),
+  expectedImprovement: z.string().min(1).max(220),
+  mistakesToAvoid: z.array(z.string().min(1).max(220)).min(1).max(10),
+  escalationCues: z.array(z.string().min(1).max(220)).min(1).max(8),
 }).strict();
 
 export const protocolMonthlyRecoveryPlanSchema = z.object({
-  morning: z.array(protocolActionStepSchema).min(1).max(16),
-  afternoon: z.array(protocolActionStepSchema).min(1).max(16),
-  night: z.array(protocolActionStepSchema).min(1).max(16),
-  weekly: z.array(protocolActionStepSchema).min(1).max(16),
+  morning: z.array(protocolRoutineStepSchema).min(1).max(16),
+  afternoon: z.array(protocolRoutineStepSchema).min(1).max(16),
+  night: z.array(protocolRoutineStepSchema).min(1).max(16),
+  weekly: z.array(protocolRoutineStepSchema).min(1).max(16),
 }).strict();
 
 export const protocolAvoidItemSchema = z.object({
   item: z.string().min(1).max(180),
-  whyItDelaysRecovery: z.string().min(1).max(220),
+  whyAvoid: z.string().min(1).max(240),
+  effectOnRecovery: z.string().min(1).max(240),
+  betterAlternative: z.string().min(1).max(220),
 }).strict();
 
 export const protocolThingsToAvoidSchema = z.object({
@@ -48,13 +54,14 @@ export const protocolThingsToAvoidSchema = z.object({
 export const protocolProductRecommendationSchema = z.object({
   productId: z.string().min(1).max(120),
   name: z.string().min(1).max(160),
-  ingredientMatch: z.string().min(1).max(140),
+  ingredientMatch: z.string().min(1).max(140).optional(),
   whyRecommended: z.string().min(1).max(260),
   howToUse: z.string().min(1).max(260),
-  howMuch: z.string().min(1).max(80),
-  whenToUse: z.string().min(1).max(80),
-  expectedTimeline: z.string().min(1).max(180),
-  commonMistakes: z.array(z.string().min(1).max(180)).max(8).default([]),
+  applicationArea: z.string().min(1).max(140),
+  amount: z.string().min(1).max(120),
+  timing: z.string().min(1).max(120),
+  expectedImprovement: z.string().min(1).max(220),
+  compatibilityWithCurrentRoutine: z.string().min(1).max(240),
 }).strict();
 
 export const protocolDietPlanSchema = z.object({
@@ -63,7 +70,7 @@ export const protocolDietPlanSchema = z.object({
   dinner: z.array(z.string().min(1).max(140)).min(1).max(10),
   snacks: z.array(z.string().min(1).max(140)).min(1).max(10),
   hydration: z.string().min(1).max(200),
-  weeklyNutritionGoals: z.array(z.string().min(1).max(180)).min(1).max(10),
+  wellnessGuidance: z.array(z.string().min(1).max(220)).min(1).max(12),
 }).strict();
 
 export const protocolExpectedTimelineWeekSchema = z.object({
@@ -93,6 +100,6 @@ export const protocolReportSchema = z.object({
   confidenceNotes: z.array(z.string().min(1).max(220)).min(1).max(6),
 }).strict();
 
-export type ProtocolActionStep = z.infer<typeof protocolActionStepSchema>;
+export type ProtocolRoutineStep = z.infer<typeof protocolRoutineStepSchema>;
 export type ProtocolProductRecommendation = z.infer<typeof protocolProductRecommendationSchema>;
 export type ProtocolReport = z.infer<typeof protocolReportSchema>;

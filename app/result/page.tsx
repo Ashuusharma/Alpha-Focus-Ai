@@ -154,8 +154,12 @@ export default function ResultPage() {
               <div key={item.ingredient} className="rounded-xl border border-[#d9d9de] bg-white p-4 text-sm">
                 <p className="font-semibold text-[#1d1d1f]">{item.ingredient}</p>
                 <p className="mt-1 text-[#5e5e5e]"><span className="font-semibold text-[#1d1d1f]">Purpose:</span> {item.purpose}</p>
-                <p className="mt-1 text-[#5e5e5e]"><span className="font-semibold text-[#1d1d1f]">How it helps:</span> {item.howItHelps}</p>
-                <p className="mt-1 text-[#5e5e5e]"><span className="font-semibold text-[#1d1d1f]">Expected benefit:</span> {item.expectedRecoveryBenefit}</p>
+                <p className="mt-1 text-[#5e5e5e]"><span className="font-semibold text-[#1d1d1f]">Targets:</span> {item.targets.join(", ")}</p>
+                <p className="mt-1 text-[#5e5e5e]"><span className="font-semibold text-[#1d1d1f]">Why it works:</span> {item.whyItWorks}</p>
+                <p className="mt-1 text-[#5e5e5e]"><span className="font-semibold text-[#1d1d1f]">Expected timeline:</span> {item.expectedTimeline}</p>
+                <ul className="mt-2 list-disc space-y-1 pl-5 text-[#5e5e5e]">
+                  {item.safetyNotes.map((note) => <li key={`${item.ingredient}-${note}`}>{note}</li>)}
+                </ul>
               </div>
             ))}
           </div>
@@ -171,10 +175,21 @@ export default function ResultPage() {
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#6e6e73]">{bucket}</p>
                 <div className="mt-2 space-y-2">
                   {report.monthlyRecoveryPlan[bucket].map((step) => (
-                    <div key={`${bucket}-${step.stepTitle}`}>
-                      <p className="font-semibold text-[#1d1d1f]">{step.stepTitle}</p>
-                      <p className="text-[#5e5e5e]">{step.exactlyHowToPerform}</p>
-                      <p className="mt-1 text-xs text-[#6e6e73]">{step.time} · {step.quantity} · {step.applicationArea}</p>
+                    <div key={`${bucket}-${step.title}`}>
+                      <p className="font-semibold text-[#1d1d1f]">{step.title}</p>
+                      <p className="mt-1 text-[#5e5e5e]"><span className="font-semibold text-[#1d1d1f]">Purpose:</span> {step.purpose}</p>
+                      <p className="text-[#5e5e5e]"><span className="font-semibold text-[#1d1d1f]">Why:</span> {step.why}</p>
+                      <ul className="mt-1 list-disc pl-5 text-[#5e5e5e]">
+                        {step.steps.map((line) => <li key={`${step.title}-${line}`}>{line}</li>)}
+                      </ul>
+                      <p className="mt-1 text-xs text-[#6e6e73]">
+                        {step.timing}
+                        {step.amount ? ` · ${step.amount}` : ""}
+                        {` · ${step.frequency}`}
+                      </p>
+                      <p className="mt-1 text-[#5e5e5e]"><span className="font-semibold text-[#1d1d1f]">Expected improvement:</span> {step.expectedImprovement}</p>
+                      <p className="mt-1 text-[#5e5e5e]"><span className="font-semibold text-[#1d1d1f]">Mistakes to avoid:</span> {step.mistakesToAvoid.join(", ")}</p>
+                      <p className="mt-1 text-[#5e5e5e]"><span className="font-semibold text-[#1d1d1f]">Escalation cues:</span> {step.escalationCues.join(", ")}</p>
                     </div>
                   ))}
                 </div>
@@ -194,7 +209,9 @@ export default function ResultPage() {
                 <ul className="mt-2 list-disc space-y-1 pl-5 text-[#5e5e5e]">
                   {report.thingsToAvoid[bucket].map((item) => (
                     <li key={`${bucket}-${item.item}`}>
-                      <span className="font-semibold text-[#1d1d1f]">{item.item}:</span> {item.whyItDelaysRecovery}
+                      <span className="font-semibold text-[#1d1d1f]">{item.item}:</span> {item.whyAvoid}
+                      <p className="mt-1 text-xs text-[#6e6e73]">Effect on recovery: {item.effectOnRecovery}</p>
+                      <p className="text-xs text-[#6e6e73]">Better alternative: {item.betterAlternative}</p>
                     </li>
                   ))}
                 </ul>
@@ -211,10 +228,13 @@ export default function ResultPage() {
             {report.recommendedProducts.map((product, idx) => (
               <div key={`${product.productId}-${idx}`} className="rounded-xl border border-[#d9d9de] bg-white p-4">
                 <p className="text-base font-bold text-[#1d1d1f]">{product.name}</p>
-                <p className="mt-1 text-xs uppercase tracking-[0.12em] text-[#6e6e73]">{product.ingredientMatch} · {product.whenToUse}</p>
+                <p className="mt-1 text-xs uppercase tracking-[0.12em] text-[#6e6e73]">{product.ingredientMatch || "Deterministic match"} · {product.timing}</p>
                 <p className="mt-2 text-sm text-[#5e5e5e]"><span className="font-semibold text-[#1d1d1f]">Why:</span> {product.whyRecommended}</p>
                 <p className="mt-1 text-sm text-[#5e5e5e]"><span className="font-semibold text-[#1d1d1f]">How:</span> {product.howToUse}</p>
-                <p className="mt-1 text-sm text-[#5e5e5e]"><span className="font-semibold text-[#1d1d1f]">Amount:</span> {product.howMuch}</p>
+                <p className="mt-1 text-sm text-[#5e5e5e]"><span className="font-semibold text-[#1d1d1f]">Application area:</span> {product.applicationArea}</p>
+                <p className="mt-1 text-sm text-[#5e5e5e]"><span className="font-semibold text-[#1d1d1f]">Amount:</span> {product.amount}</p>
+                <p className="mt-1 text-sm text-[#5e5e5e]"><span className="font-semibold text-[#1d1d1f]">Expected improvement:</span> {product.expectedImprovement}</p>
+                <p className="mt-1 text-sm text-[#5e5e5e]"><span className="font-semibold text-[#1d1d1f]">Compatibility:</span> {product.compatibilityWithCurrentRoutine}</p>
                 <div className="mt-3 flex items-center justify-between gap-2">
                   <p className="text-sm font-semibold text-[#1d1d1f]">{formatINR(999 + idx * 400)}</p>
                   <button
@@ -247,9 +267,9 @@ export default function ResultPage() {
             ))}
             <p className="rounded-xl bg-[#f5f5f7] p-3 text-[#1d1d1f] md:col-span-2"><span className="font-semibold">Hydration:</span> {report.dietPlan.hydration}</p>
             <div className="md:col-span-2">
-              <p className="font-semibold text-[#1d1d1f]">Weekly Nutrition Goals</p>
+              <p className="font-semibold text-[#1d1d1f]">Wellness Guidance</p>
               <ul className="mt-2 list-disc space-y-1 pl-5 text-[#5e5e5e]">
-                {report.dietPlan.weeklyNutritionGoals.map((goal) => <li key={goal}>{goal}</li>)}
+                {report.dietPlan.wellnessGuidance.map((goal) => <li key={goal}>{goal}</li>)}
               </ul>
             </div>
           </div>

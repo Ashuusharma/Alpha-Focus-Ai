@@ -102,6 +102,7 @@ export async function POST(request: NextRequest) {
     await writeAuditLog({ action: "scans.history.write", userId: auth.userId, ok: true, route: "/api/scans/history" });
     return NextResponse.json({ ok: true, scan: responseScan });
   } catch (error) {
-    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "scan_history_failed" }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "scan_history_failed" }, { status: 500 });
   }
 }
+
