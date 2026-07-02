@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCartStore } from "@/lib/cartStore";
 import { formatINR } from "@/lib/currency";
 import { ProtocolReport } from "@/types/protocolReport";
+import { getSupabaseAuthHeaders } from "@/lib/auth/clientAuthHeaders";
 
 function parseJson<T>(value: string | null, fallback: T): T {
   if (!value) return fallback;
@@ -59,7 +60,12 @@ export default function ResultPage() {
         if (cancelled) return;
         setPollAttempt(attempt);
 
-        const res = await fetch(query, { method: "GET", cache: "no-store" });
+        const headers = await getSupabaseAuthHeaders();
+        const res = await fetch(query, {
+          method: "GET",
+          cache: "no-store",
+          headers,
+        });
         const payload = (await res.json()) as {
           ok?: boolean;
           report?: { id?: string; status?: string; payload?: ProtocolReport | null };

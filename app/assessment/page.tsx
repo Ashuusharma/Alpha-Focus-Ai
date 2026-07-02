@@ -13,6 +13,7 @@ import { getClinicalRelevance } from "@/lib/assessmentContentMap";
 import { getParentCategoryFromChild, resolveClinicalChildCategoryFromAny } from "@/lib/categorySync";
 import { getRecoveryLevelDisplay, normalizeRecoveryLevel, type ProtocolToleranceMode } from "@/lib/protocolTemplates";
 import { getRecoveryProgramLevel, saveRecoveryProgramLevel } from "@/lib/userProfile";
+import { getSupabaseAuthHeaders } from "@/lib/auth/clientAuthHeaders";
 
 const HOUR_24_MS = 24 * 60 * 60 * 1000;
 
@@ -293,8 +294,34 @@ export default function AssessmentPage() {
       await recalculateClinicalScores(user.id, activeCategory);
 
       await hydrateUserData(user.id);
+      const protocolHeaders = await getSupabaseAuthHeaders({ "Content-Type": "application/json" });
+      const protocolResponse = await fetch("/api/protocol/generate", {
+        method: "POST",
+        headers: protocolHeaders,
+        body: JSON.stringify({
+          finalSubmission: true,
+          category: activeCategory,
+          answers,
+          async: true,
+          programContext: {
+            toleranceMode: selectedProgramLevel,
+          },
+        }),
+      });
+
+      const protocolPayload = (await protocolResponse.json()) as {
+        ok?: boolean;
+        reportId?: string;
+        error?: string;
+      };
+
+      if (!protocolResponse.ok || !protocolPayload?.ok || !protocolPayload.reportId) {
+        throw new Error(protocolPayload?.error || "protocol_generate_failed");
+      }
+
       if (typeof window !== "undefined") {
         sessionStorage.setItem("recoveryProgramLevel", selectedProgramLevel);
+        sessionStorage.setItem("protocolReportId", protocolPayload.reportId);
       }
       saveRecoveryProgramLevel(selectedProgramLevel);
       router.push(`/result?category=${activeCategory}&level=${selectedProgramLevel}`);
