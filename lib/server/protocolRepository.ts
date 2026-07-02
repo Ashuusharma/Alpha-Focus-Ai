@@ -297,6 +297,32 @@ export async function fetchProtocolReportById(input: {
   return rows[0] || null;
 }
 
+export async function fetchProtocolReportDebugById(reportId: string): Promise<null | {
+  id: string;
+  user_id: string;
+  source_version: string;
+  status: string;
+}> {
+  const config = getConfig();
+  if (!config) throw new Error("supabase_not_configured");
+
+  const path = [
+    "protocol_reports",
+    "?select=id,user_id,source_version,status",
+    `&id=eq.${reportId}`,
+    "&limit=1",
+  ].join("");
+
+  const rows = await request<Array<{
+    id: string;
+    user_id: string;
+    source_version: string;
+    status: string;
+  }>>(config, path, { method: "GET" });
+
+  return rows[0] || null;
+}
+
 export async function countPendingProtocolJobsForUser(userId: string): Promise<number> {
   const config = getConfig();
   if (!config) throw new Error("supabase_not_configured");
