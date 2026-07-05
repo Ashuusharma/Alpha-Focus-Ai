@@ -68,8 +68,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, error: "final_input_required" }, { status: 400 });
     }
 
+    const isDevelopment = process.env.NODE_ENV !== "production";
+
     const pendingJobs = await countPendingProtocolJobsForUser(auth.userId);
-    if (pendingJobs >= 3) {
+    if (isDevelopment && pendingJobs >= 3) {
+      console.info("[DEV] bypassing queue guard", {
+        userId: auth.userId,
+        pendingJobs,
+      });
+    }
+
+    if (!isDevelopment && pendingJobs >= 3) {
       await writeAuditLog({ action: "protocol.generate", userId: auth.userId, ok: false, route: "/api/protocol/generate", detail: "queue_busy" });
       return NextResponse.json({ ok: false, error: "queue_busy" }, { status: 429 });
     }
@@ -114,13 +123,15 @@ export async function POST(request: NextRequest) {
       asyncMode: body.async !== false,
     });
 
+    const asyncMode = !isDevelopment && body.async !== false;
+
     const reportRow = await insertProtocolReport({
       user_id: auth.userId,
       source_category: body.category,
       source_locale: body.locale || "en-IN",
       source_version: "v2",
       model_name: "pending",
-      status: body.async !== false ? "queued" : "generating",
+      status: asyncMode ? "queued" : "generating",
       clinical_profile: profile,
       protocol_input: protocolInput,
       report_payload: {},
@@ -147,7 +158,6 @@ export async function POST(request: NextRequest) {
       userId: auth.userId,
     });
 
-    const asyncMode = body.async !== false;
     console.info("[protocol.generate] async_mode", {
       asyncMode,
       bodyAsync: body.async,
@@ -195,6 +205,13 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    if (isDevelopment) {
+      console.info("[DEV] skipping protocol_generation_jobs insert", {
+        userId: auth.userId,
+        reportId: reportRow.id,
+      });
+    }
+
     console.info("[protocol.generate] entering_sync_branch");
     console.info("[protocol.generate] before_processing_update");
 
@@ -206,6 +223,13 @@ export async function POST(request: NextRequest) {
 
     console.info("[protocol.generate] after_processing_update");
     console.info("[protocol.generate] before_orchestrator");
+
+    if (isDevelopment) {
+      console.info("[DEV] running synchronous protocol generation", {
+        userId: auth.userId,
+        reportId: reportRow.id,
+      });
+    }
 
     const generated = await generateProtocolWithOrchestrator(protocolInput);
     console.info("[protocol.generate] after_orchestrator", {
@@ -238,6 +262,13 @@ export async function POST(request: NextRequest) {
     });
 
     console.info("[protocol.generate] after_ready_update");
+
+    if (isDevelopment) {
+      console.info("[DEV] report marked ready", {
+        userId: auth.userId,
+        reportId: reportRow.id,
+      });
+    }
 
     await writeAuditLog({ action: "protocol.generate", userId: auth.userId, ok: true, route: "/api/protocol/generate", detail: generated.status !== "ok" ? "fallback" : "ai" });
 
