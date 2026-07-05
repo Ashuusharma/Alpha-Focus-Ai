@@ -149,33 +149,33 @@ export async function POST(request: NextRequest) {
 
     const asyncMode = body.async !== false;
 
-    console.info("[protocol.generate] before_insertProtocolGenerationJob", {
-      reportId: reportRow.id,
-      userId: auth.userId,
-      priority: body.priority || 5,
-    });
-
-    const job = await insertProtocolGenerationJob({
-      user_id: auth.userId,
-      report_id: reportRow.id,
-      status: "queued",
-      priority: body.priority || 5,
-      attempts: 0,
-      max_attempts: 3,
-      scheduled_for: new Date().toISOString(),
-      input_payload: {
-        profile,
-        protocolInput,
-      },
-    });
-
-    console.info("[protocol.generate] after_insertProtocolGenerationJob", {
-      reportId: reportRow.id,
-      jobId: job.id,
-      userId: auth.userId,
-    });
-
     if (asyncMode) {
+      console.info("[protocol.generate] before_insertProtocolGenerationJob", {
+        reportId: reportRow.id,
+        userId: auth.userId,
+        priority: body.priority || 5,
+      });
+
+      const job = await insertProtocolGenerationJob({
+        user_id: auth.userId,
+        report_id: reportRow.id,
+        status: "queued",
+        priority: body.priority || 5,
+        attempts: 0,
+        max_attempts: 3,
+        scheduled_for: new Date().toISOString(),
+        input_payload: {
+          profile,
+          protocolInput,
+        },
+      });
+
+      console.info("[protocol.generate] after_insertProtocolGenerationJob", {
+        reportId: reportRow.id,
+        jobId: job.id,
+        userId: auth.userId,
+      });
+
       await writeAuditLog({ action: "protocol.generate", userId: auth.userId, ok: true, route: "/api/protocol/generate", detail: "queued" });
       return NextResponse.json({
         ok: true,
@@ -225,7 +225,7 @@ export async function POST(request: NextRequest) {
       ok: true,
       status: "completed",
       reportId: reportRow.id,
-      jobId: job.id,
+      jobId: null,
       progress: 100,
       reportStatus: "ready",
       report: generated.report,
