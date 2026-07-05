@@ -64,7 +64,7 @@ async function assertMonthlyScanLimit(userId: string) {
   const effectivePlan: SubscriptionPlan = isActive ? plan : "basic";
 
   const monthlyCapByPlan: Record<SubscriptionPlan, number> = {
-    basic: 2,
+    basic: 80,
     plus: 5,
     pro: Number.POSITIVE_INFINITY,
   };

@@ -34,6 +34,12 @@ function hasFinalInput(body: {
 
 export async function POST(request: NextRequest) {
   try {
+    console.info("[protocol.generate] route_entry", {
+      method: request.method,
+      path: request.nextUrl.pathname,
+      hasAuthorizationHeader: Boolean(request.headers.get("authorization")?.trim()),
+    });
+
     const auth = await getRequestAuth(request);
     if (!auth) {
       return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
@@ -102,6 +108,12 @@ export async function POST(request: NextRequest) {
 
     const protocolInput = buildProtocolInput(profile);
 
+    console.info("[protocol.generate] before_insertProtocolReport", {
+      userId: auth.userId,
+      category: body.category || null,
+      asyncMode: body.async !== false,
+    });
+
     const reportRow = await insertProtocolReport({
       user_id: auth.userId,
       source_category: body.category,
@@ -130,7 +142,18 @@ export async function POST(request: NextRequest) {
       report_schema_version: PROTOCOL_REPORT_SCHEMA_VERSION,
     });
 
+    console.info("[protocol.generate] after_insertProtocolReport", {
+      reportId: reportRow.id,
+      userId: auth.userId,
+    });
+
     const asyncMode = body.async !== false;
+
+    console.info("[protocol.generate] before_insertProtocolGenerationJob", {
+      reportId: reportRow.id,
+      userId: auth.userId,
+      priority: body.priority || 5,
+    });
 
     const job = await insertProtocolGenerationJob({
       user_id: auth.userId,
@@ -144,6 +167,12 @@ export async function POST(request: NextRequest) {
         profile,
         protocolInput,
       },
+    });
+
+    console.info("[protocol.generate] after_insertProtocolGenerationJob", {
+      reportId: reportRow.id,
+      jobId: job.id,
+      userId: auth.userId,
     });
 
     if (asyncMode) {
@@ -209,7 +238,12 @@ export async function POST(request: NextRequest) {
         costEstimateUsd: generated.costEstimateUsd,
       },
     });
-  } catch {
+  } catch (error) {
+    console.error("[protocol.generate] unhandled_error", {
+      error,
+      message: error instanceof Error ? error.message : "unknown_error",
+      stack: error instanceof Error ? error.stack : null,
+    });
     return NextResponse.json({ ok: false, error: "protocol_generate_failed" }, { status: 500 });
   }
 }
