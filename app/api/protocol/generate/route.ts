@@ -148,8 +148,14 @@ export async function POST(request: NextRequest) {
     });
 
     const asyncMode = body.async !== false;
+    console.info("[protocol.generate] async_mode", {
+      asyncMode,
+      bodyAsync: body.async,
+      nodeEnv: process.env.NODE_ENV,
+    });
 
     if (asyncMode) {
+      console.info("[protocol.generate] entering_async_branch");
       console.info("[protocol.generate] before_insertProtocolGenerationJob", {
         reportId: reportRow.id,
         userId: auth.userId,
@@ -189,13 +195,23 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    console.info("[protocol.generate] entering_sync_branch");
+    console.info("[protocol.generate] before_processing_update");
+
     await updateProtocolReport(reportRow.id, {
       status: "processing",
       modelName: "pending",
       fallbackUsed: false,
     });
 
+    console.info("[protocol.generate] after_processing_update");
+    console.info("[protocol.generate] before_orchestrator");
+
     const generated = await generateProtocolWithOrchestrator(protocolInput);
+    console.info("[protocol.generate] after_orchestrator", {
+      status: generated.status,
+      model: generated.model,
+    });
     const quality = evaluateProtocolQuality({ protocolInput, report: generated.report });
     const protocolVersions = buildProtocolVersions(
       generated.promptVersion,
@@ -203,6 +219,8 @@ export async function POST(request: NextRequest) {
       CLINICAL_PROFILE_SCHEMA_VERSION,
       PROTOCOL_REPORT_SCHEMA_VERSION
     );
+
+    console.info("[protocol.generate] before_ready_update");
 
     await updateProtocolReport(reportRow.id, {
       status: "ready",
@@ -218,6 +236,8 @@ export async function POST(request: NextRequest) {
       clinicalProfileSchemaVersion: CLINICAL_PROFILE_SCHEMA_VERSION,
       reportSchemaVersion: PROTOCOL_REPORT_SCHEMA_VERSION,
     });
+
+    console.info("[protocol.generate] after_ready_update");
 
     await writeAuditLog({ action: "protocol.generate", userId: auth.userId, ok: true, route: "/api/protocol/generate", detail: generated.status !== "ok" ? "fallback" : "ai" });
 

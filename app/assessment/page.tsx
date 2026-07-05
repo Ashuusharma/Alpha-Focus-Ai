@@ -295,6 +295,11 @@ export default function AssessmentPage() {
 
       await hydrateUserData(user.id);
       const protocolHeaders = await getSupabaseAuthHeaders({ "Content-Type": "application/json" });
+      const shouldUseAsyncProtocolGeneration = true;
+      console.info("[assessment] sending_generate_request", {
+        asyncValue: shouldUseAsyncProtocolGeneration,
+        nodeEnv: process.env.NODE_ENV,
+      });
       const protocolResponse = await fetch("/api/protocol/generate", {
         method: "POST",
         headers: protocolHeaders,
@@ -302,11 +307,16 @@ export default function AssessmentPage() {
           finalSubmission: true,
           category: activeCategory,
           answers,
-          async: true,
+          async: shouldUseAsyncProtocolGeneration,
           programContext: {
             toleranceMode: selectedProgramLevel,
           },
         }),
+      });
+
+      console.info("[assessment] generate_response", {
+        status: protocolResponse.status,
+        ok: protocolResponse.ok,
       });
 
       const protocolPayload = (await protocolResponse.json()) as {
