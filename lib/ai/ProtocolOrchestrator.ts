@@ -66,7 +66,7 @@ async function callChatCompletions(input: {
       body: JSON.stringify({
         model: input.model,
         temperature: 0.2,
-        max_tokens: input.maxTokens,
+        max_completion_tokens: input.maxTokens,
         response_format: { type: "json_object" },
         messages: [
           {
