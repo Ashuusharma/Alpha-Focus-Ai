@@ -41,71 +41,74 @@ export default function ResultPage() {
     let cancelled = false;
 
     const load = async () => {
-      const cached = parseJson<ProtocolReport | null>(localStorage.getItem(REPORT_CACHE_KEY), null);
-      if (cached) {
-        if (!cancelled) {
-          setReport(cached);
-          setLoading(false);
-          setReportStatus("ready");
-        }
-        return;
-      }
-
       const reportId = sessionStorage.getItem("protocolReportId") || "";
+      const cached = parseJson<ProtocolReport | null>(localStorage.getItem(REPORT_CACHE_KEY), null);
       const query = reportId
         ? `/api/protocol/report?reportId=${encodeURIComponent(reportId)}&sourceVersion=v2`
         : "/api/protocol/report?sourceVersion=v2";
 
-      for (let attempt = 1; attempt <= REPORT_POLL_MAX_ATTEMPTS; attempt += 1) {
-        if (cancelled) return;
-        setPollAttempt(attempt);
+      try {
+        for (let attempt = 1; attempt <= REPORT_POLL_MAX_ATTEMPTS; attempt += 1) {
+          if (cancelled) return;
+          setPollAttempt(attempt);
 
-        const headers = await getSupabaseAuthHeaders();
-        const res = await fetch(query, {
-          method: "GET",
-          cache: "no-store",
-          headers,
-        });
-        const payload = (await res.json()) as {
-          ok?: boolean;
-          report?: { id?: string; status?: string; payload?: ProtocolReport | null };
-          error?: string;
-        };
+          const headers = await getSupabaseAuthHeaders();
+          const res = await fetch(query, {
+            method: "GET",
+            cache: "no-store",
+            headers,
+          });
+          const payload = (await res.json()) as {
+            ok?: boolean;
+            report?: { id?: string; status?: string; payload?: ProtocolReport | null };
+            error?: string;
+          };
 
-        if (!res.ok || !payload?.ok || !payload.report) {
-          if (payload?.error === "not_found" && attempt < REPORT_POLL_MAX_ATTEMPTS) {
-            await wait(REPORT_POLL_INTERVAL_MS);
-            continue;
+          if (!res.ok || !payload?.ok || !payload.report) {
+            if (payload?.error === "not_found" && attempt < REPORT_POLL_MAX_ATTEMPTS) {
+              await wait(REPORT_POLL_INTERVAL_MS);
+              continue;
+            }
+            throw new Error(payload?.error || "protocol_report_not_ready");
           }
-          throw new Error(payload?.error || "protocol_report_not_ready");
+
+          if (payload.report.id) {
+            sessionStorage.setItem("protocolReportId", payload.report.id);
+          }
+
+          const status = payload.report.status || "unknown";
+          setReportStatus(status);
+
+          if (status === "ready" && payload.report.payload) {
+            localStorage.setItem(REPORT_CACHE_KEY, JSON.stringify(payload.report.payload));
+            if (!cancelled) {
+              setReport(payload.report.payload);
+              setLoading(false);
+            }
+            return;
+          }
+
+          if (status === "failed") {
+            throw new Error("protocol_report_failed");
+          }
+
+          if (attempt < REPORT_POLL_MAX_ATTEMPTS) {
+            await wait(REPORT_POLL_INTERVAL_MS);
+          }
         }
 
-        if (payload.report.id) {
-          sessionStorage.setItem("protocolReportId", payload.report.id);
-        }
-
-        const status = payload.report.status || "unknown";
-        setReportStatus(status);
-
-        if (status === "ready" && payload.report.payload) {
-          localStorage.setItem(REPORT_CACHE_KEY, JSON.stringify(payload.report.payload));
+        throw new Error("protocol_report_generation_timeout");
+      } catch (error) {
+        if (!reportId && cached) {
           if (!cancelled) {
-            setReport(payload.report.payload);
+            setReport(cached);
+            setReportStatus("ready");
             setLoading(false);
           }
           return;
         }
-
-        if (status === "failed") {
-          throw new Error("protocol_report_failed");
-        }
-
-        if (attempt < REPORT_POLL_MAX_ATTEMPTS) {
-          await wait(REPORT_POLL_INTERVAL_MS);
-        }
+        throw error;
       }
-
-      throw new Error("protocol_report_generation_timeout");
     };
 
     load()
