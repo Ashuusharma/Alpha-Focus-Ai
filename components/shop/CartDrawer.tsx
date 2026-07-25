@@ -201,7 +201,7 @@ export default function CartDrawer() {
                   )}
                 </Link>
                 <p className="text-center text-[10px] text-[#6e6e73]">
-                  Secure checkout powered by Stripe. 30-day money-back guarantee.
+                  Secure checkout. 30-day money-back guarantee.
                 </p>
               </div>
             </div>

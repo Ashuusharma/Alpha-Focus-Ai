@@ -1,5 +1,3 @@
-import { AUTH_COOKIE_NAME, verifyAuthToken } from "@/lib/auth/jwt";
-
 type ClinicalReportRow = {
   id: string;
   user_id: string;
@@ -162,28 +160,6 @@ function toISODate(value?: string): string {
 function average(values: number[]): number {
   if (!values.length) return 0;
   return values.reduce((sum, value) => sum + value, 0) / values.length;
-}
-
-async function resolveViewer(cookieHeader?: string): Promise<{ userId: string; name: string }> {
-  if (!cookieHeader) return { userId: "user_ashu", name: "Ashu" };
-
-  const match = cookieHeader
-    .split(";")
-    .map((part) => part.trim())
-    .find((part) => part.startsWith(`${AUTH_COOKIE_NAME}=`));
-
-  const token = match?.split("=")[1];
-  if (!token) return { userId: "user_ashu", name: "Ashu" };
-
-  try {
-    const payload = await verifyAuthToken(token);
-    return {
-      userId: payload.sub,
-      name: payload.name,
-    };
-  } catch {
-    return { userId: "user_ashu", name: "Ashu" };
-  }
 }
 
 async function querySupabase<T>(table: string, params: URLSearchParams): Promise<T[]> {
@@ -651,7 +627,3 @@ export async function getDashboardDataForViewer(viewer: { userId: string; name: 
   return payload;
 }
 
-export async function getDashboardData(cookieHeader?: string): Promise<DashboardPayload> {
-  const viewer = await resolveViewer(cookieHeader);
-  return getDashboardDataForViewer(viewer);
-}

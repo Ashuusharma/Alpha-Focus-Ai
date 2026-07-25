@@ -1,17 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { AUTH_COOKIE_NAME, verifyAuthToken } from "@/lib/auth/jwt";
-
-const protectedPagePrefixes = [
-  "/profile",
-  "/dashboard",
-  "/saved-scans",
-  "/settings",
-  "/tracking",
-  "/reports/weekly",
-  "/data-settings",
-  "/challenges",
-  "/result",
-];
+import { getSupabaseRequestUser } from "@/lib/server/supabaseRequestAuth";
 
 const protectedApiPrefixes = [
   "/api/logs/",
@@ -20,46 +8,31 @@ const protectedApiPrefixes = [
   "/api/user/sync",
 ];
 
-function isProtectedPath(pathname: string) {
-  return protectedPagePrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
-}
-
 function isProtectedApi(pathname: string) {
   return protectedApiPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(prefix));
 }
 
-async function hasValidToken(request: NextRequest) {
-  const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
-  if (!token) return false;
-
-  try {
-    await verifyAuthToken(token);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
+// Page-level redirects were previously gated on a custom demo JWT that
+// required no real credential (see git history) and have been removed.
+// Client-side gating for pages lives in components/auth/ProtectedRoute.tsx,
+// which checks the real Supabase session. The actual security boundary is
+// here and in each API route's own getRequestAuth() call, both of which
+// verify a real Supabase bearer token.
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (!isProtectedPath(pathname) && !isProtectedApi(pathname)) {
+  if (!isProtectedApi(pathname)) {
     return NextResponse.next();
   }
 
-  const authenticated = await hasValidToken(request);
-  if (authenticated) return NextResponse.next();
-
-  if (isProtectedApi(pathname)) {
+  const user = await getSupabaseRequestUser(request);
+  if (!user) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 
-  const redirectUrl = request.nextUrl.clone();
-  redirectUrl.pathname = "/";
-  redirectUrl.searchParams.set("auth", "required");
-  return NextResponse.redirect(redirectUrl);
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|icons|images).*)"],
+  matcher: ["/api/logs/:path*", "/api/reports/weekly", "/api/scans/history", "/api/user/sync"],
 };

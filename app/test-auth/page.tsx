@@ -3,9 +3,20 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 
+const TEST_ROUTES_ENABLED =
+  process.env.NODE_ENV !== "production" || process.env.NEXT_PUBLIC_ENABLE_TEST_ROUTES === "true";
+
 export default function TestAuth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  if (!TEST_ROUTES_ENABLED) {
+    return (
+      <div style={{ padding: 40 }}>
+        <p>This page is not available.</p>
+      </div>
+    );
+  }
 
   const signUp = async () => {
     const { error } = await supabase.auth.signUp({

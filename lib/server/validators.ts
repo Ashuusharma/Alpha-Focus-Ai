@@ -65,12 +65,6 @@ export const userSyncSchema = z.object({
   recoveryProgramLevel: z.enum(["beginner", "intermediate", "advanced"]).optional(),
 });
 
-export const loginSchema = z.object({
-  name: z.string().min(1).max(80),
-  consent: z.literal(true),
-  passcode: z.string().max(100).optional(),
-});
-
 export const aiAdviceSchema = z.object({
   issues: z.array(z.string().min(1)).min(1).max(20),
   answers: z.record(z.string(), z.string()).optional(),

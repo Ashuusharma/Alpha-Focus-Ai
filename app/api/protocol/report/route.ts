@@ -21,7 +21,6 @@ export async function GET(request: NextRequest) {
       reportId: reportId || null,
       sourceVersion,
       hasAuthorizationHeader: Boolean(request.headers.get("authorization")?.trim()),
-      hasAuthCookie: Boolean(request.cookies.get("af_token")?.value),
     });
 
     const auth = await getRequestAuth(request);
