@@ -3,6 +3,8 @@ import { galaxyAnalyzeSchema } from "@/lib/server/validators";
 import { isRateLimited } from "@/lib/server/rateLimit";
 import { writeAuditLog } from "@/lib/server/auditLog";
 import { getRequestAuth } from "@/lib/auth/requestAuth";
+import { analyzePhotosWithVision } from "@/lib/ai/visionAnalysis";
+import { uploadPreparedImageForVision } from "@/lib/ai/uploadPreparedImageForVision";
 
 type InputPayload = {
   images: string[];
@@ -331,6 +333,7 @@ export async function POST(request: NextRequest) {
     }
 
     let totalBytes = 0;
+    const parsedImages: ParsedDataUrl[] = [];
     for (const imageData of body.images) {
       const parsedData = parseDataUrl(imageData);
       if (!parsedData) {
@@ -358,13 +361,77 @@ export async function POST(request: NextRequest) {
         await writeAuditLog({ action: "upload.image", userId: actor, ok: false, route: "/api/galaxy/analyze", detail: "total_upload_size_rejected" });
         return NextResponse.json({ error: "total_upload_too_large" }, { status: 413 });
       }
+
+      parsedImages.push(parsedData);
+    }
+
+    const categories = body.categories || [body.analyzerType];
+
+    // Primary provider: OpenAI Vision. Prepares + uploads each image, then
+    // runs one multimodal analysis call over the full set, and normalizes
+    // the result into the exact response shape Galaxy AI already returns so
+    // no downstream consumer (frontend, assessment, protocol generation,
+    // result page) needs to know which provider actually served the request.
+    // Galaxy AI remains the fallback: any failure in this block falls
+    // through unchanged to the existing Galaxy logic below.
+    try {
+      console.info("[vision] prepare_started", { imageCount: parsedImages.length, analyzerType: body.analyzerType });
+
+      const storageUserId = auth?.userId || "anonymous";
+      const uploaded = [];
+      for (const parsedImage of parsedImages) {
+        const result = await uploadPreparedImageForVision({
+          buffer: parsedImage.bytes,
+          userId: storageUserId,
+          category: body.analyzerType,
+        });
+        uploaded.push(result);
+      }
+
+      console.info("[vision] upload_complete", {
+        imageCount: uploaded.length,
+        compressedBytes: uploaded.reduce((sum, u) => sum + u.compressedBytes, 0),
+        originalBytes: uploaded.reduce((sum, u) => sum + u.originalBytes, 0),
+      });
+
+      console.info("[vision] request_started", { imageCount: uploaded.length, analyzerType: body.analyzerType });
+      const visionOutcome = await analyzePhotosWithVision({
+        images: uploaded.map((u) => u.uploadedUrl),
+        analyzerType: body.analyzerType,
+        categories,
+        answers: body.answers,
+      });
+      console.info("[vision] request_success", {
+        model: visionOutcome.metadata.model,
+        latencyMs: visionOutcome.metadata.latencyMs,
+        retryCount: visionOutcome.metadata.retryCount,
+      });
+
+      const normalized = {
+        provider: "galaxy-ai",
+        issues: visionOutcome.result.issues,
+        hotspots: visionOutcome.result.hotspots.length ? visionOutcome.result.hotspots : defaultHotspotsForCategories(categories),
+        annotatedImageUrl: uploaded[0]?.uploadedUrl || body.images[0],
+        confidence: visionOutcome.result.confidence,
+      };
+      console.info("[vision] normalized_response", { issueCount: normalized.issues.length, hotspotCount: normalized.hotspots.length });
+
+      await writeAuditLog({ action: "vision.analyze", userId: actor, ok: true, route: "/api/galaxy/analyze", detail: "openai_vision_success" });
+      console.info("[vision] completed", { outcome: "vision_success" });
+      return NextResponse.json(normalized);
+    } catch (visionError) {
+      console.error("[vision] fallback_to_galaxy", {
+        message: visionError instanceof Error ? visionError.message : "unknown_error",
+        name: visionError instanceof Error ? visionError.name : undefined,
+      });
+      await writeAuditLog({ action: "vision.analyze", userId: actor, ok: false, route: "/api/galaxy/analyze", detail: "vision_failed_fallback_galaxy" });
+      // Fall through to the existing Galaxy implementation below, unchanged.
     }
 
     const apiKey = process.env.GALAXY_API_KEY || process.env.GALAXY_BEARER_TOKEN;
     const apiUrl = process.env.GALAXY_API_URL || "https://api.galaxy.ai/photo-analyzer";
 
     if (!apiKey) {
-      const categories = body.categories || [body.analyzerType];
       await writeAuditLog({ action: "galaxy.analyze", userId: actor, ok: true, route: "/api/galaxy/analyze", detail: "fallback_no_key" });
       return NextResponse.json({
         provider: "galaxy-ai",
@@ -423,7 +490,6 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    const categories = body.categories || [body.analyzerType];
     const issues = Array.from(uniqueIssueMap.values());
     const normalizedIssues = issues.length > 0 ? issues : defaultIssuesForCategories(categories);
     const confidence =
