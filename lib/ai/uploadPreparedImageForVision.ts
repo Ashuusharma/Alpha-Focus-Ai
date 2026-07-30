@@ -18,6 +18,9 @@ export type UploadPreparedImageResult = {
   originalHeight: number;
   outputWidth: number;
   outputHeight: number;
+  /** Internal — bucket/path used by deleteUploadedImage() for orphan cleanup. Not part of the route's public response contract. */
+  bucket: string;
+  path: string;
 };
 
 export type ImageUploadErrorDetails = {
@@ -123,5 +126,43 @@ export async function uploadPreparedImageForVision(
     originalHeight: prepared.metadata.originalHeight,
     outputWidth: prepared.metadata.outputWidth,
     outputHeight: prepared.metadata.outputHeight,
+    bucket,
+    path,
   };
+}
+
+/**
+ * Deletes a previously uploaded object — used to clean up orphaned Storage
+ * writes when prepare/upload succeeded but the subsequent vision analysis
+ * call failed, so a fallback-to-Galaxy response doesn't leave an unused
+ * compressed image behind. Best-effort: failures are caught by the caller,
+ * not thrown, since cleanup failing shouldn't affect the user-facing response.
+ */
+export async function deleteUploadedImage(target: Pick<UploadPreparedImageResult, "bucket" | "path">): Promise<void> {
+  const { baseUrl, serviceKey } = getSupabaseServerConfig();
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), UPLOAD_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(`${baseUrl}/storage/v1/object/${target.bucket}/${target.path}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${serviceKey}`,
+        apikey: serviceKey,
+      },
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const body = await response.text().catch(() => "");
+      throw new ImageUploadError({
+        stage: "upload",
+        reason: `delete_http_${response.status}: ${body.slice(0, 300)}`,
+        httpStatus: response.status,
+      });
+    }
+  } finally {
+    clearTimeout(timeout);
+  }
 }

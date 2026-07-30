@@ -4,7 +4,7 @@ import { isRateLimited } from "@/lib/server/rateLimit";
 import { writeAuditLog } from "@/lib/server/auditLog";
 import { getRequestAuth } from "@/lib/auth/requestAuth";
 import { analyzePhotosWithVision } from "@/lib/ai/visionAnalysis";
-import { uploadPreparedImageForVision } from "@/lib/ai/uploadPreparedImageForVision";
+import { uploadPreparedImageForVision, deleteUploadedImage, UploadPreparedImageResult } from "@/lib/ai/uploadPreparedImageForVision";
 
 type InputPayload = {
   images: string[];
@@ -308,7 +308,34 @@ function defaultIssuesForCategories(categories: string[]): GalaxyIssue[] {
   ];
 }
 
+// Mirrors the confidence gate app/image-analyzer/page.tsx's
+// assertValidImagePayload() already applies client-side. Kept as an explicit,
+// named constant here (rather than silently duplicated) so the two stay easy
+// to compare if either changes.
+const LOW_CONFIDENCE_THRESHOLD = 45;
+
+type QualitySignal = {
+  retakeRecommended: boolean;
+  reason?: string;
+};
+
+// Additive-only: exists so a low-confidence/no-issue analysis can be labeled
+// honestly instead of silently presented as a confident result. Does not
+// remove or rename any existing response field — a consumer that doesn't
+// read `quality` is unaffected.
+function buildQualitySignal(confidence: number, issueCount: number): QualitySignal {
+  const retakeRecommended = issueCount === 0 || confidence < LOW_CONFIDENCE_THRESHOLD;
+  return {
+    retakeRecommended,
+    reason: retakeRecommended
+      ? "Photo quality, lighting, or angle made this analysis less reliable. Consider retaking in bright, even light with the target area fully visible."
+      : undefined,
+  };
+}
+
 export async function POST(request: NextRequest) {
+  const requestStartedAt = Date.now();
+
   try {
     const auth = await getRequestAuth(request);
     const actor = auth?.userId || request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
@@ -374,11 +401,18 @@ export async function POST(request: NextRequest) {
     // result page) needs to know which provider actually served the request.
     // Galaxy AI remains the fallback: any failure in this block falls
     // through unchanged to the existing Galaxy logic below.
+    // Tracks images that made it into Storage so they can be cleaned up if a
+    // later step in this same try block fails (see the catch block below).
+    // Left empty on full success — the uploaded image is the response's
+    // annotatedImageUrl at that point and must NOT be deleted.
+    let uploadedForCleanup: UploadPreparedImageResult[] = [];
+
     try {
       console.info("[vision] prepare_started", { imageCount: parsedImages.length, analyzerType: body.analyzerType });
 
       const storageUserId = auth?.userId || "anonymous";
-      const uploaded = [];
+      const uploadStartedAt = Date.now();
+      const uploaded: UploadPreparedImageResult[] = [];
       for (const parsedImage of parsedImages) {
         const result = await uploadPreparedImageForVision({
           buffer: parsedImage.bytes,
@@ -387,11 +421,14 @@ export async function POST(request: NextRequest) {
         });
         uploaded.push(result);
       }
+      uploadedForCleanup = uploaded;
+      const uploadDurationMs = Date.now() - uploadStartedAt;
 
       console.info("[vision] upload_complete", {
         imageCount: uploaded.length,
         compressedBytes: uploaded.reduce((sum, u) => sum + u.compressedBytes, 0),
         originalBytes: uploaded.reduce((sum, u) => sum + u.originalBytes, 0),
+        uploadDurationMs,
       });
 
       console.info("[vision] request_started", { imageCount: uploaded.length, analyzerType: body.analyzerType });
@@ -405,6 +442,7 @@ export async function POST(request: NextRequest) {
         model: visionOutcome.metadata.model,
         latencyMs: visionOutcome.metadata.latencyMs,
         retryCount: visionOutcome.metadata.retryCount,
+        tokenUsage: visionOutcome.metadata.tokenUsage,
       });
 
       const normalized = {
@@ -413,17 +451,40 @@ export async function POST(request: NextRequest) {
         hotspots: visionOutcome.result.hotspots.length ? visionOutcome.result.hotspots : defaultHotspotsForCategories(categories),
         annotatedImageUrl: uploaded[0]?.uploadedUrl || body.images[0],
         confidence: visionOutcome.result.confidence,
+        quality: buildQualitySignal(visionOutcome.result.confidence, visionOutcome.result.issues.length),
+        // Every captured image was already persisted to Storage as part of
+        // the Vision pipeline (uploadPreparedImageForVision), in the same
+        // order as the request's `images` array. Exposing all of them (not
+        // just the first) lets the client skip its own redundant upload of
+        // the originals entirely instead of only avoiding it for one image.
+        uploadedImageUrls: uploaded.map((u) => u.uploadedUrl),
       };
       console.info("[vision] normalized_response", { issueCount: normalized.issues.length, hotspotCount: normalized.hotspots.length });
 
       await writeAuditLog({ action: "vision.analyze", userId: actor, ok: true, route: "/api/galaxy/analyze", detail: "openai_vision_success" });
-      console.info("[vision] completed", { outcome: "vision_success" });
+      console.info("[vision] completed", {
+        outcome: "vision_success",
+        selectedModel: visionOutcome.metadata.model,
+        fallbackModel: null,
+        uploadDurationMs,
+        visionDurationMs: visionOutcome.metadata.latencyMs,
+        totalDurationMs: Date.now() - requestStartedAt,
+        tokenUsage: visionOutcome.metadata.tokenUsage,
+      });
       return NextResponse.json(normalized);
     } catch (visionError) {
       console.error("[vision] fallback_to_galaxy", {
         message: visionError instanceof Error ? visionError.message : "unknown_error",
         name: visionError instanceof Error ? visionError.name : undefined,
       });
+
+      if (uploadedForCleanup.length) {
+        console.info("[vision] orphan_cleanup_started", { imageCount: uploadedForCleanup.length });
+        const results = await Promise.allSettled(uploadedForCleanup.map((u) => deleteUploadedImage(u)));
+        const failed = results.filter((r) => r.status === "rejected").length;
+        console.info("[vision] orphan_cleanup_completed", { imageCount: uploadedForCleanup.length, failed });
+      }
+
       await writeAuditLog({ action: "vision.analyze", userId: actor, ok: false, route: "/api/galaxy/analyze", detail: "vision_failed_fallback_galaxy" });
       // Fall through to the existing Galaxy implementation below, unchanged.
     }
@@ -433,12 +494,20 @@ export async function POST(request: NextRequest) {
 
     if (!apiKey) {
       await writeAuditLog({ action: "galaxy.analyze", userId: actor, ok: true, route: "/api/galaxy/analyze", detail: "fallback_no_key" });
+      const fallbackIssues = defaultIssuesForCategories(categories);
+      console.info("[vision] completed", {
+        outcome: "galaxy_fallback_no_key",
+        selectedModel: null,
+        fallbackModel: "galaxy-ai",
+        totalDurationMs: Date.now() - requestStartedAt,
+      });
       return NextResponse.json({
         provider: "galaxy-ai",
-        issues: defaultIssuesForCategories(categories),
+        issues: fallbackIssues,
         hotspots: defaultHotspotsForCategories(categories),
         annotatedImageUrl: body.images[0],
         confidence: 75,
+        quality: buildQualitySignal(75, fallbackIssues.length),
         note: "GALAXY_API_KEY is not configured. Returned fallback response.",
       });
     }
@@ -498,6 +567,12 @@ export async function POST(request: NextRequest) {
         : 75;
 
     await writeAuditLog({ action: "galaxy.analyze", userId: actor, ok: true, route: "/api/galaxy/analyze", detail: "analyze_success" });
+    console.info("[vision] completed", {
+      outcome: "galaxy_success",
+      selectedModel: null,
+      fallbackModel: "galaxy-ai",
+      totalDurationMs: Date.now() - requestStartedAt,
+    });
 
     return NextResponse.json({
       provider: "galaxy-ai",
@@ -505,6 +580,7 @@ export async function POST(request: NextRequest) {
       hotspots,
       annotatedImageUrl,
       confidence,
+      quality: buildQualitySignal(confidence, normalizedIssues.length),
       rawCount: successful.length,
     });
   } catch (error) {

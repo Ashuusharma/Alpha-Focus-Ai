@@ -37,6 +37,9 @@ type GalaxyAnalyzeResponse = {
   hotspots: GalaxyHotspot[];
   annotatedImageUrl?: string;
   confidence?: number;
+  /** Present only when the Vision pipeline already persisted every captured
+   *  image to Storage, in the same order as the images sent to /api/galaxy/analyze. */
+  uploadedImageUrls?: string[];
 };
 
 type SubscriptionPlan = "basic" | "plus" | "pro";
@@ -270,11 +273,25 @@ export default function ImageAnalyzerPage() {
         );
       }
 
-      const storageUpload = await uploadAnalyzerImagesToSupabase({
-        userId: user.id,
-        category: selectedCategory,
-        images,
-      });
+      // The Vision pipeline (server-side) already persists every captured
+      // image to Storage as part of analysis. Reuse those URLs instead of
+      // uploading the same images again from the client. Only fall back to
+      // the client upload when the server didn't provide a complete set
+      // (e.g. the Galaxy fallback path, which doesn't upload anything) —
+      // this preserves the exact previous behavior for that case.
+      const serverUploadedUrls = galaxyData?.uploadedImageUrls;
+      const serverUploadCoversAllImages =
+        Array.isArray(serverUploadedUrls) &&
+        serverUploadedUrls.length === images.length &&
+        serverUploadedUrls.every((url) => typeof url === "string" && url.length > 0);
+
+      const storageUpload = serverUploadCoversAllImages
+        ? { urls: serverUploadedUrls as string[], paths: [] as string[], errors: [] as string[] }
+        : await uploadAnalyzerImagesToSupabase({
+            userId: user.id,
+            category: selectedCategory,
+            images,
+          });
 
       const persistedImageUrl =
         storageUpload.urls[0] ||

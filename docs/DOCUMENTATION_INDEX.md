@@ -25,20 +25,26 @@ This index is organized by developer intent.
 - [planning/INTEGRATION_CHECKLIST.md](./planning/INTEGRATION_CHECKLIST.md)
 - [planning/MAIN_PAGE_REDESIGN_BLUEPRINT.md](./planning/MAIN_PAGE_REDESIGN_BLUEPRINT.md)
 
-## Status Reports
-- [status/PROJECT_OVERVIEW.md](./status/PROJECT_OVERVIEW.md)
-- [status/PROJECT_COMPLETE.md](./status/PROJECT_COMPLETE.md)
-- [status/IMPLEMENTATION_COMPLETE.md](./status/IMPLEMENTATION_COMPLETE.md)
-- [status/IMPLEMENTATION_SUMMARY.md](./status/IMPLEMENTATION_SUMMARY.md)
-- [status/SYSTEM_COMPLETE.md](./status/SYSTEM_COMPLETE.md)
-- [status/AI_ENGINE_COMPLETE.md](./status/AI_ENGINE_COMPLETE.md)
-- [status/PHASE_1_COMPLETION.md](./status/PHASE_1_COMPLETION.md)
-- [status/READY_TO_USE.md](./status/READY_TO_USE.md)
-- [status/READY_TO_LAUNCH.md](./status/READY_TO_LAUNCH.md)
-- [status/BEFORE_AND_AFTER.md](./status/BEFORE_AND_AFTER.md)
-- [status/COLOR_TRANSFORMATION_COMPLETE.md](./status/COLOR_TRANSFORMATION_COMPLETE.md)
-- [status/VISUAL_SUMMARY.md](./status/VISUAL_SUMMARY.md)
+## Status Reports (archived)
+These describe a December 2024 snapshot of the app (mock/localStorage-only)
+that no longer matches current code — kept for history, not as current
+status. Moved to `status/archive/` during the Phase 0 security pass.
+- [status/archive/PROJECT_OVERVIEW.md](./status/archive/PROJECT_OVERVIEW.md)
+- [status/archive/PROJECT_COMPLETE.md](./status/archive/PROJECT_COMPLETE.md)
+- [status/archive/IMPLEMENTATION_COMPLETE.md](./status/archive/IMPLEMENTATION_COMPLETE.md)
+- [status/archive/IMPLEMENTATION_SUMMARY.md](./status/archive/IMPLEMENTATION_SUMMARY.md)
+- [status/archive/SYSTEM_COMPLETE.md](./status/archive/SYSTEM_COMPLETE.md)
+- [status/archive/AI_ENGINE_COMPLETE.md](./status/archive/AI_ENGINE_COMPLETE.md)
+- [status/archive/PHASE_1_COMPLETION.md](./status/archive/PHASE_1_COMPLETION.md)
+- [status/archive/READY_TO_USE.md](./status/archive/READY_TO_USE.md)
+- [status/archive/READY_TO_LAUNCH.md](./status/archive/READY_TO_LAUNCH.md)
+- [status/archive/BEFORE_AND_AFTER.md](./status/archive/BEFORE_AND_AFTER.md)
+- [status/archive/COLOR_TRANSFORMATION_COMPLETE.md](./status/archive/COLOR_TRANSFORMATION_COMPLETE.md)
+- [status/archive/VISUAL_SUMMARY.md](./status/archive/VISUAL_SUMMARY.md)
 
 ## Testing
 - [testing/TESTING_GUIDE.md](./testing/TESTING_GUIDE.md)
 - [testing/TESTING_REAL_TIME_DATA.md](./testing/TESTING_REAL_TIME_DATA.md)
+
+## Operations
+- [operations/openai-troubleshooting.md](./operations/openai-troubleshooting.md) — diagnosing OpenAI/Vision integration failures (model access, billing, rate limits, env vars)
