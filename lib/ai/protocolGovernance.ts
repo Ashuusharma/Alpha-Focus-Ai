@@ -80,7 +80,14 @@ function sanitizeText(value: string): string {
 
 function buildCompactInput(input: ProtocolInput): ProtocolInput {
   return {
-    context: input.context,
+    // generatedAt is a fresh timestamp on every request (set in
+    // buildClinicalProfileFromAssessmentAndAnalysis) and carries no
+    // semantic meaning for either the prompt or the cache key — leaving it
+    // untouched here would make buildProtocolCacheKey() hash a different
+    // value on every call for a logically identical assessment, guaranteeing
+    // a permanent cache miss. Normalized to a constant so two calls with the
+    // same clinical input produce the same cache key.
+    context: { ...input.context, generatedAt: "normalized" },
     scores: input.scores,
     canonicalProfile: {
       demographics: input.canonicalProfile.demographics,
@@ -241,15 +248,12 @@ export async function getCachedProtocolPayload(
       cache: "no-store",
     });
 
-    console.error("[DEBUG protocolCache]", { url: url.toString(), status: response.status, ok: response.ok });
-
     if (!response.ok) {
       governanceMetrics.cacheMisses += 1;
       return null;
     }
 
     const rows = (await response.json()) as Array<{ report_payload: unknown; expires_at: string }>;
-    console.error("[DEBUG protocolCache] rows", { rowCount: rows.length, firstRowExpiresAt: rows[0]?.expires_at });
     const row = rows[0];
     if (!row || new Date(row.expires_at).getTime() <= Date.now()) {
       governanceMetrics.cacheMisses += 1;
