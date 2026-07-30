@@ -1,4 +1,5 @@
 import "server-only";
+import { getAIGovernanceConfig, evaluateBudgetStatus, BudgetStatus } from "@/lib/ai/aiGovernanceConfig";
 
 export type AIUsageFeature = "vision" | "protocol";
 
@@ -17,6 +18,12 @@ export type AIUsageEntry = {
   promptVersion?: string | null;
   temperature?: number | null;
   responseSchemaVersion?: string | null;
+  /** Vision-only (Phase 5.9 Part 4). Requires supabase/ai_governance_schema_v2.sql. */
+  imageHash?: string | null;
+  category?: string | null;
+  latencySavedMs?: number | null;
+  tokensSaved?: number | null;
+  costSavedUsd?: number | null;
 };
 
 function getSupabaseServerConfig() {
@@ -63,6 +70,12 @@ export async function recordAIUsage(entry: AIUsageEntry): Promise<void> {
         prompt_version: entry.promptVersion ?? null,
         temperature: entry.temperature ?? null,
         response_schema_version: entry.responseSchemaVersion ?? null,
+        success: true,
+        image_hash: entry.imageHash ?? null,
+        category: entry.category ?? null,
+        latency_saved_ms: entry.latencySavedMs ?? null,
+        tokens_saved: entry.tokensSaved ?? null,
+        cost_saved_usd: entry.costSavedUsd ?? null,
       }),
       cache: "no-store",
     });
@@ -73,6 +86,66 @@ export async function recordAIUsage(entry: AIUsageEntry): Promise<void> {
     }
   } catch (error) {
     console.error("[ai.usageLog] insert_error", {
+      message: error instanceof Error ? error.message : "unknown_error",
+    });
+  }
+}
+
+export type AIFailureEntry = {
+  provider: string;
+  model: string;
+  feature: AIUsageFeature;
+  userId: string | null;
+  reportId?: string | null;
+  promptVersion?: string | null;
+  failureReason: string;
+};
+
+/**
+ * Records a failed/skipped AI attempt (truncation, budget block, upstream
+ * error) — distinct from recordAIUsage, which is only for successful calls
+ * and cache hits. Powers Part 7's success/failure/truncation rate metrics.
+ * Same best-effort semantics: never throws. Requires
+ * supabase/ai_governance_schema_v2.sql (success/failure_reason columns).
+ */
+export async function recordAIFailure(entry: AIFailureEntry): Promise<void> {
+  const config = getSupabaseServerConfig();
+  if (!config) return;
+
+  try {
+    const response = await fetch(`${config.baseUrl}/rest/v1/ai_usage_log`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${config.serviceKey}`,
+        apikey: config.serviceKey,
+        "Content-Type": "application/json",
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify({
+        provider: entry.provider,
+        model: entry.model,
+        feature: entry.feature,
+        prompt_tokens: 0,
+        completion_tokens: 0,
+        total_tokens: 0,
+        estimated_cost_usd: 0,
+        latency_ms: 0,
+        cached: false,
+        user_id: entry.userId,
+        report_id: entry.reportId ?? null,
+        prompt_version: entry.promptVersion ?? null,
+        success: false,
+        failure_reason: entry.failureReason,
+      }),
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      const body = await response.text().catch(() => "");
+      console.error("[ai.usageLog] failure_insert_failed", { status: response.status, bodyPreview: body.slice(0, 300) });
+    }
+  } catch (error) {
+    console.error("[ai.usageLog] failure_insert_error", {
       message: error instanceof Error ? error.message : "unknown_error",
     });
   }
@@ -122,4 +195,18 @@ export async function getEstimatedSpendUsd(window: SpendWindow): Promise<number>
     });
     return 0;
   }
+}
+
+/**
+ * Combines the day/month spend queries with the configured soft/hard
+ * thresholds (Phase 5.9 Part 6). Callers check `.hardExceeded` to decide
+ * whether to skip the real AI call, and `.softExceeded` to decide whether to
+ * log a warning while still proceeding.
+ */
+export async function checkBudgetStatus(): Promise<BudgetStatus> {
+  const [dailySpendUsd, monthlySpendUsd] = await Promise.all([
+    getEstimatedSpendUsd("day"),
+    getEstimatedSpendUsd("month"),
+  ]);
+  return evaluateBudgetStatus(dailySpendUsd, monthlySpendUsd, getAIGovernanceConfig());
 }

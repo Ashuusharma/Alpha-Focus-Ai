@@ -8,8 +8,24 @@ export type VisionCacheLookup = {
   promptVersion: string;
 };
 
+export type VisionCacheOriginalMetrics = {
+  promptTokens: number;
+  completionTokens: number;
+  costUsd: number;
+  latencyMs: number;
+};
+
 export type VisionCacheEntry = VisionCacheLookup & {
   analysisResult: unknown;
+  /** The real cost/latency/tokens of the call that produced this result —
+   *  stored so a later cache hit can report accurate savings (Phase 5.9 Part 4).
+   *  Requires supabase/ai_governance_schema_v2.sql. */
+  original?: VisionCacheOriginalMetrics;
+};
+
+export type VisionCacheHit = {
+  analysisResult: unknown;
+  original: VisionCacheOriginalMetrics | null;
 };
 
 const DEFAULT_TTL_MS = Number(process.env.VISION_CACHE_TTL_MS || 24 * 60 * 60 * 1000);
@@ -39,13 +55,16 @@ export function computeImageSetHash(buffers: Buffer[]): string {
  * prompt version is a guaranteed miss, never a stale hit, because all four
  * are part of both the lookup and the table's unique constraint.
  */
-export async function getCachedVisionResult(lookup: VisionCacheLookup): Promise<unknown | null> {
+export async function getCachedVisionResult(lookup: VisionCacheLookup): Promise<VisionCacheHit | null> {
   const config = getSupabaseServerConfig();
   if (!config) return null;
 
   try {
     const url = new URL(`${config.baseUrl}/rest/v1/vision_analysis_cache`);
-    url.searchParams.set("select", "analysis_result,expires_at");
+    url.searchParams.set(
+      "select",
+      "analysis_result,expires_at,original_prompt_tokens,original_completion_tokens,original_cost_usd,original_latency_ms"
+    );
     url.searchParams.set("image_hash", `eq.${lookup.imageHash}`);
     url.searchParams.set("category", `eq.${lookup.category}`);
     url.searchParams.set("vision_model", `eq.${lookup.visionModel}`);
@@ -59,12 +78,35 @@ export async function getCachedVisionResult(lookup: VisionCacheLookup): Promise<
 
     if (!response.ok) return null;
 
-    const rows = (await response.json()) as Array<{ analysis_result: unknown; expires_at: string }>;
+    const rows = (await response.json()) as Array<{
+      analysis_result: unknown;
+      expires_at: string;
+      original_prompt_tokens: number | null;
+      original_completion_tokens: number | null;
+      original_cost_usd: number | string | null;
+      original_latency_ms: number | null;
+    }>;
     const row = rows[0];
     if (!row) return null;
     if (new Date(row.expires_at).getTime() <= Date.now()) return null;
 
-    return row.analysis_result;
+    const hasOriginal =
+      row.original_prompt_tokens != null &&
+      row.original_completion_tokens != null &&
+      row.original_cost_usd != null &&
+      row.original_latency_ms != null;
+
+    return {
+      analysisResult: row.analysis_result,
+      original: hasOriginal
+        ? {
+            promptTokens: Number(row.original_prompt_tokens),
+            completionTokens: Number(row.original_completion_tokens),
+            costUsd: Number(row.original_cost_usd),
+            latencyMs: Number(row.original_latency_ms),
+          }
+        : null,
+    };
   } catch (error) {
     console.error("[ai.visionCache] lookup_error", {
       message: error instanceof Error ? error.message : "unknown_error",
@@ -93,6 +135,10 @@ export async function setCachedVisionResult(entry: VisionCacheEntry, ttlMs: numb
         prompt_version: entry.promptVersion,
         analysis_result: entry.analysisResult,
         expires_at: new Date(Date.now() + ttlMs).toISOString(),
+        original_prompt_tokens: entry.original?.promptTokens ?? null,
+        original_completion_tokens: entry.original?.completionTokens ?? null,
+        original_cost_usd: entry.original?.costUsd ?? null,
+        original_latency_ms: entry.original?.latencyMs ?? null,
       }),
       cache: "no-store",
     });

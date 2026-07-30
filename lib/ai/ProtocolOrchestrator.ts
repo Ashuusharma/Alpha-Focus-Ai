@@ -15,7 +15,7 @@ import {
 } from "@/lib/ai/protocolGovernance";
 import { getAIConfig } from "@/lib/ai/config";
 import { getAIGovernanceConfig } from "@/lib/ai/aiGovernanceConfig";
-import { getEstimatedSpendUsd } from "@/lib/ai/aiUsageLog";
+import { checkBudgetStatus, recordAIFailure } from "@/lib/ai/aiUsageLog";
 
 type OrchestratorStatus = "ok" | "fallback";
 
@@ -232,16 +232,19 @@ export async function generateProtocolWithOrchestrator(input: ProtocolInput): Pr
   }
 
   const governance = getAIGovernanceConfig();
-  const [dailySpend, monthlySpend] = await Promise.all([
-    getEstimatedSpendUsd("day"),
-    getEstimatedSpendUsd("month"),
-  ]);
-  if (dailySpend >= governance.dailyBudgetUsd || monthlySpend >= governance.monthlyBudgetUsd) {
-    console.error("[protocol.orchestrator] budget_exceeded", {
-      dailySpend,
-      dailyBudgetUsd: governance.dailyBudgetUsd,
-      monthlySpend,
-      monthlyBudgetUsd: governance.monthlyBudgetUsd,
+  const budget = await checkBudgetStatus();
+  if (budget.softExceeded) {
+    console.warn("[protocol.orchestrator] budget_soft_exceeded", budget);
+  }
+  if (budget.hardExceeded) {
+    console.error("[protocol.orchestrator] budget_hard_exceeded", budget);
+    await recordAIFailure({
+      provider: "openai",
+      model: selected.model,
+      feature: "protocol",
+      userId: null,
+      promptVersion,
+      failureReason: "hard_budget_exceeded",
     });
     return fallbackResult(input, selected.model, promptVersion, cacheKey, "budget_exceeded", Date.now() - startedAt);
   }
@@ -249,7 +252,13 @@ export async function generateProtocolWithOrchestrator(input: ProtocolInput): Pr
   const prompt = trimPromptToLimit(buildProtocolPrompt(input), config.maxPromptChars);
   // Capped by the shared governance ceiling — whichever is lower wins, same
   // pattern as lib/ai/visionAnalysis.ts's VISION_MAX_TOKENS.
-  const maxTokens = Math.min(Number(process.env.PROTOCOL_AI_MAX_TOKENS || 2200), governance.maxTokensPerRequest);
+  // 2200 (the old default) was measured to be *below* the typical
+  // requirement, not just an occasional edge case: 4 real generations across
+  // different categories needed 2134-2966 completion tokens (avg ~2525), so
+  // most requests were truncating, not a rare tail. 3800 gives ~28% headroom
+  // over the measured max, combined with the verbosity limits added to
+  // buildProtocolPrompt() above (Phase 5.9 truncation fix).
+  const maxTokens = Math.min(Number(process.env.PROTOCOL_AI_MAX_TOKENS || 3800), governance.maxTokensPerRequest);
 
   console.info("[protocol.orchestrator] ai_config_resolved", {
     baseUrl: maskBaseUrl(aiConfig.baseUrl),
@@ -371,6 +380,19 @@ export async function generateProtocolWithOrchestrator(input: ProtocolInput): Pr
     completionTokens: 0,
     costEstimateUsd: 0,
     latencyMs: Date.now() - startedAt,
+  });
+
+  // failureReason keeps the raw error text (not pre-bucketed) so the admin
+  // dashboard can pattern-match truncation ("Unterminated string" /
+  // "Unexpected end of JSON") separately from other failure classes while
+  // still preserving full detail for debugging.
+  await recordAIFailure({
+    provider: "openai",
+    model: selected.model,
+    feature: "protocol",
+    userId: null,
+    promptVersion,
+    failureReason: lastError,
   });
 
   return fallbackResult(input, selected.model, promptVersion, cacheKey, lastError, Date.now() - startedAt);

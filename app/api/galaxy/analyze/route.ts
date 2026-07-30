@@ -7,7 +7,7 @@ import { analyzePhotosWithVision, VISION_PROMPT_VERSION, VISION_TEMPERATURE } fr
 import { uploadPreparedImageForVision, deleteUploadedImage, UploadPreparedImageResult } from "@/lib/ai/uploadPreparedImageForVision";
 import { getVisionAIConfig } from "@/lib/ai/config";
 import { computeImageSetHash, getCachedVisionResult, setCachedVisionResult } from "@/lib/ai/visionCache";
-import { recordAIUsage, getEstimatedSpendUsd } from "@/lib/ai/aiUsageLog";
+import { recordAIUsage, checkBudgetStatus, recordAIFailure } from "@/lib/ai/aiUsageLog";
 import { getAIGovernanceConfig, estimateCostUsd } from "@/lib/ai/aiGovernanceConfig";
 import { VisionAnalysisResult, visionAnalysisResultSchema, VISION_ANALYSIS_SCHEMA_VERSION } from "@/types/visionAnalysis";
 
@@ -411,12 +411,15 @@ export async function POST(request: NextRequest) {
     // Left empty on full success — the uploaded image is the response's
     // annotatedImageUrl at that point and must NOT be deleted.
     let uploadedForCleanup: UploadPreparedImageResult[] = [];
+    // Hoisted so the catch block (used for the failure-tracking log) can
+    // still report which model was targeted, same reasoning as
+    // uploadedForCleanup above.
+    let visionModelForCache = "unknown";
 
     try {
       console.info("[vision] prepare_started", { imageCount: parsedImages.length, analyzerType: body.analyzerType });
 
       const imageHash = computeImageSetHash(parsedImages.map((p) => p.bytes));
-      let visionModelForCache = "unknown";
       try {
         visionModelForCache = getVisionAIConfig().model;
       } catch {
@@ -426,13 +429,13 @@ export async function POST(request: NextRequest) {
         // error again, which the outer catch already handles.
       }
 
-      const cachedResult = await getCachedVisionResult({
+      const cachedHit = await getCachedVisionResult({
         imageHash,
         category: body.analyzerType,
         visionModel: visionModelForCache,
         promptVersion: VISION_PROMPT_VERSION,
       });
-      const cacheValidation = cachedResult ? visionAnalysisResultSchema.safeParse(cachedResult) : null;
+      const cacheValidation = cachedHit ? visionAnalysisResultSchema.safeParse(cachedHit.analysisResult) : null;
       const cacheHit = Boolean(cacheValidation?.success);
       console.info("[vision] cache_check", { imageHash, category: body.analyzerType, hit: cacheHit });
 
@@ -467,7 +470,15 @@ export async function POST(request: NextRequest) {
         selectedModel = visionModelForCache;
         tokenUsage = null;
         visionDurationMs = 0;
-        console.info("[vision] cache_hit", { imageHash, category: body.analyzerType, model: selectedModel });
+        const original = cachedHit?.original ?? null;
+        console.info("[vision] cache_hit", {
+          imageHash,
+          category: body.analyzerType,
+          model: selectedModel,
+          latencySavedMs: original?.latencyMs ?? null,
+          tokensSaved: original ? original.promptTokens + original.completionTokens : null,
+          costSavedUsd: original?.costUsd ?? null,
+        });
 
         await recordAIUsage({
           provider: "openai",
@@ -484,20 +495,23 @@ export async function POST(request: NextRequest) {
           promptVersion: VISION_PROMPT_VERSION,
           temperature: VISION_TEMPERATURE,
           responseSchemaVersion: VISION_ANALYSIS_SCHEMA_VERSION,
+          imageHash,
+          category: body.analyzerType,
+          latencySavedMs: original?.latencyMs ?? null,
+          tokensSaved: original ? original.promptTokens + original.completionTokens : null,
+          costSavedUsd: original?.costUsd ?? null,
         });
       } else {
-        const governance = getAIGovernanceConfig();
-        const [dailySpend, monthlySpend] = await Promise.all([
-          getEstimatedSpendUsd("day"),
-          getEstimatedSpendUsd("month"),
-        ]);
-        if (dailySpend >= governance.dailyBudgetUsd || monthlySpend >= governance.monthlyBudgetUsd) {
-          console.error("[vision] budget_exceeded", {
-            dailySpend,
-            dailyBudgetUsd: governance.dailyBudgetUsd,
-            monthlySpend,
-            monthlyBudgetUsd: governance.monthlyBudgetUsd,
-          });
+        const budget = await checkBudgetStatus();
+        if (budget.softExceeded) {
+          console.warn("[vision] budget_soft_exceeded", budget);
+        }
+        if (budget.hardExceeded) {
+          console.error("[vision] budget_hard_exceeded", budget);
+          // Deliberately not calling recordAIFailure here — throwing lets
+          // the outer catch block's single recordAIFailure call handle it
+          // (message "vision_budget_exceeded" is just as queryable), so this
+          // event isn't logged twice.
           throw new Error("vision_budget_exceeded");
         }
 
@@ -520,15 +534,22 @@ export async function POST(request: NextRequest) {
         tokenUsage = visionOutcome.metadata.tokenUsage;
         visionDurationMs = visionOutcome.metadata.latencyMs;
 
+        const costEstimateUsd = estimateCostUsd(selectedModel, tokenUsage?.promptTokens ?? 0, tokenUsage?.completionTokens ?? 0);
+
         await setCachedVisionResult({
           imageHash,
           category: body.analyzerType,
           visionModel: selectedModel,
           promptVersion: VISION_PROMPT_VERSION,
           analysisResult: visionResult,
+          original: {
+            promptTokens: tokenUsage?.promptTokens ?? 0,
+            completionTokens: tokenUsage?.completionTokens ?? 0,
+            costUsd: costEstimateUsd,
+            latencyMs: visionDurationMs,
+          },
         });
 
-        const costEstimateUsd = estimateCostUsd(selectedModel, tokenUsage?.promptTokens ?? 0, tokenUsage?.completionTokens ?? 0);
         await recordAIUsage({
           provider: "openai",
           model: selectedModel,
@@ -544,6 +565,8 @@ export async function POST(request: NextRequest) {
           promptVersion: VISION_PROMPT_VERSION,
           temperature: VISION_TEMPERATURE,
           responseSchemaVersion: VISION_ANALYSIS_SCHEMA_VERSION,
+          imageHash,
+          category: body.analyzerType,
         });
       }
 
@@ -575,9 +598,19 @@ export async function POST(request: NextRequest) {
       });
       return NextResponse.json(normalized);
     } catch (visionError) {
+      const failureMessage = visionError instanceof Error ? visionError.message : "unknown_error";
       console.error("[vision] fallback_to_galaxy", {
-        message: visionError instanceof Error ? visionError.message : "unknown_error",
+        message: failureMessage,
         name: visionError instanceof Error ? visionError.name : undefined,
+      });
+
+      await recordAIFailure({
+        provider: "openai",
+        model: visionModelForCache,
+        feature: "vision",
+        userId: auth?.userId ?? null,
+        promptVersion: VISION_PROMPT_VERSION,
+        failureReason: failureMessage,
       });
 
       if (uploadedForCleanup.length) {

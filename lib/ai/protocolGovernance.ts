@@ -416,6 +416,18 @@ export function buildProtocolPrompt(input: ProtocolInput): string {
     "- monthlyRecoveryPlan must align to routineIntelligence and knowledgePack.routineTemplates",
     "- thingsToAvoid and dietPlan must align to knowledgePack contraindications/lifestyle guidance",
     "- Keep wording concise, clinically safe, and practical",
+    // Added in the Phase 5.9 truncation fix: measured across real generations,
+    // monthlyRecoveryPlan alone was ~45-55% of total output and the single
+    // largest source of completion tokens, with thingsToAvoid second. The
+    // schema's own array bounds allow far more items than the model was
+    // actually using productively — these limits ask for the terser end of
+    // what the schema already permits, they do not change the schema itself.
+    "Length limits (apply strictly, these keep the report inside its token budget):",
+    "- Every \"why\"/\"whyAvoid\"/\"whyItWorks\"/\"effectOnRecovery\"/\"betterAlternative\" field: one sentence, under 18 words.",
+    "- monthlyRecoveryPlan: each step's \"steps\" array max 3 items, \"mistakesToAvoid\" max 2 items, \"escalationCues\" max 2 items.",
+    "- thingsToAvoid: max 2 items per category (food/habits/environment/productMistakes).",
+    "- mainResolvingIngredients: max 2 ingredients, \"safetyNotes\" max 2 items each.",
+    "- dietPlan arrays (breakfast/lunch/dinner/snacks/wellnessGuidance): max 2 items each.",
     "Canonical ClinicalProfile JSON:",
     JSON.stringify(canonicalClinicalProfile),
   ].join("\n");

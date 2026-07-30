@@ -1,8 +1,10 @@
 import "server-only";
 
 export type AIGovernanceConfig = {
-  dailyBudgetUsd: number;
-  monthlyBudgetUsd: number;
+  softDailyBudgetUsd: number;
+  hardDailyBudgetUsd: number;
+  softMonthlyBudgetUsd: number;
+  hardMonthlyBudgetUsd: number;
   maxVisionRequestsPerMinute: number;
   maxProtocolRequestsPerMinute: number;
   maxTokensPerRequest: number;
@@ -28,19 +30,44 @@ export function getAIGovernanceConfig(): AIGovernanceConfig {
   if (cached) return cached;
 
   cached = {
-    dailyBudgetUsd: envNumber("AI_GOVERNANCE_DAILY_BUDGET_USD", 5),
-    monthlyBudgetUsd: envNumber("AI_GOVERNANCE_MONTHLY_BUDGET_USD", 100),
+    // Soft: continue processing, log a warning, surface it in the admin
+    // dashboard. Hard: skip the real OpenAI call and fall through to the
+    // existing graceful degradation path (Galaxy/baseline for Vision, the
+    // template report for Protocol) — never exceeded intentionally.
+    // Defaults: soft = 80% of hard, matching the Phase 5.8 values as the
+    // hard ceiling so existing budget behavior doesn't silently change.
+    softDailyBudgetUsd: envNumber("AI_GOVERNANCE_SOFT_DAILY_BUDGET_USD", 4),
+    hardDailyBudgetUsd: envNumber("AI_GOVERNANCE_HARD_DAILY_BUDGET_USD", 5),
+    softMonthlyBudgetUsd: envNumber("AI_GOVERNANCE_SOFT_MONTHLY_BUDGET_USD", 80),
+    hardMonthlyBudgetUsd: envNumber("AI_GOVERNANCE_HARD_MONTHLY_BUDGET_USD", 100),
     maxVisionRequestsPerMinute: envNumber("AI_GOVERNANCE_MAX_VISION_RPM", 20),
     maxProtocolRequestsPerMinute: envNumber("AI_GOVERNANCE_MAX_PROTOCOL_RPM", 12),
     // A safety ceiling, not a target — set above both features' own tuned
-    // defaults (Vision: 1200, Protocol: 2200) so it doesn't silently loosen
-    // either one. Each feature caps its own request at
+    // defaults (Vision: 1200, Protocol: 3800 as of the Phase 5.9 truncation
+    // fix — see lib/ai/ProtocolOrchestrator.ts) so it doesn't silently
+    // loosen either one. Each feature caps its own request at
     // min(its own default, this ceiling).
-    maxTokensPerRequest: envNumber("AI_GOVERNANCE_MAX_TOKENS_PER_REQUEST", 2500),
+    maxTokensPerRequest: envNumber("AI_GOVERNANCE_MAX_TOKENS_PER_REQUEST", 4200),
     maxImageSizeMb: envNumber("AI_GOVERNANCE_MAX_IMAGE_SIZE_MB", 6),
   };
 
   return cached;
+}
+
+export type BudgetStatus = {
+  dailySpendUsd: number;
+  monthlySpendUsd: number;
+  softExceeded: boolean;
+  hardExceeded: boolean;
+};
+
+export function evaluateBudgetStatus(dailySpendUsd: number, monthlySpendUsd: number, config: AIGovernanceConfig): BudgetStatus {
+  return {
+    dailySpendUsd,
+    monthlySpendUsd,
+    softExceeded: dailySpendUsd >= config.softDailyBudgetUsd || monthlySpendUsd >= config.softMonthlyBudgetUsd,
+    hardExceeded: dailySpendUsd >= config.hardDailyBudgetUsd || monthlySpendUsd >= config.hardMonthlyBudgetUsd,
+  };
 }
 
 type ModelPricing = { inputPer1k: number; outputPer1k: number };
