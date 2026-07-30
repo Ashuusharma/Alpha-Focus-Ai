@@ -12,6 +12,7 @@ import { evaluateProtocolQuality } from "@/lib/protocol/qualityEvaluation";
 import { buildProtocolVersions } from "@/lib/protocol/versioning";
 import { CLINICAL_PROFILE_SCHEMA_VERSION } from "@/types/clinicalProfile";
 import { PROTOCOL_REPORT_SCHEMA_VERSION } from "@/types/protocolReport";
+import { recordAIUsage } from "@/lib/ai/aiUsageLog";
 
 export async function processNextProtocolJob(): Promise<{ ok: boolean; processed: boolean; jobId?: string; error?: string }> {
   const job = await fetchNextQueuedProtocolJob();
@@ -57,6 +58,25 @@ export async function processNextProtocolJob(): Promise<{ ok: boolean; processed
     }
 
     await markProtocolJobCompleted(job.id, generated.report);
+
+    if (generated.status === "ok") {
+      await recordAIUsage({
+        provider: "openai",
+        model: generated.model,
+        feature: "protocol",
+        promptTokens: generated.tokenUsage.promptTokens,
+        completionTokens: generated.tokenUsage.completionTokens,
+        totalTokens: generated.tokenUsage.totalTokens,
+        estimatedCostUsd: generated.costEstimateUsd,
+        latencyMs: generated.latencyMs,
+        cached: generated.cacheHit,
+        userId: job.user_id,
+        reportId: job.report_id ?? null,
+        promptVersion: generated.promptVersion,
+        temperature: generated.temperature,
+        responseSchemaVersion: PROTOCOL_REPORT_SCHEMA_VERSION,
+      });
+    }
 
     await writeAuditLog({
       action: "protocol.job.process",

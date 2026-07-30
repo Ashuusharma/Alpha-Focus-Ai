@@ -180,31 +180,137 @@ export function selectProtocolModel(input: ProtocolInput): { tier: ProtocolModel
   return { tier: "mini", model: MODEL_BY_TIER.mini };
 }
 
-export function buildProtocolCacheKey(input: ProtocolInput, promptVersion: string): string {
+// Folds promptVersion, protocolVersion, and model into the key itself
+// (rather than tracking invalidation separately) so a change in any of the
+// three is a guaranteed cache miss, never a stale hit — matching how the
+// Vision cache (lib/ai/visionCache.ts) handles category/model/promptVersion.
+export function buildProtocolCacheKey(
+  input: ProtocolInput,
+  promptVersion: string,
+  protocolVersion: string,
+  model: string
+): string {
   const compact = buildCompactInput(input);
   const digest = createHash("sha256")
-    .update(JSON.stringify({ promptVersion, compact }))
+    .update(JSON.stringify({ promptVersion, protocolVersion, model, compact }))
     .digest("hex");
-  return `protocol:${promptVersion}:${digest}`;
+  return `protocol:${promptVersion}:${protocolVersion}:${model}:${digest}`;
 }
 
-export function getCachedProtocolPayload(cacheKey: string): unknown | null {
-  const found = protocolCache.get(cacheKey);
-  if (!found) return null;
-  if (Date.now() > found.expiresAt) {
-    protocolCache.delete(cacheKey);
+function getSupabaseServerConfig() {
+  const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!baseUrl || !serviceKey) return null;
+  return { baseUrl: baseUrl.replace(/\/$/, ""), serviceKey };
+}
+
+/**
+ * Persistent (Postgres-backed) protocol cache, replacing the previous
+ * in-memory Map — survives restarts and is shared across serverless
+ * instances, unlike process memory. Falls back to the in-memory
+ * `protocolCache` Map (still declared above) only if Supabase env vars are
+ * unavailable, so caching degrades gracefully in that case rather than
+ * throwing.
+ */
+export async function getCachedProtocolPayload(
+  cacheKey: string,
+  meta: { promptVersion: string; protocolVersion: string; model: string }
+): Promise<unknown | null> {
+  const config = getSupabaseServerConfig();
+
+  if (!config) {
+    const found = protocolCache.get(cacheKey);
+    if (!found) return null;
+    if (Date.now() > found.expiresAt) {
+      protocolCache.delete(cacheKey);
+      governanceMetrics.cacheMisses += 1;
+      return null;
+    }
+    governanceMetrics.cacheHits += 1;
+    return found.payload;
+  }
+
+  try {
+    const url = new URL(`${config.baseUrl}/rest/v1/protocol_generation_cache`);
+    url.searchParams.set("select", "report_payload,expires_at");
+    url.searchParams.set("cache_key", `eq.${cacheKey}`);
+    url.searchParams.set("limit", "1");
+
+    const response = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${config.serviceKey}`, apikey: config.serviceKey },
+      cache: "no-store",
+    });
+
+    console.error("[DEBUG protocolCache]", { url: url.toString(), status: response.status, ok: response.ok });
+
+    if (!response.ok) {
+      governanceMetrics.cacheMisses += 1;
+      return null;
+    }
+
+    const rows = (await response.json()) as Array<{ report_payload: unknown; expires_at: string }>;
+    console.error("[DEBUG protocolCache] rows", { rowCount: rows.length, firstRowExpiresAt: rows[0]?.expires_at });
+    const row = rows[0];
+    if (!row || new Date(row.expires_at).getTime() <= Date.now()) {
+      governanceMetrics.cacheMisses += 1;
+      return null;
+    }
+
+    governanceMetrics.cacheHits += 1;
+    return row.report_payload;
+  } catch (error) {
+    console.error("[ai.protocolCache] lookup_error", {
+      message: error instanceof Error ? error.message : "unknown_error",
+    });
     governanceMetrics.cacheMisses += 1;
     return null;
+  } finally {
+    void meta; // reserved for future per-dimension cache-hit breakdowns
   }
-  governanceMetrics.cacheHits += 1;
-  return found.payload;
 }
 
-export function setCachedProtocolPayload(cacheKey: string, payload: unknown, ttlMs: number): void {
-  protocolCache.set(cacheKey, {
-    payload,
-    expiresAt: Date.now() + Math.max(1_000, ttlMs),
-  });
+export async function setCachedProtocolPayload(
+  cacheKey: string,
+  payload: unknown,
+  ttlMs: number,
+  meta: { promptVersion: string; protocolVersion: string; model: string }
+): Promise<void> {
+  const config = getSupabaseServerConfig();
+
+  if (!config) {
+    protocolCache.set(cacheKey, { payload, expiresAt: Date.now() + Math.max(1_000, ttlMs) });
+    return;
+  }
+
+  try {
+    const response = await fetch(`${config.baseUrl}/rest/v1/protocol_generation_cache`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${config.serviceKey}`,
+        apikey: config.serviceKey,
+        "Content-Type": "application/json",
+        Prefer: "resolution=merge-duplicates,return=minimal",
+      },
+      body: JSON.stringify({
+        cache_key: cacheKey,
+        prompt_version: meta.promptVersion,
+        protocol_version: meta.protocolVersion,
+        model: meta.model,
+        report_payload: payload,
+        expires_at: new Date(Date.now() + Math.max(1_000, ttlMs)).toISOString(),
+      }),
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      const body = await response.text().catch(() => "");
+      console.error("[ai.protocolCache] write_failed", { status: response.status, bodyPreview: body.slice(0, 300) });
+    }
+  } catch (error) {
+    console.error("[ai.protocolCache] write_error", {
+      message: error instanceof Error ? error.message : "unknown_error",
+    });
+  }
 }
 
 export function recordProtocolRunMetrics(input: {

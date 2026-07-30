@@ -1,10 +1,12 @@
 import "server-only";
 import { getVisionAIConfig } from "@/lib/ai/config";
+import { getAIGovernanceConfig } from "@/lib/ai/aiGovernanceConfig";
 import { VisionAnalysisResult, visionAnalysisResultSchema } from "@/types/visionAnalysis";
 
 // Bump this whenever buildSystemPrompt/buildUserPrompt change meaningfully,
 // so logged metadata can be correlated to the exact prompt that produced it.
-export const VISION_PROMPT_VERSION = "vision_prompt.v1.0.0";
+export const VISION_PROMPT_VERSION = "vision_prompt.v1.1.0";
+export const VISION_TEMPERATURE = 0.2;
 
 export type VisionTokenUsage = {
   promptTokens: number;
@@ -62,21 +64,37 @@ export class VisionAnalysisError extends Error {
 
 const VISION_TIMEOUT_MS = Number(process.env.VISION_AI_TIMEOUT_MS || 25_000);
 const VISION_MAX_RETRIES = Number(process.env.VISION_AI_MAX_RETRIES || 1);
-const VISION_MAX_TOKENS = Number(process.env.VISION_AI_MAX_TOKENS || 1200);
+// Capped by the shared governance ceiling (lib/ai/aiGovernanceConfig.ts) —
+// whichever is lower wins, so a misconfigured/rising governance limit can
+// never silently loosen this feature's own tuned default, only tighten it.
+const VISION_MAX_TOKENS = Math.min(
+  Number(process.env.VISION_AI_MAX_TOKENS || 1200),
+  getAIGovernanceConfig().maxTokensPerRequest
+);
 const VISION_MAX_IMAGES = 3;
 
+// Trimmed in the Phase 5.8 prompt audit: 1052 -> 837 chars (-20%), measured
+// via real API calls against the same test image, prompt_tokens 3786 -> 3723
+// (-1.7% — image tokens dominate the total, so the text trim's effect on
+// total cost is modest even though the text itself shrank substantially).
+// Output quality unchanged in the measured comparison (same issue/hotspot
+// detection on the same test image). Every clinical/safety instruction
+// (no-diagnosis, no-fabrication, confidence honesty, India climate
+// awareness) is preserved — only wording verbosity was cut.
 function buildSystemPrompt(): string {
   return [
-    "You are a careful visual-observation assistant inside a men's grooming self-analysis app used mainly by Indian users.",
-    "You are not a medical device and must never provide a diagnosis. Describe only what is visibly present in the supplied photo(s).",
-    "If a photo is blurry, poorly lit, doesn't clearly show the relevant area, or you are otherwise uncertain, lower your confidence scores and say so in the summary instead of guessing.",
-    "Never invent findings that aren't visually supported. Returning zero issues is correct and expected when nothing notable is visible.",
-    "Output strict JSON only, matching this shape exactly, with no extra keys and no prose outside the JSON:",
+    "You are a visual-observation assistant in a men's grooming self-analysis app for Indian users. Not a medical device — never diagnose. Describe only what is visibly present in the photo(s).",
+    "If a photo is blurry, poorly lit, or does not clearly show the area, lower confidence and say so in the summary instead of guessing. Never invent unsupported findings — zero issues is a valid, correct result when nothing is visible.",
+    "Output strict JSON only, exactly this shape, no extra keys, no prose:",
     '{"issues":[{"name":string,"confidence":number 0-100,"impact":"minor"|"moderate"|"significant","description":string,"affectedArea":string}],"hotspots":[{"x":number 0-100,"y":number 0-100,"label":string,"severity":"low"|"medium"|"high"}],"confidence":number 0-100,"summary":string}',
-    "x/y are percentages of image width/height locating each hotspot. Keep issues under 6 and hotspots under 8.",
+    "x/y are image-width/height percentages. Max 6 issues, 8 hotspots.",
   ].join(" ");
 }
 
+// 460 -> 282 chars (-39%), same measurement pass as buildSystemPrompt above.
+// Dropped the closing "examine the attached photo(s)" line — redundant once
+// the images are already attached as content parts and the JSON-only
+// instruction is already stated in the system prompt.
 function buildUserPrompt(analyzerType: string, categories: string[], answers?: Record<string, string>): string {
   const categoryLabel = categories.length ? categories.join(", ") : analyzerType;
   const answerLines =
@@ -85,10 +103,8 @@ function buildUserPrompt(analyzerType: string, categories: string[], answers?: R
       : "none provided";
 
   return [
-    `Analyzer focus: ${categoryLabel} (type: ${analyzerType}).`,
-    "The user is based in India, so factor in common climate-linked causes (heat, humidity, pollution, sun exposure) when they're relevant to what you actually observe.",
-    `Questionnaire context, for calibration only — do not restate it as a finding if the photo disagrees: ${answerLines}.`,
-    "Examine the attached photo(s) and return only the JSON object described in the system message.",
+    `Focus: ${categoryLabel} (${analyzerType}). Consider India-relevant climate causes (heat, humidity, pollution, sun) only if relevant to what's visible.`,
+    `Questionnaire context (calibration only, don't restate as fact if the photo disagrees): ${answerLines}.`,
   ].join(" ");
 }
 
@@ -123,7 +139,7 @@ async function callVisionCompletion(input: {
       },
       body: JSON.stringify({
         model: input.model,
-        temperature: 0.2,
+        temperature: VISION_TEMPERATURE,
         max_completion_tokens: input.maxTokens,
         response_format: { type: "json_object" },
         messages: [

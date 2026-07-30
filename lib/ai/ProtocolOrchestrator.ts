@@ -1,6 +1,7 @@
 import { buildFallbackProtocolReport } from "@/lib/protocol/fallbackReport";
 import { ProtocolInput, validateDefaultProtocolOutput } from "@/lib/protocol/contract";
 import { ProtocolReport } from "@/types/protocolReport";
+import { PROTOCOL_ENGINE_VERSION } from "@/lib/protocol/versioning";
 import {
   buildProtocolCacheKey,
   buildProtocolPrompt,
@@ -13,14 +14,20 @@ import {
   trimPromptToLimit,
 } from "@/lib/ai/protocolGovernance";
 import { getAIConfig } from "@/lib/ai/config";
+import { getAIGovernanceConfig } from "@/lib/ai/aiGovernanceConfig";
+import { getEstimatedSpendUsd } from "@/lib/ai/aiUsageLog";
 
 type OrchestratorStatus = "ok" | "fallback";
+
+const PROTOCOL_TEMPERATURE = 0.2;
 
 export type ProtocolOrchestratorResult = {
   report: ProtocolReport;
   status: OrchestratorStatus;
   model: string;
   promptVersion: string;
+  protocolVersion: string;
+  temperature: number;
   cacheKey: string;
   cacheHit: boolean;
   tokenUsage: {
@@ -29,6 +36,7 @@ export type ProtocolOrchestratorResult = {
     totalTokens: number;
   };
   costEstimateUsd: number;
+  latencyMs: number;
   fallbackReason?: string;
 };
 
@@ -65,7 +73,7 @@ async function callChatCompletions(input: {
       },
       body: JSON.stringify({
         model: input.model,
-        temperature: 0.2,
+        temperature: PROTOCOL_TEMPERATURE,
         max_completion_tokens: input.maxTokens,
         response_format: { type: "json_object" },
         messages: [
@@ -107,7 +115,14 @@ function parseAssistantJson(payload: unknown): { parsed: unknown; promptTokens: 
   return { parsed, promptTokens, completionTokens };
 }
 
-function fallbackResult(input: ProtocolInput, model: string, promptVersion: string, cacheKey: string, reason: string): ProtocolOrchestratorResult {
+function fallbackResult(
+  input: ProtocolInput,
+  model: string,
+  promptVersion: string,
+  cacheKey: string,
+  reason: string,
+  latencyMs: number
+): ProtocolOrchestratorResult {
   console.info("[protocol.orchestrator] fallback_enter", {
     model,
     promptVersion,
@@ -129,6 +144,8 @@ function fallbackResult(input: ProtocolInput, model: string, promptVersion: stri
     status: "fallback",
     model,
     promptVersion,
+    protocolVersion: PROTOCOL_ENGINE_VERSION,
+    temperature: PROTOCOL_TEMPERATURE,
     cacheKey,
     cacheHit: false,
     tokenUsage: {
@@ -137,6 +154,7 @@ function fallbackResult(input: ProtocolInput, model: string, promptVersion: stri
       totalTokens: 0,
     },
     costEstimateUsd: 0,
+    latencyMs,
     fallbackReason: reason,
   };
 }
@@ -150,9 +168,16 @@ export async function generateProtocolWithOrchestrator(input: ProtocolInput): Pr
   const startedAt = Date.now();
   const config = getProtocolGovernanceConfig();
   const promptVersion = config.promptVersion;
-  const cacheKey = buildProtocolCacheKey(input, promptVersion);
 
-  const cached = getCachedProtocolPayload(cacheKey);
+  // Model must be known before the cache key is built (the key now includes
+  // it, alongside promptVersion and protocolVersion) — selectProtocolModel
+  // is synchronous/deterministic from `input`, so this is safe to do before
+  // any cache or AI call.
+  const selected = selectProtocolModel(input);
+  const cacheKey = buildProtocolCacheKey(input, promptVersion, PROTOCOL_ENGINE_VERSION, selected.model);
+  const cacheMeta = { promptVersion, protocolVersion: PROTOCOL_ENGINE_VERSION, model: selected.model };
+
+  const cached = await getCachedProtocolPayload(cacheKey, cacheMeta);
   console.info("[protocol.orchestrator] cache_check", {
     cacheKey,
     hit: Boolean(cached),
@@ -172,8 +197,10 @@ export async function generateProtocolWithOrchestrator(input: ProtocolInput): Pr
       return {
         report,
         status: "ok",
-        model: "cache",
+        model: selected.model,
         promptVersion,
+        protocolVersion: PROTOCOL_ENGINE_VERSION,
+        temperature: PROTOCOL_TEMPERATURE,
         cacheKey,
         cacheHit: true,
         tokenUsage: {
@@ -182,6 +209,7 @@ export async function generateProtocolWithOrchestrator(input: ProtocolInput): Pr
           totalTokens: 0,
         },
         costEstimateUsd: 0,
+        latencyMs: Date.now() - startedAt,
       };
     } catch (error) {
       console.error("[protocol.orchestrator] cache_validation_error", {
@@ -200,12 +228,28 @@ export async function generateProtocolWithOrchestrator(input: ProtocolInput): Pr
       message: error instanceof Error ? error.message : "unknown_error",
       stack: error instanceof Error ? error.stack : null,
     });
-    return fallbackResult(input, "fallback-template-v2", promptVersion, cacheKey, "ai_config_missing");
+    return fallbackResult(input, "fallback-template-v2", promptVersion, cacheKey, "ai_config_missing", Date.now() - startedAt);
   }
 
-  const selected = selectProtocolModel(input);
+  const governance = getAIGovernanceConfig();
+  const [dailySpend, monthlySpend] = await Promise.all([
+    getEstimatedSpendUsd("day"),
+    getEstimatedSpendUsd("month"),
+  ]);
+  if (dailySpend >= governance.dailyBudgetUsd || monthlySpend >= governance.monthlyBudgetUsd) {
+    console.error("[protocol.orchestrator] budget_exceeded", {
+      dailySpend,
+      dailyBudgetUsd: governance.dailyBudgetUsd,
+      monthlySpend,
+      monthlyBudgetUsd: governance.monthlyBudgetUsd,
+    });
+    return fallbackResult(input, selected.model, promptVersion, cacheKey, "budget_exceeded", Date.now() - startedAt);
+  }
+
   const prompt = trimPromptToLimit(buildProtocolPrompt(input), config.maxPromptChars);
-  const maxTokens = Number(process.env.PROTOCOL_AI_MAX_TOKENS || 2200);
+  // Capped by the shared governance ceiling — whichever is lower wins, same
+  // pattern as lib/ai/visionAnalysis.ts's VISION_MAX_TOKENS.
+  const maxTokens = Math.min(Number(process.env.PROTOCOL_AI_MAX_TOKENS || 2200), governance.maxTokensPerRequest);
 
   console.info("[protocol.orchestrator] ai_config_resolved", {
     baseUrl: maskBaseUrl(aiConfig.baseUrl),
@@ -266,7 +310,7 @@ export async function generateProtocolWithOrchestrator(input: ProtocolInput): Pr
       const parsed = parseAssistantJson(payload);
       const report = validateDefaultProtocolOutput(parsed.parsed);
 
-      setCachedProtocolPayload(cacheKey, report, config.cacheTtlMs);
+      await setCachedProtocolPayload(cacheKey, report, config.cacheTtlMs, cacheMeta);
 
       const usage = estimateProtocolUsageMetrics({
         tier: selected.tier,
@@ -274,12 +318,14 @@ export async function generateProtocolWithOrchestrator(input: ProtocolInput): Pr
         completionTokens: parsed.completionTokens,
       });
 
+      const latencyMs = Date.now() - startedAt;
+
       recordProtocolRunMetrics({
         ok: true,
         promptTokens: usage.promptTokens,
         completionTokens: usage.completionTokens,
         costEstimateUsd: usage.costEstimateUsd,
-        latencyMs: Date.now() - startedAt,
+        latencyMs,
       });
 
       console.info("[protocol.orchestrator] final_return", {
@@ -296,6 +342,8 @@ export async function generateProtocolWithOrchestrator(input: ProtocolInput): Pr
         status: "ok",
         model: selected.model,
         promptVersion,
+        protocolVersion: PROTOCOL_ENGINE_VERSION,
+        temperature: PROTOCOL_TEMPERATURE,
         cacheKey,
         cacheHit: false,
         tokenUsage: {
@@ -304,6 +352,7 @@ export async function generateProtocolWithOrchestrator(input: ProtocolInput): Pr
           totalTokens: usage.totalTokens,
         },
         costEstimateUsd: usage.costEstimateUsd,
+        latencyMs,
       };
     } catch (error) {
       console.error("[protocol.orchestrator] attempt_error", {
@@ -324,5 +373,5 @@ export async function generateProtocolWithOrchestrator(input: ProtocolInput): Pr
     latencyMs: Date.now() - startedAt,
   });
 
-  return fallbackResult(input, selected.model, promptVersion, cacheKey, lastError);
+  return fallbackResult(input, selected.model, promptVersion, cacheKey, lastError, Date.now() - startedAt);
 }

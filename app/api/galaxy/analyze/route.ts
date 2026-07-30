@@ -3,8 +3,13 @@ import { galaxyAnalyzeSchema } from "@/lib/server/validators";
 import { isRateLimited } from "@/lib/server/rateLimit";
 import { writeAuditLog } from "@/lib/server/auditLog";
 import { getRequestAuth } from "@/lib/auth/requestAuth";
-import { analyzePhotosWithVision } from "@/lib/ai/visionAnalysis";
+import { analyzePhotosWithVision, VISION_PROMPT_VERSION, VISION_TEMPERATURE } from "@/lib/ai/visionAnalysis";
 import { uploadPreparedImageForVision, deleteUploadedImage, UploadPreparedImageResult } from "@/lib/ai/uploadPreparedImageForVision";
+import { getVisionAIConfig } from "@/lib/ai/config";
+import { computeImageSetHash, getCachedVisionResult, setCachedVisionResult } from "@/lib/ai/visionCache";
+import { recordAIUsage, getEstimatedSpendUsd } from "@/lib/ai/aiUsageLog";
+import { getAIGovernanceConfig, estimateCostUsd } from "@/lib/ai/aiGovernanceConfig";
+import { VisionAnalysisResult, visionAnalysisResultSchema, VISION_ANALYSIS_SCHEMA_VERSION } from "@/types/visionAnalysis";
 
 type InputPayload = {
   images: string[];
@@ -29,7 +34,7 @@ type GalaxyHotspot = {
 };
 
 const ALLOWED_IMAGE_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
-const MAX_IMAGE_BYTES = 6 * 1024 * 1024;
+const MAX_IMAGE_BYTES = getAIGovernanceConfig().maxImageSizeMb * 1024 * 1024;
 const MAX_TOTAL_IMAGE_BYTES = 15 * 1024 * 1024;
 
 type ParsedDataUrl = {
@@ -341,7 +346,7 @@ export async function POST(request: NextRequest) {
     const actor = auth?.userId || request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
 
     const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
-    if (isRateLimited(`galaxy:analyze:${actor}`, 20, 60_000)) {
+    if (isRateLimited(`galaxy:analyze:${actor}`, getAIGovernanceConfig().maxVisionRequestsPerMinute, 60_000)) {
       await writeAuditLog({ action: "galaxy.analyze", userId: actor, ok: false, route: "/api/galaxy/analyze", detail: "rate_limited" });
       return NextResponse.json({ error: "rate_limited" }, { status: 429 });
     }
@@ -410,6 +415,27 @@ export async function POST(request: NextRequest) {
     try {
       console.info("[vision] prepare_started", { imageCount: parsedImages.length, analyzerType: body.analyzerType });
 
+      const imageHash = computeImageSetHash(parsedImages.map((p) => p.bytes));
+      let visionModelForCache = "unknown";
+      try {
+        visionModelForCache = getVisionAIConfig().model;
+      } catch {
+        // getVisionAIConfig throws if OPENAI_VISION_MODEL isn't configured —
+        // fine here, the cache lookup below will simply miss and the
+        // analyzePhotosWithVision call further down will throw the same
+        // error again, which the outer catch already handles.
+      }
+
+      const cachedResult = await getCachedVisionResult({
+        imageHash,
+        category: body.analyzerType,
+        visionModel: visionModelForCache,
+        promptVersion: VISION_PROMPT_VERSION,
+      });
+      const cacheValidation = cachedResult ? visionAnalysisResultSchema.safeParse(cachedResult) : null;
+      const cacheHit = Boolean(cacheValidation?.success);
+      console.info("[vision] cache_check", { imageHash, category: body.analyzerType, hit: cacheHit });
+
       const storageUserId = auth?.userId || "anonymous";
       const uploadStartedAt = Date.now();
       const uploaded: UploadPreparedImageResult[] = [];
@@ -431,27 +457,103 @@ export async function POST(request: NextRequest) {
         uploadDurationMs,
       });
 
-      console.info("[vision] request_started", { imageCount: uploaded.length, analyzerType: body.analyzerType });
-      const visionOutcome = await analyzePhotosWithVision({
-        images: uploaded.map((u) => u.uploadedUrl),
-        analyzerType: body.analyzerType,
-        categories,
-        answers: body.answers,
-      });
-      console.info("[vision] request_success", {
-        model: visionOutcome.metadata.model,
-        latencyMs: visionOutcome.metadata.latencyMs,
-        retryCount: visionOutcome.metadata.retryCount,
-        tokenUsage: visionOutcome.metadata.tokenUsage,
-      });
+      let visionResult: VisionAnalysisResult;
+      let selectedModel: string;
+      let tokenUsage: { promptTokens: number; completionTokens: number; totalTokens: number } | null;
+      let visionDurationMs: number;
+
+      if (cacheHit && cacheValidation?.success) {
+        visionResult = cacheValidation.data;
+        selectedModel = visionModelForCache;
+        tokenUsage = null;
+        visionDurationMs = 0;
+        console.info("[vision] cache_hit", { imageHash, category: body.analyzerType, model: selectedModel });
+
+        await recordAIUsage({
+          provider: "openai",
+          model: selectedModel,
+          feature: "vision",
+          promptTokens: 0,
+          completionTokens: 0,
+          totalTokens: 0,
+          estimatedCostUsd: 0,
+          latencyMs: 0,
+          cached: true,
+          userId: auth?.userId ?? null,
+          reportId: null,
+          promptVersion: VISION_PROMPT_VERSION,
+          temperature: VISION_TEMPERATURE,
+          responseSchemaVersion: VISION_ANALYSIS_SCHEMA_VERSION,
+        });
+      } else {
+        const governance = getAIGovernanceConfig();
+        const [dailySpend, monthlySpend] = await Promise.all([
+          getEstimatedSpendUsd("day"),
+          getEstimatedSpendUsd("month"),
+        ]);
+        if (dailySpend >= governance.dailyBudgetUsd || monthlySpend >= governance.monthlyBudgetUsd) {
+          console.error("[vision] budget_exceeded", {
+            dailySpend,
+            dailyBudgetUsd: governance.dailyBudgetUsd,
+            monthlySpend,
+            monthlyBudgetUsd: governance.monthlyBudgetUsd,
+          });
+          throw new Error("vision_budget_exceeded");
+        }
+
+        console.info("[vision] request_started", { imageCount: uploaded.length, analyzerType: body.analyzerType });
+        const visionOutcome = await analyzePhotosWithVision({
+          images: uploaded.map((u) => u.uploadedUrl),
+          analyzerType: body.analyzerType,
+          categories,
+          answers: body.answers,
+        });
+        console.info("[vision] request_success", {
+          model: visionOutcome.metadata.model,
+          latencyMs: visionOutcome.metadata.latencyMs,
+          retryCount: visionOutcome.metadata.retryCount,
+          tokenUsage: visionOutcome.metadata.tokenUsage,
+        });
+
+        visionResult = visionOutcome.result;
+        selectedModel = visionOutcome.metadata.model;
+        tokenUsage = visionOutcome.metadata.tokenUsage;
+        visionDurationMs = visionOutcome.metadata.latencyMs;
+
+        await setCachedVisionResult({
+          imageHash,
+          category: body.analyzerType,
+          visionModel: selectedModel,
+          promptVersion: VISION_PROMPT_VERSION,
+          analysisResult: visionResult,
+        });
+
+        const costEstimateUsd = estimateCostUsd(selectedModel, tokenUsage?.promptTokens ?? 0, tokenUsage?.completionTokens ?? 0);
+        await recordAIUsage({
+          provider: "openai",
+          model: selectedModel,
+          feature: "vision",
+          promptTokens: tokenUsage?.promptTokens ?? 0,
+          completionTokens: tokenUsage?.completionTokens ?? 0,
+          totalTokens: tokenUsage?.totalTokens ?? 0,
+          estimatedCostUsd: costEstimateUsd,
+          latencyMs: visionDurationMs,
+          cached: false,
+          userId: auth?.userId ?? null,
+          reportId: null,
+          promptVersion: VISION_PROMPT_VERSION,
+          temperature: VISION_TEMPERATURE,
+          responseSchemaVersion: VISION_ANALYSIS_SCHEMA_VERSION,
+        });
+      }
 
       const normalized = {
         provider: "galaxy-ai",
-        issues: visionOutcome.result.issues,
-        hotspots: visionOutcome.result.hotspots.length ? visionOutcome.result.hotspots : defaultHotspotsForCategories(categories),
+        issues: visionResult.issues,
+        hotspots: visionResult.hotspots.length ? visionResult.hotspots : defaultHotspotsForCategories(categories),
         annotatedImageUrl: uploaded[0]?.uploadedUrl || body.images[0],
-        confidence: visionOutcome.result.confidence,
-        quality: buildQualitySignal(visionOutcome.result.confidence, visionOutcome.result.issues.length),
+        confidence: visionResult.confidence,
+        quality: buildQualitySignal(visionResult.confidence, visionResult.issues.length),
         // Every captured image was already persisted to Storage as part of
         // the Vision pipeline (uploadPreparedImageForVision), in the same
         // order as the request's `images` array. Exposing all of them (not
@@ -461,15 +563,15 @@ export async function POST(request: NextRequest) {
       };
       console.info("[vision] normalized_response", { issueCount: normalized.issues.length, hotspotCount: normalized.hotspots.length });
 
-      await writeAuditLog({ action: "vision.analyze", userId: actor, ok: true, route: "/api/galaxy/analyze", detail: "openai_vision_success" });
+      await writeAuditLog({ action: "vision.analyze", userId: actor, ok: true, route: "/api/galaxy/analyze", detail: cacheHit ? "openai_vision_cache_hit" : "openai_vision_success" });
       console.info("[vision] completed", {
-        outcome: "vision_success",
-        selectedModel: visionOutcome.metadata.model,
+        outcome: cacheHit ? "vision_cache_hit" : "vision_success",
+        selectedModel,
         fallbackModel: null,
         uploadDurationMs,
-        visionDurationMs: visionOutcome.metadata.latencyMs,
+        visionDurationMs,
         totalDurationMs: Date.now() - requestStartedAt,
-        tokenUsage: visionOutcome.metadata.tokenUsage,
+        tokenUsage,
       });
       return NextResponse.json(normalized);
     } catch (visionError) {

@@ -18,6 +18,8 @@ import {
   protocolRepoReady,
   updateProtocolReport,
 } from "@/lib/server/protocolRepository";
+import { recordAIUsage } from "@/lib/ai/aiUsageLog";
+import { getAIGovernanceConfig } from "@/lib/ai/aiGovernanceConfig";
 
 export const runtime = "nodejs";
 
@@ -49,7 +51,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, error: "protocol_storage_not_configured" }, { status: 500 });
     }
 
-    if (isRateLimited(`protocol:generate:${auth.userId}`, 12, 60_000)) {
+    if (isRateLimited(`protocol:generate:${auth.userId}`, getAIGovernanceConfig().maxProtocolRequestsPerMinute, 60_000)) {
       await writeAuditLog({ action: "protocol.generate", userId: auth.userId, ok: false, route: "/api/protocol/generate", detail: "rate_limited" });
       return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
     }
@@ -262,6 +264,25 @@ export async function POST(request: NextRequest) {
     });
 
     console.info("[protocol.generate] after_ready_update");
+
+    if (generated.status === "ok") {
+      await recordAIUsage({
+        provider: "openai",
+        model: generated.model,
+        feature: "protocol",
+        promptTokens: generated.tokenUsage.promptTokens,
+        completionTokens: generated.tokenUsage.completionTokens,
+        totalTokens: generated.tokenUsage.totalTokens,
+        estimatedCostUsd: generated.costEstimateUsd,
+        latencyMs: generated.latencyMs,
+        cached: generated.cacheHit,
+        userId: auth.userId,
+        reportId: reportRow.id,
+        promptVersion: generated.promptVersion,
+        temperature: generated.temperature,
+        responseSchemaVersion: PROTOCOL_REPORT_SCHEMA_VERSION,
+      });
+    }
 
     if (isDevelopment) {
       console.info("[DEV] report marked ready", {
