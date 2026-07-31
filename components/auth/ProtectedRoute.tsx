@@ -1,8 +1,7 @@
-﻿"use client";
+"use client";
 
-import { useContext, useMemo, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import AuthModal from "@/components/AuthModal";
+import { useContext, useMemo } from "react";
+import { usePathname } from "next/navigation";
 import { AuthContext } from "@/contexts/AuthProvider";
 
 const PROTECTED_PREFIXES = [
@@ -16,55 +15,29 @@ const PROTECTED_PREFIXES = [
   "/saved-scans",
   "/image-analyzer",
   "/compare-results",
+  "/upgrade",
+  "/checkout",
 ];
 
+// The actual security boundary for these prefixes is middleware.ts (SSR,
+// checked via @supabase/ssr's getUser() before the page ever renders) — an
+// unauthenticated request never reaches this component. This just covers
+// the brief window where the request is authenticated (cookie verified by
+// middleware) but AuthProvider's client-side context hasn't hydrated yet.
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
-  const { user, loading } = useContext(AuthContext);
-  const [modalOpen, setModalOpen] = useState(true);
+  const { loading } = useContext(AuthContext);
 
   const isProtected = useMemo(() => {
     if (!pathname) return false;
     return PROTECTED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
   }, [pathname]);
 
-  if (!isProtected) {
-    return <>{children}</>;
-  }
-
-  if (loading) {
+  if (isProtected && loading) {
     return (
       <div className="min-h-[50vh] flex items-center justify-center text-[#6e6e73] text-sm">
         Verifying secure session...
       </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <>
-        <AuthModal
-          isOpen={modalOpen}
-          onClose={() => {
-            setModalOpen(false);
-            router.replace("/");
-          }}
-        />
-        <div className="min-h-[50vh] flex flex-col items-center justify-center gap-3 text-center px-6">
-          <h2 className="text-xl font-semibold text-[#1d1d1f]">Sign in required</h2>
-          <p className="text-sm text-[#6e6e73] max-w-md">
-            This page is protected. Please sign in to continue.
-          </p>
-          <button
-            type="button"
-            onClick={() => setModalOpen(true)}
-            className="rounded-full bg-[#1d1d1f] px-4 py-2 text-sm font-semibold text-white"
-          >
-            Open Sign In
-          </button>
-        </div>
-      </>
     );
   }
 

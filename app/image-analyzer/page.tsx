@@ -42,8 +42,12 @@ type GalaxyAnalyzeResponse = {
   uploadedImageUrls?: string[];
 };
 
-type SubscriptionPlan = "basic" | "plus" | "pro";
+type SubscriptionPlan = "free" | "premium_monthly" | "premium_yearly";
 
+// Advisory pre-check only — avoids a wasted upload/round-trip for a user
+// who's obviously over the cap. The real enforcement is server-side in
+// /api/galaxy/analyze (lib/server/entitlements.ts's canRunAnalyzer), which
+// this client-side Supabase read can't be trusted to replace.
 async function assertMonthlyScanLimit(userId: string) {
   const monthStart = new Date();
   monthStart.setUTCDate(1);
@@ -62,21 +66,20 @@ async function assertMonthlyScanLimit(userId: string) {
       .gte("scan_date", monthStart.toISOString()),
   ]);
 
-  const plan = ((subscription?.plan || "basic") as string).toLowerCase() as SubscriptionPlan;
+  const plan = ((subscription?.plan || "free") as string).toLowerCase() as SubscriptionPlan;
   const isActive = subscription?.active !== false && (!subscription?.expires_at || new Date(subscription.expires_at) > new Date());
-  const effectivePlan: SubscriptionPlan = isActive ? plan : "basic";
+  const effectivePlan: SubscriptionPlan = isActive ? plan : "free";
 
   const monthlyCapByPlan: Record<SubscriptionPlan, number> = {
-    basic: 80,
-    plus: 5,
-    pro: Number.POSITIVE_INFINITY,
+    free: 2,
+    premium_monthly: Number.POSITIVE_INFINITY,
+    premium_yearly: Number.POSITIVE_INFINITY,
   };
 
   const used = Number(count || 0);
   const cap = monthlyCapByPlan[effectivePlan] ?? 2;
   if (used >= cap) {
-    const label = effectivePlan.toUpperCase();
-    throw new Error(`${label} plan limit reached (${used}/${Number.isFinite(cap) ? cap : "inf"} scans this month).`);
+    throw new Error(`Free plan limit reached (${used}/${Number.isFinite(cap) ? cap : "inf"} scans this month). Upgrade to Premium for unlimited scans.`);
   }
 }
 

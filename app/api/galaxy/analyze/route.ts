@@ -9,6 +9,7 @@ import { getVisionAIConfig } from "@/lib/ai/config";
 import { computeImageSetHash, getCachedVisionResult, setCachedVisionResult } from "@/lib/ai/visionCache";
 import { recordAIUsage, checkBudgetStatus, recordAIFailure } from "@/lib/ai/aiUsageLog";
 import { getAIGovernanceConfig, estimateCostUsd } from "@/lib/ai/aiGovernanceConfig";
+import { canRunAnalyzer } from "@/lib/server/entitlements";
 import { VisionAnalysisResult, visionAnalysisResultSchema, VISION_ANALYSIS_SCHEMA_VERSION } from "@/types/visionAnalysis";
 
 type InputPayload = {
@@ -362,6 +363,23 @@ export async function POST(request: NextRequest) {
 
     if (!Array.isArray(body.images) || body.images.length === 0) {
       return NextResponse.json({ error: "No images provided" }, { status: 400 });
+    }
+
+    // Server-side scan-limit enforcement (Phase 6) — previously only
+    // checked client-side in app/image-analyzer/page.tsx, which trusted a
+    // direct browser Supabase read and could be bypassed. This is now the
+    // real security boundary; the client-side check stays as a fast
+    // advisory pre-check only. Anonymous requests aren't capped here (no
+    // user_id to track against), matching prior behavior.
+    if (auth?.userId) {
+      const entitlement = await canRunAnalyzer(auth.userId);
+      if (!entitlement.allowed) {
+        await writeAuditLog({ action: "galaxy.analyze", userId: auth.userId, ok: false, route: "/api/galaxy/analyze", detail: "scan_limit_reached" });
+        return NextResponse.json(
+          { error: "scan_limit_reached", used: entitlement.used, cap: entitlement.cap },
+          { status: 403 }
+        );
+      }
     }
 
     let totalBytes = 0;
