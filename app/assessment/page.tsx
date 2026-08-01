@@ -1,9 +1,9 @@
-﻿"use client";
+"use client";
 
 import { useContext, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ArrowRight, CheckCircle2, Activity } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Activity, Sparkles, Clock } from "lucide-react";
 import { AuthContext } from "@/contexts/AuthProvider";
 import { supabase } from "@/lib/supabaseClient";
 import { hydrateUserData } from "@/lib/hydrateUserData";
@@ -14,8 +14,24 @@ import { getParentCategoryFromChild, resolveClinicalChildCategoryFromAny } from 
 import { getRecoveryLevelDisplay, normalizeRecoveryLevel, type ProtocolToleranceMode } from "@/lib/protocolTemplates";
 import { getRecoveryProgramLevel, saveRecoveryProgramLevel } from "@/lib/userProfile";
 import { getSupabaseAuthHeaders } from "@/lib/auth/clientAuthHeaders";
+import Button from "@/components/ui/Button";
 
 const HOUR_24_MS = 24 * 60 * 60 * 1000;
+// Presentational only — an estimate shown to set expectations, not tied to
+// any real timing measurement or business logic.
+const SECONDS_PER_QUESTION_ESTIMATE = 15;
+
+type SubmitStage = "idle" | "preparing" | "profile" | "generating" | "validating";
+
+// Every stage below is tied to a real, already-existing await in
+// handleSubmit (see the matching comment at each call site) — no fabricated
+// progress, per the phase's explicit instruction.
+const SUBMIT_STAGE_COPY: Record<Exclude<SubmitStage, "idle">, string> = {
+  preparing: "Preparing your assessment",
+  profile: "Building your clinical profile",
+  generating: "Generating your recovery protocol",
+  validating: "Final quality validation",
+};
 
 function getCategoryLabel(categoryId: CategoryId) {
   return categories.find((category) => category.id === categoryId)?.label || categoryId;
@@ -105,9 +121,13 @@ export default function AssessmentPage() {
   const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStage, setSubmitStage] = useState<SubmitStage>("idle");
   const [clinicalContextMessage, setClinicalContextMessage] = useState<string>("");
   const [flowDiagnosticSource, setFlowDiagnosticSource] = useState<"db_scan" | "session_fallback" | null>(null);
   const [selectedProgramLevel, setSelectedProgramLevel] = useState<ProtocolToleranceMode>("intermediate");
+  // Purely presentational gate — a Welcome/orientation moment before the
+  // question flow starts. No data implications; flips once per page load.
+  const [hasStarted, setHasStarted] = useState(false);
 
   const categoryQuestions = useMemo(() => {
     if (!activeCategory) return [];
@@ -122,6 +142,12 @@ export default function AssessmentPage() {
   const progressPercent = categoryQuestions.length > 0
     ? Math.round((answeredCount / categoryQuestions.length) * 100)
     : 0;
+
+  const estimatedMinutes = Math.max(1, Math.ceil((categoryQuestions.length * SECONDS_PER_QUESTION_ESTIMATE) / 60));
+  const estimatedMinutesRemaining = Math.max(
+    0,
+    Math.ceil(((categoryQuestions.length - activeQuestionIndex) * SECONDS_PER_QUESTION_ESTIMATE) / 60)
+  );
 
   useEffect(() => {
     async function validateFlow() {
@@ -212,6 +238,17 @@ export default function AssessmentPage() {
   const activeQuestion = categoryQuestions[activeQuestionIndex];
   const selectedLevelMeta = getRecoveryLevelDisplay(selectedProgramLevel);
 
+  // Section grouping: consecutive questions sharing the same domain are
+  // presented as one visual "section" (no change to the underlying flow —
+  // still one question at a time, same order).
+  const currentSectionStartIndex = useMemo(() => {
+    if (!activeQuestion) return activeQuestionIndex;
+    let start = activeQuestionIndex;
+    while (start > 0 && categoryQuestions[start - 1]?.domain === activeQuestion.domain) start -= 1;
+    return start;
+  }, [activeQuestion, activeQuestionIndex, categoryQuestions]);
+  const isNewSection = activeQuestionIndex === currentSectionStartIndex;
+
   const handleSelectProgramLevel = (level: ProtocolToleranceMode) => {
     const normalized = normalizeRecoveryLevel(level);
     setSelectedProgramLevel(normalized);
@@ -243,6 +280,7 @@ export default function AssessmentPage() {
   const handleSubmit = async () => {
     if (!user || !activeCategory || isSubmitting) return;
     setIsSubmitting(true);
+    setSubmitStage("preparing"); // Stage 1: about to build + insert the assessment payload below.
 
     try {
       const answersWithScore = categoryQuestions.map((question) => {
@@ -291,9 +329,11 @@ export default function AssessmentPage() {
         throw new Error(`Could not save assessment: ${assessmentInsertError.message}`);
       }
 
+      setSubmitStage("profile"); // Stage 2: recalculating clinical scores + hydrating store data below.
       await recalculateClinicalScores(user.id, activeCategory);
-
       await hydrateUserData(user.id);
+
+      setSubmitStage("generating"); // Stage 3: the actual AI protocol generation call below.
       const protocolHeaders = await getSupabaseAuthHeaders({ "Content-Type": "application/json" });
       const shouldUseAsyncProtocolGeneration = true;
       console.info("[assessment] sending_generate_request", {
@@ -319,6 +359,7 @@ export default function AssessmentPage() {
         ok: protocolResponse.ok,
       });
 
+      setSubmitStage("validating"); // Stage 4: validating the response below, same checks as before.
       const protocolPayload = (await protocolResponse.json()) as {
         ok?: boolean;
         reportId?: string;
@@ -338,31 +379,29 @@ export default function AssessmentPage() {
     } catch (error) {
       console.error("Assessment submit failed", error);
       setBlockedMessage("Could not submit assessment. Please retry.");
+      setSubmitStage("idle");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-if (loading) {
+  if (loading) {
     return (
-      <div className="af-page-shell flex h-full items-center justify-center p-6 text-[#ffffff]">
-        <div className="af-surface-card px-6 py-5 text-sm text-[#1d1d1f]">Loading clinical flow validation...</div>
+      <div className="af-page flex h-full min-h-screen items-center justify-center p-6">
+        <div className="af-surface-card px-6 py-5 text-sm text-[var(--ink)]">Loading clinical flow validation...</div>
       </div>
     );
   }
 
   if (blockedMessage || !activeCategory) {
     return (
-      <div className="af-page-shell flex h-full items-center justify-center p-6 text-[#ffffff]">
-        <div className="max-w-xl w-full rounded-3xl border border-[#d8c4bf] bg-white shadow-[0_24px_60px_rgba(140,106,90,0.12)] p-8 text-center space-y-4">
-          <h1 className="text-xl font-bold text-[#1d1d1f]">Assessment Locked</h1>
-          <p className="text-sm text-[#6e6e73]">{blockedMessage || "Flow validation failed."}</p>
-          <button
-            onClick={() => router.push("/image-analyzer")}
-            className="inline-flex items-center justify-center rounded-full bg-[#0071e3] hover:bg-[#0066cc] text-white border border-[#0071e3] px-6 py-3 text-sm font-semibold transition-colors"
-          >
+      <div className="af-page flex h-full min-h-screen items-center justify-center p-6">
+        <div className="max-w-xl w-full rounded-3xl border border-[var(--border-hairline)] bg-white shadow-[var(--shadow-raised)] p-8 text-center space-y-4">
+          <h1 className="text-xl font-bold text-[var(--ink)]">Assessment Locked</h1>
+          <p className="text-sm text-[var(--ink-soft)]">{blockedMessage || "Flow validation failed."}</p>
+          <Button onClick={() => router.push("/image-analyzer")} variant="primary">
             Go to Analyzer
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -370,36 +409,115 @@ if (loading) {
 
   const isAnswered = Boolean(activeQuestion && answers[activeQuestion.id]);
   const isLastQuestion = activeQuestionIndex === categoryQuestions.length - 1;
+  const belowSubmitThreshold = progressPercent < 60;
+
+  // Protocol generation in progress — a dedicated staged loading screen
+  // (Phase 7F), replacing the old inline "Compiling Report..." button text.
+  if (isSubmitting) {
+    return (
+      <div className="af-page flex min-h-screen flex-col items-center justify-center px-4 py-20 text-center">
+        <div className="relative af-card-primary p-8">
+          <div className="h-24 w-24 animate-spin rounded-full border-4 border-[var(--border-hairline)] border-t-[var(--accent-blue)]" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Sparkles className="h-8 w-8 animate-pulse text-[var(--accent-blue)]" />
+          </div>
+        </div>
+
+        <div className="mt-6 max-w-xl space-y-2" role="status" aria-live="polite">
+          <h2 className="text-2xl font-bold text-[var(--ink)]">
+            {submitStage === "idle" ? "Working..." : SUBMIT_STAGE_COPY[submitStage]}...
+          </h2>
+          <p className="text-sm text-[var(--ink-soft)]">This usually takes under a minute. Please keep this tab open.</p>
+        </div>
+
+        <div className="af-card-secondary mt-6 w-full max-w-md p-5">
+          <div className="flex justify-between text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-soft)]">
+            {(Object.keys(SUBMIT_STAGE_COPY) as Exclude<SubmitStage, "idle">[]).map((stage) => (
+              <span key={stage} className={stage === submitStage ? "text-[var(--accent-blue)]" : ""}>
+                {SUBMIT_STAGE_COPY[stage].split(" ")[0]}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Welcome / orientation moment — shown once before the question flow
+  // starts. Purely presentational; flips a local boolean, no data changes.
+  if (!hasStarted) {
+    return (
+      <div className="af-page min-h-screen">
+        <div className="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center px-4 py-16 text-center">
+          <div className="af-card-primary w-full p-8 md:p-10">
+            <span className="af-page-kicker mx-auto">
+              <Sparkles className="h-3.5 w-3.5" />
+              {getCategoryLabel(activeCategory)} Assessment
+            </span>
+            <h1 className="text-clinical-heading mt-4 text-3xl font-extrabold text-[var(--ink)]">Let's build your recovery plan</h1>
+            <p className="mt-3 text-sm leading-relaxed text-[var(--ink-soft)]">{clinicalContextMessage}</p>
+
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <div className="af-surface-soft flex items-center gap-3 p-4">
+                <CheckCircle2 className="h-5 w-5 shrink-0 text-[var(--accent-blue)]" />
+                <div className="text-left">
+                  <p className="text-lg font-bold text-[var(--ink)]">{categoryQuestions.length}</p>
+                  <p className="text-xs text-[var(--ink-soft)]">Questions</p>
+                </div>
+              </div>
+              <div className="af-surface-soft flex items-center gap-3 p-4">
+                <Clock className="h-5 w-5 shrink-0 text-[var(--accent-blue)]" />
+                <div className="text-left">
+                  <p className="text-lg font-bold text-[var(--ink)]">~{estimatedMinutes} min</p>
+                  <p className="text-xs text-[var(--ink-soft)]">Estimated time</p>
+                </div>
+              </div>
+            </div>
+
+            <p className="mt-5 text-xs text-[var(--ink-soft)]">
+              Answer honestly based on the last 2-4 weeks — this shapes every recommendation in your protocol.
+            </p>
+
+            <Button onClick={() => setHasStarted(true)} variant="primary" size="lg" className="mt-6 w-full justify-center">
+              Begin Assessment <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="af-page-shell flex flex-col h-full w-full animate-in fade-in duration-700 min-h-screen text-[#ffffff]">
-      
+    <div className="af-page flex min-h-screen w-full flex-col animate-in fade-in duration-700">
       {/* HEADER PROGRESS BAR */}
-      <div className="sticky top-0 z-30 bg-[#f5f5f7] border-b border-[#d9d9de]">
+      <div className="sticky top-0 z-30 border-b border-[var(--border-hairline)] bg-white/90 backdrop-blur-md">
         <div className="max-w-3xl mx-auto px-6 py-4 space-y-4">
-          <div className="flex items-start justify-between">
+          <div className="flex items-start justify-between gap-3">
             <div className="space-y-1">
-              <h1 className="text-clinical-heading text-xl font-extrabold text-[#1d1d1f] tracking-tight">Clinical Assessment - {getCategoryLabel(activeCategory)}</h1>
-              <p className="text-xs text-[#6e6e73]">Category-locked protocol scoring with weighted domain inputs.</p>
+              <h1 className="text-clinical-heading text-xl font-extrabold text-[var(--ink)] tracking-tight">Clinical Assessment - {getCategoryLabel(activeCategory)}</h1>
+              <p className="text-xs text-[var(--ink-soft)]">Category-locked protocol scoring with weighted domain inputs.</p>
             </div>
-            <div className="flex flex-col items-end">
-               <span className="text-xs font-bold text-[#0071e3] bg-white px-2 py-1 rounded-md border border-[#0071e3]">{answeredCount}/{categoryQuestions.length} answered</span>
+            <div className="flex shrink-0 flex-col items-end gap-1">
+              <span className="text-xs font-bold text-[var(--accent-blue)] bg-white px-2 py-1 rounded-md border border-[var(--accent-blue)]">{answeredCount}/{categoryQuestions.length} answered</span>
+              <span className="flex items-center gap-1 text-[10px] text-[var(--ink-soft)]">
+                <Clock className="h-3 w-3" /> ~{estimatedMinutesRemaining} min left
+              </span>
             </div>
           </div>
-          
-           <div className="af-surface-soft px-4 py-3 text-xs text-[#1d1d1f] flex items-center gap-3">
-             <Activity className="w-4 h-4 text-[#0071e3]" />
+
+           <div className="af-surface-soft px-4 py-3 text-xs text-[var(--ink)] flex items-center gap-3">
+             <Activity className="w-4 h-4 text-[var(--accent-blue)]" />
             {clinicalContextMessage || "We detected early signs. Let's understand your daily behavior drivers."}
           </div>
 
           <div className="af-surface-card p-4">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6e6e73]">Recovery Track</p>
-                <p className="mt-1 text-sm font-semibold text-[#1d1d1f]">{selectedLevelMeta.label}</p>
-                <p className="mt-1 max-w-xl text-xs leading-relaxed text-[#6e6e73]">{selectedLevelMeta.description} This selection is saved to your profile and used by the 30-day planner after assessment.</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-soft)]">Recovery Track</p>
+                <p className="mt-1 text-sm font-semibold text-[var(--ink)]">{selectedLevelMeta.label}</p>
+                <p className="mt-1 max-w-xl text-xs leading-relaxed text-[var(--ink-soft)]">{selectedLevelMeta.description} This selection is saved to your profile and used by the 30-day planner after assessment.</p>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Recovery track">
                 {(["beginner", "intermediate", "advanced"] as ProtocolToleranceMode[]).map((level) => {
                   const option = getRecoveryLevelDisplay(level);
                   const active = selectedProgramLevel === level;
@@ -408,8 +526,10 @@ if (loading) {
                     <button
                       key={level}
                       type="button"
+                      role="radio"
+                      aria-checked={active}
                       onClick={() => handleSelectProgramLevel(level)}
-                      className={`rounded-xl px-4 py-2 text-left transition-all ${active ? "bg-[#0071e3] text-white" : "af-surface-soft text-[#1d1d1f] hover:text-[#1d1d1f]"}`}
+                      className={`rounded-xl px-4 py-2 text-left transition-all ${active ? "bg-[var(--accent-blue)] text-white" : "af-surface-soft text-[var(--ink)] hover:text-[var(--ink)]"}`}
                     >
                       <span className="block text-[10px] font-black uppercase tracking-widest">{option.label}</span>
                     </button>
@@ -418,22 +538,29 @@ if (loading) {
               </div>
             </div>
           </div>
-          
+
           {flowDiagnosticSource && (
-            <p className="text-[10px] uppercase tracking-wider text-[#6e6e73]">
-              Diagnostic mode: <span className="text-[#0071e3]">{flowDiagnosticSource === "db_scan" ? "DB scan validated" : "Session fallback"}</span>
+            <p className="text-[10px] uppercase tracking-wider text-[var(--ink-soft)]">
+              Diagnostic mode: <span className="text-[var(--accent-blue)]">{flowDiagnosticSource === "db_scan" ? "DB scan validated" : "Session fallback"}</span>
             </p>
           )}
-          
-          <div className="af-progress-track w-full h-1.5 border border-[#e3d8c8]">
+
+          <div
+            className="af-progress-track w-full h-1.5 border border-[var(--border-hairline)]"
+            role="progressbar"
+            aria-valuenow={progressPercent}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label="Assessment progress"
+          >
             <div className="af-progress-fill transition-all duration-500 ease-out" style={{ width: `${progressPercent}%` }} />
           </div>
         </div>
       </div>
 
-      <main className="flex-1 max-w-3xl mx-auto w-full px-6 py-10 relative">
+      <main className="flex-1 max-w-3xl mx-auto w-full px-6 py-10 relative pb-28 md:pb-10">
         {/* Glow effect */}
-        <div className="absolute top-[10%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-[#99c9ff]/25 blur-[120px] rounded-full pointer-events-none" />
+        <div className="absolute top-[10%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-[var(--accent-blue-soft)]/25 blur-[120px] rounded-full pointer-events-none" />
 
         <AnimatePresence mode="wait">
           {activeQuestion && (
@@ -442,61 +569,68 @@ if (loading) {
               initial={{ opacity: 0, scale: 0.98, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.98, y: -10 }}
-              transition={{ duration: 0.3 }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
               className="af-surface-card relative p-6 md:p-8 space-y-6"
             >
-              <div className="flex items-center justify-between border-b border-[#e0e0e4] pb-4">
+              <div className="flex items-center justify-between border-b border-[var(--border-hairline)] pb-4">
                 <button
                   onClick={handleBack}
-                  className="inline-flex items-center gap-2 text-xs font-semibold text-[#1d1d1f] hover:text-[#1d1d1f] transition-colors"
+                  className="inline-flex items-center gap-2 text-xs font-semibold text-[var(--ink)] hover:text-[var(--accent-blue)] transition-colors"
                 >
                   <ArrowLeft className="w-4 h-4" /> Back
                 </button>
                 <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-[#2997ff] animate-pulse"></span>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#0071e3]">
+                    <span className="w-2 h-2 rounded-full bg-[var(--accent-blue-soft)] animate-pulse"></span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--accent-blue)]">
                     {getClinicalRelevance(activeQuestion.id)} relevance
                   </span>
                 </div>
               </div>
 
+              {/* Section marker — only shown when the topic domain changes,
+                  giving a "moving through distinct sections" feel without
+                  altering the underlying one-question-at-a-time flow. */}
+              {isNewSection && (
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--accent-green)]">
+                  Section - {activeQuestion.domain.replace(/_/g, " ")}
+                </p>
+              )}
+
               <div className="space-y-4">
-                <div className="flex items-center justify-between text-[11px] uppercase tracking-wider text-[#6e6e73]">
+                <div className="flex items-center justify-between text-[11px] uppercase tracking-wider text-[var(--ink-soft)]">
                   <span>Question {activeQuestionIndex + 1} of {categoryQuestions.length}</span>
                   <span>{Math.max(0, categoryQuestions.length - (activeQuestionIndex + 1))} remaining</span>
                 </div>
-                <div className="inline-block px-2 py-1 rounded border border-[#ddd2c2] bg-[rgba(255,252,246,0.72)] text-[10px] uppercase tracking-wider text-[#6e6e73]">
-                  Domain: <span className="text-[#1d1d1f]">{activeQuestion.domain.replace(/_/g, " ")}</span>
+                <div className="inline-block px-2 py-1 rounded border border-[var(--border-hairline)] bg-[var(--tint-warm)] text-[10px] uppercase tracking-wider text-[var(--ink-soft)]">
+                  Domain: <span className="text-[var(--ink)]">{activeQuestion.domain.replace(/_/g, " ")}</span>
                 </div>
-                <h2 className="text-2xl font-bold text-[#1d1d1f] leading-snug">{activeQuestion.text}</h2>
-                <div className="flex items-center gap-4 text-xs text-[#6e6e73]">
-                  <span className="flex items-center gap-1.5"><Activity className="w-3.5 h-3.5 text-[#0071e3]" /> W-{activeQuestion.weight.toFixed(1)}</span>
-                  <span className="w-1 h-1 rounded-full bg-[#c8bcab]"></span>
+                <h2 className="text-2xl font-bold text-[var(--ink)] leading-snug">{activeQuestion.text}</h2>
+                <div className="flex items-center gap-4 text-xs text-[var(--ink-soft)]">
+                  <span className="flex items-center gap-1.5"><Activity className="w-3.5 h-3.5 text-[var(--accent-blue)]" /> W-{activeQuestion.weight.toFixed(1)}</span>
+                  <span className="w-1 h-1 rounded-full bg-[var(--border-hairline)]"></span>
                   <span>Answer based on recent 2-4 weeks.</span>
                 </div>
               </div>
 
-              <div className="space-y-3 pt-4">
+              <div className="space-y-3 pt-4" role="radiogroup" aria-label={activeQuestion.text}>
                 {activeQuestion.options.map((option) => {
                   const selected = answers[activeQuestion.id] === option.label;
                   return (
                     <button
                       key={option.label}
                       onClick={() => handleSelectAnswer(option.label)}
+                      role="radio"
+                      aria-checked={selected}
                       className={`w-full rounded-2xl border px-5 py-4 text-left transition-all duration-300 relative overflow-hidden group ${
                         selected
-                          ? "border-[#0071e3] bg-[#eef5ff]"
-                          : "border-[#d9d9de] bg-white hover:border-[#bfc2cc] hover:bg-white"
+                          ? "border-[var(--accent-blue)] bg-[var(--bg-wash-start)]"
+                          : "border-[var(--border-hairline)] bg-white hover:border-[var(--ink-soft)]/40 hover:bg-white"
                       }`}
                     >
-                      {selected && <div className="absolute inset-0 bg-[#eef5ff] pointer-events-none" />}
                       <div className="relative z-10 flex items-center justify-between gap-3">
-                        <span className={`text-sm font-medium transition-colors ${selected ? "text-[#0071e3]" : "text-[#1d1d1f] group-hover:text-[#1d1d1f]"}`}>{option.label}</span>
-                        <div className="flex items-center gap-3">
-                           <span className={`text-[10px] font-mono px-2 py-1 rounded ${selected ? "bg-[#eef5ff] text-[#0071e3]" : "bg-[#f5f5f7] text-[#1d1d1f]"}`}>SC {option.score}</span>
-                           <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${selected ? "border-[#0071e3]" : "border-[#b8bac4]"}`}>
-                             {selected && <div className="w-2 h-2 bg-[#0071e3] rounded-full" />}
-                           </div>
+                        <span className={`text-sm font-medium transition-colors ${selected ? "text-[var(--accent-blue)]" : "text-[var(--ink)]"}`}>{option.label}</span>
+                        <div className={`w-4 h-4 shrink-0 rounded-full border flex items-center justify-center ${selected ? "border-[var(--accent-blue)]" : "border-[var(--ink-soft)]/40"}`}>
+                          {selected && <div className="w-2 h-2 bg-[var(--accent-blue)] rounded-full" />}
                         </div>
                       </div>
                     </button>
@@ -504,25 +638,26 @@ if (loading) {
                 })}
               </div>
 
-              <div className="pt-6 flex justify-end">
-                {!isLastQuestion ? (
-                  <button
-                    onClick={handleContinue}
-                    disabled={!isAnswered}
-                    className="inline-flex items-center gap-2 rounded-xl bg-[#f5f5f7] text-[#1d1d1f] px-8 py-3 text-sm font-bold border border-[#cfd1db] transition-all disabled:opacity-30 disabled:pointer-events-none"
-                  >
-                    Next Query <ArrowRight className="w-4 h-4" />
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleSubmit}
-                    disabled={!isAnswered || isSubmitting || progressPercent < 60}
-                    className="relative overflow-hidden inline-flex items-center gap-2 rounded-xl bg-[#0071e3] text-white px-8 py-3 text-sm font-bold transition-all disabled:opacity-30 disabled:pointer-events-none"
-                  >
-                    <CheckCircle2 className="w-4 h-4" />
-                    {isSubmitting ? "Compiling Report..." : "Generate Clinical Report"}
-                  </button>
+              {/* Sticky on mobile so Next/Submit stays reachable without
+                  scrolling back down a long option list; static on desktop. */}
+              <div className="sticky bottom-4 z-10 -mx-6 -mb-6 flex flex-col gap-2 border-t border-[var(--border-hairline)] bg-white/95 px-6 py-4 backdrop-blur md:static md:mx-0 md:mb-0 md:border-0 md:bg-transparent md:p-0 md:pt-6">
+                {isLastQuestion && belowSubmitThreshold && (
+                  <p className="text-xs text-[var(--ink-soft)]">
+                    Answer at least 60% of questions to generate your protocol ({answeredCount}/{categoryQuestions.length} so far).
+                  </p>
                 )}
+                <div className="flex justify-end">
+                  {!isLastQuestion ? (
+                    <Button onClick={handleContinue} disabled={!isAnswered} variant="soft">
+                      Next Question <ArrowRight className="w-4 h-4" />
+                    </Button>
+                  ) : (
+                    <Button onClick={handleSubmit} disabled={!isAnswered || belowSubmitThreshold} variant="primary">
+                      <CheckCircle2 className="w-4 h-4" />
+                      Generate Clinical Report
+                    </Button>
+                  )}
+                </div>
               </div>
             </motion.div>
           )}
@@ -531,4 +666,3 @@ if (loading) {
     </div>
   );
 }
-

@@ -1,11 +1,22 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { FileWarning, Sparkles } from "lucide-react";
 import { useCartStore } from "@/lib/cartStore";
-import { formatINR } from "@/lib/currency";
 import { ProtocolReport } from "@/types/protocolReport";
 import { getSupabaseAuthHeaders } from "@/lib/auth/clientAuthHeaders";
+import Button from "@/components/ui/Button";
+import ProtocolTableOfContents, { ProtocolTocEntry } from "./_sections/ProtocolTableOfContents";
+import ProtocolHeader from "./_sections/ProtocolHeader";
+import PrimaryFindings from "./_sections/PrimaryFindings";
+import RecoveryRoadmap from "./_sections/RecoveryRoadmap";
+import ProtocolIngredients from "./_sections/ProtocolIngredients";
+import DailyRoutine from "./_sections/DailyRoutine";
+import LifestyleGuidance from "./_sections/LifestyleGuidance";
+import ThingsToAvoid from "./_sections/ThingsToAvoid";
+import RecommendedProducts from "./_sections/RecommendedProducts";
+import ProtocolFollowUp from "./_sections/ProtocolFollowUp";
 
 function parseJson<T>(value: string | null, fallback: T): T {
   if (!value) return fallback;
@@ -24,8 +35,36 @@ function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/** Derived from the report's own generatedAt timestamp (already present in
+ * the existing /api/protocol/report response - no new fetch). Never shown
+ * if generatedAt is unavailable (e.g. the offline localStorage-cache
+ * fallback path below), rather than fabricating a start date. */
+function getDayAndWeek(generatedAt: string | null) {
+  if (!generatedAt) return null;
+  const generatedMs = new Date(generatedAt).getTime();
+  if (!Number.isFinite(generatedMs)) return null;
+
+  const daysSince = Math.floor((Date.now() - generatedMs) / (24 * 60 * 60 * 1000));
+  return {
+    day: Math.min(30, Math.max(1, daysSince + 1)),
+    week: Math.min(4, Math.max(1, Math.floor(daysSince / 7) + 1)),
+  };
+}
+
+const TOC_ENTRIES: ProtocolTocEntry[] = [
+  { id: "overview", label: "Overview" },
+  { id: "findings", label: "Primary Findings" },
+  { id: "roadmap", label: "Recovery Roadmap" },
+  { id: "ingredients", label: "Ingredients & Treatments" },
+  { id: "routine", label: "Daily Routine" },
+  { id: "lifestyle", label: "Lifestyle Guidance" },
+  { id: "avoid", label: "Things To Avoid" },
+  { id: "products", label: "Recommended Products" },
+];
+
 export default function ResultPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const addItem = useCartStore((state) => state.addItem);
   const openCart = useCartStore((state) => state.openCart);
 
@@ -34,6 +73,7 @@ export default function ResultPage() {
   const [report, setReport] = useState<ProtocolReport | null>(null);
   const [reportStatus, setReportStatus] = useState<string | null>(null);
   const [pollAttempt, setPollAttempt] = useState(0);
+  const [generatedAt, setGeneratedAt] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -60,7 +100,7 @@ export default function ResultPage() {
           });
           const payload = (await res.json()) as {
             ok?: boolean;
-            report?: { id?: string; status?: string; payload?: ProtocolReport | null };
+            report?: { id?: string; status?: string; generatedAt?: string | null; payload?: ProtocolReport | null };
             error?: string;
           };
 
@@ -83,6 +123,7 @@ export default function ResultPage() {
             localStorage.setItem(REPORT_CACHE_KEY, JSON.stringify(payload.report.payload));
             if (!cancelled) {
               setReport(payload.report.payload);
+              setGeneratedAt(payload.report.generatedAt || null);
               setLoading(false);
             }
             return;
@@ -124,218 +165,25 @@ export default function ResultPage() {
     };
   }, []);
 
-  const sectionCards = useMemo(() => {
-    if (!report) return [];
+  const progress = useMemo(() => getDayAndWeek(generatedAt), [generatedAt]);
 
-    return [
-      {
-        id: "issue",
-        title: "Issue Summary",
-        body: (
-          <div className="grid gap-3 text-sm md:grid-cols-3">
-            <div>
-              <p className="font-semibold text-[#1d1d1f]">What Was Detected</p>
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-[#5e5e5e]">
-                {report.issueSummary.whatWasDetected.map((item) => <li key={item}>{item}</li>)}
-              </ul>
-            </div>
-            <div>
-              <p className="font-semibold text-[#1d1d1f]">Why It Happens</p>
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-[#5e5e5e]">
-                {report.issueSummary.whyItHappens.map((item) => <li key={item}>{item}</li>)}
-              </ul>
-            </div>
-            <div>
-              <p className="font-semibold text-[#1d1d1f]">Why Consistency Matters</p>
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-[#5e5e5e]">
-                {report.issueSummary.whyConsistencyMatters.map((item) => <li key={item}>{item}</li>)}
-              </ul>
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: "ingredients",
-        title: "Main Resolving Ingredients",
-        body: (
-          <div className="grid gap-3 md:grid-cols-2">
-            {report.mainResolvingIngredients.map((item) => (
-              <div key={item.ingredient} className="rounded-xl border border-[#d9d9de] bg-white p-4 text-sm">
-                <p className="font-semibold text-[#1d1d1f]">{item.ingredient}</p>
-                <p className="mt-1 text-[#5e5e5e]"><span className="font-semibold text-[#1d1d1f]">Purpose:</span> {item.purpose}</p>
-                <p className="mt-1 text-[#5e5e5e]"><span className="font-semibold text-[#1d1d1f]">Targets:</span> {item.targets.join(", ")}</p>
-                <p className="mt-1 text-[#5e5e5e]"><span className="font-semibold text-[#1d1d1f]">Why it works:</span> {item.whyItWorks}</p>
-                <p className="mt-1 text-[#5e5e5e]"><span className="font-semibold text-[#1d1d1f]">Expected timeline:</span> {item.expectedTimeline}</p>
-                <ul className="mt-2 list-disc space-y-1 pl-5 text-[#5e5e5e]">
-                  {item.safetyNotes.map((note) => <li key={`${item.ingredient}-${note}`}>{note}</li>)}
-                </ul>
-              </div>
-            ))}
-          </div>
-        ),
-      },
-      {
-        id: "monthly-plan",
-        title: "Monthly Recovery Plan",
-        body: (
-          <div className="grid gap-3 md:grid-cols-2">
-            {(["morning", "afternoon", "night", "weekly"] as const).map((bucket) => (
-              <div key={bucket} className="rounded-xl border border-[#d9d9de] bg-white p-4 text-sm">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#6e6e73]">{bucket}</p>
-                <div className="mt-2 space-y-2">
-                  {report.monthlyRecoveryPlan[bucket].map((step) => (
-                    <div key={`${bucket}-${step.title}`}>
-                      <p className="font-semibold text-[#1d1d1f]">{step.title}</p>
-                      <p className="mt-1 text-[#5e5e5e]"><span className="font-semibold text-[#1d1d1f]">Purpose:</span> {step.purpose}</p>
-                      <p className="text-[#5e5e5e]"><span className="font-semibold text-[#1d1d1f]">Why:</span> {step.why}</p>
-                      <ul className="mt-1 list-disc pl-5 text-[#5e5e5e]">
-                        {step.steps.map((line) => <li key={`${step.title}-${line}`}>{line}</li>)}
-                      </ul>
-                      <p className="mt-1 text-xs text-[#6e6e73]">
-                        {step.timing}
-                        {step.amount ? ` · ${step.amount}` : ""}
-                        {` · ${step.frequency}`}
-                      </p>
-                      <p className="mt-1 text-[#5e5e5e]"><span className="font-semibold text-[#1d1d1f]">Expected improvement:</span> {step.expectedImprovement}</p>
-                      <p className="mt-1 text-[#5e5e5e]"><span className="font-semibold text-[#1d1d1f]">Mistakes to avoid:</span> {step.mistakesToAvoid.join(", ")}</p>
-                      <p className="mt-1 text-[#5e5e5e]"><span className="font-semibold text-[#1d1d1f]">Escalation cues:</span> {step.escalationCues.join(", ")}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        ),
-      },
-      {
-        id: "avoid",
-        title: "Things To Avoid",
-        body: (
-          <div className="grid gap-3 text-sm md:grid-cols-2">
-            {(["food", "habits", "environment", "productMistakes"] as const).map((bucket) => (
-              <div key={bucket}>
-                <p className="font-semibold capitalize text-[#1d1d1f]">{bucket}</p>
-                <ul className="mt-2 list-disc space-y-1 pl-5 text-[#5e5e5e]">
-                  {report.thingsToAvoid[bucket].map((item) => (
-                    <li key={`${bucket}-${item.item}`}>
-                      <span className="font-semibold text-[#1d1d1f]">{item.item}:</span> {item.whyAvoid}
-                      <p className="mt-1 text-xs text-[#6e6e73]">Effect on recovery: {item.effectOnRecovery}</p>
-                      <p className="text-xs text-[#6e6e73]">Better alternative: {item.betterAlternative}</p>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        ),
-      },
-      {
-        id: "products",
-        title: "Recommended Products",
-        body: (
-          <div className="grid gap-3 md:grid-cols-2">
-            {report.recommendedProducts.map((product, idx) => (
-              <div key={`${product.productId}-${idx}`} className="rounded-xl border border-[#d9d9de] bg-white p-4">
-                <p className="text-base font-bold text-[#1d1d1f]">{product.name}</p>
-                <p className="mt-1 text-xs uppercase tracking-[0.12em] text-[#6e6e73]">{product.ingredientMatch || "Deterministic match"} · {product.timing}</p>
-                <p className="mt-2 text-sm text-[#5e5e5e]"><span className="font-semibold text-[#1d1d1f]">Why:</span> {product.whyRecommended}</p>
-                <p className="mt-1 text-sm text-[#5e5e5e]"><span className="font-semibold text-[#1d1d1f]">How:</span> {product.howToUse}</p>
-                <p className="mt-1 text-sm text-[#5e5e5e]"><span className="font-semibold text-[#1d1d1f]">Application area:</span> {product.applicationArea}</p>
-                <p className="mt-1 text-sm text-[#5e5e5e]"><span className="font-semibold text-[#1d1d1f]">Amount:</span> {product.amount}</p>
-                <p className="mt-1 text-sm text-[#5e5e5e]"><span className="font-semibold text-[#1d1d1f]">Expected improvement:</span> {product.expectedImprovement}</p>
-                <p className="mt-1 text-sm text-[#5e5e5e]"><span className="font-semibold text-[#1d1d1f]">Compatibility:</span> {product.compatibilityWithCurrentRoutine}</p>
-                <div className="mt-3 flex items-center justify-between gap-2">
-                  <p className="text-sm font-semibold text-[#1d1d1f]">{formatINR(999 + idx * 400)}</p>
-                  <button
-                    onClick={() => {
-                      addItem({ id: `${product.productId}-${idx}`, name: product.name, price: 999 + idx * 400, quantity: 1 });
-                      openCart();
-                    }}
-                    className="rounded-lg bg-[#1d1d1f] px-3 py-2 text-xs font-semibold text-white"
-                  >
-                    Add to Cart
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        ),
-      },
-      {
-        id: "diet",
-        title: "Diet Plan",
-        body: (
-          <div className="grid gap-3 text-sm md:grid-cols-2">
-            {(["breakfast", "lunch", "dinner", "snacks"] as const).map((meal) => (
-              <div key={meal}>
-                <p className="font-semibold capitalize text-[#1d1d1f]">{meal}</p>
-                <ul className="mt-2 list-disc space-y-1 pl-5 text-[#5e5e5e]">
-                  {report.dietPlan[meal].map((item) => <li key={`${meal}-${item}`}>{item}</li>)}
-                </ul>
-              </div>
-            ))}
-            <p className="rounded-xl bg-[#f5f5f7] p-3 text-[#1d1d1f] md:col-span-2"><span className="font-semibold">Hydration:</span> {report.dietPlan.hydration}</p>
-            <div className="md:col-span-2">
-              <p className="font-semibold text-[#1d1d1f]">Wellness Guidance</p>
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-[#5e5e5e]">
-                {report.dietPlan.wellnessGuidance.map((goal) => <li key={goal}>{goal}</li>)}
-              </ul>
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: "timeline",
-        title: "Expected Timeline",
-        body: (
-          <div className="space-y-2">
-            {report.expectedTimeline.map((item) => (
-              <div key={`timeline-${item.week}`} className="rounded-xl border border-[#d9d9de] bg-white p-3 text-sm">
-                <p className="font-semibold text-[#1d1d1f]">Week {item.week}</p>
-                <p className="mt-1 font-semibold text-[#1d1d1f]">Expected Improvements</p>
-                <ul className="list-disc pl-5 text-[#5e5e5e]">
-                  {item.expectedImprovements.map((line) => <li key={`improve-${item.week}-${line}`}>{line}</li>)}
-                </ul>
-                <p className="mt-2 font-semibold text-[#1d1d1f]">Possible Setbacks</p>
-                <ul className="list-disc pl-5 text-[#5e5e5e]">
-                  {item.possibleSetbacks.map((line) => <li key={`setback-${item.week}-${line}`}>{line}</li>)}
-                </ul>
-              </div>
-            ))}
-          </div>
-        ),
-      },
-      {
-        id: "milestones",
-        title: "Weekly Milestones",
-        body: (
-          <div className="space-y-2">
-            {report.weeklyMilestones.map((item) => (
-              <div key={`milestone-${item.week}`} className="rounded-xl border border-[#d9d9de] bg-white p-3 text-sm">
-                <p className="font-semibold text-[#1d1d1f]">Week {item.week}: {item.milestone}</p>
-                <p className="mt-1 text-[#5e5e5e]"><span className="font-semibold text-[#1d1d1f]">Adherence target:</span> {item.adherenceTarget}</p>
-              </div>
-            ))}
-          </div>
-        ),
-      },
-      {
-        id: "motivation",
-        title: "Motivation",
-        body: <p className="text-sm text-[#5e5e5e]">{report.motivation}</p>,
-      },
-    ];
-  }, [report, addItem, openCart]);
+  const handleAddToCart = (product: ProtocolReport["recommendedProducts"][number], idx: number) => {
+    addItem({ id: `${product.productId}-${idx}`, name: product.name, price: 999 + idx * 400, quantity: 1 });
+    openCart();
+  };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f5f5f7] px-6">
-        <div className="space-y-2 rounded-2xl border border-[#d9d9de] bg-white px-6 py-5 text-sm text-[#6e6e73]">
-          <p>Preparing your result...</p>
-          <p className="text-xs uppercase tracking-[0.1em] text-[#8e8e93]">
-            {reportStatus ? `Status: ${reportStatus}` : "Status: queued"}
-            {pollAttempt > 0 ? ` · Check ${pollAttempt}/${REPORT_POLL_MAX_ATTEMPTS}` : ""}
-          </p>
+      <div className="af-page flex min-h-screen items-center justify-center px-6">
+        <div className="af-surface-card flex items-center gap-4 px-6 py-5">
+          <Sparkles className="h-5 w-5 shrink-0 animate-pulse text-[var(--accent-blue)]" />
+          <div>
+            <p className="text-sm font-semibold text-[var(--ink)]">Preparing your result...</p>
+            <p className="mt-0.5 text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]" role="status" aria-live="polite">
+              {reportStatus ? `Status: ${reportStatus}` : "Status: queued"}
+              {pollAttempt > 0 ? ` · Check ${pollAttempt}/${REPORT_POLL_MAX_ATTEMPTS}` : ""}
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -343,38 +191,43 @@ export default function ResultPage() {
 
   if (error || !report) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f5f5f7] px-6">
-        <div className="w-full max-w-xl space-y-4 rounded-3xl border border-[#d9d9de] bg-white p-8 text-center">
-          <h1 className="text-xl font-bold text-[#1d1d1f]">Result unavailable</h1>
-          <p className="text-sm text-[#6e6e73]">{error || "No report found."}</p>
-          <button onClick={() => router.push("/assessment")} className="rounded-full bg-[#1d1d1f] px-6 py-3 text-sm font-semibold text-white">Start Assessment</button>
+      <div className="af-page flex min-h-screen items-center justify-center px-6">
+        <div className="af-card-primary w-full max-w-xl space-y-4 p-8 text-center">
+          <FileWarning className="mx-auto h-8 w-8 text-[var(--warning-accent)]" />
+          <h1 className="text-xl font-bold text-[var(--ink)]">Result unavailable</h1>
+          <p className="text-sm text-[var(--ink-soft)]">{error || "No report found."}</p>
+          <Button onClick={() => router.push("/assessment")} variant="primary">Start Assessment</Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="af-page-shell min-h-screen text-[#ffffff]">
-      <main className="mx-auto flex max-w-5xl flex-col gap-4 px-4 py-6 md:px-6 md:py-8">
-        <section className="nv-section-dark">
-          <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#2997ff]">Single Source Clinical Result</p>
-          <h1 className="apple-section-title mt-2 text-white">Your Recovery Protocol Report</h1>
-          <p className="mt-2 text-sm text-[#a7a7a7]">Pipeline: ALPHA FOCUS V2 · Structured server report</p>
-        </section>
+    <div className="af-page min-h-screen">
+      <main className="mx-auto flex max-w-6xl gap-6 px-4 py-6 md:px-6 md:py-8">
+        <ProtocolTableOfContents entries={TOC_ENTRIES} />
 
-        {sectionCards.map((section) => (
-          <section key={section.id} className="nv-section-white">
-            <h2 className="text-xl font-black text-[#1d1d1f]">{section.title}</h2>
-            <div className="mt-3">{section.body}</div>
-          </section>
-        ))}
+        <div className="flex min-w-0 flex-1 flex-col gap-4">
+          <ProtocolHeader
+            category={searchParams?.get("category") || null}
+            level={searchParams?.get("level") || null}
+            currentDay={progress?.day ?? null}
+            currentWeek={progress?.week ?? null}
+          />
 
-        <section className="nv-section-white">
-          <h2 className="text-xl font-black text-[#1d1d1f]">Confidence Notes</h2>
-          <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-[#5e5e5e]">
-            {report.confidenceNotes.map((line) => <li key={line}>{line}</li>)}
-          </ul>
-        </section>
+          <PrimaryFindings issueSummary={report.issueSummary} confidenceNotes={report.confidenceNotes} />
+          <RecoveryRoadmap
+            expectedTimeline={report.expectedTimeline}
+            weeklyMilestones={report.weeklyMilestones}
+            currentWeek={progress?.week ?? null}
+          />
+          <ProtocolIngredients ingredients={report.mainResolvingIngredients} />
+          <DailyRoutine monthlyRecoveryPlan={report.monthlyRecoveryPlan} />
+          <LifestyleGuidance dietPlan={report.dietPlan} />
+          <ThingsToAvoid thingsToAvoid={report.thingsToAvoid} />
+          <RecommendedProducts products={report.recommendedProducts} onAddToCart={handleAddToCart} />
+          <ProtocolFollowUp motivation={report.motivation} />
+        </div>
       </main>
     </div>
   );
