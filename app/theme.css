@@ -1,63 +1,133 @@
-/* Apple-inspired Global Theme Tokens */
+/* Phase 7B — unified light-first design tokens. Dark (--bg-hero-dark) is an
+   explicit opt-in for hero/AI-banner/premium moments only (via .af-hero-dark
+   in globals.css), never the page default. See the Phase 7B plan for the
+   audit that led here: three competing visual languages were previously
+   stacked via !important overrides across globals.css/theme.css/tailwind
+   config; this file is now the single source of truth for color/elevation/
+   radius/motion tokens. Variable NAMES are kept stable where they already
+   existed (--surface-raised, --shadow-raised, --color-text-*, etc.) so every
+   existing var(...) consumer in globals.css picks up the new values without
+   needing markup changes. */
 
 :root {
-  --primary-bg: #000000;
-  --secondary-bg: #f5f5f7;
-  --card-bg: #f5f5f7;
+  /* Ink (navy) — primary text/headings/buttons on light surfaces */
+  --ink: #0b2a4a;
+  --ink-soft: #5b6b7f;
 
+  /* Accents */
   --accent-blue: #0071e3;
+  --accent-blue-soft: #2997ff;
+  --accent-green: #34d399;
+  --accent-green-soft: #6ee7b0;
   --link-blue: #0066cc;
   --link-blue-dark: #2997ff;
+
+  /* Page background wash — the new default for every page */
+  --bg-wash-start: #eef4fc;
+  --bg-wash-mid: #f7fafd;
+  --bg-wash-end: #ffffff;
+
+  /* Reserved for hero sections / AI-processing banners / premium moments
+     only — opt-in via .af-hero-dark, never the default page background. */
+  --bg-hero-dark-start: #020913;
+  --bg-hero-dark-mid: #030a16;
+  --bg-hero-dark-end: #020713;
 
   --text-primary-dark: #ffffff;
   --text-secondary-dark: #a7a7a7;
 
-  --text-primary-light: #1d1d1f;
-  --text-secondary-light: rgba(0, 0, 0, 0.8);
+  /* Persistent nav chrome — deliberately dark (stable anchor across both
+     light-wash and .af-hero-dark pages), consistent with the reference's
+     premium SaaS top-bar pattern. Used only by MainNavbar/mobile drawer. */
+  --nav-bg-start: rgba(10, 12, 18, 0.9);
+  --nav-bg-end: rgba(8, 10, 14, 0.78);
+  --nav-border: rgba(255, 255, 255, 0.1);
+  --nav-surface: rgba(0, 0, 0, 0.94);
+  --nav-surface-soft: #111611;
+  --nav-surface-border: #2d2d2d;
 
-  --border-accent: 2px solid #0071e3;
-  --border-default: 1px solid rgba(0, 0, 0, 0.14);
+  --danger: #ef4444;
+  --accent-blue-dark: #005bbf;
+
+  /* "Reward expiring soon" banner state — distinct from generic danger red,
+     a warm amber-red pairing for a time-limited-but-not-broken alert. */
+  --warning-bg: #fff5f3;
+  --warning-text: #a63c31;
+  --warning-accent: #e85d4e;
+
+  --nav-border-soft: #5a5a5a;
+
+  /* Tint backgrounds — consolidates ~20 near-duplicate one-off warm/cool
+     off-white shades found scattered across dashboard subcomponents
+     (Phase 7D) into 3 deliberate, reusable categories. */
+  --tint-warm: #fff8ee;
+  --tint-cool: #ecf5ef;
+  --tint-neutral: #f1efea;
+  /* Opacity baked into the value on purpose — Tailwind's bg-[...]/NN opacity
+     shorthand can't decompose a var() reference into color channels at
+     build time, so it silently fails (found live: the mobile drawer
+     rendered fully transparent using bg-[var(--nav-drawer-bg)]/95). */
+  --nav-drawer-bg: rgba(13, 13, 16, 0.97);
+
+  --text-primary-light: var(--ink);
+  --text-secondary-light: var(--ink-soft);
+
+  --border-accent: 2px solid var(--accent-blue);
+  --border-default: 1px solid rgba(11, 42, 74, 0.14);
+  --border-hairline: rgba(11, 42, 74, 0.08);
 
   --font-ui: "SF Pro Text", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-display: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
 
-  --color-primary: var(--accent-blue);
-  --color-primary-light: #2997ff;
+  --color-primary: var(--ink);
+  --color-primary-light: var(--accent-blue-soft);
   --color-accent: var(--accent-blue);
-  --color-accent-light: #2997ff;
+  --color-accent-light: var(--accent-blue-soft);
 
-  --color-bg-primary: var(--primary-bg);
-  --color-bg-secondary: var(--secondary-bg);
+  --color-bg-primary: var(--bg-wash-end);
+  --color-bg-secondary: var(--bg-wash-start);
   --color-bg-tertiary: #ffffff;
 
   --color-text-primary: var(--text-primary-light);
   --color-text-secondary: var(--text-secondary-light);
-  --color-text-tertiary: rgba(0, 0, 0, 0.48);
+  --color-text-tertiary: rgba(11, 42, 74, 0.48);
   --color-text-inverse: var(--text-primary-dark);
 
-  --color-border: rgba(0, 0, 0, 0.14);
-  --color-border-light: rgba(0, 0, 0, 0.08);
+  --color-border: rgba(11, 42, 74, 0.14);
+  --color-border-light: var(--border-hairline);
 
-  --surface-base: #000000;
-  --surface-raised: #f5f5f7;
-  --surface-soft: #ffffff;
-  --surface-pressed: #ededf2;
+  /* Surfaces */
+  --surface-base: var(--bg-wash-end);
+  --surface-raised: #ffffff;
+  --surface-soft: #fbfdff;
+  --surface-pressed: #eef2f7;
   --surface-glow: rgba(255, 255, 255, 0.9);
-  --surface-outline: rgba(0, 0, 0, 0.16);
+  --surface-outline: var(--border-hairline);
 
-  --shadow-raised: rgba(0, 0, 0, 0.22) 3px 5px 30px 0;
-  --shadow-soft: rgba(0, 0, 0, 0.16) 2px 4px 18px 0;
-  --shadow-pressed: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
-  --shadow-button: none;
-}
+  /* Elevation — two tiers only (soft = resting, raised = hover/emphasis) */
+  --shadow-soft: 0 8px 24px rgba(11, 42, 74, 0.08);
+  --shadow-raised: 0 16px 40px rgba(11, 42, 74, 0.12);
+  --shadow-pressed: inset 0 0 0 1px rgba(11, 42, 74, 0.08);
+  --shadow-button: 0 8px 20px rgba(11, 42, 74, 0.14);
+  --shadow-glow-blue: 0 8px 24px rgba(0, 113, 227, 0.24);
+  --shadow-glow-green: 0 8px 24px rgba(52, 211, 153, 0.28);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-bg-primary: #000000;
-    --color-bg-secondary: #000000;
-    --color-bg-tertiary: #272729;
-    --color-text-primary: var(--text-primary-dark);
-    --color-text-secondary: var(--text-secondary-dark);
-    --color-border: rgba(255, 255, 255, 0.14);
-  }
+  /* Radius */
+  --radius-card: 1.25rem;
+  --radius-btn: 0.75rem;
+  --radius-chip: 1rem;
+
+  /* Motion — one standard duration/easing, adopted everywhere instead of
+     ad-hoc per-component values (matches RouteTransition's existing curve) */
+  --motion-fast: 150ms cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-base: 250ms cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-slow: 400ms cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Spacing scale — consumed directly by globals.css (heading margins, etc.) */
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
 }

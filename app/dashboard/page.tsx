@@ -29,6 +29,10 @@ import {
   RewardProgress,
   TreatmentPlan,
 } from "./_components";
+import EntitlementSummary from "./_components/EntitlementSummary";
+import QuickActions from "./_components/QuickActions";
+import ActivityTimeline from "./_components/ActivityTimeline";
+import { SkeletonBlock, SkeletonCard } from "@/components/ui/Skeleton";
 
 type RoutineLogRow = {
   id?: string;
@@ -857,18 +861,56 @@ export default function DashboardPage() {
     return "Close Stabilize phase with 80%+ adherence";
   }, [programDay]);
 
+  // Recent Activity: pure UI-layer derivation from data already loaded into
+  // the store (scans/reports/routines) — no new queries, no new business
+  // logic, just presenting existing state as a timeline.
+  const activityItems = useMemo(() => {
+    type Item = { id: string; label: string; timestamp: string };
+    const items: Item[] = [];
+
+    for (const row of scans) {
+      const ts = typeof row.scan_date === "string" ? row.scan_date : typeof row.created_at === "string" ? row.created_at : null;
+      if (!ts) continue;
+      items.push({ id: `scan-${String(row.id || ts)}`, label: "Photo scan uploaded", timestamp: ts });
+    }
+
+    for (const row of reports) {
+      const ts = typeof row.created_at === "string" ? row.created_at : typeof row.generated_at === "string" ? row.generated_at : null;
+      if (!ts) continue;
+      items.push({ id: `report-${String(row.id || ts)}`, label: "Recovery protocol generated", timestamp: ts });
+    }
+
+    for (const row of routines) {
+      const ts = typeof row.log_date === "string" ? row.log_date : typeof row.created_at === "string" ? row.created_at : null;
+      if (!ts) continue;
+      if (row.am_done) items.push({ id: `routine-am-${ts}`, label: "Morning routine completed", timestamp: ts });
+      if (row.pm_done) items.push({ id: `routine-pm-${ts}`, label: "Evening routine completed", timestamp: ts });
+    }
+
+    return items
+      .filter((item) => safeDate(item.timestamp))
+      .sort((a, b) => safeDate(b.timestamp)!.getTime() - safeDate(a.timestamp)!.getTime())
+      .slice(0, 6);
+  }, [scans, reports, routines]);
+
   if (loading || !user) {
     return (
-      <main className="min-h-screen bg-[#f5f5f7] px-4 py-6 text-[#1d1d1f] sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl">
-          <p className="text-sm text-[#6e6e73]">Loading personalized dashboard...</p>
+      <main className="af-page min-h-screen px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl space-y-6">
+          <SkeletonBlock className="h-48 rounded-[2rem] md:h-64" />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <SkeletonBlock className="h-24 rounded-2xl" />
+            <SkeletonBlock className="h-24 rounded-2xl" />
+            <SkeletonBlock className="h-24 rounded-2xl" />
+          </div>
+          <SkeletonCard />
         </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_right,rgba(0,113,227,0.16),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(41,151,255,0.1),transparent_30%),linear-gradient(180deg,#05070c_0%,#0a0f1a_100%)] px-4 py-6 sm:px-6 lg:px-8">
+    <main className="af-page min-h-screen px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl space-y-8 md:space-y-10">
         <section className="animate-in fade-in duration-500">
           <DashboardHero
@@ -883,6 +925,10 @@ export default function DashboardPage() {
             dayLabel={`Day ${programDay} / 30`}
             nextMilestone={nextMilestone}
           />
+        </section>
+
+        <section className="animate-in fade-in duration-500 delay-75">
+          <EntitlementSummary />
         </section>
 
         <section className="nv-section-white space-y-4 animate-in fade-in duration-500 delay-100" id="recovery-roadmap">
@@ -909,32 +955,32 @@ export default function DashboardPage() {
         <section className="nv-section-white animate-in fade-in duration-500 delay-150">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#6e6e73]">Recovery Intelligence</p>
-              <h2 className="text-xl font-black text-[#111]">Clinical Signal Summary</h2>
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--ink-soft)]">Recovery Intelligence</p>
+              <h2 className="text-xl font-black text-[var(--ink)]">Clinical Signal Summary</h2>
             </div>
-            <p className="rounded-full bg-white px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.14em] text-[#0071e3] border border-[#0071e3]">
+            <p className="rounded-full bg-white px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.14em] text-[var(--accent-blue)] border border-[var(--accent-blue)]">
               {activeCategory ? `Category: ${categoryLabel}` : "No active category"}
             </p>
           </div>
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-[1.4rem] border border-[#d9d9de] bg-[#FFF8EE] p-4">
-              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#7A6D5A]">Severity Change</p>
-              <p className="mt-2 text-2xl font-black text-[#111]">down {progressSummary?.improvement_pct ?? 0}%</p>
+            <div className="rounded-[1.4rem] border border-[var(--border-hairline)] bg-[var(--tint-warm)] p-4">
+              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--ink-soft)]">Severity Change</p>
+              <p className="mt-2 text-2xl font-black text-[var(--ink)]">down {progressSummary?.improvement_pct ?? 0}%</p>
             </div>
-            <div className="rounded-[1.4rem] border border-[#d9d9de] bg-[#FFF8EE] p-4">
-              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#7A6D5A]">Consistency</p>
-              <p className="mt-2 text-2xl font-black text-[#111]">{progressSummary?.consistency_score ?? consistencyScore}%</p>
+            <div className="rounded-[1.4rem] border border-[var(--border-hairline)] bg-[var(--tint-warm)] p-4">
+              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--ink-soft)]">Consistency</p>
+              <p className="mt-2 text-2xl font-black text-[var(--ink)]">{progressSummary?.consistency_score ?? consistencyScore}%</p>
             </div>
-            <div className="rounded-[1.4rem] border border-[#d9d9de] bg-[#FFF8EE] p-4">
-              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#7A6D5A]">Recovery Speed</p>
-              <p className="mt-2 text-2xl font-black text-[#111]">{recoveryVelocityLabel}</p>
+            <div className="rounded-[1.4rem] border border-[var(--border-hairline)] bg-[var(--tint-warm)] p-4">
+              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--ink-soft)]">Recovery Speed</p>
+              <p className="mt-2 text-2xl font-black text-[var(--ink)]">{recoveryVelocityLabel}</p>
             </div>
-            <div className="rounded-[1.4rem] border border-[#d9d9de] bg-[#FFF8EE] p-4">
-              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#7A6D5A]">Confidence</p>
-              <p className="mt-2 text-2xl font-black text-[#111]">{confidenceScore}</p>
+            <div className="rounded-[1.4rem] border border-[var(--border-hairline)] bg-[var(--tint-warm)] p-4">
+              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--ink-soft)]">Confidence</p>
+              <p className="mt-2 text-2xl font-black text-[var(--ink)]">{confidenceScore}</p>
             </div>
           </div>
-          <p className="mt-4 text-xs font-semibold text-[#6e6e73]">{refreshing || storeLoading ? "Syncing latest data..." : "Realtime sync is active for routine, rewards, and progress signals."}</p>
+          <p className="mt-4 text-xs font-semibold text-[var(--ink-soft)]">{refreshing || storeLoading ? "Syncing latest data..." : "Realtime sync is active for routine, rewards, and progress signals."}</p>
         </section>
 
         <section className="nv-section-dark animate-in fade-in duration-500 delay-200">
@@ -953,8 +999,16 @@ export default function DashboardPage() {
           <AIInsightEngine insights={aiInsights} behaviorInsights={behaviorInsights} />
         </section>
 
+        <section className="animate-in fade-in duration-500 delay-700">
+          <QuickActions />
+        </section>
+
+        <section className="animate-in fade-in duration-500 delay-700">
+          <ActivityTimeline items={activityItems} />
+        </section>
+
         {!profile && (
-          <section className="nv-section-white text-sm text-[#6e6e73]">
+          <section className="nv-section-white text-sm text-[var(--ink-soft)]">
             Complete your profile to improve recommendation precision.
           </section>
         )}

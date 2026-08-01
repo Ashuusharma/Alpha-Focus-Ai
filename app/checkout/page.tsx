@@ -203,7 +203,7 @@ export default function CheckoutPage() {
                      </div>
                   </div>
                 </div>
-                        <button onClick={handleNext} className="btn-primary w-full font-bold py-4 transition-colors flex justify-center items-center gap-2">
+                        <button onClick={handleNext} className="af-btn-primary w-full font-bold py-4 transition-colors flex justify-center items-center gap-2">
                    Continue to Shipping <ChevronRight className="h-4 w-4" />
                 </button>
               </div>
@@ -236,7 +236,7 @@ export default function CheckoutPage() {
                   </div>
                   <div className="flex item-center gap-4">
                      <button onClick={handleBack} className="flex-1 py-4 text-[#6e6e73] font-bold hover:text-[#1d1d1f] transition-colors">Back</button>
-                     <button onClick={handleNext} className="btn-primary flex-[2] font-bold py-4 transition-colors flex justify-center items-center gap-2">
+                     <button onClick={handleNext} className="af-btn-primary flex-[2] font-bold py-4 transition-colors flex justify-center items-center gap-2">
                         Continue to Payment <ChevronRight className="h-4 w-4" />
                      </button>
                   </div>
@@ -280,7 +280,7 @@ export default function CheckoutPage() {
                   </div>
                   <div className="flex item-center gap-4">
                      <button onClick={handleBack} className="flex-1 py-4 text-[#6e6e73] font-bold hover:text-[#1d1d1f] transition-colors">Back</button>
-                     <button onClick={handlePay} className="btn-primary flex-[2] font-bold py-4 transition-colors flex justify-center items-center gap-2">
+                     <button onClick={handlePay} className="af-btn-primary flex-[2] font-bold py-4 transition-colors flex justify-center items-center gap-2">
                         <ShieldCheck className="h-4 w-4" /> Pay {formatINR(total)}
                      </button>
                   </div>

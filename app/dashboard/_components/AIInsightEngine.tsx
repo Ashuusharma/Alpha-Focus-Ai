@@ -22,11 +22,11 @@ const impactStyle: Record<InsightItem["impact"], string> = {
 
 export default function AIInsightEngine({ insights, behaviorInsights = [] }: AIInsightEngineProps) {
   return (
-    <section className="rounded-[2rem] border border-[#d9d9de] bg-white p-6 shadow-[0_10px_30px_rgba(17,17,17,0.04)]">
+    <section className="rounded-[2rem] border border-[var(--border-hairline)] bg-white p-6 shadow-[0_10px_30px_rgba(17,17,17,0.04)]">
       <div className="flex items-center justify-between gap-2">
         <div>
-          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#6e6e73]">AI Coach Insights</p>
-          <h3 className="text-lg font-black text-[#111]">Insight, Action, and Expected Outcome</h3>
+          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--ink-soft)]">AI Coach Insights</p>
+          <h3 className="text-lg font-black text-[var(--ink)]">Insight, Action, and Expected Outcome</h3>
         </div>
       </div>
 
@@ -57,9 +57,9 @@ export default function AIInsightEngine({ insights, behaviorInsights = [] }: AII
       </div>
 
       {behaviorInsights.length ? (
-        <div className="mt-4 rounded-[1.4rem] border border-[#d9d9de] bg-[#FFF8EE] p-4">
-          <p className="text-xs font-semibold text-[#1d1d1f]">Behavior Insight Engine</p>
-          <ul className="mt-2 space-y-1 text-xs text-[#6e6e73]">
+        <div className="mt-4 rounded-[1.4rem] border border-[var(--border-hairline)] bg-[var(--tint-warm)] p-4">
+          <p className="text-xs font-semibold text-[var(--ink)]">Behavior Insight Engine</p>
+          <ul className="mt-2 space-y-1 text-xs text-[var(--ink-soft)]">
             {behaviorInsights.map((item) => (
               <li key={item}> -  {item}</li>
             ))}

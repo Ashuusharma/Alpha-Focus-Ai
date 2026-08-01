@@ -1,9 +1,9 @@
-﻿"use client";
+"use client";
 
 import { useContext, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, ChevronLeft, ScanLine, Sparkles } from "lucide-react";
+import { Check, ChevronLeft, RotateCcw, ScanLine, Sparkles, ArrowRight, AlertTriangle, ImageIcon } from "lucide-react";
 
 import { AnalyzerType, AnalysisResult, DetectedIssue } from "@/lib/analyzeImage";
 import { AuthContext } from "@/contexts/AuthProvider";
@@ -15,6 +15,7 @@ import { getParentCategoryFromChild } from "@/lib/categorySync";
 import { uploadAnalyzerImagesToSupabase } from "@/lib/photoStorage";
 import MultiAngleUpload from "./_components/ImageUpload";
 import AnalyzerSelector from "./_components/AnalyzerSelector";
+import Button from "@/components/ui/Button";
 
 type GalaxyIssue = {
   name: string;
@@ -31,18 +32,45 @@ type GalaxyHotspot = {
   severity?: "low" | "medium" | "high";
 };
 
+type GalaxyQualitySignal = {
+  retakeRecommended: boolean;
+  reason?: string;
+};
+
 type GalaxyAnalyzeResponse = {
   provider: string;
   issues: GalaxyIssue[];
   hotspots: GalaxyHotspot[];
   annotatedImageUrl?: string;
   confidence?: number;
+  /** Already returned by /api/galaxy/analyze (lib buildQualitySignal) but
+   *  previously unread by this page — Phase 7E surfaces it instead of
+   *  relying solely on the blunt confidence<45 error. */
+  quality?: GalaxyQualitySignal;
   /** Present only when the Vision pipeline already persisted every captured
    *  image to Storage, in the same order as the images sent to /api/galaxy/analyze. */
   uploadedImageUrls?: string[];
 };
 
 type SubscriptionPlan = "free" | "premium_monthly" | "premium_yearly";
+
+type AnalysisStage = "preparing" | "optimizing" | "vision" | "validating" | "building";
+
+const STAGE_COPY: Record<AnalysisStage, string> = {
+  preparing: "Preparing image",
+  optimizing: "Optimizing quality",
+  vision: "Running AI Vision",
+  validating: "Validating results",
+  building: "Building personalized assessment",
+};
+
+const STAGE_PROGRESS: Record<AnalysisStage, number> = {
+  preparing: 10,
+  optimizing: 25,
+  vision: 55,
+  validating: 78,
+  building: 92,
+};
 
 // Advisory pre-check only — avoids a wasted upload/round-trip for a user
 // who's obviously over the cap. The real enforcement is server-side in
@@ -81,22 +109,6 @@ async function assertMonthlyScanLimit(userId: string) {
   if (used >= cap) {
     throw new Error(`Free plan limit reached (${used}/${Number.isFinite(cap) ? cap : "inf"} scans this month). Upgrade to Premium for unlimited scans.`);
   }
-}
-
-function extractOpenedCategoriesFromAnswers(answers: Record<string, string>): string[] {
-  const categories = new Set<string>();
-
-  Object.keys(answers).forEach((key) => {
-    if (key.startsWith("hair_")) categories.add("hairCare");
-    if (key.startsWith("skin_")) categories.add("skinCare");
-    if (key.startsWith("beard_")) categories.add("beardCare");
-    if (key.startsWith("body_")) categories.add("bodyCare");
-    if (key.startsWith("health_")) categories.add("healthCare");
-    if (key.startsWith("fitness_")) categories.add("fitness");
-    if (key.startsWith("fragrance_")) categories.add("fragrance");
-  });
-
-  return Array.from(categories);
 }
 
 function mapGalaxyIssuesToDetectedIssues(issues: GalaxyIssue[]): DetectedIssue[] {
@@ -139,11 +151,13 @@ export default function ImageAnalyzerPage() {
   const router = useRouter();
   const { user } = useContext(AuthContext);
 
-  const [step, setStep] = useState<"select" | "upload" | "analyzing" | "done">("select");
+  const [step, setStep] = useState<"select" | "upload" | "review" | "analyzing" | "done">("select");
   const [selectedType, setSelectedType] = useState<AnalyzerType | null>(null);
-  const [analysisProgress, setAnalysisProgress] = useState(0);
-  const [analysisStatus, setAnalysisStatus] = useState("Preparing photos...");
-  const [diagnosticMode, setDiagnosticMode] = useState<"db_persisted" | "session_only" | null>(null);
+  const [reviewImages, setReviewImages] = useState<string[]>([]);
+  const [analysisStage, setAnalysisStage] = useState<AnalysisStage>("preparing");
+  const [analysisDetail, setAnalysisDetail] = useState("");
+  const [qualitySignal, setQualitySignal] = useState<GalaxyQualitySignal | null>(null);
+  const [pendingCategory, setPendingCategory] = useState<string | null>(null);
 
   const handleQuestionsNavigation = () => {
     const selectedCategory = selectedType ? getCategoryFromAnalyzer(selectedType) : null;
@@ -191,12 +205,21 @@ export default function ImageAnalyzerPage() {
     }
   };
 
-  const handleAllCaptured = async (images: string[]) => {
+  // Step 2 -> Step 3: images are captured but NOT yet submitted for
+  // analysis — the user reviews them first (previously this callback went
+  // straight into the AI call with no confirmation step).
+  const handleImagesReady = (images: string[]) => {
+    setReviewImages(images);
+    setStep("review");
+  };
+
+  const runAnalysis = async (images: string[]) => {
     if (!selectedType) return;
 
     setStep("analyzing");
-    setAnalysisProgress(8);
-    setAnalysisStatus("Preparing secure request...");
+    setAnalysisStage("preparing");
+    setAnalysisDetail("");
+    setQualitySignal(null);
 
     const answers: Record<string, string> = {};
     const selectedCategory = getCategoryFromAnalyzer(selectedType);
@@ -205,10 +228,6 @@ export default function ImageAnalyzerPage() {
     }
     const parentCategory = getParentCategoryFromChild(selectedCategory);
 
-    const progressTimer = setInterval(() => {
-      setAnalysisProgress((prev) => (prev < 88 ? prev + 4 : prev));
-    }, 350);
-
     try {
       if (!user) {
         throw new Error("Please log in first. Assessment and result sync require an authenticated account.");
@@ -216,7 +235,10 @@ export default function ImageAnalyzerPage() {
 
       await assertMonthlyScanLimit(user.id);
 
-      setAnalysisStatus("Sending photos to Galaxy AI for hotspot detection...");
+      setAnalysisStage("optimizing");
+      await new Promise((resolve) => setTimeout(resolve, 250));
+
+      setAnalysisStage("vision");
       const galaxyRaw = await fetch("/api/galaxy/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -234,6 +256,7 @@ export default function ImageAnalyzerPage() {
 
       const galaxyData = (await galaxyRaw.json()) as GalaxyAnalyzeResponse;
 
+      setAnalysisStage("validating");
       const galaxyIssues = galaxyData?.issues || [];
       const mergedIssues = mapGalaxyIssuesToDetectedIssues(galaxyIssues);
       const derivedConfidence = deriveConfidenceScore(galaxyData?.confidence, mergedIssues);
@@ -251,6 +274,9 @@ export default function ImageAnalyzerPage() {
       };
 
       assertValidImagePayload(finalResult);
+      if (galaxyData?.quality?.retakeRecommended) {
+        setQualitySignal(galaxyData.quality);
+      }
 
       const photoMetrics = buildCategoryPhotoMetrics(selectedCategory, mergedIssues, finalResult.confidence);
       const imageValid = photoMetrics.image_valid !== false;
@@ -275,6 +301,8 @@ export default function ImageAnalyzerPage() {
           })
         );
       }
+
+      setAnalysisStage("building");
 
       // The Vision pipeline (server-side) already persists every captured
       // image to Storage as part of analysis. Reuse those URLs instead of
@@ -364,54 +392,67 @@ export default function ImageAnalyzerPage() {
 
       await recalculateClinicalScores(user.id, selectedCategory);
       await hydrateUserData(user.id);
-      setDiagnosticMode("db_persisted");
-      if (storageUpload.urls.length > 0) {
-        setAnalysisStatus("Scan + photos persisted to Supabase Storage. Redirecting to category assessment...");
-      } else {
-        const storageHint = storageUpload.errors.length
-          ? ` Storage upload warning: ${storageUpload.errors[0]}`
-          : "";
-        setAnalysisStatus(`Scan persisted to DB.${storageHint} Redirecting to category assessment...`);
-      }
 
-      setAnalysisProgress(100);
+      setPendingCategory(selectedCategory);
       setStep("done");
-
-      setTimeout(() => {
-        router.push(`/assessment?category=${selectedCategory}`);
-      }, 600);
     } catch (error) {
       console.error("Analysis failed:", error);
       const message = error instanceof Error ? error.message : "Analysis failed";
-      setAnalysisStatus(`${message} Returning to upload...`);
-      setTimeout(() => setStep("upload"), 1000);
-    } finally {
-      clearInterval(progressTimer);
+      setAnalysisDetail(message);
+      setTimeout(() => setStep("review"), 1400);
     }
   };
 
+  const continueToAssessment = () => {
+    if (pendingCategory) {
+      router.push(`/assessment?category=${pendingCategory}`);
+    } else {
+      router.push("/assessment");
+    }
+  };
+
+  const categoryLabel = selectedType
+    ? selectedType.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+    : "";
+
+  const stepIndex = { select: 1, upload: 2, review: 3, analyzing: 4, done: 5 }[step];
+
   return (
-    <div className="af-page-shell min-h-screen text-[#ffffff] selection:bg-[#0071e3]/30">
-      <header className="fixed top-0 left-0 right-0 z-40 border-b border-[#1d1d1f]/10 bg-white/80 backdrop-blur-md shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+    <div className="af-page min-h-screen">
+      <header className="sticky top-0 z-30 border-b border-[var(--border-hairline)] bg-white/85 backdrop-blur-md">
+        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
           <button
             onClick={() => router.push("/")}
-            className="flex items-center gap-2 text-[#6e6e73] hover:text-[#1d1d1f] transition-colors"
+            className="flex items-center gap-2 text-sm text-[var(--ink-soft)] transition-colors hover:text-[var(--ink)]"
+            aria-label="Back to home"
           >
-            <ChevronLeft className="w-5 h-5" />
-            <span>Back</span>
+            <ChevronLeft className="h-5 w-5" />
+            <span className="hidden sm:inline">Back</span>
           </button>
-          <span className="font-semibold text-[#1d1d1f]">Alpha Focus Analyzer</span>
+
+          {/* Step indicator — Phase 7E's explicit 5-step guided workflow */}
+          <div className="flex items-center gap-1.5" role="list" aria-label={`Step ${stepIndex} of 5`}>
+            {[1, 2, 3, 4, 5].map((n) => (
+              <span
+                key={n}
+                role="listitem"
+                className={`h-1.5 rounded-full transition-all ${
+                  n === stepIndex ? "w-6 bg-[var(--accent-blue)]" : n < stepIndex ? "w-1.5 bg-[var(--accent-green)]" : "w-1.5 bg-[var(--border-hairline)]"
+                }`}
+              />
+            ))}
+          </div>
+
           <button
             onClick={handleQuestionsNavigation}
-            className="text-xs px-3 py-1.5 rounded-lg border border-[#1d1d1f]/10 text-[#1d1d1f] bg-white/60 hover:bg-white/80 transition-colors shadow-sm"
+            className="rounded-lg border border-[var(--border-hairline)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--ink)] shadow-sm transition-colors hover:bg-[var(--bg-wash-start)]"
           >
             Questions
           </button>
         </div>
       </header>
 
-      <main className="af-page-frame mx-auto flex min-h-screen max-w-6xl flex-col justify-center px-4 pb-20 pt-24">
+      <main className="af-page-frame mx-auto flex min-h-[calc(100vh-56px)] max-w-6xl flex-col justify-center px-4 py-10">
         <AnimatePresence mode="wait">
           {step === "select" && (
             <motion.div
@@ -419,23 +460,26 @@ export default function ImageAnalyzerPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
               className="space-y-8"
             >
-              <section className="nv-section-white text-center">
+              <section className="af-card-primary p-8 text-center md:p-10">
                 <div className="relative z-10 mx-auto max-w-3xl space-y-4">
-                  <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-[#1d1d1f] shadow-[0_10px_24px_rgba(47,111,87,0.2)]">
-                    <ScanLine className="w-8 h-8 text-white" />
+                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--ink)] shadow-[var(--shadow-raised)]">
+                    <ScanLine className="h-7 w-7 text-white" />
                   </div>
                   <span className="af-page-kicker mx-auto">
                     <Sparkles className="h-3.5 w-3.5" />
-                    AI Intake
+                    Step 1 of 5 - Choose Category
                   </span>
-                  <h1 className="text-clinical-heading text-4xl font-extrabold tracking-tight text-[#1d1d1f]">Choose an area to analyze and start a cleaner diagnostic flow.</h1>
-                  <p className="text-[#6e6e73]">Select an analyzer mode, upload consistent angles, and move into the linked assessment without leaving the premium shell.</p>
+                  <h1 className="text-clinical-heading text-3xl font-extrabold tracking-tight text-[var(--ink)] md:text-4xl">
+                    Choose an area to analyze
+                  </h1>
+                  <p className="text-[var(--ink-soft)]">Select an analyzer mode, upload consistent angles, and move into the linked assessment.</p>
                 </div>
               </section>
 
-              <div className="af-card-secondary p-8 md:p-10">
+              <div className="af-card-secondary p-6 md:p-10">
                 <AnalyzerSelector selected={selectedType} onSelect={handleTypeSelect} />
               </div>
             </motion.div>
@@ -447,66 +491,166 @@ export default function ImageAnalyzerPage() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
               className="space-y-6"
             >
               <div className="mb-4 flex items-center gap-4">
                 <button
                   onClick={() => setStep("select")}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-white/40 bg-white/60 shadow-sm transition-colors hover:bg-white/80"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border-hairline)] bg-white shadow-sm transition-colors hover:bg-[var(--bg-wash-start)]"
+                  aria-label="Back to category selection"
                 >
-                  <ChevronLeft className="w-5 h-5 text-[#1d1d1f]" />
+                  <ChevronLeft className="h-5 w-5 text-[var(--ink)]" />
                 </button>
                 <div>
-                  <h2 className="text-2xl font-bold text-[#1d1d1f]">Upload Photos</h2>
-                  <p className="text-sm text-[#6e6e73]">Capture 3 angles for stronger hotspot confidence and report quality</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--accent-blue)]">Step 2 of 5 - Upload Photos</p>
+                  <h2 className="text-2xl font-bold text-[var(--ink)]">{categoryLabel}</h2>
+                  <p className="text-sm text-[var(--ink-soft)]">Capture guided angles for stronger hotspot confidence and report quality</p>
                 </div>
               </div>
 
-              <div className="af-card-secondary p-8 md:p-10">
-                <MultiAngleUpload analyzerType={selectedType || "skin"} onAllCaptured={handleAllCaptured} />
+              <div className="af-card-secondary p-6 md:p-10">
+                <MultiAngleUpload analyzerType={selectedType || "skin"} onAllCaptured={handleImagesReady} />
               </div>
             </motion.div>
           )}
 
-          {(step === "analyzing" || step === "done") && (
+          {step === "review" && (
+            <motion.div
+              key="review"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              className="space-y-6"
+            >
+              <div className="mb-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--accent-blue)]">Step 3 of 5 - Review Images</p>
+                <h2 className="text-2xl font-bold text-[var(--ink)]">Confirm your photos</h2>
+                <p className="text-sm text-[var(--ink-soft)]">Double-check lighting and framing before we run AI Vision analysis.</p>
+              </div>
+
+              <div className="af-card-secondary p-6 md:p-10">
+                {analysisDetail && (
+                  <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                    <p>{analysisDetail}</p>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+                  {reviewImages.map((src, idx) => (
+                    <div key={idx} className="relative aspect-square overflow-hidden rounded-2xl border border-[var(--border-hairline)] bg-white shadow-sm">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={src} alt={`Captured photo ${idx + 1}`} className="h-full w-full object-cover" />
+                      <div className="absolute bottom-2 left-2 flex items-center gap-1 rounded-full bg-black/60 px-2 py-1 text-[10px] font-bold text-white backdrop-blur">
+                        <Check className="h-3 w-3" /> Ready
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <p className="mt-4 flex items-center gap-2 text-xs text-[var(--ink-soft)]">
+                  <ImageIcon className="h-3.5 w-3.5" />
+                  {reviewImages.length} photo{reviewImages.length === 1 ? "" : "s"} ready for analysis
+                </p>
+
+                <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                  <Button onClick={() => runAnalysis(reviewImages)} variant="primary" size="lg" className="flex-1 justify-center">
+                    Start AI Analysis <ArrowRight className="h-4 w-4" />
+                  </Button>
+                  <Button onClick={() => setStep("upload")} variant="soft" size="lg" className="justify-center">
+                    <RotateCcw className="h-4 w-4" /> Retake Photos
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {step === "analyzing" && (
             <motion.div
               key="analyzing"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex flex-col items-center justify-center text-center space-y-6 py-20"
+              transition={{ duration: 0.25 }}
+              className="flex flex-col items-center justify-center space-y-6 py-20 text-center"
             >
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--accent-blue)]">Step 4 of 5 - AI Analysis</p>
+
               <div className="relative af-card-primary p-8">
-                <div className="w-24 h-24 rounded-full border-4 border-[#D9D2C7] border-t-[#0071e3] animate-spin" />
+                <div className="h-24 w-24 animate-spin rounded-full border-4 border-[var(--border-hairline)] border-t-[var(--accent-blue)]" />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  {step === "done" ? (
-                    <Check className="w-8 h-8 text-[#0071e3]" />
-                  ) : (
-                    <Sparkles className="w-8 h-8 text-[#0071e3] animate-pulse" />
-                  )}
+                  <Sparkles className="h-8 w-8 animate-pulse text-[var(--accent-blue)]" />
                 </div>
               </div>
 
-              <div className="max-w-xl space-y-2">
-                <h2 className="text-2xl font-bold mb-2">
-                  {step === "done" ? "Analysis Complete" : "Analyzing Images..."}
-                </h2>
-                <p className="text-[#0071e3]">{analysisStatus}</p>
-                {diagnosticMode && (
-                  <p className="mt-2 text-xs text-[#6e6e73]">
-                    Diagnostic mode: {diagnosticMode === "db_persisted" ? "DB persisted" : "Session only"}
-                  </p>
-                )}
+              <div className="max-w-xl space-y-2" role="status" aria-live="polite">
+                <h2 className="mb-2 text-2xl font-bold text-[var(--ink)]">{STAGE_COPY[analysisStage]}...</h2>
+                <p className="text-sm text-[var(--ink-soft)]">This usually takes a few seconds. Please keep this tab open.</p>
               </div>
 
               <div className="af-card-secondary w-full max-w-md p-5">
-                <div className="h-2 w-full bg-[#d9d9de] rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-medical-gradient transition-all duration-300"
-                    style={{ width: `${analysisProgress}%` }}
+                <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--border-hairline)]">
+                  <motion.div
+                    className="h-full bg-[var(--accent-blue)]"
+                    animate={{ width: `${STAGE_PROGRESS[analysisStage]}%` }}
+                    transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                   />
                 </div>
-                <p className="text-xs text-[#6E9F87] mt-2">{analysisProgress}%</p>
+                <div className="mt-3 flex justify-between text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-soft)]">
+                  {(Object.keys(STAGE_COPY) as AnalysisStage[]).map((s) => (
+                    <span key={s} className={s === analysisStage ? "text-[var(--accent-blue)]" : ""}>
+                      {STAGE_PROGRESS[s]}%
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {step === "done" && (
+            <motion.div
+              key="done"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              className="flex flex-col items-center justify-center space-y-6 py-20 text-center"
+              role="status"
+              aria-live="polite"
+            >
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--accent-blue)]">Step 5 of 5 - Continue to Assessment</p>
+
+              <div className="af-card-primary flex h-24 w-24 items-center justify-center p-0">
+                <Check className="h-10 w-10 text-[var(--accent-green)]" />
+              </div>
+
+              <div className="max-w-xl space-y-2">
+                <h2 className="text-2xl font-bold text-[var(--ink)]">Analysis Complete</h2>
+                <p className="text-sm text-[var(--ink-soft)]">Your photos have been analyzed and saved. Continue to the assessment to build your personalized recovery plan.</p>
+              </div>
+
+              {qualitySignal?.retakeRecommended && (
+                <div className="flex max-w-md items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-left text-sm text-amber-900">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <div>
+                    <p className="font-semibold">Photo quality could be better next time</p>
+                    <p className="mt-1 text-xs leading-relaxed">
+                      {qualitySignal.reason || "Lighting, angle, or focus made this analysis less reliable."} This result was still saved — you can continue now or retake for a stronger baseline.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Button onClick={continueToAssessment} variant="primary" size="lg" className="justify-center">
+                  Continue to Assessment <ArrowRight className="h-4 w-4" />
+                </Button>
+                {qualitySignal?.retakeRecommended && (
+                  <Button onClick={() => setStep("upload")} variant="soft" size="lg" className="justify-center">
+                    <RotateCcw className="h-4 w-4" /> Retake Photos
+                  </Button>
+                )}
               </div>
             </motion.div>
           )}
@@ -515,4 +659,3 @@ export default function ImageAnalyzerPage() {
     </div>
   );
 }
-

@@ -34,21 +34,21 @@ export default function InsightCard({ category, metrics }: InsightCardProps) {
   return (
     <section className="af-card rounded-2xl p-6">
       <div className="flex items-center gap-2">
-        <Brain className="h-5 w-5 text-[#0071e3]" />
-        <h3 className="text-lg font-bold text-[#1d1d1f]">AI Insight Panel</h3>
+        <Brain className="h-5 w-5 text-[var(--accent-blue)]" />
+        <h3 className="text-lg font-bold text-[var(--ink)]">AI Insight Panel</h3>
       </div>
-      <p className="mt-3 text-sm text-[#1d1d1f]">
+      <p className="mt-3 text-sm text-[var(--ink)]">
         Your current concern pattern is likely driven by {reason}. Prioritize hydration, barrier repair, and strict routine consistency this week.
       </p>
-      <div className="mt-4 rounded-xl border border-[#d9d9de] bg-[#F8F6F3] p-4">
+      <div className="mt-4 rounded-xl border border-[var(--border-hairline)] bg-[var(--tint-neutral)] p-4">
         <div className="flex items-center justify-between text-sm">
-          <span className="font-semibold text-[#1d1d1f]">Improvement Probability</span>
-          <span className="font-bold text-[#0071e3]">{probability}%</span>
+          <span className="font-semibold text-[var(--ink)]">Improvement Probability</span>
+          <span className="font-bold text-[var(--accent-blue)]">{probability}%</span>
         </div>
-        <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#E7E1D7]">
-          <div className="h-full rounded-full bg-gradient-to-r from-[#6e6e73] to-[#0071e3]" style={{ width: `${probability}%` }} />
+        <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--border-hairline)]">
+          <div className="h-full rounded-full bg-gradient-to-r from-[var(--ink-soft)] to-[var(--accent-blue)]" style={{ width: `${probability}%` }} />
         </div>
-        <p className="mt-2 inline-flex items-center gap-1 text-xs text-[#6e6e73]"><TrendingUp className="h-3.5 w-3.5" /> Focus this week: hydration + barrier stabilization</p>
+        <p className="mt-2 inline-flex items-center gap-1 text-xs text-[var(--ink-soft)]"><TrendingUp className="h-3.5 w-3.5" /> Focus this week: hydration + barrier stabilization</p>
       </div>
     </section>
   );

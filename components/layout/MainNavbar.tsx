@@ -5,20 +5,15 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
 import {
-  Activity,
   Bell,
-  BookOpen,
-  ClipboardCheck,
-  FileText,
-  LayoutDashboard,
   MapPin,
-  Menu, // Added Menu icon
+  Menu,
   RefreshCcw,
   ShoppingCart,
   User,
-  X, // Added X icon
+  X,
   Zap,
-  ArrowRight
+  ArrowRight,
 } from "lucide-react";
 import { useMounted } from "@/app/hooks/useMounted";
 import { useLocation } from "@/app/hooks/useLocation";
@@ -41,12 +36,6 @@ const LINKS = [
   { label: "Challenges", href: "/challenges" },
   { label: "Knowledge", href: "/learning-center" },
   { label: "Shop", href: "/shop" },
-] as const;
-
-const MOBILE_PRIMARY_LINKS = [
-  { label: "Home", href: "/dashboard" },
-  { label: "Protocol", href: "/result" },
-  { label: "Progress", href: "/alpha-credits" },
 ] as const;
 
 type NotificationItem = {
@@ -412,7 +401,7 @@ export default function MainNavbar() {
     setMobileMenuOpen(false);
   };
 
-  if (!mounted) return <div className="h-12 bg-black/80 border-b border-white/10" />;
+  if (!mounted) return <div className="h-14 bg-[var(--nav-surface)] border-b border-[var(--nav-border)]" />;
 
   const filterTabs: NotificationFilter[] = ["All", "Rewards", "Alerts"];
   const primaryDesktopLinks = LINKS.slice(0, 5);
@@ -427,7 +416,7 @@ export default function MainNavbar() {
       style={{ opacity: showNotifications ? 1 : 0, transform: showNotifications ? "translateY(0)" : "translateY(-10px)" }}
     >
       <div className="mb-3 flex items-center justify-between">
-        <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#a7a7a7]">Notifications</p>
+        <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--text-secondary-dark)]">Notifications</p>
         <button
           type="button"
           onClick={async () => {
@@ -440,7 +429,7 @@ export default function MainNavbar() {
             setToast(null);
             void refreshNotifications();
           }}
-          className="border border-[#0071e3] px-2 py-1 text-[11px] font-bold uppercase text-white"
+          className="border border-[var(--accent-blue)] px-2 py-1 text-[11px] font-bold uppercase text-white"
           disabled={unreadNotifications.length === 0}
         >
           Mark all read
@@ -455,7 +444,7 @@ export default function MainNavbar() {
               key={filter}
               type="button"
               onClick={() => setNotificationFilter(filter)}
-              className={`border px-2 py-1 text-[11px] font-bold uppercase ${active ? "border-[#0071e3] text-[#2997ff]" : "border-[#4a4a4a] text-[#a7a7a7]"}`}
+              className={`border px-2 py-1 text-[11px] font-bold uppercase ${active ? "border-[var(--accent-blue)] text-[var(--link-blue-dark)]" : "border-[var(--nav-border-soft)] text-[var(--text-secondary-dark)]"}`}
             >
               {filter}
             </button>
@@ -463,34 +452,34 @@ export default function MainNavbar() {
         })}
       </div>
 
-      <div className="mb-3 flex items-center justify-between border border-[#2d2d2d] px-2 py-2">
-        <span className="text-[11px] font-bold uppercase text-[#a7a7a7]">Unread only</span>
+      <div className="mb-3 flex items-center justify-between border border-[var(--nav-surface-border)] px-2 py-2">
+        <span className="text-[11px] font-bold uppercase text-[var(--text-secondary-dark)]">Unread only</span>
         <button
           type="button"
           onClick={() => setShowUnreadOnly((current) => !current)}
-          className={`h-6 w-10 border ${showUnreadOnly ? "border-[#0071e3]" : "border-[#5a5a5a]"}`}
+          className={`h-6 w-10 border ${showUnreadOnly ? "border-[var(--accent-blue)]" : "border-[var(--nav-border-soft)]"}`}
           aria-pressed={showUnreadOnly}
         >
-          <span className={`block h-4 w-4 bg-[#0071e3] transition-transform ${showUnreadOnly ? "translate-x-4" : "translate-x-0"}`} />
+          <span className={`block h-4 w-4 bg-[var(--accent-blue)] transition-transform ${showUnreadOnly ? "translate-x-4" : "translate-x-0"}`} />
         </button>
       </div>
 
       <div className="space-y-2">
         {visibleNotifications.slice(0, 5).length === 0 && (
-          <div className="border border-[#2d2d2d] p-3 text-sm text-[#a7a7a7]">No notifications found.</div>
+          <div className="border border-[var(--nav-surface-border)] p-3 text-sm text-[var(--text-secondary-dark)]">No notifications found.</div>
         )}
         {visibleNotifications.slice(0, 5).map((note) => (
-          <div key={note.id} className="border border-[#2d2d2d] bg-[#111611] p-3">
+          <div key={note.id} className="border border-[var(--nav-surface-border)] bg-[var(--nav-surface-soft)] p-3">
             <div className="flex items-start justify-between gap-2">
               <div>
                 <p className="text-sm font-bold text-white">{note.title}</p>
-                <p className="mt-1 text-xs text-[#a7a7a7]">{note.time}</p>
+                <p className="mt-1 text-xs text-[var(--text-secondary-dark)]">{note.time}</p>
               </div>
-              {!note.isRead && <span className="h-2 w-2 bg-[#d94444]" />}
+              {!note.isRead && <span className="h-2 w-2 bg-[var(--danger)]" />}
             </div>
-            <p className="mt-2 text-xs text-[#a7a7a7]">{note.body}</p>
+            <p className="mt-2 text-xs text-[var(--text-secondary-dark)]">{note.body}</p>
             <div className="mt-2 flex items-center gap-2">
-              <span className="border border-[#0071e3] px-2 py-0.5 text-[10px] font-bold uppercase text-[#2997ff]">{note.tag || "Alerts"}</span>
+              <span className="border border-[var(--accent-blue)] px-2 py-0.5 text-[10px] font-bold uppercase text-[var(--link-blue-dark)]">{note.tag || "Alerts"}</span>
               {!note.isRead && (
                 <button
                   type="button"
@@ -498,13 +487,13 @@ export default function MainNavbar() {
                     void markNotificationRead(note.id);
                     if (toast?.id === note.id) setToast(null);
                   }}
-                  className="border border-[#5a5a5a] px-2 py-0.5 text-[10px] font-bold uppercase text-white"
+                  className="border border-[var(--nav-border-soft)] px-2 py-0.5 text-[10px] font-bold uppercase text-white"
                 >
                   Mark read
                 </button>
               )}
               {note.ctaHref && note.ctaLabel && (
-                <Link href={note.ctaHref} onClick={() => setShowNotifications(false)} className="border border-[#5a5a5a] px-2 py-0.5 text-[10px] font-bold uppercase text-white">
+                <Link href={note.ctaHref} onClick={() => setShowNotifications(false)} className="border border-[var(--nav-border-soft)] px-2 py-0.5 text-[10px] font-bold uppercase text-white">
                   {note.ctaLabel}
                 </Link>
               )}
@@ -517,7 +506,7 @@ export default function MainNavbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 h-14 border-b border-white/10 bg-[linear-gradient(180deg,rgba(10,12,18,0.9)_0%,rgba(8,10,14,0.78)_100%)] backdrop-blur-[20px]">
+      <header className="sticky top-0 z-50 h-14 border-b border-[var(--nav-border)] bg-[linear-gradient(180deg,var(--nav-bg-start)_0%,var(--nav-bg-end)_100%)] backdrop-blur-[20px]">
         <div className="mx-auto grid h-full max-w-[1320px] grid-cols-[auto,1fr,auto] items-center gap-3 px-3 sm:px-4 lg:px-6">
           
           {/* Mobile: Hamburger + Logo */}
@@ -560,7 +549,7 @@ export default function MainNavbar() {
               >
                 {link.label}
                 {isActive ? (
-                  <span className="absolute bottom-0 left-2 right-2 h-px bg-[#2997ff]/70" />
+                  <span className="absolute bottom-0 left-2 right-2 h-px bg-[var(--link-blue-dark)]/70" />
                 ) : (
                   <span className="absolute bottom-0 left-0 w-0 h-px bg-white/75 transition-all duration-300 group-hover:w-full" />
                 )}
@@ -603,7 +592,7 @@ export default function MainNavbar() {
           {/* Right: Actions */}
           <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-2.5 text-white min-w-0 justify-self-end">
             {/* Location (Desktop Only) */}
-            <div className="hidden xl:flex items-center gap-1 max-w-[150px] 2xl:max-w-[190px] text-[#a7a7a7]">
+            <div className="hidden xl:flex items-center gap-1 max-w-[150px] 2xl:max-w-[190px] text-[var(--text-secondary-dark)]">
               <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
               <span className="truncate text-xs font-medium" title={locationText}>{locationText}</span>
               <button
@@ -632,7 +621,7 @@ export default function MainNavbar() {
               >
                 <Bell className="h-5 w-5 text-white" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 h-2.5 w-2.5 bg-[#d94444]" />
+                  <span className="absolute top-1 right-1 h-2.5 w-2.5 bg-[var(--danger)]" />
                 )}
               </button>
               {notificationPanel}
@@ -646,7 +635,7 @@ export default function MainNavbar() {
             >
               <ShoppingCart className="h-5 w-5 text-white" />
               {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#0071e3] text-[10px] text-white font-bold">
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--accent-blue)] text-[10px] text-white font-bold">
                   {cartCount}
                 </span>
               )}
@@ -657,7 +646,7 @@ export default function MainNavbar() {
             </Link>
 
             {user && (
-              <span className="hidden 2xl:block text-xs font-semibold text-[#a7a7a7] max-w-[140px] truncate" title={userDisplayName}>
+              <span className="hidden 2xl:block text-xs font-semibold text-[var(--text-secondary-dark)] max-w-[140px] truncate" title={userDisplayName}>
                 Welcome, {userDisplayName}
               </span>
             )}
@@ -666,7 +655,7 @@ export default function MainNavbar() {
               <button
                 type="button"
                 onClick={() => setAuthModalOpen(true)}
-                className="hidden sm:flex items-center gap-2 rounded-full border border-[#0071e3] px-3 py-1 text-[12px] font-normal text-white hover:bg-white/10 whitespace-nowrap"
+                className="hidden sm:flex items-center gap-2 rounded-full border border-[var(--accent-blue)] px-3 py-1 text-[12px] font-normal text-white hover:bg-white/10 whitespace-nowrap"
               >
                 Sign in
               </button>
@@ -674,7 +663,7 @@ export default function MainNavbar() {
               <button
                 type="button"
                 onClick={handleSignOut}
-                className="hidden sm:flex items-center gap-2 rounded-full border border-[#0071e3] px-3 py-1 text-[12px] font-normal text-white hover:bg-white/10 whitespace-nowrap"
+                className="hidden sm:flex items-center gap-2 rounded-full border border-[var(--accent-blue)] px-3 py-1 text-[12px] font-normal text-white hover:bg-white/10 whitespace-nowrap"
               >
                 Logout
               </button>
@@ -682,7 +671,7 @@ export default function MainNavbar() {
 
             <Link 
               href="/upgrade" 
-              className="hidden sm:flex items-center gap-2 rounded-full border border-[#0071e3] bg-[#0071e3] px-3 lg:px-4 py-1 text-[12px] font-normal text-white transition-all whitespace-nowrap"
+              className="hidden sm:flex items-center gap-2 rounded-full border border-[var(--accent-blue)] bg-[var(--accent-blue)] px-3 lg:px-4 py-1 text-[12px] font-normal text-white transition-all whitespace-nowrap"
             >
               <Zap className="h-3.5 w-3.5 fill-current" />
               UPGRADE
@@ -694,10 +683,10 @@ export default function MainNavbar() {
       {activeReward && pathname && (pathname.startsWith("/dashboard") || pathname.startsWith("/shop") || pathname.startsWith("/product")) && (
         <div className={`sticky top-12 z-40 flex items-center justify-center gap-2 lg:gap-3 border-b px-3 py-2 text-center text-xs font-normal shadow-sm transition-colors ${
           isExpiringSoon 
-            ? "border-[#E85D4E]/30 bg-[#FFF5F3] text-[#A63C31]" 
-            : "border-[#d9d9de] bg-[#eef5ff] text-[#1d1d1f]"
+            ? "border-[var(--warning-accent)]/30 bg-[var(--warning-bg)] text-[var(--warning-text)]" 
+            : "border-[var(--border-hairline)] bg-[var(--bg-wash-start)] text-[var(--ink)]"
         }`}>
-          {isExpiringSoon && <span className="inline-flex h-2 w-2 rounded-full bg-[#E85D4E] animate-pulse" />}
+          {isExpiringSoon && <span className="inline-flex h-2 w-2 rounded-full bg-[var(--warning-accent)] animate-pulse" />}
           <span>
             You have {activeReward.discountPercent}% OFF
             {isExpiringSoon && <span className="hidden sm:inline">  -  Expiring {getRewardCountdownLabel(activeReward.expiresAt)}</span>}
@@ -721,7 +710,7 @@ export default function MainNavbar() {
           />
 
           {/* Drawer Panel */}
-          <div className="relative w-[80%] max-w-[300px] h-full bg-[#0d0d10]/95 border-r border-white/15 shadow-2xl flex flex-col animate-in slide-in-from-left duration-300 text-white">
+          <div className="relative w-[80%] max-w-[300px] h-full bg-[var(--nav-drawer-bg)] border-r border-white/15 shadow-2xl flex flex-col animate-in slide-in-from-left duration-300 text-white">
             {/* Drawer Header */}
             <div className="flex items-center justify-between p-6 border-b border-white/10">
               <img
@@ -746,7 +735,12 @@ export default function MainNavbar() {
 
             {/* Links List */}
             <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1">
-              {MOBILE_PRIMARY_LINKS.map((link) => {
+              {/* Same primary/secondary split as desktop (primaryDesktopLinks/
+                  overflowDesktopLinks) — previously mobile had its own,
+                  differently-curated 3-link "primary" set that disagreed
+                  with desktop's 5, a real inconsistency found in the Phase 7B
+                  audit. One source of truth for "what's primary" now. */}
+              {primaryDesktopLinks.map((link) => {
                 const isActive = pathname === link.href || pathname?.startsWith(link.href + '/');
                 return (
                 <Link
@@ -754,19 +748,20 @@ export default function MainNavbar() {
                   href={link.href}
                   onClick={() => setMobileMenuOpen(false)}
                   className={`flex items-center gap-3 px-4 py-3 text-base font-medium rounded-xl transition-all ${
-                    isActive 
-                      ? "bg-[#0071e3] text-white shadow-md shadow-[#0071e3]/30" 
+                    isActive
+                      ? "bg-[var(--accent-blue)] text-white shadow-md shadow-[var(--accent-blue)]/30"
                       : "text-white/85 hover:bg-white/10"
                   }`}
                 >
-                  {/* Optional icons mapping could go here if links had icons */}
                   {link.label}
                 </Link>
               )})}
 
-              <div className="mt-2 px-4 text-[11px] uppercase tracking-wider text-white/55">More</div>
+              {overflowDesktopLinks.length > 0 && (
+                <div className="mt-2 px-4 text-[11px] uppercase tracking-wider text-white/55">More</div>
+              )}
 
-              {LINKS.filter((item) => !MOBILE_PRIMARY_LINKS.some((m) => m.href === item.href)).map((link) => {
+              {overflowDesktopLinks.map((link) => {
                 const isActive = pathname === link.href || pathname?.startsWith(link.href + '/');
                 return (
                 <Link
@@ -775,7 +770,7 @@ export default function MainNavbar() {
                   onClick={() => setMobileMenuOpen(false)}
                   className={`flex items-center gap-3 px-4 py-3 text-base font-medium rounded-xl transition-all ${
                     isActive
-                      ? "bg-[#0071e3] text-white shadow-md shadow-[#0071e3]/30"
+                      ? "bg-[var(--accent-blue)] text-white shadow-md shadow-[var(--accent-blue)]/30"
                       : "text-white/85 hover:bg-white/10"
                   }`}
                 >
@@ -819,7 +814,7 @@ export default function MainNavbar() {
                  <Link 
                   href="/upgrade"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#0071e3] px-4 py-3 text-sm font-bold text-white shadow-lg hover:bg-[#005bbf] transition-all"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--accent-blue)] px-4 py-3 text-sm font-bold text-white shadow-lg hover:bg-[var(--accent-blue-dark)] transition-all"
                 >
                   <Zap className="h-4 w-4 fill-current" />
                   UPGRADE TO PRO
@@ -851,7 +846,7 @@ export default function MainNavbar() {
       {mountedDom && toast &&
         createPortal(
           <div
-            className={`fixed bottom-4 right-1/2 translate-x-1/2 sm:translate-x-0 sm:right-5 z-[10000] w-[min(420px,calc(100vw-1rem))] rounded-2xl border border-[#d9d9de] bg-white px-4 py-3 shadow-xl shadow-black/10 transition-all duration-300 ${toastPhase === "exit" ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"}`}
+            className={`fixed bottom-4 right-1/2 translate-x-1/2 sm:translate-x-0 sm:right-5 z-[10000] w-[min(420px,calc(100vw-1rem))] rounded-2xl border border-[var(--border-hairline)] bg-white px-4 py-3 shadow-xl shadow-black/10 transition-all duration-300 ${toastPhase === "exit" ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"}`}
             onTouchStart={(e) => setTouchStartX(e.touches[0]?.clientX ?? null)}
             onTouchEnd={(e) => {
               if (touchStartX === null) return;
@@ -863,11 +858,11 @@ export default function MainNavbar() {
             }}
           >
             <div className="flex items-start gap-3">
-              <div className="mt-0.5 h-2 w-2 rounded-full bg-[#0071e3]" />
+              <div className="mt-0.5 h-2 w-2 rounded-full bg-[var(--accent-blue)]" />
               <div className="flex-1">
-                <p className="text-sm font-semibold text-[#1d1d1f]">{toast.title}</p>
-                <p className="text-xs text-[#4A453E] mt-1 leading-relaxed">{toast.body}</p>
-                <p className="text-[11px] text-[#6e6e73] mt-1">{toast.time}</p>
+                <p className="text-sm font-semibold text-[var(--ink)]">{toast.title}</p>
+                <p className="text-xs text-[var(--ink-soft)] mt-1 leading-relaxed">{toast.body}</p>
+                <p className="text-[11px] text-[var(--ink-soft)] mt-1">{toast.time}</p>
               </div>
               <button
                 type="button"
@@ -877,7 +872,7 @@ export default function MainNavbar() {
                 onTouchEnd={(e) => e.stopPropagation()}
                 onMouseDown={(e) => e.stopPropagation()}
                 onClickCapture={(e) => e.stopPropagation()}
-                className="text-xs font-semibold text-[#6e6e73] hover:text-[#1d1d1f]"
+                className="text-xs font-semibold text-[var(--ink-soft)] hover:text-[var(--ink)]"
               >
                 Dismiss
               </button>

@@ -1,11 +1,10 @@
 "use client";
 
 import { Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import AuthForm from "@/components/auth/AuthForm";
 
 function LoginPageInner() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams?.get("redirect") || "/dashboard";
 
@@ -19,7 +18,18 @@ function LoginPageInner() {
             <span className="af-badge-chip text-[#A46A2D]">Profile synced</span>
           </div>
 
-          <AuthForm onSuccess={() => router.push(redirectTo)} />
+          <AuthForm
+            onSuccess={() => {
+              // Full page navigation, not router.push(): a client-side
+              // transition here raced ahead of the session cookie being
+              // guaranteed available to middleware on the very next
+              // request, bouncing users back to /login right after a
+              // correct login (found + diagnosed during Phase 7 journey
+              // recording). A full navigation always carries the current
+              // cookie jar and gets a clean SSR evaluation.
+              window.location.href = redirectTo;
+            }}
+          />
         </div>
       </div>
     </div>

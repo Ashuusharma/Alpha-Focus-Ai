@@ -1,4 +1,7 @@
-﻿type TimelineItem = {
+import { Check } from "lucide-react";
+import EmptyState from "@/components/ui/EmptyState";
+
+type TimelineItem = {
   id: string;
   label: string;
   timestamp: string;
@@ -22,16 +25,25 @@ function humanDateLabel(iso: string) {
 
 export default function ActivityTimeline({ items }: ActivityTimelineProps) {
   return (
-    <section className="af-card rounded-2xl p-6">
-      <h3 className="text-lg font-bold text-[#1d1d1f]">Activity Timeline</h3>
+    <section className="af-card p-6">
+      <h3 className="text-lg font-bold text-[var(--ink)]">Recent Activity</h3>
       <div className="mt-4 space-y-3">
         {items.length === 0 ? (
-          <p className="text-sm text-[#6e6e73]">No activity yet. Complete your first protocol action.</p>
+          <EmptyState
+            icon={<Check className="h-5 w-5" />}
+            title="No activity yet"
+            description="Complete your first protocol action to see it here."
+          />
         ) : (
           items.map((item) => (
-            <div key={item.id} className="rounded-xl border border-[#d9d9de] bg-[#F8F6F3] p-3">
-              <p className="text-xs font-semibold text-[#6e6e73]">{humanDateLabel(item.timestamp)}</p>
-              <p className="mt-1 text-sm font-medium text-[#1d1d1f]">âœ” {item.label}</p>
+            <div key={item.id} className="flex items-start gap-3 rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-wash-start)] p-3">
+              <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--accent-green)]/20 text-[var(--ink)]">
+                <Check className="h-3 w-3" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-[var(--ink-soft)]">{humanDateLabel(item.timestamp)}</p>
+                <p className="mt-0.5 text-sm font-medium text-[var(--ink)]">{item.label}</p>
+              </div>
             </div>
           ))
         )}

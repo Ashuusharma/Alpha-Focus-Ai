@@ -7,42 +7,47 @@ module.exports = {
   ],
   theme: {
     extend: {
+      // Phase 7B: values updated to the unified light-first navy/blue/green
+      // system (keys kept identical — components/dashboard/* and
+      // components/result/* consume these keys directly, e.g. text-text-
+      // primary, bg-card, shadow-glow — updating values only means no
+      // markup changes were needed to repaint that whole component cluster).
       colors: {
         primary: {
-          900: "#1E4D3A",
-          800: "#2F6F57",
-          700: "#6E9F87"
+          900: "#0B2A4A",
+          800: "#123A63",
+          700: "#3D5875"
         },
         accent: {
-          emerald: "#2F6F57",
-          teal: "#6E9F87",
-          cyan: "#A9CBB7",
-          gold: "#C9A227"
+          emerald: "#34D399",
+          teal: "#0D9488",
+          cyan: "#0071E3",
+          gold: "#F0B429"
         },
         clinical: {
-          blue: "#2F6F57",
-          success: "#2F6F57",
-          warning: "#C9A227",
-          danger: "#8C6A5A"
+          blue: "#0071E3",
+          success: "#34D399",
+          warning: "#F59E0B",
+          danger: "#EF4444"
         },
         card: {
-          DEFAULT: "#F4F1EB",
-          soft: "#E8E3DA"
+          DEFAULT: "#FFFFFF",
+          soft: "#F3F7FC"
         },
         text: {
-          primary: "#1E4D3A",
-          secondary: "#2F6F57",
-          muted: "#6E9F87"
+          primary: "#0B2A4A",
+          secondary: "#5B6B7F",
+          muted: "#8592A3"
         }
       },
       backgroundImage: {
-        "medical-gradient": "linear-gradient(135deg, #2F6F57 0%, #6E9F87 100%)",
-        "card-soft-gradient": "linear-gradient(180deg, #F4F1EB 0%, #E8E3DA 100%)",
-        "premium-button-gradient": "linear-gradient(135deg, #C9A227 0%, #E6C65C 100%)",
+        "medical-gradient": "linear-gradient(135deg, #0B2A4A 0%, #0071E3 100%)",
+        "card-soft-gradient": "linear-gradient(180deg, #FFFFFF 0%, #F3F7FC 100%)",
+        "premium-button-gradient": "linear-gradient(135deg, #F0B429 0%, #FFD666 100%)",
       },
       boxShadow: {
-        glow: "0 8px 20px rgba(47,111,87,0.12)",
-        card: "0 8px 20px rgba(0,0,0,0.04)",
+        glow: "0 8px 20px rgba(0,113,227,0.16)",
+        card: "0 8px 24px rgba(11,42,74,0.08)",
       },
       borderRadius: {
         xl: "1rem",

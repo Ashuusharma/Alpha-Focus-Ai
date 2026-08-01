@@ -273,17 +273,19 @@ export default function MultiAngleUpload({
           <div key={angle.id} className="flex items-center gap-2 flex-1">
             <button
               onClick={() => { setActiveAngleIdx(idx); stopCamera(); }}
+              aria-label={`${angle.imageData ? "Captured" : "Not yet captured"}: ${angle.label}`}
+              aria-current={idx === activeAngleIdx ? "step" : undefined}
               className={`flex-1 h-2 rounded-full transition-all duration-300 cursor-pointer ${
-                angle.imageData 
-                    ? "bg-[#0071e3] shadow-[0_0_8px_rgba(47,111,87,0.35)]" 
-                  : idx === activeAngleIdx 
-                    ? "bg-[#99c9ff] animate-pulse shadow-[0_0_8px_rgba(169,203,183,0.6)]" 
-                    : "bg-[#d9d9de]"
+                angle.imageData
+                    ? "bg-[var(--accent-blue)] shadow-[0_0_8px_rgba(47,111,87,0.35)]"
+                  : idx === activeAngleIdx
+                    ? "bg-[var(--accent-blue-soft)] animate-pulse shadow-[0_0_8px_rgba(169,203,183,0.6)]"
+                    : "bg-[var(--border-hairline)]"
               }`}
             />
           </div>
         ))}
-        <span className="text-xs text-[#6E9F87] ml-2 whitespace-nowrap">{capturedCount}/{totalAngles}</span>
+        <span className="text-xs text-[var(--ink-soft)] ml-2 whitespace-nowrap">{capturedCount}/{totalAngles}</span>
       </div>
 
       {/* PINNED THUMBNAILS */}
@@ -291,16 +293,26 @@ export default function MultiAngleUpload({
         {angles.map((angle, idx) => (
           <motion.div
             key={angle.id}
+            role="button"
+            tabIndex={0}
+            aria-label={`${angle.imageData ? "Captured" : "Not yet captured"}: ${angle.label}`}
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: idx * 0.1 }}
             onClick={() => { setActiveAngleIdx(idx); stopCamera(); }}
-            className={`relative flex-shrink-0 w-24 h-24 rounded-xl border-2 cursor-pointer overflow-hidden transition-all duration-300 ${
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setActiveAngleIdx(idx);
+                stopCamera();
+              }
+            }}
+            className={`relative flex-shrink-0 w-24 h-24 rounded-xl border-2 cursor-pointer overflow-hidden transition-all duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#06b6d4] ${
               idx === activeAngleIdx 
-                ? "border-[#0071e3] shadow-[0_0_15px_rgba(47,111,87,0.2)] ring-2 ring-[#99c9ff]" 
+                ? "border-[var(--accent-blue)] shadow-[0_0_15px_rgba(47,111,87,0.2)] ring-2 ring-[var(--accent-blue-soft)]" 
                 : angle.imageData 
-                  ? "border-[#99c9ff]" 
-                  : "border-[#D9D2C7] border-dashed bg-white"
+                  ? "border-[var(--accent-blue-soft)]" 
+                  : "border-[var(--border-hairline)] border-dashed bg-white"
             }`}
           >
             {angle.imageData ? (
@@ -319,11 +331,12 @@ export default function MultiAngleUpload({
                 </div>
                 <button
                   onClick={(e) => { e.stopPropagation(); removePhoto(idx); }}
-                  className="absolute top-1 right-1 w-5 h-5 bg-red-500/80 rounded-full flex items-center justify-center hover:bg-red-500 transition"
+                  aria-label={`Remove ${angle.label} photo`}
+                  className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500/90 transition hover:bg-red-500"
                 >
-                  <X className="w-3 h-3 text-white" />
+                  <X className="h-3.5 w-3.5 text-white" />
                 </button>
-                <div className="absolute top-1 left-1 w-5 h-5 bg-[#0071e3] rounded-full flex items-center justify-center">
+                <div className="absolute top-1 left-1 w-5 h-5 bg-[var(--accent-blue)] rounded-full flex items-center justify-center">
                   <Check className="w-3 h-3 text-white" />
                 </div>
                 {(qualityWarnings[angle.id] || []).length > 0 && (
@@ -333,9 +346,9 @@ export default function MultiAngleUpload({
                 )}
               </>
             ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center bg-[#F7F4EE]">
-                <Camera className="w-5 h-5 text-[#6E9F87] mb-1" />
-                <p className="text-[8px] text-[#6E9F87] text-center px-1 leading-tight">{angle.label}</p>
+              <div className="w-full h-full flex flex-col items-center justify-center bg-[var(--bg-wash-start)]">
+                <Camera className="w-5 h-5 text-[var(--ink-soft)] mb-1" />
+                <p className="text-[8px] text-[var(--ink-soft)] text-center px-1 leading-tight">{angle.label}</p>
               </div>
             )}
           </motion.div>
@@ -348,23 +361,23 @@ export default function MultiAngleUpload({
           key={`instruction-${activeAngleIdx}`}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-[#F7F4EE] border border-[#D9D2C7] rounded-2xl p-7"
+          className="bg-[var(--bg-wash-start)] border border-[var(--border-hairline)] rounded-2xl p-7"
         >
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 bg-[#eef5ff] rounded-xl flex items-center justify-center flex-shrink-0 border border-[#d9d9de]">
-              <Camera className="w-6 h-6 text-[#0071e3]" />
+            <div className="w-12 h-12 bg-[var(--bg-wash-start)] rounded-xl flex items-center justify-center flex-shrink-0 border border-[var(--border-hairline)]">
+              <Camera className="w-6 h-6 text-[var(--accent-blue)]" />
             </div>
             <div>
-              <h4 className="text-xl font-bold text-[#1E4D3A] mb-1">
+              <h4 className="text-xl font-bold text-[var(--ink)] mb-1">
                 Photo {activeAngleIdx + 1}: {currentAngle.label}
               </h4>
-              <p className="text-sm text-[#0071e3] leading-relaxed">
+              <p className="text-sm text-[var(--accent-blue)] leading-relaxed">
                 {currentAngle.instruction}
               </p>
               {currentTips.length > 0 ? (
-                <div className="mt-4 rounded-xl border border-[#d9d9de] bg-white/70 px-4 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#6E9F87]">Quality cues</p>
-                  <div className="mt-2 space-y-1 text-xs text-[#0071e3]">
+                <div className="mt-4 rounded-xl border border-[var(--border-hairline)] bg-white/70 px-4 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-soft)]">Quality cues</p>
+                  <div className="mt-2 space-y-1 text-xs text-[var(--accent-blue)]">
                     {currentTips.map((tip) => (
                       <p key={tip}> -  {tip}</p>
                     ))}
@@ -386,7 +399,7 @@ export default function MultiAngleUpload({
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={disabled || processingImage}
-              className="flex-1 flex items-center justify-center gap-2 bg-white hover:bg-[#F7F4EE] text-[#0071e3] py-4 px-5 rounded-xl font-bold transition-all border border-[#D9D2C7] disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-2 bg-white hover:bg-[var(--bg-wash-start)] text-[var(--accent-blue)] py-4 px-5 rounded-xl font-bold transition-all border border-[var(--border-hairline)] disabled:opacity-50"
             >
               <Upload className="w-5 h-5" />
               Upload Photo
@@ -400,12 +413,14 @@ export default function MultiAngleUpload({
               className="hidden"
             />
           </div>
-          {processingImage ? (
-            <p className="mt-3 text-xs font-medium text-[#0071e3]">Optimizing photo for faster upload on mobile...</p>
-          ) : null}
-          {uploadError ? (
-            <p className="mt-3 rounded-xl border border-[#E4B9AA] bg-[#FFF5F1] px-3 py-2 text-xs text-[#8C4C3A]">{uploadError}</p>
-          ) : null}
+          <div role="status" aria-live="polite">
+            {processingImage ? (
+              <p className="mt-3 text-xs font-medium text-[var(--accent-blue)]">Optimizing photo for faster upload on mobile...</p>
+            ) : null}
+            {uploadError ? (
+              <p className="mt-3 rounded-xl border border-[var(--warning-accent)] bg-[var(--warning-bg)] px-3 py-2 text-xs text-[var(--warning-text)]">{uploadError}</p>
+            ) : null}
+          </div>
         </motion.div>
       )}
 
@@ -414,7 +429,7 @@ export default function MultiAngleUpload({
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="rounded-2xl overflow-hidden bg-black/40 border border-[#D9D2C7] relative"
+          className="rounded-2xl overflow-hidden bg-black/40 border border-[var(--border-hairline)] relative"
         >
           <video ref={videoRef} autoPlay playsInline muted className="w-full h-[440px] object-cover" />
 
@@ -429,7 +444,7 @@ export default function MultiAngleUpload({
 
           {/* Angle Label */}
           <div className="absolute top-4 left-4 bg-black/60 backdrop-blur px-3 py-1.5 rounded-lg">
-            <p className="text-sm text-[#eef5ff] font-bold"> {currentAngle?.label}</p>
+            <p className="text-sm text-white font-bold">{currentAngle?.label}</p>
           </div>
 
           {/* Camera Controls */}
@@ -437,7 +452,7 @@ export default function MultiAngleUpload({
             <button
               onClick={capturePhoto}
               disabled={processingImage}
-              className="flex items-center gap-2 bg-white text-black px-8 py-3 rounded-full font-bold hover:bg-[#F7F4EE] transition shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+              className="flex items-center gap-2 bg-white text-black px-8 py-3 rounded-full font-bold hover:bg-[var(--bg-wash-start)] transition shadow-[0_0_20px_rgba(255,255,255,0.3)]"
             >
               <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse" />
               Capture
@@ -459,7 +474,7 @@ export default function MultiAngleUpload({
           key={`preview-${activeAngleIdx}`}
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="relative rounded-2xl overflow-hidden border border-[#d9d9de]"
+          className="relative rounded-2xl overflow-hidden border border-[var(--border-hairline)]"
         >
           <div className="relative h-80 w-full">
             <NextImage
@@ -472,7 +487,7 @@ export default function MultiAngleUpload({
             />
           </div>
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-          <div className="absolute bottom-4 left-4 flex items-center gap-2 text-[#eef5ff] font-bold bg-black/60 backdrop-blur px-3 py-1.5 rounded-full border border-[#99c9ff] text-sm">
+          <div className="absolute bottom-4 left-4 flex items-center gap-2 text-white font-bold bg-black/60 backdrop-blur px-3 py-1.5 rounded-full border border-[var(--accent-blue-soft)] text-sm">
             <Check className="w-4 h-4" />
             {currentPhotoApproved ? `${currentAngle.label} ready` : `${currentAngle.label} captured`}
           </div>
@@ -514,7 +529,7 @@ export default function MultiAngleUpload({
               if (nextEmpty !== -1) setActiveAngleIdx(nextEmpty);
               else setAllDone(true);
             }}
-            className="flex-1 text-[#6E9F87] hover:text-[#1E4D3A] py-3 rounded-xl border border-[#D9D2C7] hover:border-[#d9d9de] transition text-sm font-medium"
+            className="flex-1 text-[var(--ink-soft)] hover:text-[var(--ink)] py-3 rounded-xl border border-[var(--border-hairline)] hover:border-[var(--border-hairline)] transition text-sm font-medium"
           >
             Skip this angle
           </button>
@@ -540,7 +555,7 @@ export default function MultiAngleUpload({
 
       {/* Minimum photos notice */}
       {capturedCount === 0 && (
-        <div className="flex items-center gap-2 text-[#6E9F87] text-xs justify-center">
+        <div className="flex items-center gap-2 text-[var(--ink-soft)] text-xs justify-center">
           <AlertCircle className="w-3.5 h-3.5" />
           <span>Capture at least {minPhotosRequired} photo to proceed. All {totalAngles} angles recommended for best results.</span>
         </div>

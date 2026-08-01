@@ -63,6 +63,9 @@ export default function RootLayout({
       </head>
 
       <body className="font-apple-ui">
+        <a href="#main-content" className="skip-link">
+          Skip to content
+        </a>
         <I18nProvider>
           <AuthProvider>
             <CoreUserHydrator />
@@ -70,7 +73,7 @@ export default function RootLayout({
               <LegacyLangProvider>
                 <ToastProvider>
                   <MainNavbar />
-                  <main className="pt-0 pb-24 md:pb-0">
+                  <main id="main-content" className="pt-0 pb-24 md:pb-0">
                     <ProtectedRoute>
                       <RouteTransition>{children}</RouteTransition>
                     </ProtectedRoute>
