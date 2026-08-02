@@ -14,22 +14,38 @@
   --ink: #0b2a4a;
   --ink-soft: #5b6b7f;
 
-  /* Accents */
-  --accent-blue: #0071e3;
-  --accent-blue-soft: #2997ff;
-  --accent-green: #34d399;
-  --accent-green-soft: #6ee7b0;
+  /* Accents — Phase 7ZB brand palette (Primary Navy / Accent Blue / Clinical
+     Cyan / Recovery Green), replacing the earlier Apple-blue-derived values.
+     Still one set of CSS variables consumed everywhere, so this cascades
+     without touching any component. */
+  --accent-blue: #2f80ed;
+  --accent-blue-soft: #56ccf2;
+  --accent-blue-dark: #1e5fc4;
+  --clinical-cyan: #56ccf2;
+  --accent-green: #29d391;
+  --accent-green-soft: #6ee7c4;
   /* Achievement/streak/tier accent (Phase 7Z) - the one recurring warm-gold
      semantic in the app (streaks, reward tiers) that had no token and was
      hardcoded per-use as #C27803. */
   --accent-amber: #c27803;
-  --link-blue: #0066cc;
-  --link-blue-dark: #2997ff;
+  --link-blue: #2f80ed;
+  --link-blue-dark: #56ccf2;
 
   /* Page background wash — the new default for every page */
   --bg-wash-start: #eef4fc;
   --bg-wash-mid: #f7fafd;
   --bg-wash-end: #ffffff;
+  /* Named brand neutral (Phase 7ZB) - same value bg-wash-mid already used,
+     given its own name since the palette spec calls it out explicitly. */
+  --warm-neutral: #f8fafc;
+
+  /* Premium layered-glass system (Phase 7ZB) - deliberately more
+     translucent than the earlier .glass-card (0.72 alpha), so blur/light
+     from whatever sits behind it actually reads through. */
+  --glass-white: rgba(255, 255, 255, 0.22);
+  --glass-white-strong: rgba(255, 255, 255, 0.34);
+  --glass-border: rgba(255, 255, 255, 0.4);
+  --glass-highlight: rgba(255, 255, 255, 0.65);
 
   /* Reserved for hero sections / AI-processing banners / premium moments
      only — opt-in via .af-hero-dark, never the default page background. */
@@ -51,7 +67,6 @@
   --nav-surface-border: #2d2d2d;
 
   --danger: #ef4444;
-  --accent-blue-dark: #005bbf;
 
   /* "Reward expiring soon" banner state — distinct from generic danger red,
      a warm amber-red pairing for a time-limited-but-not-broken alert. */
@@ -113,8 +128,9 @@
   --shadow-raised: 0 16px 40px rgba(11, 42, 74, 0.12);
   --shadow-pressed: inset 0 0 0 1px rgba(11, 42, 74, 0.08);
   --shadow-button: 0 8px 20px rgba(11, 42, 74, 0.14);
-  --shadow-glow-blue: 0 8px 24px rgba(0, 113, 227, 0.24);
-  --shadow-glow-green: 0 8px 24px rgba(52, 211, 153, 0.28);
+  --shadow-glow-blue: 0 8px 24px rgba(47, 128, 237, 0.24);
+  --shadow-glow-green: 0 8px 24px rgba(41, 211, 145, 0.28);
+  --shadow-glow-cyan: 0 8px 24px rgba(86, 204, 242, 0.26);
 
   /* Radius */
   --radius-card: 1.25rem;

@@ -36,10 +36,12 @@ import { trackRewardEvent } from "@/lib/rewardTracking";
 import { AuthContext } from "@/contexts/AuthProvider";
 import { useUserStore } from "@/stores/useUserStore";
 
+import AnimatedCounter from "@/components/ui/AnimatedCounter";
+import EmptyState from "@/components/ui/EmptyState";
 import { AlphaCoin } from "./_components/AlphaCoin";
 import { RewardUnlockModal, type RewardUnlockModalData } from "./_components/RewardUnlockModal";
 
-function ProgressBar({ value, color = "bg-[#22C55E]", trackColor = "bg-[#d9d9de]/50", height = "h-2" }: { value: number; color?: string; trackColor?: string; height?: string }) {
+function ProgressBar({ value, color = "bg-[var(--accent-green)]", trackColor = "bg-[var(--border-hairline)]/50", height = "h-2" }: { value: number; color?: string; trackColor?: string; height?: string }) {
   return (
     <div className={`w-full overflow-hidden rounded-full ${trackColor} ${height}`}>
       <motion.div
@@ -69,6 +71,7 @@ export default function AlphaCreditsPage() {
   // Micro-interactions states
   const previousBalanceRef = useRef(alphaSummary ? Number(alphaSummary.current_balance || 0) : 0);
   const [recentEarn, setRecentEarn] = useState<number | null>(null);
+  const [coinFlipTick, setCoinFlipTick] = useState(0);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 60_000);
@@ -112,6 +115,7 @@ export default function AlphaCreditsPage() {
     if (summary.current_balance > previousBalance) {
       const diff = summary.current_balance - previousBalance;
       setRecentEarn(diff);
+      setCoinFlipTick((tick) => tick + 1);
       const t = setTimeout(() => setRecentEarn(null), 3000);
       const newlyUnlocked = [...rewardCatalog]
         .filter((reward) => previousBalance < reward.cost && summary.current_balance >= reward.cost)
@@ -202,7 +206,7 @@ export default function AlphaCreditsPage() {
           discountPercent: reward.discountPercent,
           title: `You redeemed ${reward.discountPercent}% OFF`,
           body: featuredProduct
-            ? `Successfully spent ${reward.cost} A$. ${featuredProduct.name} is queued as your recommended conversion target.`
+            ? `Successfully spent ${reward.cost} A$. ${featuredProduct.name} is ready and waiting in your cart.`
             : `Successfully spent ${reward.cost} A$. The discount is now ready in your cart.`,
           ctaLabel: "Use it now",
           href: buildRewardProductHref(reward.discountPercent),
@@ -226,7 +230,7 @@ export default function AlphaCreditsPage() {
         <div className="space-y-4 text-center">
           <h1 className="text-3xl font-extrabold text-[#111]">Sign in required</h1>
           <p className="text-[#666]">Please sign in to view your Alpha Wallet.</p>
-          <Link href="/" className="inline-flex rounded-full bg-[#0071e3] px-8 py-4 font-bold text-white transition-opacity hover:opacity-90 shadow-xl">
+          <Link href="/" className="inline-flex rounded-full bg-[var(--accent-blue)] px-8 py-4 font-bold text-white transition-opacity hover:opacity-90 shadow-xl">
             Sign In
           </Link>
         </div>
@@ -237,7 +241,7 @@ export default function AlphaCreditsPage() {
   if (loading && !alphaSummary && alphaTransactions.length === 0) {
     return (
       <div className="flex h-[70vh] items-center justify-center">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#0071e3] border-t-transparent" />
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-[var(--accent-blue)] border-t-transparent" />
       </div>
     );
   }
@@ -247,7 +251,7 @@ export default function AlphaCreditsPage() {
   const rewardRingOffset = circumference - (rewardProgress.percent / 100) * circumference;
 
   return (
-    <div className="af-page-shell px-4 pb-24 pt-8 text-[#ffffff] md:px-8">
+    <div className="af-page-shell px-4 pb-28 pt-8 md:px-8 md:pb-8">
       <main className="mx-auto w-full max-w-6xl animate-in fade-in font-sans duration-700">
         <div className="af-page-stack gap-10 md:gap-12">
       
@@ -281,11 +285,9 @@ export default function AlphaCreditsPage() {
       />
 
       {/* SECTION 1: WALLET HERO */}
-      <section className="relative mt-4 overflow-hidden rounded-[2.5rem] p-6 shadow-[0_20px_60px_-15px_rgba(26,54,38,0.4)] md:mt-8 md:p-12 group">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0F1F15] via-[#0071e3] to-[#122419]" />
-        
+      <section className="af-hero-dark relative mt-4 overflow-hidden p-6 md:mt-8 md:p-12 group">
         {/* Soft Ambient Glows */}
-        <div className="absolute top-0 right-0 w-[40rem] h-[40rem] bg-gradient-to-b from-[#22C55E]/10 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+        <div className="absolute top-0 right-0 w-[40rem] h-[40rem] bg-gradient-to-b from-[var(--accent-green)]/12 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-[30rem] h-[30rem] bg-gradient-to-t from-[#FFD700]/5 to-transparent rounded-full blur-3xl translate-y-1/2 -translate-x-1/4 pointer-events-none" />
 
         <div className="relative z-10 flex min-w-0 flex-col items-center justify-between gap-10 md:flex-row md:items-start md:gap-12">
@@ -303,15 +305,15 @@ export default function AlphaCreditsPage() {
               </span>
             </div>
             <div className="mb-2 flex items-center gap-4 sm:gap-6">
-              <AlphaCoin size="hero" className="shadow-[0_0_40px_rgba(255,215,0,0.3)] transition-transform duration-500 group-hover:scale-105" />
+              <AlphaCoin size="hero" flipKey={coinFlipTick} className="shadow-[0_0_40px_rgba(255,215,0,0.3)] transition-transform duration-500 group-hover:scale-105" />
               <div>
                 <p className="text-xs font-semibold uppercase tracking-widest text-[#A3BFA5] mb-1">Alpha Sikka Balance</p>
                 <div className="relative flex items-baseline gap-2">
                   <h1 className="text-5xl leading-none font-black tracking-tight text-white drop-shadow-md sm:text-[5rem]">
-                    {summary.current_balance}
+                    <AnimatedCounter value={summary.current_balance} duration={1.4} />
                   </h1>
                   <span className="text-3xl font-bold text-white/50 mb-1">A$</span>
-                  
+
                   {/* Floating earn animation */}
                   <AnimatePresence>
                     {recentEarn && (
@@ -325,12 +327,39 @@ export default function AlphaCreditsPage() {
                       </motion.div>
                     )}
                   </AnimatePresence>
+
+                  {/* Confetti burst on real earn events — small, coin-colored,
+                      fires alongside the floating +N A$ label above. */}
+                  <AnimatePresence>
+                    {recentEarn && (
+                      <div className="pointer-events-none absolute left-1/2 top-0 h-0 w-0">
+                        {["#FFD700", "#57D38C", "#56CCF2", "#FFD700", "#57D38C", "#56CCF2", "#FFD700", "#56CCF2"].map((color, i) => {
+                          const angle = (i / 8) * Math.PI * 2;
+                          return (
+                            <motion.span
+                              key={i}
+                              className="absolute h-1.5 w-1.5 rounded-full"
+                              style={{ backgroundColor: color }}
+                              initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
+                              animate={{
+                                x: Math.cos(angle) * 46,
+                                y: Math.sin(angle) * 46 - 20,
+                                opacity: 0,
+                                scale: 0.3,
+                              }}
+                              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                            />
+                          );
+                        })}
+                      </div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
             </div>
             <p className="mt-2 hidden text-sm font-medium text-[#7A9984] md:ml-[104px] md:block">Earned through discipline & recovery</p>
             {rewardProgress.next && (
-              <div className="mt-5 inline-flex max-w-full items-center gap-2 rounded-full border border-[#22C55E]/30 bg-[#22C55E]/10 px-4 py-2.5 text-sm font-bold shadow-[0_0_15px_rgba(34,197,94,0.1)] md:ml-[104px]">
+              <div className="mt-5 inline-flex max-w-full items-center gap-2 rounded-full border border-[var(--accent-green)]/30 bg-[var(--accent-green)]/10 px-4 py-2.5 text-sm font-bold shadow-[0_0_15px_rgba(34,197,94,0.1)] md:ml-[104px]">
                 <span className="text-white">Only <span className="text-[#57D38C] font-black">{rewardProgress.remaining} A$</span> more to unlock <span className="text-[#F4D675]">{rewardProgress.next.discountPercent}% OFF</span></span>
               </div>
             )}
@@ -410,7 +439,7 @@ export default function AlphaCreditsPage() {
                 className={`relative min-w-0 rounded-[2rem] p-6 transition-all duration-300 flex flex-col justify-between shadow-sm ${
                   isCompleted ? "bg-[#F4F9F6] border border-green-100" :
                   isMissed ? "bg-[#FFF4F1] border border-[#FFD5CB]" :
-                  isAvailable ? "bg-white border border-[#d9d9de] shadow-[0_8px_30px_rgb(0,0,0,0.04)]" :
+                  isAvailable ? "bg-white border border-[var(--border-hairline)] shadow-[0_8px_30px_rgb(0,0,0,0.04)]" :
                   "bg-[#F9F9F9] border border-[#EEE]"
                 }`}
               >
@@ -420,7 +449,7 @@ export default function AlphaCreditsPage() {
                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${
                          isCompleted ? 'bg-green-100 text-green-600' : 
                          isMissed ? 'bg-[#FFE0D8] text-[#D14C1F]' :
-                         isAvailable ? 'bg-[#0071e3]/5 text-[#0071e3]' : 'bg-[#EAEAEA] text-[#999]'
+                         isAvailable ? 'bg-[var(--accent-blue)]/5 text-[var(--accent-blue)]' : 'bg-[#EAEAEA] text-[#999]'
                        }`}>
                           {isCompleted ? <CheckCircle className="w-6 h-6" /> : isMissed ? <ShieldAlert className="w-6 h-6" /> : <Clock3 className="w-6 h-6" />}
                        </div>
@@ -452,7 +481,7 @@ export default function AlphaCreditsPage() {
                     <Link href="/dashboard" className="block w-full">
                       <motion.button 
                         whileTap={{ scale: 0.97 }}
-                        className="w-full relative min-h-12 py-3.5 rounded-xl bg-[#0071e3] text-white text-center text-sm font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 overflow-hidden"
+                        className="w-full relative min-h-12 py-3.5 rounded-xl bg-[var(--accent-blue)] text-white text-center text-sm font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 overflow-hidden"
                       >
                          <Play className="w-4 h-4 fill-current" /> Complete Task
                       </motion.button>
@@ -471,7 +500,7 @@ export default function AlphaCreditsPage() {
 
       {/* SECTION 3: STREAK ENGINE */}
       <section>
-        <div className="rounded-[2rem] bg-white border border-[#d9d9de] p-8 md:p-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col md:flex-row items-center justify-between gap-8">
+        <div className="rounded-[2rem] bg-white border border-[var(--border-hairline)] p-8 md:p-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col md:flex-row items-center justify-between gap-8">
            <div className="flex items-center gap-6">
               <motion.div 
                 animate={{ scale: [1, 1.05, 1], filter: ["hue-rotate(0deg)", "hue-rotate(20deg)", "hue-rotate(0deg)"] }}
@@ -522,18 +551,18 @@ export default function AlphaCreditsPage() {
                     key={reward.id} 
                     className={`relative min-w-0 rounded-[2rem] p-6 flex flex-col transition-transform ${
                       isUnlocked ? "bg-white border-2 border-green-500 shadow-[0_8px_20px_rgb(34,197,94,0.15)]" :
-                      isNext ? "bg-white border-2 border-[#0071e3] shadow-[0_12px_30px_rgb(0,0,0,0.08)] scale-[1.02] z-10" :
-                      "bg-[#F9F9F9] border border-[#d9d9de] shadow-sm opacity-80"
+                      isNext ? "bg-white border-2 border-[var(--accent-blue)] shadow-[0_12px_30px_rgb(0,0,0,0.08)] scale-[1.02] z-10" :
+                      "bg-[#F9F9F9] border border-[var(--border-hairline)] shadow-sm opacity-80"
                     }`}
                   >
                     <div className="mb-6 flex items-start justify-between gap-3">
-                       <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isUnlocked ? 'bg-green-100 text-green-600' : isNext ? 'bg-[#0071e3] text-white' : 'bg-[#EAEAEA] text-[#999]'}`}>
+                       <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isUnlocked ? 'bg-green-100 text-green-600' : isNext ? 'bg-[var(--accent-blue)] text-white' : 'bg-[#EAEAEA] text-[#999]'}`}>
                           {isUnlocked ? <UnlockIcon /> : <LockKeyhole className="w-5 h-5" />}
                        </div>
                        {isNext && <span className="rounded-full bg-black px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white">Next Reward</span>}
                      </div>
 
-                     <h3 className={`text-3xl font-black mb-1 ${isUnlocked ? 'text-green-600' : isNext ? 'text-[#0071e3]' : 'text-[#666]'}`}>
+                     <h3 className={`text-3xl font-black mb-1 ${isUnlocked ? 'text-green-600' : isNext ? 'text-[var(--accent-blue)]' : 'text-[#666]'}`}>
                        {reward.discountPercent}% OFF
                      </h3>
                     <p className="mb-8 text-sm font-bold text-[#999]">Required: {reward.cost} A$</p>
@@ -542,7 +571,7 @@ export default function AlphaCreditsPage() {
                         {!isUnlocked && (
                           <ProgressBar 
                             value={progressVal} 
-                            color={isNext ? "bg-[#0071e3]" : "bg-[#CCC]"} 
+                            color={isNext ? "bg-[var(--accent-blue)]" : "bg-[#CCC]"} 
                             trackColor="bg-[#F0F0F0]"
                           />
                         )}
@@ -566,7 +595,7 @@ export default function AlphaCreditsPage() {
                   const canRedeem = summary.current_balance >= reward.cost;
                   
                   return (
-                    <div key={`spend-${reward.id}`} className="flex flex-wrap items-center justify-between gap-4 rounded-[2rem] border border-[#d9d9de] bg-white p-6 shadow-sm transition-shadow hover:shadow-md sm:flex-nowrap">
+                    <div key={`spend-${reward.id}`} className="flex flex-wrap items-center justify-between gap-4 rounded-[2rem] border border-[var(--border-hairline)] bg-white p-6 shadow-sm transition-shadow hover:shadow-md sm:flex-nowrap">
                        <div className="flex min-w-0 items-center gap-4">
                          <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center border border-amber-100 shrink-0">
                             <Tag className="w-6 h-6 text-amber-600" />
@@ -581,7 +610,7 @@ export default function AlphaCreditsPage() {
                          onClick={() => void handleRedeem(reward)}
                          disabled={!canRedeem || redeemingId === reward.id}
                          className={`w-full shrink-0 rounded-full px-5 py-2.5 text-sm font-bold transition-colors sm:w-auto ${
-                           canRedeem ? "bg-[#0071e3] text-white hover:bg-[#005bbf] shadow-md" : "bg-[#F0F0F0] text-[#999] cursor-not-allowed"
+                           canRedeem ? "bg-[var(--accent-blue)] text-white hover:bg-[var(--accent-blue)] shadow-md" : "bg-[#F0F0F0] text-[#999] cursor-not-allowed"
                          }`}
                        >
                          {redeemingId === reward.id ? "..." : "Redeem"}
@@ -597,7 +626,7 @@ export default function AlphaCreditsPage() {
         <div>
           <div className="sticky top-8">
             <h2 className="text-2xl font-black text-[#111] tracking-tight mb-6">Activity</h2>
-            <div className="bg-white border border-[#d9d9de] rounded-[2.5rem] p-8 shadow-sm">
+            <div className="bg-white border border-[var(--border-hairline)] rounded-[2.5rem] p-8 shadow-sm">
                 <div className="mb-6 rounded-[1.5rem] bg-[#F5FAF7] px-4 py-3">
                   <div className="flex items-center justify-between gap-4">
                     <div>
@@ -611,13 +640,19 @@ export default function AlphaCreditsPage() {
                   </div>
                 </div>
               {timeline.length === 0 ? (
-                 <p className="text-center text-[#999] py-10 font-medium">No activity yet. Earn Sikka today!</p>
+                <EmptyState
+                  icon={<Sparkles className="h-5 w-5" />}
+                  title="No activity yet"
+                  description="Complete today's missions to start earning Alpha Sikka and build your activity history."
+                  actionLabel="Start Next Task"
+                  actionHref="/dashboard"
+                />
               ) : (
                 <div className="relative border-l-2 border-[#F0F0F0] ml-3 pl-6 space-y-8 py-2">
                   {timeline.slice(0, 10).map((item, idx) => (
                     <div key={item.id} className="relative">
                       {/* Timeline dot */}
-                      <div className="absolute -left-[31px] top-1 w-3 h-3 rounded-full bg-white border-2 border-[#0071e3] shadow-[0_0_0_4px_white]" />
+                      <div className="absolute -left-[31px] top-1 w-3 h-3 rounded-full bg-white border-2 border-[var(--accent-blue)] shadow-[0_0_0_4px_white]" />
                       
                       <p className="text-sm font-bold text-[#111] leading-tight mb-1">{item.description}</p>
                       <div className="flex items-center gap-3">
@@ -635,7 +670,10 @@ export default function AlphaCreditsPage() {
         </div>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#EADFD0] bg-[rgba(255,250,242,0.96)] px-4 py-3 backdrop-blur-xl md:hidden">
+      <div
+        className="af-safe-bottom fixed inset-x-0 z-30 border-t border-[#EADFD0] bg-[rgba(255,250,242,0.96)] px-4 pt-3 backdrop-blur-xl md:hidden"
+        style={{ bottom: "calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))" }}
+      >
         <div className="mx-auto flex max-w-6xl items-center gap-3">
           <div className="min-w-0 flex-1 rounded-[1.4rem] bg-white px-4 py-3 shadow-sm">
             <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#7A6D5A]">Start next task</p>
@@ -644,7 +682,7 @@ export default function AlphaCreditsPage() {
           <Link href="/dashboard" className="shrink-0">
             <motion.button
               whileTap={{ scale: 0.96 }}
-              className="flex min-h-12 items-center gap-2 rounded-[1.4rem] bg-[#0071e3] px-5 py-4 text-sm font-black text-white shadow-lg"
+              className="flex min-h-12 items-center gap-2 rounded-[1.4rem] bg-[var(--accent-blue)] px-5 py-4 text-sm font-black text-white shadow-lg"
             >
               <span>Start Next Task</span>
               <ArrowRight className="h-4 w-4" />

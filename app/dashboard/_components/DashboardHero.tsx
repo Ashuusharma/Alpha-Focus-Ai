@@ -74,8 +74,8 @@ export default function DashboardHero({
             <svg className="absolute inset-0 h-full w-full -rotate-90 transform" viewBox="0 0 100 100">
               <defs>
                 <linearGradient id="dashboardHeroRing" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#0071e3" />
-                  <stop offset="100%" stopColor="#34d399" />
+                  <stop offset="0%" stopColor="var(--accent-blue)" />
+                  <stop offset="100%" stopColor="var(--accent-green)" />
                 </linearGradient>
               </defs>
               <circle

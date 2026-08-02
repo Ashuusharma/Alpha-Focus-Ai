@@ -21,20 +21,33 @@ const HOUR_24_MS = 24 * 60 * 60 * 1000;
 // any real timing measurement or business logic.
 const SECONDS_PER_QUESTION_ESTIMATE = 15;
 
-type SubmitStage = "idle" | "preparing" | "profile" | "generating" | "validating";
+type SubmitStage = "idle" | "preparing" | "profile" | "generating" | "validating" | "ready";
 
-// Every stage below is tied to a real, already-existing await in
-// handleSubmit (see the matching comment at each call site) — no fabricated
-// progress, per the phase's explicit instruction.
+// Every stage is tied to a real, already-existing await in handleSubmit
+// (see the matching comment at each call site) - no fabricated progress.
+// "ready" is the one exception: a brief terminal beat shown only after
+// success is already confirmed, before the redirect - not a claim about
+// work still happening.
 const SUBMIT_STAGE_COPY: Record<Exclude<SubmitStage, "idle">, string> = {
-  preparing: "Preparing your assessment",
-  profile: "Building your clinical profile",
-  generating: "Generating your recovery protocol",
-  validating: "Final quality validation",
+  preparing: "Understanding your clinical profile",
+  profile: "Building your daily protocol",
+  generating: "Selecting your ingredients",
+  validating: "Final quality review",
+  ready: "Ready",
 };
 
 function getCategoryLabel(categoryId: CategoryId) {
   return categories.find((category) => category.id === categoryId)?.label || categoryId;
+}
+
+// Encouraging microcopy tied to real progress milestones — not decorative
+// filler, each threshold reflects the actual answeredCount/total ratio.
+function getEncouragementCopy(progressPercent: number, isLastQuestion: boolean): string {
+  if (isLastQuestion) return "Last one — you're about to unlock your protocol.";
+  if (progressPercent >= 75) return "Almost there — final stretch.";
+  if (progressPercent >= 50) return "Great pace — you're halfway through.";
+  if (progressPercent >= 25) return "You're doing great, keep going.";
+  return "Let's get to know your recovery profile.";
 }
 
 function getClinicalContextMessage(categoryId: CategoryId, photoMetrics: Record<string, unknown> | null) {
@@ -375,6 +388,11 @@ export default function AssessmentPage() {
         sessionStorage.setItem("protocolReportId", protocolPayload.reportId);
       }
       saveRecoveryProgramLevel(selectedProgramLevel);
+
+      // Success is already confirmed at this point - "ready" is a brief
+      // completion beat, not a claim about pending work.
+      setSubmitStage("ready");
+      await new Promise((resolve) => setTimeout(resolve, 550));
       router.push(`/result?category=${activeCategory}&level=${selectedProgramLevel}`);
     } catch (error) {
       console.error("Assessment submit failed", error);
@@ -411,33 +429,96 @@ export default function AssessmentPage() {
   const isLastQuestion = activeQuestionIndex === categoryQuestions.length - 1;
   const belowSubmitThreshold = progressPercent < 60;
 
-  // Protocol generation in progress — a dedicated staged loading screen
-  // (Phase 7F), replacing the old inline "Compiling Report..." button text.
+  // Protocol generation in progress — a dedicated staged loading journey
+  // (Phase 7F, restyled 7ZB), replacing the old inline "Compiling Report..."
+  // button text with named, human stages instead of technical status text.
   if (isSubmitting) {
+    const stageOrder: Exclude<SubmitStage, "idle">[] = ["preparing", "profile", "generating", "validating", "ready"];
+    const currentIndex = submitStage === "idle" ? 0 : stageOrder.indexOf(submitStage);
+    const isReady = submitStage === "ready";
+
     return (
       <div className="af-page flex min-h-screen flex-col items-center justify-center px-4 py-20 text-center">
-        <div className="relative af-card-primary p-8">
-          <div className="h-24 w-24 animate-spin rounded-full border-4 border-[var(--border-hairline)] border-t-[var(--accent-blue)]" />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Sparkles className="h-8 w-8 animate-pulse text-[var(--accent-blue)]" />
-          </div>
+        <div className="glass-card relative p-8">
+          <AnimatePresence mode="wait">
+            {isReady ? (
+              <motion.div
+                key="ready"
+                initial={{ scale: 0.6, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                className="relative flex h-24 w-24 items-center justify-center rounded-full bg-[var(--accent-green)]/15"
+              >
+                <CheckCircle2 className="h-12 w-12 text-[var(--accent-green)]" />
+                {/* Completion celebration — small sparks bursting outward from
+                    the checkmark, once, on the same success confirmation. */}
+                {[0, 1, 2, 3, 4, 5].map((i) => {
+                  const angle = (i / 6) * Math.PI * 2;
+                  return (
+                    <motion.span
+                      key={i}
+                      className="absolute h-1.5 w-1.5 rounded-full bg-[var(--accent-green)]"
+                      style={{ top: "50%", left: "50%" }}
+                      initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
+                      animate={{
+                        x: Math.cos(angle) * 56,
+                        y: Math.sin(angle) * 56,
+                        opacity: 0,
+                        scale: 0.4,
+                      }}
+                      transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
+                    />
+                  );
+                })}
+              </motion.div>
+            ) : (
+              <motion.div key="spinning" className="relative h-24 w-24">
+                <div className="h-24 w-24 animate-spin rounded-full border-4 border-[var(--border-hairline)] border-t-[var(--accent-blue)]" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Sparkles className="h-8 w-8 animate-pulse text-[var(--accent-blue)]" />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         <div className="mt-6 max-w-xl space-y-2" role="status" aria-live="polite">
-          <h2 className="text-2xl font-bold text-[var(--ink)]">
-            {submitStage === "idle" ? "Working..." : SUBMIT_STAGE_COPY[submitStage]}...
-          </h2>
-          <p className="text-sm text-[var(--ink-soft)]">This usually takes under a minute. Please keep this tab open.</p>
+          <AnimatePresence mode="wait">
+            <motion.h2
+              key={submitStage}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.25 }}
+              className="text-2xl font-bold text-[var(--ink)]"
+            >
+              {submitStage === "idle" ? "Getting started" : SUBMIT_STAGE_COPY[submitStage]}
+            </motion.h2>
+          </AnimatePresence>
+          <p className="text-sm text-[var(--ink-soft)]">
+            {isReady ? "Taking you to your recovery protocol." : "This usually takes under a minute. Please keep this tab open."}
+          </p>
         </div>
 
-        <div className="af-card-secondary mt-6 w-full max-w-md p-5">
-          <div className="flex justify-between text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-soft)]">
-            {(Object.keys(SUBMIT_STAGE_COPY) as Exclude<SubmitStage, "idle">[]).map((stage) => (
-              <span key={stage} className={stage === submitStage ? "text-[var(--accent-blue)]" : ""}>
-                {SUBMIT_STAGE_COPY[stage].split(" ")[0]}
-              </span>
+        <div className="glass-card mt-6 w-full max-w-md p-5">
+          <div className="flex items-center gap-1.5">
+            {stageOrder.map((stage, index) => (
+              <div
+                key={stage}
+                className={`h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--border-hairline)]`}
+              >
+                <motion.div
+                  className={`h-full rounded-full ${index <= currentIndex ? "bg-[var(--accent-blue)]" : ""}`}
+                  initial={{ width: index < currentIndex ? "100%" : "0%" }}
+                  animate={{ width: index <= currentIndex ? "100%" : "0%" }}
+                  transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                />
+              </div>
             ))}
           </div>
+          <p className="mt-3 text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-soft)]">
+            Step {Math.min(currentIndex + 1, stageOrder.length)} of {stageOrder.length}
+          </p>
         </div>
       </div>
     );
@@ -493,9 +574,25 @@ export default function AssessmentPage() {
       <div className="sticky top-0 z-30 border-b border-[var(--border-hairline)] bg-white/90 backdrop-blur-md">
         <div className="max-w-3xl mx-auto px-6 py-4 space-y-4">
           <div className="flex items-start justify-between gap-3">
-            <div className="space-y-1">
-              <h1 className="text-clinical-heading text-xl font-extrabold text-[var(--ink)] tracking-tight">Clinical Assessment - {getCategoryLabel(activeCategory)}</h1>
-              <p className="text-xs text-[var(--ink-soft)]">Category-locked protocol scoring with weighted domain inputs.</p>
+            <div className="flex items-start gap-3">
+              {/* Recovery avatar — a progress-reactive orb standing in for the
+                  emerging recovery profile, not a real user photo/identity. */}
+              <motion.div
+                className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
+                style={{
+                  background: `conic-gradient(var(--accent-blue) ${progressPercent * 3.6}deg, var(--border-hairline) 0deg)`,
+                }}
+                animate={{ scale: isNewSection ? [1, 1.08, 1] : 1 }}
+                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white">
+                  <Sparkles className="h-4 w-4 text-[var(--accent-blue)]" />
+                </div>
+              </motion.div>
+              <div className="space-y-1">
+                <h1 className="text-clinical-heading text-xl font-extrabold text-[var(--ink)] tracking-tight">Clinical Assessment - {getCategoryLabel(activeCategory)}</h1>
+                <p className="text-xs text-[var(--ink-soft)]">Category-locked protocol scoring with weighted domain inputs.</p>
+              </div>
             </div>
             <div className="flex shrink-0 flex-col items-end gap-1">
               <span className="text-xs font-bold text-[var(--accent-blue)] bg-white px-2 py-1 rounded-md border border-[var(--accent-blue)]">{answeredCount}/{categoryQuestions.length} answered</span>
@@ -509,6 +606,19 @@ export default function AssessmentPage() {
              <Activity className="w-4 h-4 text-[var(--accent-blue)]" />
             {clinicalContextMessage || "We detected early signs. Let's understand your daily behavior drivers."}
           </div>
+
+          <AnimatePresence mode="wait">
+            <motion.p
+              key={getEncouragementCopy(progressPercent, isLastQuestion)}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.25 }}
+              className="text-xs font-semibold text-[var(--accent-green)]"
+            >
+              {getEncouragementCopy(progressPercent, isLastQuestion)}
+            </motion.p>
+          </AnimatePresence>
 
           <div className="af-surface-card p-4">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">

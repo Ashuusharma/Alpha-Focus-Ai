@@ -24,13 +24,16 @@ type RewardUnlockModalProps = {
   onPrimaryClick?: () => void;
 };
 
+const CONFETTI_COLORS = ["#FFD700", "#57D38C", "#56CCF2", "#2F80ED"];
+
 export function RewardUnlockModal({ data, onClose, onPrimaryClick }: RewardUnlockModalProps) {
-  const particles = Array.from({ length: 16 }).map((_, i) => ({
+  const particles = Array.from({ length: 20 }).map((_, i) => ({
     id: i,
-    angle: (i * 360) / 16,
+    angle: (i * 360) / 20,
     distance: 80 + Math.random() * 60,
     delay: Math.random() * 0.2,
     scale: 0.5 + Math.random() * 0.8,
+    color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
   }));
 
   return (
@@ -49,7 +52,7 @@ export function RewardUnlockModal({ data, onClose, onPrimaryClick }: RewardUnloc
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.8, opacity: 0, y: 40 }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="relative z-10 w-full max-w-md overflow-hidden rounded-[2px] bg-white p-10 text-center border border-[#5a5a5a] shadow-[rgba(0,0,0,0.3)_0px_0px_5px]"
+            className="glass-premium-strong relative z-10 w-full max-w-md overflow-hidden rounded-3xl p-10 text-center"
           >
             {/* Celebration burst effect */}
             <div className="absolute left-1/2 top-1/4 -translate-x-1/2 -translate-y-1/2">
@@ -72,13 +75,14 @@ export function RewardUnlockModal({ data, onClose, onPrimaryClick }: RewardUnloc
                 <motion.div
                   key={p.id}
                   initial={{ x: 0, y: 0, opacity: 1, scale: p.scale }}
-                  animate={{ 
+                  animate={{
                     x: Math.cos((p.angle * Math.PI) / 180) * p.distance,
                     y: Math.sin((p.angle * Math.PI) / 180) * p.distance,
-                    opacity: 0 
+                    opacity: 0
                   }}
                   transition={{ duration: 1, delay: p.delay, ease: "easeOut" }}
-                  className="absolute h-3 w-3 rounded-full bg-[#FFD700] shadow-[0_0_10px_#FFD700]"
+                  className="absolute h-3 w-3 rounded-full"
+                  style={{ backgroundColor: p.color, boxShadow: `0 0 10px ${p.color}` }}
                 />
               ))}
               <div className="z-10 scale-[1.3] relative">
@@ -86,29 +90,29 @@ export function RewardUnlockModal({ data, onClose, onPrimaryClick }: RewardUnloc
               </div>
             </motion.div>
 
-            <div className="mb-4 inline-flex items-center gap-2 rounded-[2px] border border-[#0071e3] bg-transparent px-5 py-2.5 text-[11px] font-black uppercase tracking-[0.18em] text-[#0071e3]">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[var(--accent-blue)]/30 bg-[var(--accent-blue)]/10 px-5 py-2.5 text-[11px] font-black uppercase tracking-[0.18em] text-[var(--accent-blue)]">
               <Sparkles className="h-4 w-4 text-[#FFD700]" />
               <span>You just unlocked {data.discountPercent}% OFF</span>
             </div>
 
-            <h2 className="mb-2 text-3xl font-black text-[#111]">Reward claimed</h2>
-            <p className="mb-5 text-[#666] text-sm px-4">
+            <h2 className="mb-2 text-3xl font-black text-[var(--ink)]">Reward claimed</h2>
+            <p className="mb-5 text-[var(--ink-soft)] text-sm px-4">
               {data.body}
               {data.expiresAt && (
-                <span className="mt-2 block font-semibold text-[#A96C00]">
+                <span className="mt-2 block font-semibold text-[var(--accent-amber)]">
                   Expires in {getRewardCountdownLabel(data.expiresAt)}
                 </span>
               )}
             </p>
 
             {data.productName && (
-              <div className="mb-8 flex items-center justify-between gap-4 rounded-[2px] border border-[#5a5a5a] bg-white p-4 text-left">
+              <div className="mb-8 flex items-center justify-between gap-4 rounded-2xl border border-[var(--border-hairline)] bg-white p-4 text-left">
                 <div className="flex-1">
-                  <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-[#0071e3]">
+                  <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-[var(--accent-blue)]">
                     <Gift className="h-3.5 w-3.5" /> Featured Reward
                   </p>
-                  <p className="mt-1.5 text-sm font-bold leading-tight text-[#1d1d1f]">{data.productName}</p>
-                  <p className="mt-0.5 text-xs font-semibold text-[#6e6e73]">Apply your {data.discountPercent}% directly</p>
+                  <p className="mt-1.5 text-sm font-bold leading-tight text-[var(--ink)]">{data.productName}</p>
+                  <p className="mt-0.5 text-xs font-semibold text-[var(--ink-soft)]">Apply your {data.discountPercent}% directly</p>
                 </div>
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-black/5">
                    <div className="h-8 w-8 opacity-40"><AlphaCoin size="sm" /></div>
@@ -120,7 +124,7 @@ export function RewardUnlockModal({ data, onClose, onPrimaryClick }: RewardUnloc
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="group flex w-full items-center justify-center gap-2 rounded-[2px] bg-transparent border border-[#0071e3] py-4 text-lg font-bold text-[#1a1a1a] transition-all"
+                className="af-btn-primary group flex w-full items-center justify-center gap-2 py-4 text-lg"
                 onClick={() => {
                   onPrimaryClick?.();
                   onClose();

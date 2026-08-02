@@ -7,7 +7,7 @@ import { useCartStore, type CartItem } from "@/lib/cartStore";
 import { applyCouponToSubtotal, getBestAvailableCoupon, markCouponApplied } from "@/lib/couponService";
 import { getCreditSnapshot } from "@/lib/creditService";
 import { getActiveUserName } from "@/lib/userScopedStorage";
-import { Info } from "lucide-react";
+import { Info, ShoppingBag } from "lucide-react";
 
 function formatCurrency(value: number) {
   return `Rs ${Math.max(0, Math.round(value))}`;
@@ -151,15 +151,32 @@ function CartItemsList({
   items,
   onRemove,
   onQty,
+  onClose,
 }: {
   items: CartItem[];
   onRemove: (id: string) => void;
   onQty: (id: string, qty: number) => void;
+  onClose?: () => void;
 }) {
+  const router = useRouter();
+
   if (items.length === 0) {
     return (
-      <div className="px-5 py-6 text-sm text-[#5F7A69]">
-        Your clinical cart is empty. Add protocol products to begin guided checkout.
+      <div className="flex flex-col items-center gap-3 px-5 py-10 text-center">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#5F7A69]/10 text-[#5F7A69]">
+          <ShoppingBag className="h-5 w-5" />
+        </div>
+        <p className="text-sm font-semibold text-[#111]">Your clinical cart is empty</p>
+        <p className="max-w-xs text-xs text-[#5F7A69]">Add protocol products recommended in your report to begin guided checkout.</p>
+        <button
+          onClick={() => {
+            onClose?.();
+            router.push("/shop");
+          }}
+          className="mt-2 rounded-full bg-[var(--accent-blue)] px-5 py-2 text-xs font-semibold text-white transition hover:opacity-90"
+        >
+          Browse Products
+        </button>
       </div>
     );
   }
@@ -476,7 +493,7 @@ export default function ProfessionalCartDrawer({ open, onClose }: { open?: boole
           <CartHeader count={userItems.length} subtotal={subtotal} onClose={handleClose} />
 
           <div className="h-full overflow-y-auto">
-            <CartItemsList items={userItems} onRemove={removeItem} onQty={updateQty} />
+            <CartItemsList items={userItems} onRemove={removeItem} onQty={updateQty} onClose={handleClose} />
 
             <ClinicalUpsellSection
               upsells={upsells}

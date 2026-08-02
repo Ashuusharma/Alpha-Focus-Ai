@@ -174,17 +174,52 @@ export default function ResultPage() {
   };
 
   if (loading) {
+    // Human-readable protocol-building journey, driven by the real
+    // reportStatus from the server plus poll count as a time proxy for how
+    // far into the (single, real) generating/processing phase we are - no
+    // raw status strings, queue positions, or check-counters shown to the
+    // user. See ../assessment/page.tsx for the same pattern on submission.
+    const loadingLabel = (() => {
+      if (!reportStatus || reportStatus === "queued") return "Understanding your clinical profile";
+      if (reportStatus === "generating" || reportStatus === "processing") {
+        if (pollAttempt <= 4) return "Building your daily protocol";
+        if (pollAttempt <= 9) return "Selecting your ingredients";
+        return "Final quality review";
+      }
+      return "Preparing your protocol";
+    })();
+    const loadingStages = ["Understanding your clinical profile", "Building your daily protocol", "Selecting your ingredients", "Final quality review"];
+    const currentStageIndex = Math.max(0, loadingStages.indexOf(loadingLabel));
+
     return (
-      <div className="af-page flex min-h-screen items-center justify-center px-6">
-        <div className="af-surface-card flex items-center gap-4 px-6 py-5">
-          <Sparkles className="h-5 w-5 shrink-0 animate-pulse text-[var(--accent-blue)]" />
-          <div>
-            <p className="text-sm font-semibold text-[var(--ink)]">Preparing your result...</p>
-            <p className="mt-0.5 text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]" role="status" aria-live="polite">
-              {reportStatus ? `Status: ${reportStatus}` : "Status: queued"}
-              {pollAttempt > 0 ? ` · Check ${pollAttempt}/${REPORT_POLL_MAX_ATTEMPTS}` : ""}
-            </p>
+      <div className="af-page flex min-h-screen flex-col items-center justify-center px-4 py-20 text-center">
+        <div className="glass-card relative p-8">
+          <div className="relative h-24 w-24">
+            <div className="h-24 w-24 animate-spin rounded-full border-4 border-[var(--border-hairline)] border-t-[var(--accent-blue)]" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Sparkles className="h-8 w-8 animate-pulse text-[var(--accent-blue)]" />
+            </div>
           </div>
+        </div>
+
+        <div className="mt-6 max-w-xl space-y-2" role="status" aria-live="polite">
+          <h2 className="text-2xl font-bold text-[var(--ink)]">{loadingLabel}</h2>
+          <p className="text-sm text-[var(--ink-soft)]">This usually takes under a minute. Please keep this tab open.</p>
+        </div>
+
+        <div className="glass-card mt-6 w-full max-w-md p-5">
+          <div className="flex items-center gap-1.5">
+            {loadingStages.map((stage, index) => (
+              <div key={stage} className="h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--border-hairline)]">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ease-out ${index <= currentStageIndex ? "w-full bg-[var(--accent-blue)]" : "w-0"}`}
+                />
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-soft)]">
+            Step {currentStageIndex + 1} of {loadingStages.length}
+          </p>
         </div>
       </div>
     );

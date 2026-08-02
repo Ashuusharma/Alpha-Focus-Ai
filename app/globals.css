@@ -336,14 +336,45 @@ a {
   overflow: hidden;
 }
 
+/* Premium background system (Phase 7ZB) - a layered mesh of soft radial
+   gradients in the brand's three accent hues (blue/cyan/green) plus a very
+   fine noise texture, replacing the old single top-right glow. Kept at low
+   opacity and cheap to render (radial-gradient, no filter:blur on the
+   pseudo-element itself) so it reads as ambience, not decoration you
+   consciously notice. The slow drift is purely a background-position
+   animation - GPU-cheap - and is skipped entirely under reduced-motion via
+   the global safety net above. */
 .af-page-shell::before,
 .af-page::before {
   content: "";
   position: fixed;
+  inset: -10%;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 88% 6%, rgba(47, 128, 237, 0.10) 0%, rgba(47, 128, 237, 0) 30%),
+    radial-gradient(circle at 8% 18%, rgba(86, 204, 242, 0.08) 0%, rgba(86, 204, 242, 0) 32%),
+    radial-gradient(circle at 78% 82%, rgba(41, 211, 145, 0.07) 0%, rgba(41, 211, 145, 0) 34%),
+    radial-gradient(circle at 20% 92%, rgba(47, 128, 237, 0.05) 0%, rgba(47, 128, 237, 0) 28%);
+  background-size: 160% 160%;
+  background-position: 0% 0%;
+  animation: afMeshDrift 32s ease-in-out infinite alternate;
+  z-index: 0;
+}
+
+.af-page-shell::after,
+.af-page::after {
+  content: "";
+  position: fixed;
   inset: 0;
   pointer-events: none;
-  background: radial-gradient(circle at 86% 4%, rgba(0, 113, 227, 0.08) 0%, rgba(0, 113, 227, 0) 28%);
   z-index: 0;
+  opacity: 0.5;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/></svg>");
+}
+
+@keyframes afMeshDrift {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 6% 6%; }
 }
 
 .af-page-frame {
@@ -484,6 +515,37 @@ a {
   color: var(--link-blue-dark);
 }
 
+/* Third section rhythm option (Phase 7ZB) - a tinted wash between full-white
+   and full-dark, so long pages don't read as "white card, white card, white
+   card" with one dark break. Two colorways (cool/warm) so consecutive
+   tinted sections can still differ from each other. */
+.nv-section-tint-cool,
+.nv-section-tint-warm {
+  width: 100%;
+  border-radius: 1.8rem;
+  padding: 40px 24px;
+  color: var(--ink);
+  transition: transform var(--motion-base), box-shadow var(--motion-base);
+  animation: nvSectionRise 420ms ease both;
+  box-shadow: var(--shadow-soft);
+}
+
+.nv-section-tint-cool {
+  background: linear-gradient(160deg, rgba(86, 204, 242, 0.1) 0%, var(--bg-wash-mid) 60%);
+  border: 1px solid rgba(86, 204, 242, 0.22);
+}
+
+.nv-section-tint-warm {
+  background: linear-gradient(160deg, rgba(41, 211, 145, 0.09) 0%, var(--bg-wash-mid) 60%);
+  border: 1px solid rgba(41, 211, 145, 0.2);
+}
+
+.nv-section-tint-cool:hover,
+.nv-section-tint-warm:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-raised);
+}
+
 /* report-page: neutralizes embedded sub-components authored with raw dark-
    theme Tailwind classes (text-white, text-gray-400, etc.) so they inherit
    the parent shell's (now light) color scheme instead of hardcoding white. */
@@ -583,19 +645,47 @@ a {
   box-shadow: var(--shadow-pressed);
 }
 
-/* Light glassmorphism — for overlays/modals that need to sit above imagery
-   or other content (frosted white, not the old dark-navy glass panel). */
+/* Premium layered glassmorphism (Phase 7ZB) - closer to VisionOS than a flat
+   CSS blur: a translucent base layer, a bright top-edge highlight simulating
+   a light source above, and a diagonal sheen across the surface. Three
+   stacked visual layers instead of one flat blur+opacity. */
 .glass,
 .glass-card,
 .glass-premium,
 .glass-premium-strong {
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  box-shadow: var(--shadow-raised);
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(165deg, var(--glass-white-strong) 0%, var(--glass-white) 60%, rgba(255, 255, 255, 0.14) 100%);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-raised), inset 0 1px 0 rgba(255, 255, 255, 0.5);
   border-radius: var(--radius-card);
   color: var(--ink);
+}
+
+.glass::before,
+.glass-card::before,
+.glass-premium::before,
+.glass-premium-strong::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, var(--glass-highlight) 0%, rgba(255, 255, 255, 0) 28%, rgba(255, 255, 255, 0) 72%, rgba(255, 255, 255, 0.18) 100%);
+  opacity: 0.5;
+}
+
+.glass::after,
+.glass-card::after,
+.glass-premium::after,
+.glass-premium-strong::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.9) 50%, rgba(255, 255, 255, 0) 100%);
 }
 
 .skeuo-panel {

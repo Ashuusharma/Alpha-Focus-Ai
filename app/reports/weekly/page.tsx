@@ -57,19 +57,20 @@ export default function WeeklyReportPage() {
   }, [logs]);
 
   return (
-    <div className="af-page-shell report-page min-h-screen text-[#ffffff] px-4 py-8">
+    <div className="af-page-shell report-page min-h-screen px-4 py-8">
       <div className="af-page-frame mx-auto max-w-5xl space-y-6">
-        <section className="nv-section-white">
+        <section className="af-hero-dark">
           <div className="relative z-10 space-y-4">
-            <button onClick={() => router.back()} className="inline-flex items-center gap-2 text-[#6e6e73] hover:text-[#1d1d1f]">
+            <button onClick={() => router.back()} className="inline-flex items-center gap-2 text-sm text-[#b7c4d7] hover:text-white">
               <ArrowLeft className="w-4 h-4" /> Back
             </button>
             <span className="af-page-kicker">
               <BarChart3 className="h-3.5 w-3.5" />
               Weekly Review
             </span>
-            <h1 className="text-clinical-heading text-3xl font-extrabold tracking-tight md:text-4xl">Weekly AI report built from sleep, hydration, stress, and routine consistency.</h1>
-            <p className="max-w-2xl text-sm leading-7 text-[#6e6e73]">This view now matches the premium app shell and frames the weekly report as a decision page instead of a standalone export.</p>
+            <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-4xl">Your Recovery Journey, week by week.</h1>
+            <p className="max-w-2xl text-sm leading-7 text-[#b7c4d7]">Sleep, hydration, stress, and routine consistency — synthesized into one weekly read on how your recovery is actually trending.</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--clinical-cyan)]">{logs.length} days of data · Last 14 days</p>
           </div>
         </section>
         <WeeklyReport summary={summary} />

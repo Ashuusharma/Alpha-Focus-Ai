@@ -412,8 +412,12 @@ export default function MainNavbar() {
 
   if (!mounted) return <div style={{ height: NAV_SHELL_TOTAL_HEIGHT_PX }} className="bg-[var(--nav-surface)] border-b border-[var(--nav-border)]" />;
 
-  const primaryDesktopLinks = LINKS.slice(0, 5);
-  const overflowDesktopLinks = LINKS.slice(5);
+  // Phase 7ZB nav simplification: primary nav now matches the same 4-item
+  // core priority as the mobile bottom nav (Home/Analyze/Protocol/Progress)
+  // instead of 5 - Challenges moves into "More" alongside Knowledge/Shop,
+  // reducing top-level visual noise on desktop.
+  const primaryDesktopLinks = LINKS.slice(0, 4);
+  const overflowDesktopLinks = LINKS.slice(4);
 
   return (
     <>

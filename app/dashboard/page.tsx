@@ -5,6 +5,7 @@ import { AuthContext } from "@/contexts/AuthProvider";
 import { useUserStore } from "@/stores/useUserStore";
 import { hydrateUserData } from "@/lib/hydrateUserData";
 import PullToRefresh from "@/components/ui/PullToRefresh";
+import AnimatedCounter from "@/components/ui/AnimatedCounter";
 import { supabase } from "@/lib/supabaseClient";
 import { calculateProgressMetricsForCategory } from "@/lib/calculateProgressMetrics";
 import { useToast } from "@/app/toast/ToastContext";
@@ -933,7 +934,54 @@ export default function DashboardPage() {
           <EntitlementSummary />
         </section>
 
-        <section className="nv-section-white space-y-4 animate-in fade-in duration-500 delay-100" id="recovery-roadmap">
+        {/* KPI - Recovery Intelligence (Phase 7ZB: moved ahead of the
+            routine/roadmap section to match Hero -> KPI -> Analytics ->
+            Recovery Timeline rhythm; tinted instead of flat white so five
+            consecutive white cards don't repeat back to back). */}
+        <section className="nv-section-tint-warm animate-in fade-in duration-500 delay-100">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--ink-soft)]">Recovery Intelligence</p>
+              <h2 className="text-xl font-black text-[var(--ink)]">Clinical Signal Summary</h2>
+            </div>
+            <p className="rounded-full bg-white px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.14em] text-[var(--accent-blue)] border border-[var(--accent-blue)]">
+              {activeCategory ? `Category: ${categoryLabel}` : "No active category"}
+            </p>
+          </div>
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-[1.4rem] border border-[var(--border-hairline)] bg-white/70 p-4">
+              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--ink-soft)]">Severity Change</p>
+              <p className="mt-2 text-2xl font-black text-[var(--ink)]">
+                down <AnimatedCounter value={progressSummary?.improvement_pct ?? 0} suffix="%" />
+              </p>
+            </div>
+            <div className="rounded-[1.4rem] border border-[var(--border-hairline)] bg-white/70 p-4">
+              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--ink-soft)]">Consistency</p>
+              <p className="mt-2 text-2xl font-black text-[var(--ink)]">
+                <AnimatedCounter value={progressSummary?.consistency_score ?? consistencyScore} suffix="%" />
+              </p>
+            </div>
+            <div className="rounded-[1.4rem] border border-[var(--border-hairline)] bg-white/70 p-4">
+              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--ink-soft)]">Recovery Speed</p>
+              <p className="mt-2 text-2xl font-black text-[var(--ink)]">{recoveryVelocityLabel}</p>
+            </div>
+            <div className="rounded-[1.4rem] border border-[var(--border-hairline)] bg-white/70 p-4">
+              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--ink-soft)]">Confidence</p>
+              <p className="mt-2 text-2xl font-black text-[var(--ink)]">
+                <AnimatedCounter value={confidenceScore} />
+              </p>
+            </div>
+          </div>
+          <p className="mt-4 text-xs font-semibold text-[var(--ink-soft)]">{refreshing || storeLoading ? "Syncing latest data..." : "Realtime sync is active for routine, rewards, and progress signals."}</p>
+        </section>
+
+        {/* Analytics */}
+        <section className="nv-section-dark animate-in fade-in duration-500 delay-150">
+          <ProgressVisualization data={weeklyProgressData} />
+        </section>
+
+        {/* Recovery Timeline / Today's Focus */}
+        <section className="nv-section-tint-cool space-y-4 animate-in fade-in duration-500 delay-200" id="recovery-roadmap">
           <RecoveryProgramNavigator
             dayNumber={programDay}
             totalDays={30}
@@ -954,51 +1002,19 @@ export default function DashboardPage() {
           />
         </section>
 
-        <section className="nv-section-white animate-in fade-in duration-500 delay-150">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--ink-soft)]">Recovery Intelligence</p>
-              <h2 className="text-xl font-black text-[var(--ink)]">Clinical Signal Summary</h2>
-            </div>
-            <p className="rounded-full bg-white px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.14em] text-[var(--accent-blue)] border border-[var(--accent-blue)]">
-              {activeCategory ? `Category: ${categoryLabel}` : "No active category"}
-            </p>
-          </div>
-          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-[1.4rem] border border-[var(--border-hairline)] bg-[var(--tint-warm)] p-4">
-              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--ink-soft)]">Severity Change</p>
-              <p className="mt-2 text-2xl font-black text-[var(--ink)]">down {progressSummary?.improvement_pct ?? 0}%</p>
-            </div>
-            <div className="rounded-[1.4rem] border border-[var(--border-hairline)] bg-[var(--tint-warm)] p-4">
-              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--ink-soft)]">Consistency</p>
-              <p className="mt-2 text-2xl font-black text-[var(--ink)]">{progressSummary?.consistency_score ?? consistencyScore}%</p>
-            </div>
-            <div className="rounded-[1.4rem] border border-[var(--border-hairline)] bg-[var(--tint-warm)] p-4">
-              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--ink-soft)]">Recovery Speed</p>
-              <p className="mt-2 text-2xl font-black text-[var(--ink)]">{recoveryVelocityLabel}</p>
-            </div>
-            <div className="rounded-[1.4rem] border border-[var(--border-hairline)] bg-[var(--tint-warm)] p-4">
-              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--ink-soft)]">Confidence</p>
-              <p className="mt-2 text-2xl font-black text-[var(--ink)]">{confidenceScore}</p>
-            </div>
-          </div>
-          <p className="mt-4 text-xs font-semibold text-[var(--ink-soft)]">{refreshing || storeLoading ? "Syncing latest data..." : "Realtime sync is active for routine, rewards, and progress signals."}</p>
-        </section>
-
-        <section className="nv-section-dark animate-in fade-in duration-500 delay-200">
-          <ProgressVisualization data={weeklyProgressData} />
-        </section>
-
         <section className="nv-section-white animate-in fade-in duration-500 delay-300">
           <BeforeAfterTimeline categoryLabel={categoryLabel} photos={beforeAfterPhotos} />
         </section>
 
-        <section className="nv-section-white animate-in fade-in duration-500 delay-500">
-          <RewardProgress balance={balance} streakDays={routineStreakDays} />
+        {/* AI Health Coach - premium dark moment, matching the AI-banner
+            treatment used elsewhere (analyzer, protocol generation). */}
+        <section className="nv-section-dark animate-in fade-in duration-500 delay-500">
+          <AIInsightEngine insights={aiInsights} behaviorInsights={behaviorInsights} />
         </section>
 
-        <section className="nv-section-white animate-in fade-in duration-500 delay-700">
-          <AIInsightEngine insights={aiInsights} behaviorInsights={behaviorInsights} />
+        {/* Rewards */}
+        <section className="nv-section-tint-warm animate-in fade-in duration-500 delay-700">
+          <RewardProgress balance={balance} streakDays={routineStreakDays} />
         </section>
 
         <section className="animate-in fade-in duration-500 delay-700">

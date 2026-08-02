@@ -999,14 +999,16 @@ export default function TreatmentPlan({
                 </p>
               </div>
               <div className="rounded-full bg-[var(--bg-wash-start)] px-3 py-1 text-[10px] font-black uppercase tracking-wider text-[var(--ink-soft)]">
-                {group.tasks.some((task) => task.id === activeTaskId) ? "Current window" : "Queued"}
+                {group.tasks.some((task) => task.id === activeTaskId) ? "Current window" : "Up next"}
               </div>
             </div>
 
             <div className="flex gap-4 overflow-x-auto pb-6 -mx-4 px-4 md:mx-0 md:px-0 snap-x snap-mandatory md:flex-col md:overflow-visible hide-scrollbar">
               {group.tasks.length === 0 ? (
                 <div className="w-full rounded-[1.5rem] border-2 border-dashed border-[var(--border-hairline)] bg-[var(--tint-neutral)] p-8 text-center">
-                  <p className="text-sm font-medium italic text-[var(--ink-soft)]">No mandatory clinical tasks scheduled for this period.</p>
+                  <CheckCircle2 className="mx-auto mb-2 h-6 w-6 text-[var(--accent-green)]" />
+                  <p className="text-sm font-semibold text-[var(--ink)]">You're clear for this window</p>
+                  <p className="mt-1 text-xs text-[var(--ink-soft)]">No mandatory clinical tasks scheduled for this period.</p>
                 </div>
               ) : (
                 group.tasks.map((task) => {

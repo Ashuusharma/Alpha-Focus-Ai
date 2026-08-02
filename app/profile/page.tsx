@@ -7,7 +7,8 @@ import { Calendar, Camera, FileText, Flame, MapPin, Medal, ShieldCheck, Sparkles
 import MedicalCard from "@/components/ui/MedicalCard";
 import StatusBadge from "@/components/ui/StatusBadge";
 import Button from "@/components/ui/Button";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import EmptyState from "@/components/ui/EmptyState";
+import { ComposedChart, Area, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { AuthContext } from "@/contexts/AuthProvider";
 import { useUserStore } from "@/stores/useUserStore";
 import { hydrateUserData } from "@/lib/hydrateUserData";
@@ -348,7 +349,13 @@ export default function ProfilePage() {
             <MedicalCard className="p-0">
               <div className="max-h-[420px] space-y-0 overflow-y-auto">
                 {timelineItems.length === 0 ? (
-                  <div className="p-6 text-sm text-[var(--ink-soft)]">No timeline entries yet. Complete an analysis to start your record.</div>
+                  <EmptyState
+                    icon={<Camera className="h-5 w-5" />}
+                    title="No timeline entries yet"
+                    description="Complete a scan and analysis to start building your recovery record."
+                    actionLabel="Start a Scan"
+                    actionHref="/image-analyzer"
+                  />
                 ) : (
                   timelineItems.map((item) => {
                     const Icon = item.icon;
@@ -407,16 +414,27 @@ export default function ProfilePage() {
                 </div>
                 <div className="h-64 w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={trendData.length > 0 ? trendData : [{ date: "Week 1", score: 60, consistency: 50 }, { date: "Week 2", score: 65, consistency: 60 }, { date: "Week 3", score: 72, consistency: 70 }, { date: "Week 4", score: 78, consistency: 85 }]}>
+                    <ComposedChart data={trendData.length > 0 ? trendData : [{ date: "Week 1", score: 60, consistency: 50 }, { date: "Week 2", score: 65, consistency: 60 }, { date: "Week 3", score: 72, consistency: 70 }, { date: "Week 4", score: 78, consistency: 85 }]}>
+                      <defs>
+                        <linearGradient id="profileScoreStroke" x1="0" y1="0" x2="1" y2="0">
+                          <stop offset="0%" stopColor="var(--clinical-cyan)" />
+                          <stop offset="100%" stopColor="var(--accent-blue)" />
+                        </linearGradient>
+                        <linearGradient id="profileScoreFill" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="var(--accent-blue)" stopOpacity={0.28} />
+                          <stop offset="100%" stopColor="var(--accent-blue)" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
                       <CartesianGrid stroke="var(--border-hairline)" strokeDasharray="3 3" vertical={false} />
                       <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "var(--ink-soft)", fontSize: 10 }} dy={10} />
                       <YAxis axisLine={false} tickLine={false} tick={{ fill: "var(--ink-soft)", fontSize: 10 }} domain={[0, 100]} />
-                      <Tooltip 
-                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                      <Tooltip
+                        contentStyle={{ borderRadius: "var(--radius-card)", border: "1px solid var(--border-hairline)", boxShadow: "var(--shadow-raised)" }}
                       />
-                      <Line type="monotone" dataKey="score" stroke="var(--accent-blue)" strokeWidth={3} dot={{ r: 4, fill: "var(--accent-blue)" }} activeDot={{ r: 6 }} name="Alpha Score" />
-                      <Line type="monotone" dataKey="consistency" stroke="var(--accent-amber)" strokeWidth={2} dot={false} strokeDasharray="5 5" name="Consistency" />
-                    </LineChart>
+                      <Area type="monotone" dataKey="score" stroke="none" fill="url(#profileScoreFill)" isAnimationActive animationDuration={900} />
+                      <Line type="monotone" dataKey="score" stroke="url(#profileScoreStroke)" strokeWidth={3} dot={{ r: 4, fill: "var(--accent-blue)", strokeWidth: 0 }} activeDot={{ r: 6 }} name="Alpha Score" isAnimationActive animationDuration={900} />
+                      <Line type="monotone" dataKey="consistency" stroke="var(--accent-amber)" strokeWidth={2} dot={false} strokeDasharray="5 5" name="Consistency" isAnimationActive animationDuration={900} />
+                    </ComposedChart>
                   </ResponsiveContainer>
                 </div>
               </MedicalCard>

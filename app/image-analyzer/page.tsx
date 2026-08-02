@@ -57,11 +57,11 @@ type SubscriptionPlan = "free" | "premium_monthly" | "premium_yearly";
 type AnalysisStage = "preparing" | "optimizing" | "vision" | "validating" | "building";
 
 const STAGE_COPY: Record<AnalysisStage, string> = {
-  preparing: "Preparing image",
+  preparing: "Preparing your photo",
   optimizing: "Optimizing quality",
-  vision: "Running AI Vision",
-  validating: "Validating results",
-  building: "Building personalized assessment",
+  vision: "AI analyzing your scan",
+  validating: "Reviewing results",
+  building: "Building your personalized assessment",
 };
 
 const STAGE_PROGRESS: Record<AnalysisStage, number> = {

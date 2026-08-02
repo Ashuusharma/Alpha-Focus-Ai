@@ -780,7 +780,8 @@ export default function SettingsPage() {
                       ) : (
                         <div className="text-center py-8 text-[var(--ink-soft)]">
                           <AlertTriangle className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                          <p>No ingredients blacklisted yet</p>
+                          <p className="font-medium text-[var(--ink)]">No ingredients blacklisted yet</p>
+                          <p className="mt-1 text-xs">Use the field above or tap a common allergen to keep it out of your protocol.</p>
                         </div>
                       )}
                     </div>
@@ -894,7 +895,14 @@ export default function SettingsPage() {
                       ) : (
                         <div className="text-center py-8 text-[var(--ink-soft)]">
                           <Heart className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                          <p>No products in wishlist</p>
+                          <p className="font-medium text-[var(--ink)]">No products in wishlist</p>
+                          <p className="mt-1 text-xs">Save products you like from the shop to find them here later.</p>
+                          <button
+                            onClick={() => router.push("/shop")}
+                            className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[var(--accent-blue)] px-4 py-2 text-xs font-semibold text-white transition hover:opacity-90"
+                          >
+                            Browse Shop
+                          </button>
                         </div>
                       )}
                     </div>

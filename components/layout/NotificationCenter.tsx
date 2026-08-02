@@ -179,7 +179,20 @@ const NotificationCenter = forwardRef<HTMLDivElement, NotificationCenterProps>(f
         {groups.length === 0 ? (
           <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
             <Inbox className="h-6 w-6 text-white/30" />
-            <p className="text-sm text-white/60">You&apos;re all caught up.</p>
+            <p className="text-sm text-white/60">
+              {showUnreadOnly ? "No unread notifications." : "You’re all caught up."}
+            </p>
+            {showUnreadOnly ? (
+              <button
+                type="button"
+                onClick={onToggleUnreadOnly}
+                className="mt-1 rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold text-white/80 hover:bg-white/16"
+              >
+                Show all notifications
+              </button>
+            ) : (
+              <p className="text-xs text-white/35">New updates on your protocol and rewards will show up here.</p>
+            )}
           </div>
         ) : (
           <motion.div {...listMotion} className="space-y-4">

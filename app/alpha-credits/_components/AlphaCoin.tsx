@@ -6,20 +6,25 @@ type AlphaCoinProps = {
   size?: "sm" | "md" | "lg" | "hero";
   className?: string;
   animateEarn?: boolean;
+  /** Change this value (e.g. an incrementing counter) to replay a coin-flip spin on real earn events. */
+  flipKey?: number | string;
 };
 
-export function AlphaCoin({ size = "md", className = "", animateEarn = false }: AlphaCoinProps) {
+export function AlphaCoin({ size = "md", className = "", animateEarn = false, flipKey }: AlphaCoinProps) {
   const sizeClasses = {
     sm: "w-5 h-5 text-[9px]",
     md: "w-8 h-8 text-[12px]",
     lg: "w-12 h-12 text-sm",
     hero: "w-20 h-20 text-3xl",
   };
+  const shouldFlip = flipKey !== undefined && flipKey !== 0 && flipKey !== "";
 
   return (
     <motion.div
-      initial={animateEarn ? { y: 20, scale: 0.5, opacity: 0 } : false}
-      animate={animateEarn ? { y: 0, scale: [1.2, 1], opacity: 1 } : false}
+      key={shouldFlip ? flipKey : undefined}
+      initial={animateEarn ? { y: 20, scale: 0.5, opacity: 0 } : shouldFlip ? { rotateY: 0 } : false}
+      animate={animateEarn ? { y: 0, scale: [1.2, 1], opacity: 1 } : shouldFlip ? { rotateY: 360 } : false}
+      transition={shouldFlip && !animateEarn ? { duration: 0.6, ease: [0.22, 1, 0.36, 1] } : undefined}
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
       className={`relative rounded-full flex items-center justify-center font-black ${sizeClasses[size]} ${className}`}
@@ -29,6 +34,7 @@ export function AlphaCoin({ size = "md", className = "", animateEarn = false }: 
         border: "1px solid rgba(255, 235, 130, 0.8)",
         color: "#995C00",
         textShadow: "0 1px 1px rgba(255,255,255,0.6)",
+        transformStyle: "preserve-3d",
       }}
     >
       <span className="drop-shadow-sm pointer-events-none">A$</span>
