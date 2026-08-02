@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { CloudSun, Moon, Sun, CalendarClock } from "lucide-react";
 import type { ProtocolReport, ProtocolRoutineStep } from "@/types/protocolReport";
 
@@ -77,20 +78,34 @@ export default function DailyRoutine({ monthlyRecoveryPlan }: { monthlyRecoveryP
         })}
       </div>
 
-      {BUCKETS.map((bucket) => (
-        <div
-          key={bucket.id}
-          role="tabpanel"
-          id={`routine-panel-${bucket.id}`}
-          aria-labelledby={`routine-tab-${bucket.id}`}
-          hidden={active !== bucket.id}
-          className="mt-4 space-y-3"
-        >
-          {monthlyRecoveryPlan[bucket.id].map((step) => (
-            <RoutineStepCard key={`${bucket.id}-${step.title}`} step={step} />
-          ))}
-        </div>
-      ))}
+      <motion.div
+        drag="x"
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={0.15}
+        onDragEnd={(_, info) => {
+          const currentIndex = BUCKETS.findIndex((bucket) => bucket.id === active);
+          if (info.offset.x < -60 && currentIndex < BUCKETS.length - 1) {
+            setActive(BUCKETS[currentIndex + 1].id);
+          } else if (info.offset.x > 60 && currentIndex > 0) {
+            setActive(BUCKETS[currentIndex - 1].id);
+          }
+        }}
+      >
+        {BUCKETS.map((bucket) => (
+          <div
+            key={bucket.id}
+            role="tabpanel"
+            id={`routine-panel-${bucket.id}`}
+            aria-labelledby={`routine-tab-${bucket.id}`}
+            hidden={active !== bucket.id}
+            className="mt-4 space-y-3"
+          >
+            {monthlyRecoveryPlan[bucket.id].map((step) => (
+              <RoutineStepCard key={`${bucket.id}-${step.title}`} step={step} />
+            ))}
+          </div>
+        ))}
+      </motion.div>
     </section>
   );
 }

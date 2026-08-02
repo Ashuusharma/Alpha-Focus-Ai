@@ -1,12 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useState } from "react";
 import { CheckCircle2, FileText, ShieldCheck, Sparkles, Stethoscope, Upload } from "lucide-react";
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
-}
 
 type LandingPageProps = {
   onStart: () => void;
@@ -15,66 +9,10 @@ type LandingPageProps = {
 };
 
 export default function LandingPage({ onStart, onLogin, onNavigate }: LandingPageProps) {
-  const [deferredInstallPrompt, setDeferredInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [engaged, setEngaged] = useState(false);
-  const [showInstallCta, setShowInstallCta] = useState(false);
-
-  useEffect(() => {
-    const handleBeforeInstallPrompt = (event: Event) => {
-      event.preventDefault();
-      setDeferredInstallPrompt(event as BeforeInstallPromptEvent);
-    };
-
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-    return () => window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-  }, []);
-
-  useEffect(() => {
-    const markEngaged = () => setEngaged(true);
-    window.addEventListener("pointerdown", markEngaged, { once: true });
-    window.addEventListener("keydown", markEngaged, { once: true });
-    window.addEventListener("scroll", markEngaged, { once: true });
-
-    return () => {
-      window.removeEventListener("pointerdown", markEngaged);
-      window.removeEventListener("keydown", markEngaged);
-      window.removeEventListener("scroll", markEngaged);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!deferredInstallPrompt || !engaged) {
-      setShowInstallCta(false);
-      return;
-    }
-
-    const timer = window.setTimeout(() => {
-      setShowInstallCta(true);
-    }, 8000);
-
-    return () => window.clearTimeout(timer);
-  }, [deferredInstallPrompt, engaged]);
-
-  useEffect(() => {
-    const handleInstalled = () => {
-      setDeferredInstallPrompt(null);
-      setShowInstallCta(false);
-    };
-
-    window.addEventListener("appinstalled", handleInstalled);
-    return () => window.removeEventListener("appinstalled", handleInstalled);
-  }, []);
-
-  const handleInstallClick = async () => {
-    if (!deferredInstallPrompt) return;
-    deferredInstallPrompt.prompt();
-    try {
-      await deferredInstallPrompt.userChoice;
-    } finally {
-      setDeferredInstallPrompt(null);
-      setShowInstallCta(false);
-    }
-  };
+  // Install-prompt capture/timing moved to the global InstallBanner (Phase
+  // 7ZA) - it now shows on every page instead of only whoever scrolls to
+  // this page's final CTA section, using the exact same trigger conditions
+  // (see app/hooks/useInstallPrompt.ts).
 
   return (
     <div className="min-h-screen bg-[#F4F1EB] text-[#1E4D3A]">
@@ -229,9 +167,6 @@ export default function LandingPage({ onStart, onLogin, onNavigate }: LandingPag
           <p className="mt-2 text-[#0071e3]">Start with your first scan and receive a structured report in minutes.</p>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <button onClick={onStart} className="rounded-xl bg-medical-gradient px-7 py-3 text-sm font-semibold text-[#F4F1EB]">Start Your Free Skin Scan</button>
-            {showInstallCta ? (
-              <button onClick={handleInstallClick} className="rounded-xl bg-premium-button-gradient px-7 py-3 text-sm font-semibold text-[#1E4D3A]">Install App</button>
-            ) : null}
           </div>
         </section>
       </main>

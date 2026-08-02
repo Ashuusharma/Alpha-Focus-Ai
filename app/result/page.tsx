@@ -17,6 +17,7 @@ import LifestyleGuidance from "./_sections/LifestyleGuidance";
 import ThingsToAvoid from "./_sections/ThingsToAvoid";
 import RecommendedProducts from "./_sections/RecommendedProducts";
 import ProtocolFollowUp from "./_sections/ProtocolFollowUp";
+import ProtocolMobileActionBar from "./_sections/ProtocolMobileActionBar";
 
 function parseJson<T>(value: string | null, fallback: T): T {
   if (!value) return fallback;
@@ -204,7 +205,8 @@ export default function ResultPage() {
 
   return (
     <div className="af-page min-h-screen">
-      <main className="mx-auto flex max-w-6xl gap-6 px-4 py-6 md:px-6 md:py-8">
+      <ProtocolMobileActionBar />
+      <main className="mx-auto flex max-w-6xl gap-6 px-4 py-6 pb-24 md:px-6 md:py-8 md:pb-8">
         <ProtocolTableOfContents entries={TOC_ENTRIES} />
 
         <div className="flex min-w-0 flex-1 flex-col gap-4">

@@ -1,9 +1,10 @@
-﻿"use client";
+"use client";
 
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
+import { motion } from "framer-motion";
 import {
   Bell,
   MapPin,
@@ -16,6 +17,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { useMounted } from "@/app/hooks/useMounted";
+import { useIsMobileViewport } from "@/app/hooks/useIsMobileViewport";
 import { useLocation } from "@/app/hooks/useLocation";
 import { RewardUnlockModal, type RewardUnlockModalData } from "@/app/alpha-credits/_components/RewardUnlockModal";
 import { useCartStore } from "@/lib/cartStore";
@@ -27,6 +29,7 @@ import { getSupabaseAuthHeaders } from "@/lib/auth/clientAuthHeaders";
 import { getRewardCountdownLabel } from "@/lib/rewardUnlockService";
 import { trackRewardEvent } from "@/lib/rewardTracking";
 import { useRewardStore } from "@/stores/useRewardStore";
+import NotificationCenter, { type NotificationFilter, type NotificationItem } from "./NotificationCenter";
 
 const LINKS = [
   { label: "Home", href: "/dashboard" },
@@ -38,19 +41,13 @@ const LINKS = [
   { label: "Shop", href: "/shop" },
 ] as const;
 
-type NotificationItem = {
-  id: string;
-  title: string;
-  body: string;
-  time: string;
-  tag?: string;
-  createdAt: string;
-  ctaHref?: string;
-  ctaLabel?: string;
-  isRead?: boolean;
-};
-
-type NotificationFilter = "All" | "Rewards" | "Alerts";
+// The floating nav shell's top padding + inner capsule height, in px. The
+// reward banner below is `sticky` and needs to sit flush against the
+// bottom of this shell - if either value changes, update both together
+// (this exact class of mismatch was a real bug fixed in Phase 7C).
+const NAV_SHELL_TOP_PADDING_PX = 12;
+const NAV_CAPSULE_HEIGHT_PX = 56;
+const NAV_SHELL_TOTAL_HEIGHT_PX = NAV_SHELL_TOP_PADDING_PX + NAV_CAPSULE_HEIGHT_PX;
 
 function formatTimeAgo(iso?: string) {
   if (!iso) return "Just now";
@@ -76,6 +73,7 @@ const LOGO_SOURCES = [BRAND_LOGO_PRIMARY, BRAND_LOGO_FALLBACK, BRAND_LOGO_LEGACY
 export default function MainNavbar() {
   const pathname = usePathname();
   const mounted = useMounted();
+  const isMobileViewport = useIsMobileViewport();
   const items = useCartStore((state) => state.items);
   const openCart = useCartStore((state) => state.openCart);
   const { displayLabel, status: locationStatus, refreshLocation } = useLocation();
@@ -189,6 +187,17 @@ export default function MainNavbar() {
 
     setNotifications((current) => current.map((item) => item.id === id ? { ...item, isRead: true } : item));
     setUnreadCount((current) => Math.max(0, current - 1));
+  };
+
+  const markAllNotificationsRead = async () => {
+    const headers = await getSupabaseAuthHeaders({ "Content-Type": "application/json" });
+    await fetch("/api/notifications/read", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ all: true }),
+    });
+    setToast(null);
+    void refreshNotifications();
   };
 
   const dismissToast = (id?: string) => {
@@ -401,119 +410,26 @@ export default function MainNavbar() {
     setMobileMenuOpen(false);
   };
 
-  if (!mounted) return <div className="h-14 bg-[var(--nav-surface)] border-b border-[var(--nav-border)]" />;
+  if (!mounted) return <div style={{ height: NAV_SHELL_TOTAL_HEIGHT_PX }} className="bg-[var(--nav-surface)] border-b border-[var(--nav-border)]" />;
 
-  const filterTabs: NotificationFilter[] = ["All", "Rewards", "Alerts"];
   const primaryDesktopLinks = LINKS.slice(0, 5);
   const overflowDesktopLinks = LINKS.slice(5);
 
-  const notificationPanel = showNotifications ? (
-    <div
-      ref={notificationPanelRef}
-      role="dialog"
-      aria-label="Notifications"
-      className="absolute right-0 top-[48px] z-[9999] w-[360px] border border-white/12 bg-black/94 p-3 text-white shadow-[0_20px_40px_rgba(0,0,0,0.45)] transition-all duration-200"
-      style={{ opacity: showNotifications ? 1 : 0, transform: showNotifications ? "translateY(0)" : "translateY(-10px)" }}
-    >
-      <div className="mb-3 flex items-center justify-between">
-        <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--text-secondary-dark)]">Notifications</p>
-        <button
-          type="button"
-          onClick={async () => {
-            const headers = await getSupabaseAuthHeaders({ "Content-Type": "application/json" });
-            await fetch("/api/notifications/read", {
-              method: "POST",
-              headers,
-              body: JSON.stringify({ all: true }),
-            });
-            setToast(null);
-            void refreshNotifications();
-          }}
-          className="border border-[var(--accent-blue)] px-2 py-1 text-[11px] font-bold uppercase text-white"
-          disabled={unreadNotifications.length === 0}
-        >
-          Mark all read
-        </button>
-      </div>
-
-      <div className="mb-3 flex gap-2">
-        {filterTabs.map((filter) => {
-          const active = notificationFilter === filter;
-          return (
-            <button
-              key={filter}
-              type="button"
-              onClick={() => setNotificationFilter(filter)}
-              className={`border px-2 py-1 text-[11px] font-bold uppercase ${active ? "border-[var(--accent-blue)] text-[var(--link-blue-dark)]" : "border-[var(--nav-border-soft)] text-[var(--text-secondary-dark)]"}`}
-            >
-              {filter}
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="mb-3 flex items-center justify-between border border-[var(--nav-surface-border)] px-2 py-2">
-        <span className="text-[11px] font-bold uppercase text-[var(--text-secondary-dark)]">Unread only</span>
-        <button
-          type="button"
-          onClick={() => setShowUnreadOnly((current) => !current)}
-          className={`h-6 w-10 border ${showUnreadOnly ? "border-[var(--accent-blue)]" : "border-[var(--nav-border-soft)]"}`}
-          aria-pressed={showUnreadOnly}
-        >
-          <span className={`block h-4 w-4 bg-[var(--accent-blue)] transition-transform ${showUnreadOnly ? "translate-x-4" : "translate-x-0"}`} />
-        </button>
-      </div>
-
-      <div className="space-y-2">
-        {visibleNotifications.slice(0, 5).length === 0 && (
-          <div className="border border-[var(--nav-surface-border)] p-3 text-sm text-[var(--text-secondary-dark)]">No notifications found.</div>
-        )}
-        {visibleNotifications.slice(0, 5).map((note) => (
-          <div key={note.id} className="border border-[var(--nav-surface-border)] bg-[var(--nav-surface-soft)] p-3">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <p className="text-sm font-bold text-white">{note.title}</p>
-                <p className="mt-1 text-xs text-[var(--text-secondary-dark)]">{note.time}</p>
-              </div>
-              {!note.isRead && <span className="h-2 w-2 bg-[var(--danger)]" />}
-            </div>
-            <p className="mt-2 text-xs text-[var(--text-secondary-dark)]">{note.body}</p>
-            <div className="mt-2 flex items-center gap-2">
-              <span className="border border-[var(--accent-blue)] px-2 py-0.5 text-[10px] font-bold uppercase text-[var(--link-blue-dark)]">{note.tag || "Alerts"}</span>
-              {!note.isRead && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    void markNotificationRead(note.id);
-                    if (toast?.id === note.id) setToast(null);
-                  }}
-                  className="border border-[var(--nav-border-soft)] px-2 py-0.5 text-[10px] font-bold uppercase text-white"
-                >
-                  Mark read
-                </button>
-              )}
-              {note.ctaHref && note.ctaLabel && (
-                <Link href={note.ctaHref} onClick={() => setShowNotifications(false)} className="border border-[var(--nav-border-soft)] px-2 py-0.5 text-[10px] font-bold uppercase text-white">
-                  {note.ctaLabel}
-                </Link>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  ) : null;
-
   return (
     <>
-      <header className="sticky top-0 z-50 h-14 border-b border-[var(--nav-border)] bg-[linear-gradient(180deg,var(--nav-bg-start)_0%,var(--nav-bg-end)_100%)] backdrop-blur-[20px]">
-        <div className="mx-auto grid h-full max-w-[1320px] grid-cols-[auto,1fr,auto] items-center gap-3 px-3 sm:px-4 lg:px-6">
-          
+      {/* Floating glass shell: sticky (not fixed) so it still reserves its
+          own space in normal flow like before - only the padding here
+          creates the "floating" gap from the viewport edge, nothing else
+          on the page needs to account for a new offset. */}
+      <header className="sticky top-0 z-50 px-3 pt-3 sm:px-4">
+        <div className="mx-auto flex h-14 max-w-[1320px] items-center gap-3 rounded-2xl border border-[var(--nav-border)] bg-[linear-gradient(180deg,var(--nav-bg-start)_0%,var(--nav-bg-end)_100%)] px-3 shadow-[0_16px_40px_rgba(0,0,0,0.35)] backdrop-blur-[20px] sm:px-4">
+          <div className="grid h-full w-full grid-cols-[auto,1fr,auto] items-center gap-3">
+
           {/* Mobile: Hamburger + Logo */}
           <div className="flex items-center gap-2 md:gap-3 min-w-0">
             <button
               type="button"
-              className="md:hidden p-2 -ml-2 text-white hover:bg-white/10"
+              className="md:hidden p-2 -ml-2 text-white hover:bg-white/10 rounded-full transition-colors"
               onClick={() => setMobileMenuOpen(true)}
               aria-label="Open menu"
             >
@@ -521,7 +437,7 @@ export default function MainNavbar() {
             </button>
 
             {/* Left: Logo */}
-            <Link href="/" className="flex items-center group mr-0.5 md:mr-1 rounded-full border border-white/15 bg-white/5 px-2.5 py-1 shadow-[0_8px_24px_rgba(0,0,0,0.24)]">
+            <Link href="/" className="flex items-center group mr-0.5 md:mr-1 rounded-full border border-white/15 bg-white/5 px-2.5 py-1 shadow-[0_8px_24px_rgba(0,0,0,0.24)] transition-transform hover:scale-105 active:scale-95">
               <img
                 src={logoSrc}
                 alt="Alpha Focus"
@@ -538,21 +454,23 @@ export default function MainNavbar() {
           </div>
 
           {/* Center: Links (Desktop Only - hidden on smaller screens) */}
-          <nav className="hidden md:flex items-center justify-center gap-2 lg:gap-2.5 px-2 lg:px-3 min-w-0 max-w-full whitespace-nowrap">
+          <nav className="hidden md:flex items-center justify-center gap-1 lg:gap-1.5 px-2 lg:px-3 min-w-0 max-w-full whitespace-nowrap">
             {primaryDesktopLinks.map((link) => {
               const isActive = pathname === link.href || pathname?.startsWith(link.href + '/');
               return (
               <Link
                 key={link.label}
                 href={link.href}
-                className={`relative rounded-full px-3 py-1.5 text-[12px] font-medium transition-all duration-200 group whitespace-nowrap ${isActive ? "bg-white/12 text-white shadow-[0_10px_22px_rgba(0,0,0,0.25)]" : "text-white/90 hover:text-white hover:bg-white/8"}`}
+                className={`relative rounded-full px-3 py-1.5 text-[12px] font-medium transition-colors whitespace-nowrap ${isActive ? "text-white" : "text-white/80 hover:text-white"}`}
               >
-                {link.label}
-                {isActive ? (
-                  <span className="absolute bottom-0 left-2 right-2 h-px bg-[var(--link-blue-dark)]/70" />
-                ) : (
-                  <span className="absolute bottom-0 left-0 w-0 h-px bg-white/75 transition-all duration-300 group-hover:w-full" />
+                {isActive && (
+                  <motion.span
+                    layoutId="nav-active-pill"
+                    className="absolute inset-0 rounded-full bg-white/12 shadow-[0_10px_22px_rgba(0,0,0,0.25)]"
+                    transition={{ type: "spring", stiffness: 500, damping: 34 }}
+                  />
                 )}
+                <span className="relative z-10">{link.label}</span>
               </Link>
             )})}
 
@@ -561,7 +479,7 @@ export default function MainNavbar() {
                 <button
                   type="button"
                   onClick={() => setShowMoreMenu((current) => !current)}
-                  className="text-[12px] font-medium text-white/90 hover:text-white px-3 py-1.5 border border-white/20 rounded-full bg-white/5 hover:bg-white/10"
+                  className="text-[12px] font-medium text-white/90 hover:text-white px-3 py-1.5 border border-white/20 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
                   aria-expanded={showMoreMenu}
                   aria-label="Open more routes"
                 >
@@ -569,7 +487,7 @@ export default function MainNavbar() {
                 </button>
 
                 {showMoreMenu && (
-                  <div className="absolute right-0 top-[38px] z-[9999] min-w-[180px] border border-white/15 bg-black/85 backdrop-blur-xl p-2 shadow-[0_20px_40px_rgba(0,0,0,0.35)]">
+                  <div className="absolute right-0 top-[38px] z-[9999] min-w-[180px] rounded-2xl border border-white/15 bg-black/85 backdrop-blur-xl p-2 shadow-[0_20px_40px_rgba(0,0,0,0.35)]">
                     {overflowDesktopLinks.map((link) => {
                       const isActive = pathname === link.href || pathname?.startsWith(link.href + '/');
                       return (
@@ -577,7 +495,7 @@ export default function MainNavbar() {
                           key={`overflow-${link.label}`}
                           href={link.href}
                           onClick={() => setShowMoreMenu(false)}
-                          className={`block px-3 py-2 text-xs transition-colors ${isActive ? "text-white bg-white/10" : "text-white/80 hover:text-white hover:bg-white/5"}`}
+                          className={`block rounded-xl px-3 py-2 text-xs transition-colors ${isActive ? "text-white bg-white/10" : "text-white/80 hover:text-white hover:bg-white/5"}`}
                         >
                           {link.label}
                         </Link>
@@ -599,7 +517,7 @@ export default function MainNavbar() {
                 type="button"
                 onClick={refreshLocation}
                 aria-label="Refresh location"
-                className="p-1 hover:bg-white/10 transition-colors"
+                className="p-1 rounded-full hover:bg-white/10 transition-colors"
                 title="Refresh location"
               >
                 <RefreshCcw className="h-3.5 w-3.5" />
@@ -614,17 +532,37 @@ export default function MainNavbar() {
                   void refreshNotifications();
                   setShowNotifications((current) => !current);
                 }}
-                className="relative rounded-full p-2.5 hover:bg-white/10 transition-colors"
+                className="relative rounded-full p-2.5 hover:bg-white/10 active:scale-95 transition-all duration-150"
                 aria-label="Notifications"
                 aria-expanded={showNotifications}
-                onClickCapture={(e) => e.stopPropagation()}
               >
                 <Bell className="h-5 w-5 text-white" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 h-2.5 w-2.5 bg-[var(--danger)]" />
+                  <span className="absolute top-1 right-1 h-2.5 w-2.5 rounded-full bg-[var(--danger)]" />
                 )}
               </button>
-              {notificationPanel}
+
+              {showNotifications && !isMobileViewport && (
+                <div className="absolute right-0 top-[calc(100%+0.5rem)]">
+                  <NotificationCenter
+                    ref={notificationPanelRef}
+                    variant="desktop"
+                    notifications={notifications}
+                    visibleNotifications={visibleNotifications}
+                    unreadCount={unreadCount}
+                    filter={notificationFilter}
+                    onFilterChange={setNotificationFilter}
+                    showUnreadOnly={showUnreadOnly}
+                    onToggleUnreadOnly={() => setShowUnreadOnly((current) => !current)}
+                    onMarkRead={(id) => {
+                      void markNotificationRead(id);
+                      if (toast?.id === id) setToast(null);
+                    }}
+                    onMarkAllRead={() => void markAllNotificationsRead()}
+                    onNavigate={() => setShowNotifications(false)}
+                  />
+                </div>
+              )}
             </div>
 
             <button
@@ -641,7 +579,7 @@ export default function MainNavbar() {
               )}
             </button>
 
-            <Link href="/profile" className="hidden sm:block rounded-full p-2.5 hover:bg-white/10 transition-colors">
+            <Link href="/profile" className="hidden sm:block rounded-full p-2.5 hover:bg-white/10 active:scale-95 transition-all duration-150">
               <User className="h-5 w-5 text-white" />
             </Link>
 
@@ -655,7 +593,7 @@ export default function MainNavbar() {
               <button
                 type="button"
                 onClick={() => setAuthModalOpen(true)}
-                className="hidden sm:flex items-center gap-2 rounded-full border border-[var(--accent-blue)] px-3 py-1 text-[12px] font-normal text-white hover:bg-white/10 whitespace-nowrap"
+                className="hidden sm:flex items-center gap-2 rounded-full border border-[var(--accent-blue)] px-3 py-1 text-[12px] font-normal text-white hover:bg-white/10 whitespace-nowrap transition-colors"
               >
                 Sign in
               </button>
@@ -663,36 +601,40 @@ export default function MainNavbar() {
               <button
                 type="button"
                 onClick={handleSignOut}
-                className="hidden sm:flex items-center gap-2 rounded-full border border-[var(--accent-blue)] px-3 py-1 text-[12px] font-normal text-white hover:bg-white/10 whitespace-nowrap"
+                className="hidden sm:flex items-center gap-2 rounded-full border border-[var(--accent-blue)] px-3 py-1 text-[12px] font-normal text-white hover:bg-white/10 whitespace-nowrap transition-colors"
               >
                 Logout
               </button>
             )}
 
-            <Link 
-              href="/upgrade" 
-              className="hidden sm:flex items-center gap-2 rounded-full border border-[var(--accent-blue)] bg-[var(--accent-blue)] px-3 lg:px-4 py-1 text-[12px] font-normal text-white transition-all whitespace-nowrap"
+            <Link
+              href="/upgrade"
+              className="hidden sm:flex items-center gap-2 rounded-full border border-[var(--accent-blue)] bg-[var(--accent-blue)] px-3 lg:px-4 py-1 text-[12px] font-normal text-white transition-transform hover:scale-105 active:scale-95 whitespace-nowrap"
             >
               <Zap className="h-3.5 w-3.5 fill-current" />
               UPGRADE
             </Link>
           </div>
+          </div>
         </div>
       </header>
 
       {activeReward && pathname && (pathname.startsWith("/dashboard") || pathname.startsWith("/shop") || pathname.startsWith("/product")) && (
-        <div className={`sticky top-12 z-40 flex items-center justify-center gap-2 lg:gap-3 border-b px-3 py-2 text-center text-xs font-normal shadow-sm transition-colors ${
-          isExpiringSoon 
-            ? "border-[var(--warning-accent)]/30 bg-[var(--warning-bg)] text-[var(--warning-text)]" 
-            : "border-[var(--border-hairline)] bg-[var(--bg-wash-start)] text-[var(--ink)]"
-        }`}>
+        <div
+          style={{ top: NAV_SHELL_TOTAL_HEIGHT_PX }}
+          className={`sticky z-40 flex items-center justify-center gap-2 lg:gap-3 border-b px-3 py-2 text-center text-xs font-normal shadow-sm transition-colors ${
+            isExpiringSoon
+              ? "border-[var(--warning-accent)]/30 bg-[var(--warning-bg)] text-[var(--warning-text)]"
+              : "border-[var(--border-hairline)] bg-[var(--bg-wash-start)] text-[var(--ink)]"
+          }`}
+        >
           {isExpiringSoon && <span className="inline-flex h-2 w-2 rounded-full bg-[var(--warning-accent)] animate-pulse" />}
           <span>
             You have {activeReward.discountPercent}% OFF
             {isExpiringSoon && <span className="hidden sm:inline">  -  Expiring {getRewardCountdownLabel(activeReward.expiresAt)}</span>}
           </span>
-          <Link 
-            href="/checkout" 
+          <Link
+            href="/checkout"
             className="group ml-2 inline-flex items-center gap-1 uppercase tracking-widest font-black underline decoration-transparent transition-all hover:decoration-current"
           >
             Use now <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -700,12 +642,37 @@ export default function MainNavbar() {
         </div>
       )}
 
+      {/* Mobile notification sheet - separate from the desktop dropdown
+          above so it can render as a full bottom sheet with its own
+          backdrop instead of a cramped fixed-width dropdown. */}
+      {mountedDom && showNotifications && isMobileViewport && createPortal(
+        <div>
+          <NotificationCenter
+            variant="mobile"
+            notifications={notifications}
+            visibleNotifications={visibleNotifications}
+            unreadCount={unreadCount}
+            filter={notificationFilter}
+            onFilterChange={setNotificationFilter}
+            showUnreadOnly={showUnreadOnly}
+            onToggleUnreadOnly={() => setShowUnreadOnly((current) => !current)}
+            onMarkRead={(id) => {
+              void markNotificationRead(id);
+              if (toast?.id === id) setToast(null);
+            }}
+            onMarkAllRead={() => void markAllNotificationsRead()}
+            onNavigate={() => setShowNotifications(false)}
+          />
+        </div>,
+        document.body
+      )}
+
       {/* Mobile Drawer Portal */}
       {mobileMenuOpen && createPortal(
         <div className="fixed inset-0 z-[100] flex md:hidden">
           {/* Backdrop */}
-          <div 
-            className="absolute inset-0 bg-black/50 transition-opacity" 
+          <div
+            className="absolute inset-0 bg-black/50 transition-opacity"
             onClick={() => setMobileMenuOpen(false)}
           />
 
@@ -725,7 +692,7 @@ export default function MainNavbar() {
                 loading="eager"
                 decoding="async"
               />
-              <button 
+              <button
                 onClick={() => setMobileMenuOpen(false)}
                 className="p-2 -mr-2 text-white/80 hover:text-white hover:bg-white/10 rounded-full"
               >
@@ -811,7 +778,7 @@ export default function MainNavbar() {
               )}
 
               <div className="mt-4 px-4">
-                 <Link 
+                 <Link
                   href="/upgrade"
                   onClick={() => setMobileMenuOpen(false)}
                   className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--accent-blue)] px-4 py-3 text-sm font-bold text-white shadow-lg hover:bg-[var(--accent-blue-dark)] transition-all"
@@ -868,10 +835,6 @@ export default function MainNavbar() {
                 type="button"
                 aria-label="Dismiss toast"
                 onClick={() => dismissToast(toast.id)}
-                onPointerDown={(e) => e.stopPropagation()}
-                onTouchEnd={(e) => e.stopPropagation()}
-                onMouseDown={(e) => e.stopPropagation()}
-                onClickCapture={(e) => e.stopPropagation()}
                 className="text-xs font-semibold text-[var(--ink-soft)] hover:text-[var(--ink)]"
               >
                 Dismiss
@@ -899,5 +862,3 @@ export default function MainNavbar() {
     </>
   );
 }
-
-

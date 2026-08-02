@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import Script from "next/script";
-import { CheckCircle2, Crown, Sparkles } from "lucide-react";
+import { AlertCircle, CheckCircle2, Crown, ShieldCheck, Sparkles, Zap } from "lucide-react";
 import { getSupabaseAuthHeaders } from "@/lib/auth/clientAuthHeaders";
 import type { PlanId } from "@/lib/server/entitlements";
+import Button from "@/components/ui/Button";
+import StatChip from "@/components/ui/StatChip";
 
 type Tier = {
   id: PlanId;
@@ -12,6 +14,7 @@ type Tier = {
   price: string;
   subtitle: string;
   features: string[];
+  spotlight?: boolean;
 };
 
 const TIERS: Tier[] = [
@@ -28,6 +31,7 @@ const TIERS: Tier[] = [
     price: "Rs 199/month",
     subtitle: "Billed monthly",
     features: ["Unlimited scans", "Detailed protocol reports", "Progress analytics", "Priority AI processing"],
+    spotlight: true,
   },
   {
     id: "premium_yearly",
@@ -87,19 +91,33 @@ export default function UpgradePageClient({ currentPlan }: { currentPlan: PlanId
       <Script src="https://sdk.cashfree.com/js/v3/cashfree.js" onLoad={() => setSdkReady(true)} />
 
       <div className="af-page pb-28">
-        <main className="max-w-7xl mx-auto px-4 pt-24 space-y-10">
-          <section className="af-card p-8">
-            <p className="inline-flex items-center gap-2 text-xs uppercase tracking-wider af-accent mb-4">
-              <Sparkles className="w-4 h-4" /> Subscription Plans
+        <main className="max-w-7xl mx-auto px-4 pt-8 md:pt-12 space-y-8">
+          <section className="af-hero-dark p-8 md:p-10">
+            <span className="af-page-kicker">
+              <Sparkles className="h-3.5 w-3.5" />
+              Subscription Plans
+            </span>
+            <h1 className="mt-4 text-3xl md:text-4xl font-extrabold leading-tight text-white">
+              Upgrade your Alpha Focus experience
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm text-[#b7c4d7]">
+              Unlimited scans, deeper protocol reports, and priority AI processing. Sandbox pricing shown for testing — final pricing will be confirmed before launch.
             </p>
-            <h1 className="text-[2rem] md:text-[2.25rem] font-semibold leading-tight">Upgrade Your Alpha Focus Experience</h1>
-            <p className="mt-3 af-muted max-w-3xl">
-              Sandbox pricing shown for testing — final pricing will be confirmed before launch.
-            </p>
-            {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              <StatChip icon={<ShieldCheck className="h-4 w-4" />} value="Cancel anytime" label="No lock-in on monthly" />
+              <StatChip icon={<Zap className="h-4 w-4" />} value="Instant activation" label="Applied right after checkout" />
+            </div>
+
+            {error && (
+              <div className="mt-5 flex items-center gap-2 rounded-xl bg-white/10 px-4 py-3 text-sm text-white">
+                <AlertCircle className="h-4 w-4 shrink-0 text-[var(--warning-accent)]" />
+                {error}
+              </div>
+            )}
           </section>
 
-          <section className="grid lg:grid-cols-3 gap-4">
+          <section className="grid gap-4 lg:grid-cols-3">
             {TIERS.map((tier) => {
               const isCurrent = tier.id === currentPlan;
               const isFree = tier.id === "free";
@@ -107,52 +125,59 @@ export default function UpgradePageClient({ currentPlan }: { currentPlan: PlanId
               return (
                 <article
                   key={tier.id}
-                  className={`af-card p-5 ${tier.id === "premium_monthly" ? "border-[#0071e3]" : "border-[#d9d9de]"}`}
+                  className={tier.spotlight ? "af-hero-dark relative p-6" : "af-surface-card relative p-6"}
                 >
+                  {tier.spotlight && (
+                    <span className="absolute -top-3 left-6 rounded-full bg-[var(--accent-green)] px-3 py-1 text-[10px] font-black uppercase tracking-wide text-[var(--ink)]">
+                      Most Popular
+                    </span>
+                  )}
+
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-lg font-semibold text-[#1d1d1f]">{tier.name}</p>
-                      <p className="text-xs af-muted mt-1">{tier.subtitle}</p>
+                      <p className={`text-lg font-semibold ${tier.spotlight ? "text-white" : "text-[var(--ink)]"}`}>{tier.name}</p>
+                      <p className={`mt-1 text-xs ${tier.spotlight ? "text-[#b7c4d7]" : "text-[var(--ink-soft)]"}`}>{tier.subtitle}</p>
                     </div>
                     {isCurrent && (
-                      <span className="text-[11px] px-2 py-1 rounded-full border border-[#0071e3]/30 bg-[#E8F4EE] text-[#0071e3]">Current Plan</span>
+                      <span className="rounded-full border border-[var(--accent-blue)]/30 bg-[var(--accent-blue)]/10 px-2 py-1 text-[11px] font-semibold text-[var(--link-blue-dark)]">
+                        Current Plan
+                      </span>
                     )}
                   </div>
 
-                  <p className="text-2xl font-bold mt-4 text-[#1d1d1f]">{tier.price}</p>
+                  <p className={`mt-4 text-2xl font-bold ${tier.spotlight ? "text-white" : "text-[var(--ink)]"}`}>{tier.price}</p>
 
-                  <ul className="mt-4 space-y-2 text-sm text-[#1d1d1f]">
+                  <ul className={`mt-4 space-y-2 text-sm ${tier.spotlight ? "text-white" : "text-[var(--ink)]"}`}>
                     {tier.features.map((feature) => (
                       <li key={feature} className="flex items-start gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-[#0071e3] mt-0.5" />
+                        <CheckCircle2 className={`mt-0.5 h-4 w-4 shrink-0 ${tier.spotlight ? "text-[var(--accent-green)]" : "text-[var(--accent-blue)]"}`} />
                         <span>{feature}</span>
                       </li>
                     ))}
                   </ul>
 
-                  <button
+                  <Button
                     onClick={() => handleChoosePlan(tier.id)}
                     disabled={isFree || isCurrent || loadingPlan !== null}
-                    className={`mt-5 w-full py-2.5 text-sm transition-colors disabled:opacity-60 ${
-                      tier.id === "premium_monthly" ? "af-btn-primary" : "af-btn-soft"
-                    }`}
+                    variant={tier.spotlight ? "accent" : "outline"}
+                    className="mt-5 w-full justify-center disabled:opacity-60"
                   >
                     {isCurrent ? "Current Plan" : isFree ? "Free" : loadingPlan === tier.id ? "Starting checkout..." : `Choose ${tier.name}`}
-                  </button>
+                  </Button>
                 </article>
               );
             })}
           </section>
 
-          <section className="af-card p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <section className="af-surface-card flex flex-col items-start justify-between gap-4 p-6 md:flex-row md:items-center">
             <div>
-              <h3 className="text-lg font-semibold">Free Trial Conversion Strategy</h3>
-              <p className="text-sm af-muted mt-1">Start on Free, see your results, upgrade whenever you're ready.</p>
+              <h3 className="text-lg font-semibold text-[var(--ink)]">Try before you commit</h3>
+              <p className="mt-1 text-sm text-[var(--ink-soft)]">Start on Free, see your results, upgrade whenever you&apos;re ready.</p>
             </div>
-            <a href="/image-analyzer" className="inline-flex items-center gap-2 af-btn-primary px-5 py-2.5 text-sm">
-              <Crown className="w-4 h-4" />
+            <Button href="/image-analyzer" variant="primary">
+              <Crown className="h-4 w-4" />
               Start Free Trial Flow
-            </a>
+            </Button>
           </section>
         </main>
       </div>

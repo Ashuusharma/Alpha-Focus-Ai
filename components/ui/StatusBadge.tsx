@@ -9,10 +9,10 @@ type StatusBadgeProps = {
 };
 
 const variantClasses: Record<StatusVariant, string> = {
-  success: "bg-[#E4EFE9] text-[#0071e3] border-[#BFD5C8]",
-  warning: "bg-[#F4EED7] text-[#6e6e73] border-[#E0CE97]",
-  danger: "bg-[#F1E6E1] text-[#6e6e73] border-[#D6B8AA]",
-  info: "bg-[#eef5ff] text-[#0071e3] border-[#d9d9de]",
+  success: "bg-[var(--accent-green)]/12 text-[var(--ink)] border-[var(--accent-green)]/30",
+  warning: "bg-[var(--warning-bg)] text-[var(--warning-text)] border-[var(--warning-accent)]/30",
+  danger: "bg-[var(--danger)]/10 text-[var(--danger)] border-[var(--danger)]/30",
+  info: "bg-[var(--accent-blue)]/10 text-[var(--accent-blue)] border-[var(--border-hairline)]",
 };
 
 export default function StatusBadge({ variant, children, className = "" }: StatusBadgeProps) {

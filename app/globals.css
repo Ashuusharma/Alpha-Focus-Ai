@@ -16,6 +16,55 @@
 @import "tailwindcss/utilities";
 
 /* ==========================================================================
+   Reduced motion (Phase 7Z) — a global safety net for every CSS transition/
+   animation in the app. Framer Motion components additionally check
+   useReducedMotion() themselves where they drive layout-affecting motion
+   (e.g. the nav's active-pill layoutId slide); this covers everything else
+   (hover lifts, shimmer, fades) in one place instead of per-component.
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ==========================================================================
+   Mobile / PWA shell (Phase 7ZA) — bottom nav clearance + safe-area insets.
+   This is a native-app pass, not a responsive-breakpoint pass: below the md
+   breakpoint the app gets a fixed bottom nav (BottomNav.tsx), so page
+   content needs matching bottom clearance, and every fixed bottom/top
+   element needs to respect notch/home-indicator safe areas on iOS.
+   ========================================================================== */
+.af-main-shell {
+  padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 1rem);
+}
+@media (min-width: 768px) {
+  .af-main-shell { padding-bottom: 0; }
+}
+
+/* Applied to any element pinned to the physical bottom edge (bottom nav,
+   sticky action bars, mobile notification sheet) so its content doesn't
+   sit under the iOS home-indicator / Android gesture bar. */
+.af-safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.af-safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Minimum native-app touch target (44x44, Apple HIG / Material both land
+   here) for icon-only buttons - opt-in via this class rather than a blanket
+   selector, since a global button/a minimum would break inline text links
+   and dense desktop toolbars. */
+.af-tap-target {
+  min-height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
+}
+
+/* ==========================================================================
    Animation keyframes & small utilities (kept as-is — these are motion
    utilities, not part of the color/surface system that was competing)
    ========================================================================== */

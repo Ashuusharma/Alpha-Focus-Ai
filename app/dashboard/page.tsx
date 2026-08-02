@@ -4,6 +4,7 @@ import { useContext, useEffect, useMemo, useState } from "react";
 import { AuthContext } from "@/contexts/AuthProvider";
 import { useUserStore } from "@/stores/useUserStore";
 import { hydrateUserData } from "@/lib/hydrateUserData";
+import PullToRefresh from "@/components/ui/PullToRefresh";
 import { supabase } from "@/lib/supabaseClient";
 import { calculateProgressMetricsForCategory } from "@/lib/calculateProgressMetrics";
 import { useToast } from "@/app/toast/ToastContext";
@@ -910,6 +911,7 @@ export default function DashboardPage() {
   }
 
   return (
+    <PullToRefresh onRefresh={() => hydrateUserData(user.id, { force: true, silent: true })}>
     <main className="af-page min-h-screen px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl space-y-8 md:space-y-10">
         <section className="animate-in fade-in duration-500">
@@ -1014,6 +1016,7 @@ export default function DashboardPage() {
         )}
       </div>
     </main>
+    </PullToRefresh>
   );
 }
 

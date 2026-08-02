@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "framer-motion";
+import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
+import Button from "@/components/ui/Button";
 
 type AuthFormProps = {
   onSuccess: () => void;
@@ -9,21 +12,26 @@ type AuthFormProps = {
   title?: { signin: string; signup: string };
 };
 
+type StatusMessage = { kind: "error" | "success"; text: string } | null;
+
 export default function AuthForm({ onSuccess, title }: AuthFormProps) {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState<StatusMessage>(null);
 
   const handleAuth = async () => {
+    setStatus(null);
+
     if (!email || !password) {
-      alert("Please enter email and password.");
+      setStatus({ kind: "error", text: "Please enter email and password." });
       return;
     }
 
     if (mode === "signup" && !fullName.trim()) {
-      alert("Please enter your full name.");
+      setStatus({ kind: "error", text: "Please enter your full name." });
       return;
     }
 
@@ -43,12 +51,12 @@ export default function AuthForm({ onSuccess, title }: AuthFormProps) {
       }
 
       if (error) {
-        alert(error.message);
+        setStatus({ kind: "error", text: error.message });
         setLoading(false);
         return;
       }
 
-      alert("Signup success!");
+      setStatus({ kind: "success", text: "Account created. Signing you in..." });
     } else {
       const { error } = await supabase.auth.signInWithPassword({
         email,
@@ -56,7 +64,7 @@ export default function AuthForm({ onSuccess, title }: AuthFormProps) {
       });
 
       if (error) {
-        alert(error.message);
+        setStatus({ kind: "error", text: error.message });
         setLoading(false);
         return;
       }
@@ -67,8 +75,10 @@ export default function AuthForm({ onSuccess, title }: AuthFormProps) {
   };
 
   const handleForgotPassword = async () => {
+    setStatus(null);
+
     if (!email) {
-      alert("Enter your email first.");
+      setStatus({ kind: "error", text: "Enter your email first, then tap Forgot password again." });
       return;
     }
 
@@ -76,38 +86,45 @@ export default function AuthForm({ onSuccess, title }: AuthFormProps) {
       redirectTo: typeof window !== "undefined" ? `${window.location.origin}/` : undefined,
     });
 
-    alert(error ? error.message : "Password reset email sent.");
+    setStatus(
+      error
+        ? { kind: "error", text: error.message }
+        : { kind: "success", text: "Password reset email sent - check your inbox." }
+    );
   };
 
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-2xl font-bold tracking-tight">
+        <h2 className="text-2xl font-bold tracking-tight text-[var(--ink)]">
           {mode === "signin" ? title?.signin ?? "Welcome Back" : title?.signup ?? "Create Account"}
         </h2>
-        <p className="mt-1 text-sm text-[#6e6e73]">
+        <p className="mt-1 text-sm text-[var(--ink-soft)]">
           Sign in to continue your recovery dashboard, routines, rewards, and scan history.
         </p>
       </div>
 
-      <div className="mb-4 grid grid-cols-2 gap-2 rounded-[1.25rem] border border-[#e2d8ca] bg-white/70 p-1.5">
-        <button
-          type="button"
-          onClick={() => setMode("signin")}
-          className={`rounded-xl px-4 py-2 text-sm font-bold transition-all ${mode === "signin" ? "bg-[#1d1d1f] text-white shadow-[0_12px_22px_rgba(31,61,43,0.16)]" : "text-[#6e6e73]"}`}
-        >
-          Sign in
-        </button>
-        <button
-          type="button"
-          onClick={() => setMode("signup")}
-          className={`rounded-xl px-4 py-2 text-sm font-bold transition-all ${mode === "signup" ? "bg-[#1d1d1f] text-white shadow-[0_12px_22px_rgba(31,61,43,0.16)]" : "text-[#6e6e73]"}`}
-        >
-          Create account
-        </button>
+      <div className="relative mb-4 grid grid-cols-2 gap-1 rounded-2xl border border-[var(--border-hairline)] bg-white/70 p-1.5">
+        {(["signin", "signup"] as const).map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => { setMode(tab); setStatus(null); }}
+            className={`relative rounded-xl px-4 py-2 text-sm font-bold transition-colors ${mode === tab ? "text-white" : "text-[var(--ink-soft)] hover:text-[var(--ink)]"}`}
+          >
+            {mode === tab && (
+              <motion.span
+                layoutId="auth-tab-pill"
+                className="absolute inset-0 rounded-xl bg-[var(--ink)] shadow-[0_12px_22px_rgba(11,42,74,0.18)]"
+                transition={{ type: "spring", stiffness: 500, damping: 34 }}
+              />
+            )}
+            <span className="relative z-10">{tab === "signin" ? "Sign in" : "Create account"}</span>
+          </button>
+        ))}
       </div>
 
-      <div className="rounded-[1.6rem] border border-[#e2d8ca] bg-[rgba(255,251,245,0.82)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] space-y-3">
+      <div className="glass-card space-y-3 !rounded-[1.6rem] p-4">
         {mode === "signup" && (
           <input
             placeholder="Full Name"
@@ -123,6 +140,7 @@ export default function AuthForm({ onSuccess, title }: AuthFormProps) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           type="email"
+          autoComplete="email"
         />
 
         <input
@@ -131,37 +149,54 @@ export default function AuthForm({ onSuccess, title }: AuthFormProps) {
           className="af-input w-full rounded-xl px-4 py-2.5 outline-none"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          autoComplete={mode === "signin" ? "current-password" : "new-password"}
         />
+
+        {status && (
+          <div
+            role="status"
+            aria-live="polite"
+            className={`flex items-start gap-2 rounded-xl px-3 py-2 text-xs font-medium ${
+              status.kind === "error"
+                ? "bg-[var(--warning-bg)] text-[var(--warning-text)]"
+                : "bg-[var(--accent-green)]/12 text-[var(--ink)]"
+            }`}
+          >
+            {status.kind === "error" ? (
+              <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            ) : (
+              <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--accent-green)]" />
+            )}
+            {status.text}
+          </div>
+        )}
 
         <button
           type="button"
           onClick={handleForgotPassword}
-          className="text-xs font-semibold text-[#0071e3] hover:underline"
+          className="text-xs font-semibold text-[var(--accent-blue)] hover:underline"
         >
           Forgot password?
         </button>
 
-        <button
-          onClick={handleAuth}
-          className="w-full rounded-xl bg-[#0071e3] py-2.5 font-bold text-white transition hover:bg-[#005bbf] shadow-[0_16px_28px_rgba(47,111,87,0.2)]"
-          disabled={loading}
-        >
+        <Button onClick={handleAuth} variant="primary" size="md" disabled={loading} className="w-full justify-center">
+          {loading && <Loader2 className="h-4 w-4 animate-spin" />}
           {loading ? "Processing..." : mode === "signin" ? "Continue to dashboard" : "Create my account"}
-        </button>
+        </Button>
       </div>
 
-      <p className="mt-4 text-center text-sm text-[#6e6e73]">
+      <p className="mt-4 text-center text-sm text-[var(--ink-soft)]">
         {mode === "signin" ? "New user?" : "Already have account?"}
         <button
-          onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-          className="ml-2 font-semibold text-[#0071e3]"
+          onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setStatus(null); }}
+          className="ml-2 font-semibold text-[var(--accent-blue)]"
           type="button"
         >
           {mode === "signin" ? "Create Account" : "Sign In"}
         </button>
       </p>
 
-      <div className="mt-4 grid grid-cols-3 gap-2 text-[11px] text-[#6e6e73]">
+      <div className="mt-4 grid grid-cols-3 gap-2 text-[11px] text-[var(--ink-soft)]">
         <div className="rounded-xl bg-white/70 px-3 py-2 text-center font-semibold">Secure auth</div>
         <div className="rounded-xl bg-white/70 px-3 py-2 text-center font-semibold">Saved routines</div>
         <div className="rounded-xl bg-white/70 px-3 py-2 text-center font-semibold">Rewards linked</div>

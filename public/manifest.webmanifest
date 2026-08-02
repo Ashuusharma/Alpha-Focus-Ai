@@ -7,7 +7,7 @@
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
   "background_color": "#060b14",
-  "theme_color": "#00f2ff",
+  "theme_color": "#0b2a4a",
   "description": "AI-powered grooming assistant with photo analysis, routines, and habit coaching.",
   "categories": ["health", "lifestyle", "medical"],
   "icons": [

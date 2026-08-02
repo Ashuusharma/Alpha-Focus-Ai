@@ -10,6 +10,8 @@ import { LanguageProvider as LegacyLangProvider } from "../lib/languageContext";
 import I18nProvider from "./_components/I18nProvider";
 import RouteTransition from "./_components/RouteTransition";
 import MainNavbar from "@/components/layout/MainNavbar";
+import BottomNav from "@/components/layout/BottomNav";
+import InstallBanner from "@/components/layout/InstallBanner";
 import AuthProvider from "@/contexts/AuthProvider";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import CoreUserHydrator from "@/components/providers/CoreUserHydrator";
@@ -26,7 +28,11 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0b0f0c",
+  // Matches --ink (the brand navy) - previously mismatched both the
+  // manifest's theme_color (an unrelated cyan) and itself, so the OS status
+  // bar / app-switcher chrome showed an inconsistent color depending on
+  // which one won. One brand color for installed-app chrome now.
+  themeColor: "#0b2a4a",
 };
 
 export default function RootLayout({
@@ -39,7 +45,7 @@ export default function RootLayout({
       <head>
         <meta
           name="viewport"
-          content="width=device-width, initial-scale=1, maximum-scale=1"
+          content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
         />
         <script
           dangerouslySetInnerHTML={{
@@ -73,11 +79,13 @@ export default function RootLayout({
               <LegacyLangProvider>
                 <ToastProvider>
                   <MainNavbar />
-                  <main id="main-content" className="pt-0 pb-24 md:pb-0">
+                  <main id="main-content" className="af-main-shell pt-0">
                     <ProtectedRoute>
                       <RouteTransition>{children}</RouteTransition>
                     </ProtectedRoute>
                   </main>
+                  <BottomNav />
+                  <InstallBanner />
                   <CartDrawer />
                   <ProductComparison />
                   <ToastContainer />

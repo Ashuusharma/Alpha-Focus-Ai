@@ -427,7 +427,7 @@ export default function SettingsPage() {
     <button
       onClick={onClick}
       className={`w-14 h-8 rounded-full p-1 transition-colors duration-300 ${
-        active ? "bg-[#0071e3] shadow-sm" : "bg-black/10"
+        active ? "bg-[var(--accent-blue)] shadow-sm" : "bg-black/10"
       }`}
     >
       <div
@@ -457,23 +457,23 @@ export default function SettingsPage() {
     >
       <div className="flex items-center gap-3">
         <Icon className={`w-5 h-5 ${color}`} />
-        <span className="font-bold text-[#1d1d1f]">{title}</span>
+        <span className="font-bold text-[var(--ink)]">{title}</span>
         {badge !== undefined && badge > 0 && (
-          <span className="px-2 py-0.5 rounded-full bg-[#0071e3]/10 text-[#0071e3] text-xs font-bold">
+          <span className="px-2 py-0.5 rounded-full bg-[var(--accent-blue)]/10 text-[var(--accent-blue)] text-xs font-bold">
             {badge}
           </span>
         )}
       </div>
-      <ChevronDown className={`w-5 h-5 text-[#6e6e73] transition-transform duration-300 ${expandedSection === sectionKey ? 'rotate-180' : ''}`} />
+      <ChevronDown className={`w-5 h-5 text-[var(--ink-soft)] transition-transform duration-300 ${expandedSection === sectionKey ? 'rotate-180' : ''}`} />
     </button>
   );
 
   return (
-    <div className="af-page-shell min-h-screen py-8 text-[#ffffff] relative overflow-hidden">
+    <div className="af-page-shell min-h-screen py-8 relative overflow-hidden">
       {/* Background Ambience */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-[20%] right-[10%] w-[500px] h-[500px] bg-[#0071e3]/5 blur-[120px] rounded-full opacity-30 animate-pulse" />
-        <div className="absolute bottom-[10%] left-[10%] w-[400px] h-[400px] bg-[#99c9ff]/20 blur-[120px] rounded-full opacity-30" />
+        <div className="absolute top-[20%] right-[10%] w-[500px] h-[500px] bg-[var(--accent-blue)]/5 blur-[120px] rounded-full opacity-30 animate-pulse" />
+        <div className="absolute bottom-[10%] left-[10%] w-[400px] h-[400px] bg-[var(--accent-blue-soft)]/20 blur-[120px] rounded-full opacity-30" />
       </div>
 
       <Container>
@@ -484,7 +484,7 @@ export default function SettingsPage() {
             <div className="relative z-10 space-y-6">
               <button
                 onClick={() => router.back()}
-                className="inline-flex items-center gap-2 text-sm font-medium text-[#6e6e73] transition hover:text-[#1d1d1f]"
+                className="inline-flex items-center gap-2 text-sm font-medium text-[var(--ink-soft)] transition hover:text-[var(--ink)]"
               >
                 <div className="rounded-xl border border-white/60 bg-white/70 p-2 shadow-sm">
                   <ArrowLeft className="w-4 h-4" />
@@ -500,12 +500,12 @@ export default function SettingsPage() {
                   </span>
                   <div>
                     <h1 className="text-clinical-heading text-3xl font-extrabold tracking-tight md:text-4xl">Tune notifications, privacy, rewards, and device behavior from one place.</h1>
-                    <p className="mt-3 text-sm leading-7 text-[#6e6e73]">The settings stack now matches the premium app shell and keeps the highest-friction controls visible before the deeper sections below.</p>
+                    <p className="mt-3 text-sm leading-7 text-[var(--ink-soft)]">The settings stack now matches the premium app shell and keeps the highest-friction controls visible before the deeper sections below.</p>
                   </div>
                   <div className="af-badge-row">
-                    <span className="af-badge-chip text-[#0071e3]">Push {pushStatus === "enabled" ? "active" : pushStatus}</span>
-                    <span className="af-badge-chip text-[#A46A2D]">{settings.language.toUpperCase()} locale</span>
-                    <span className="af-badge-chip text-[#7A5C47]">{blacklist.length} blocked ingredients</span>
+                    <span className="af-badge-chip text-[var(--accent-blue)]">Push {pushStatus === "enabled" ? "active" : pushStatus}</span>
+                    <span className="af-badge-chip text-[var(--accent-amber)]">{settings.language.toUpperCase()} locale</span>
+                    <span className="af-badge-chip text-[var(--ink-soft)]">{blacklist.length} blocked ingredients</span>
                   </div>
                 </div>
 
@@ -515,8 +515,8 @@ export default function SettingsPage() {
                     whileTap={{ scale: 0.98 }}
                     className={`inline-flex items-center justify-center gap-2 px-6 py-4 text-sm font-bold transition-all duration-200 ${
                       saved
-                        ? "bg-[#0071e3] text-white shadow-[0_0_20px_rgba(0,113,227,0.26)]"
-                        : "btn-primary text-[#000000]"
+                        ? "bg-[var(--accent-blue)] text-white shadow-[0_0_20px_rgba(0,113,227,0.26)]"
+                        : "btn-primary text-[var(--ink)]"
                     }`}
                   >
                     {saved ? <CheckCircle2 className="w-5 h-5" /> : <Save className="w-5 h-5" />}
@@ -524,14 +524,14 @@ export default function SettingsPage() {
                   </motion.button>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="af-stat-tile">
-                      <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#6e6e73]">Wishlist</p>
-                      <p className="mt-2 text-2xl font-bold text-[#1d1d1f]">{wishlistItems.length}</p>
-                      <p className="mt-1 text-xs text-[#6e6e73]">Saved products</p>
+                      <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--ink-soft)]">Wishlist</p>
+                      <p className="mt-2 text-2xl font-bold text-[var(--ink)]">{wishlistItems.length}</p>
+                      <p className="mt-1 text-xs text-[var(--ink-soft)]">Saved products</p>
                     </div>
                     <div className="af-stat-tile">
-                      <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#6e6e73]">Gallery</p>
-                      <p className="mt-2 text-2xl font-bold text-[#1d1d1f]">{photos.length}</p>
-                      <p className="mt-1 text-xs text-[#6e6e73]">Stored captures</p>
+                      <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--ink-soft)]">Gallery</p>
+                      <p className="mt-2 text-2xl font-bold text-[var(--ink)]">{photos.length}</p>
+                      <p className="mt-1 text-xs text-[var(--ink-soft)]">Stored captures</p>
                     </div>
                   </div>
                 </div>
@@ -551,19 +551,19 @@ export default function SettingsPage() {
 
           <div className="grid gap-4 md:grid-cols-3">
             <div className="af-card-secondary p-4">
-              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#6e6e73]">Delivery status</p>
-              <p className="mt-2 text-base font-semibold text-[#1d1d1f]">{pushDeliveryReady ? "All notification routes ready" : "Browser-ready, server follow-up may remain"}</p>
-              <p className="mt-1 text-xs text-[#6e6e73]">{pushMissingConfig.length ? `${pushMissingConfig.length} config items still missing.` : "No missing push config detected."}</p>
+              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--ink-soft)]">Delivery status</p>
+              <p className="mt-2 text-base font-semibold text-[var(--ink)]">{pushDeliveryReady ? "All notification routes ready" : "Browser-ready, server follow-up may remain"}</p>
+              <p className="mt-1 text-xs text-[var(--ink-soft)]">{pushMissingConfig.length ? `${pushMissingConfig.length} config items still missing.` : "No missing push config detected."}</p>
             </div>
             <div className="af-card-secondary p-4">
-              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#6e6e73]">Reward balance</p>
-              <p className="mt-2 text-base font-semibold text-[#1d1d1f]">{credits} credits available</p>
-              <p className="mt-1 text-xs text-[#6e6e73]">Lifetime earned: {lifetimeCredits}</p>
+              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--ink-soft)]">Reward balance</p>
+              <p className="mt-2 text-base font-semibold text-[var(--ink)]">{credits} credits available</p>
+              <p className="mt-1 text-xs text-[var(--ink-soft)]">Lifetime earned: {lifetimeCredits}</p>
             </div>
             <div className="af-card-secondary p-4">
-              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#6e6e73]">Theme mode</p>
-              <p className="mt-2 text-base font-semibold text-[#1d1d1f] capitalize">{settings.theme}</p>
-              <p className="mt-1 text-xs text-[#6e6e73]">Timezone set to {settings.timezone}</p>
+              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--ink-soft)]">Theme mode</p>
+              <p className="mt-2 text-base font-semibold text-[var(--ink)] capitalize">{settings.theme}</p>
+              <p className="mt-1 text-xs text-[var(--ink-soft)]">Timezone set to {settings.timezone}</p>
             </div>
           </div>
 
@@ -583,7 +583,7 @@ export default function SettingsPage() {
                     <div className="p-6 space-y-6 border-t border-white/40">
                       {/* Theme Selector */}
                       <div>
-                        <h3 className="font-bold text-[#1d1d1f] mb-3 flex items-center gap-2">
+                        <h3 className="font-bold text-[var(--ink)] mb-3 flex items-center gap-2">
                           {settings.theme === "dark" ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
                           Theme
                         </h3>
@@ -598,8 +598,8 @@ export default function SettingsPage() {
                               onClick={() => handleChange("theme", option.value)}
                               className={`p-4 rounded-xl border transition-all ${
                                 settings.theme === option.value
-                                  ? "bg-[#0071e3]/10 border-[#0071e3] text-[#0071e3]"
-                                  : "bg-white/40 border-white/40 hover:bg-white/60 text-[#6e6e73]"
+                                  ? "bg-[var(--accent-blue)]/10 border-[var(--accent-blue)] text-[var(--accent-blue)]"
+                                  : "bg-white/40 border-white/40 hover:bg-white/60 text-[var(--ink-soft)]"
                               }`}
                             >
                               <option.icon className="w-5 h-5 mx-auto mb-2" />
@@ -616,7 +616,7 @@ export default function SettingsPage() {
 
             {/* ==================== LANGUAGE ==================== */}
             <section className="nv-section-white overflow-hidden">
-              <SectionHeader icon={Languages} title="Language & Region" color="text-[#0071e3]" sectionKey="language" />
+              <SectionHeader icon={Languages} title="Language & Region" color="text-[var(--accent-blue)]" sectionKey="language" />
               <AnimatePresence>
                 {expandedSection === "language" && (
                   <motion.div
@@ -628,7 +628,7 @@ export default function SettingsPage() {
                     <div className="p-6 space-y-6 border-t border-white/40">
                       {/* Language Grid */}
                       <div>
-                        <h3 className="font-bold text-[#1d1d1f] mb-3">Select Language</h3>
+                        <h3 className="font-bold text-[var(--ink)] mb-3">Select Language</h3>
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                           {languages.map((lang: LanguageOption) => (
                             <button
@@ -636,13 +636,13 @@ export default function SettingsPage() {
                               onClick={() => handleChange("language", lang.code)}
                               className={`p-3 rounded-xl border transition-all text-left ${
                                 settings.language === lang.code
-                                    ? "bg-[#0071e3]/10 border-[#0071e3] text-[#0071e3]"
-                                  : "bg-white/40 border-white/40 hover:bg-white/60 text-[#6e6e73]"
+                                    ? "bg-[var(--accent-blue)]/10 border-[var(--accent-blue)] text-[var(--accent-blue)]"
+                                  : "bg-white/40 border-white/40 hover:bg-white/60 text-[var(--ink-soft)]"
                               }`}
                             >
                               <span className="text-xl mr-2">{lang.flag}</span>
                               <span className="font-medium">{lang.nativeName}</span>
-                              <p className="text-xs text-[#8C877D] mt-0.5">{lang.name}</p>
+                              <p className="text-xs text-[var(--ink-soft)] mt-0.5">{lang.name}</p>
                             </button>
                           ))}
                         </div>
@@ -650,11 +650,11 @@ export default function SettingsPage() {
 
                       {/* Timezone */}
                       <div>
-                        <label className="block text-sm font-bold text-[#6e6e73] mb-2">Timezone</label>
+                        <label className="block text-sm font-bold text-[var(--ink-soft)] mb-2">Timezone</label>
                         <select
                           value={settings.timezone}
                           onChange={(e) => handleChange("timezone", e.target.value)}
-                          className="w-full bg-white/40 border border-white/40 rounded-xl p-3 text-[#1d1d1f] focus:outline-none focus:border-[#0071e3] transition"
+                          className="w-full bg-white/40 border border-white/40 rounded-xl p-3 text-[var(--ink)] focus:outline-none focus:border-[var(--accent-blue)] transition"
                         >
                           <option value="Asia/Kolkata">India (IST)</option>
                           <option value="UTC">UTC</option>
@@ -688,7 +688,7 @@ export default function SettingsPage() {
                     className="overflow-hidden"
                   >
                     <div className="p-6 space-y-6 border-t border-white/40">
-                      <p className="text-sm text-[#6e6e73]">
+                      <p className="text-sm text-[var(--ink-soft)]">
                         Products containing these ingredients will be flagged or filtered out from recommendations.
                       </p>
 
@@ -700,13 +700,13 @@ export default function SettingsPage() {
                             value={newIngredient}
                             onChange={(e) => setNewIngredient(e.target.value)}
                             placeholder="Enter ingredient name..."
-                            className="flex-1 bg-white/40 border border-white/40 rounded-xl px-4 py-3 text-[#1d1d1f] placeholder-[#8C877D] focus:outline-none focus:border-[#0071e3]"
+                            className="flex-1 bg-white/40 border border-white/40 rounded-xl px-4 py-3 text-[var(--ink)] placeholder-[var(--ink-soft)] focus:outline-none focus:border-[var(--accent-blue)]"
                             onKeyPress={(e) => e.key === "Enter" && handleAddIngredient()}
                           />
                           <select
                             value={newIngredientReason}
                             onChange={(e) => setNewIngredientReason(e.target.value as "allergy" | "sensitivity" | "preference" | "other")}
-                            className="bg-white/40 border border-white/40 rounded-xl px-3 text-[#1d1d1f] focus:outline-none"
+                            className="bg-white/40 border border-white/40 rounded-xl px-3 text-[var(--ink)] focus:outline-none"
                           >
                             <option value="allergy">Allergy</option>
                             <option value="sensitivity">Sensitivity</option>
@@ -723,14 +723,14 @@ export default function SettingsPage() {
 
                         {/* Quick Add Common Allergens */}
                         <div>
-                          <p className="text-xs text-[#6e6e73] mb-2">Quick add common allergens:</p>
+                          <p className="text-xs text-[var(--ink-soft)] mb-2">Quick add common allergens:</p>
                           <div className="flex flex-wrap gap-2">
                             {commonAllergens.slice(0, 6).map((allergen) => (
                               <button
                                 key={allergen.name}
                                 onClick={() => addIngredient({ name: allergen.name, reason: "sensitivity" })}
                                 disabled={blacklist.some(b => b.name.toLowerCase() === allergen.name.toLowerCase())}
-                                className="px-3 py-1.5 text-xs rounded-full bg-white/40 border border-white/40 text-[#6e6e73] hover:bg-red-500/10 hover:text-red-600 hover:border-red-500/30 transition disabled:opacity-30"
+                                className="px-3 py-1.5 text-xs rounded-full bg-white/40 border border-white/40 text-[var(--ink-soft)] hover:bg-red-500/10 hover:text-red-600 hover:border-red-500/30 transition disabled:opacity-30"
                               >
                                 + {allergen.name}
                               </button>
@@ -743,7 +743,7 @@ export default function SettingsPage() {
                       {blacklist.length > 0 ? (
                         <div className="space-y-2">
                           <div className="flex justify-between items-center">
-                            <h4 className="text-sm font-bold text-[#1d1d1f]">Your Blacklist ({blacklist.length})</h4>
+                            <h4 className="text-sm font-bold text-[var(--ink)]">Your Blacklist ({blacklist.length})</h4>
                             <button
                               onClick={clearBlacklist}
                               className="text-xs text-red-500 hover:text-red-600"
@@ -761,15 +761,15 @@ export default function SettingsPage() {
                                   <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
                                     item.reason === "allergy" ? "bg-red-500/10 text-red-600" :
                                     item.reason === "sensitivity" ? "bg-amber-500/10 text-amber-600" :
-                                    "bg-gray-500/10 text-[#6e6e73]"
+                                    "bg-gray-500/10 text-[var(--ink-soft)]"
                                   }`}>
                                     {item.reason}
                                   </span>
-                                  <span className="text-[#1d1d1f] font-medium">{item.name}</span>
+                                  <span className="text-[var(--ink)] font-medium">{item.name}</span>
                                 </div>
                                 <button
                                   onClick={() => removeIngredient(item.id)}
-                                  className="p-1.5 text-[#6e6e73] hover:text-red-500 transition"
+                                  className="p-1.5 text-[var(--ink-soft)] hover:text-red-500 transition"
                                 >
                                   <X className="w-4 h-4" />
                                 </button>
@@ -778,7 +778,7 @@ export default function SettingsPage() {
                           </div>
                         </div>
                       ) : (
-                        <div className="text-center py-8 text-[#6e6e73]">
+                        <div className="text-center py-8 text-[var(--ink-soft)]">
                           <AlertTriangle className="w-8 h-8 mx-auto mb-2 opacity-50" />
                           <p>No ingredients blacklisted yet</p>
                         </div>
@@ -794,7 +794,7 @@ export default function SettingsPage() {
               <SectionHeader 
                 icon={Camera} 
                 title="Photo Gallery" 
-                color="text-[#0071e3]" 
+                color="text-[var(--accent-blue)]" 
                 sectionKey="photos"
                 badge={photos.length}
               />
@@ -809,13 +809,13 @@ export default function SettingsPage() {
                     <div className="p-6 space-y-4 border-t border-white/40">
                       <div className="flex justify-between items-center">
                         <div>
-                          <p className="text-[#1d1d1f] font-medium">{photos.length} photos saved</p>
-                          <p className="text-xs text-[#6e6e73]">Progress photos are stored locally on your device</p>
+                          <p className="text-[var(--ink)] font-medium">{photos.length} photos saved</p>
+                          <p className="text-xs text-[var(--ink-soft)]">Progress photos are stored locally on your device</p>
                         </div>
                         <div className="flex gap-2">
                           <button
                             onClick={() => router.push("/saved-scans")}
-                            className="px-4 py-2 bg-white/40 text-[#0071e3] rounded-lg border border-white/40 hover:bg-white/60 transition flex items-center gap-2"
+                            className="px-4 py-2 bg-white/40 text-[var(--accent-blue)] rounded-lg border border-white/40 hover:bg-white/60 transition flex items-center gap-2"
                           >
                             <Eye className="w-4 h-4" /> View All
                           </button>
@@ -865,7 +865,7 @@ export default function SettingsPage() {
                   >
                     <div className="p-6 space-y-4 border-t border-white/40">
                       <div className="flex justify-between items-center">
-                        <p className="text-[#1d1d1f] font-medium">{wishlistItems.length} products saved</p>
+                        <p className="text-[var(--ink)] font-medium">{wishlistItems.length} products saved</p>
                         {wishlistItems.length > 0 && (
                           <button
                             onClick={clearWishlist}
@@ -884,15 +884,15 @@ export default function SettingsPage() {
                               className="flex items-center justify-between p-3 rounded-lg bg-white/40 border border-white/40"
                             >
                               <div>
-                                <p className="text-[#1d1d1f] font-medium">{item.name}</p>
-                                <p className="text-xs text-[#6e6e73]">{item.type}  -  {item.price}</p>
+                                <p className="text-[var(--ink)] font-medium">{item.name}</p>
+                                <p className="text-xs text-[var(--ink-soft)]">{item.type}  -  {item.price}</p>
                               </div>
                               <span className="text-pink-400">{item.rating} star</span>
                             </div>
                           ))}
                         </div>
                       ) : (
-                        <div className="text-center py-8 text-[#6e6e73]">
+                        <div className="text-center py-8 text-[var(--ink-soft)]">
                           <Heart className="w-8 h-8 mx-auto mb-2 opacity-50" />
                           <p>No products in wishlist</p>
                         </div>
@@ -917,15 +917,15 @@ export default function SettingsPage() {
                     <div className="p-6 space-y-5 border-t border-white/40">
                       <div className="grid sm:grid-cols-3 gap-3">
                         <div className="p-4 rounded-xl bg-white/40 border border-white/40">
-                          <p className="text-xs uppercase tracking-wider text-[#6e6e73] mb-1">Current Balance</p>
-                          <p className="text-2xl font-bold text-[#EAB308]">{credits} A$</p>
+                          <p className="text-xs uppercase tracking-wider text-[var(--ink-soft)] mb-1">Current Balance</p>
+                          <p className="text-2xl font-bold text-[var(--accent-amber)]">{credits} A$</p>
                         </div>
                         <div className="p-4 rounded-xl bg-white/40 border border-white/40">
-                          <p className="text-xs uppercase tracking-wider text-[#6e6e73] mb-1">Lifetime Earned</p>
-                          <p className="text-2xl font-bold text-[#1d1d1f]">{lifetimeCredits} A$</p>
+                          <p className="text-xs uppercase tracking-wider text-[var(--ink-soft)] mb-1">Lifetime Earned</p>
+                          <p className="text-2xl font-bold text-[var(--ink)]">{lifetimeCredits} A$</p>
                         </div>
                         <div className="p-4 rounded-xl bg-white/40 border border-white/40">
-                          <p className="text-xs uppercase tracking-wider text-[#6e6e73] mb-1">Discount Status</p>
+                          <p className="text-xs uppercase tracking-wider text-[var(--ink-soft)] mb-1">Discount Status</p>
                           <p className="text-sm font-bold text-emerald-600">
                             {activeDiscount ? `${activeDiscount.discountPercent}% Active` : "No active code"}
                           </p>
@@ -944,18 +944,18 @@ export default function SettingsPage() {
                             <button
                               key={tier.id}
                               onClick={() => handleRedeem(tier.id)}
-                              className="p-4 rounded-xl text-left bg-white/40 border border-white/40 hover:border-[#0071e3]/40 hover:bg-white/60 transition"
+                              className="p-4 rounded-xl text-left bg-white/40 border border-white/40 hover:border-[var(--accent-blue)]/40 hover:bg-white/60 transition"
                             >
-                              <p className="font-semibold text-[#1d1d1f]">{tier.label}</p>
-                              <p className="text-xs text-[#6e6e73] mt-1">{tier.discountPercent}% discount</p>
-                              <p className="text-xs text-[#0071e3] mt-1">Redeem: {tier.creditsCost} A$</p>
+                              <p className="font-semibold text-[var(--ink)]">{tier.label}</p>
+                              <p className="text-xs text-[var(--ink-soft)] mt-1">{tier.discountPercent}% discount</p>
+                              <p className="text-xs text-[var(--accent-blue)] mt-1">Redeem: {tier.creditsCost} A$</p>
                             </button>
                           ))}
                         </div>
                       )}
 
                       {walletMessage && (
-                        <p className="text-sm text-[#0071e3]">{walletMessage}</p>
+                        <p className="text-sm text-[var(--accent-blue)]">{walletMessage}</p>
                       )}
 
                       <div className="flex flex-wrap gap-2 pt-1">
@@ -967,7 +967,7 @@ export default function SettingsPage() {
                         </button>
                         <button
                           onClick={() => router.push("/result")}
-                          className="px-4 py-2 rounded-lg bg-[#eef5ff] border border-[#d9d9de] text-[#0071e3] hover:bg-[#DCE8E0] transition text-sm font-medium"
+                          className="px-4 py-2 rounded-lg bg-[var(--bg-wash-start)] border border-[var(--border-hairline)] text-[var(--accent-blue)] hover:bg-[var(--tint-cool)] transition text-sm font-medium"
                         >
                           Open Report Wallet
                         </button>
@@ -992,17 +992,17 @@ export default function SettingsPage() {
                     <div className="p-6 space-y-6 border-t border-white/40">
                       <div className="flex items-center justify-between">
                         <div>
-                          <h3 className="font-bold text-[#1d1d1f] mb-1">Push Notifications</h3>
-                          <p className="text-sm text-[#6e6e73]">Get routine, streak, reward, and recovery alerts on this device</p>
+                          <h3 className="font-bold text-[var(--ink)] mb-1">Push Notifications</h3>
+                          <p className="text-sm text-[var(--ink-soft)]">Get routine, streak, reward, and recovery alerts on this device</p>
                         </div>
                         <Toggle active={settings.notifications} onClick={handleMasterNotificationsToggle} />
                       </div>
 
-                      <div className={`skeuo-panel rounded-2xl border px-4 py-4 ${pushStatus === "enabled" ? "border-[#0071e3]/30 bg-[#eef5ff]" : pushStatus === "blocked" ? "border-[#E4B9AA] bg-[#FFF5F1]" : "border-[#D9D2C7] bg-white/50"}`}>
+                      <div className={`skeuo-panel rounded-2xl border px-4 py-4 ${pushStatus === "enabled" ? "border-[var(--accent-blue)]/30 bg-[var(--bg-wash-start)]" : pushStatus === "blocked" ? "border-[var(--warning-accent)] bg-[var(--warning-bg)]" : "border-[var(--border-hairline)] bg-white/50"}`}>
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                           <div>
-                            <p className="text-sm font-semibold text-[#1d1d1f]">Browser push status</p>
-                            <p className="text-xs text-[#6e6e73] mt-1">
+                            <p className="text-sm font-semibold text-[var(--ink)]">Browser push status</p>
+                            <p className="text-xs text-[var(--ink-soft)] mt-1">
                               {pushStatus === "enabled" && "Enabled on this device."}
                               {pushStatus === "disabled" && "Permission is available, but this device is not subscribed yet."}
                               {pushStatus === "blocked" && "Permission is blocked in the browser. Allow notifications in site settings first."}
@@ -1011,7 +1011,7 @@ export default function SettingsPage() {
                               {pushStatus === "checking" && "Checking current device status..."}
                             </p>
                             {pushConfigured && !pushDeliveryReady ? (
-                              <p className="mt-2 text-xs text-[#6e6e73]">
+                              <p className="mt-2 text-xs text-[var(--ink-soft)]">
                                 Device subscription is ready, but automatic backend delivery still needs: {pushMissingConfig.filter((item) => item === "SUPABASE_SERVICE_ROLE_KEY").join(", ") || "server completion"}.
                               </p>
                             ) : null}
@@ -1019,7 +1019,7 @@ export default function SettingsPage() {
                           <button
                             onClick={pushStatus === "enabled" ? disableBrowserPush : enableBrowserPush}
                             disabled={pushBusy || pushStatus === "unsupported" || (!pushConfigured && pushStatus === "unavailable")}
-                            className="skeuo-button rounded-xl border border-[#d9d9de] bg-white px-4 py-2 text-sm font-semibold text-[#1d1d1f] transition hover:bg-[#F7F4EE] disabled:opacity-50"
+                            className="skeuo-button rounded-xl border border-[var(--border-hairline)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:bg-[var(--tint-neutral)] disabled:opacity-50"
                           >
                             {pushBusy ? "Updating..." : pushStatus === "enabled" ? "Disable on this device" : "Enable on this device"}
                           </button>
@@ -1028,76 +1028,76 @@ export default function SettingsPage() {
                           <button
                             onClick={sendTestPush}
                             disabled={pushTestBusy || pushStatus !== "enabled"}
-                            className="skeuo-button rounded-xl border border-[#d9d9de] px-4 py-2 text-sm font-semibold text-[#1d1d1f] disabled:opacity-50"
+                            className="skeuo-button rounded-xl border border-[var(--border-hairline)] px-4 py-2 text-sm font-semibold text-[var(--ink)] disabled:opacity-50"
                           >
                             {pushTestBusy ? "Sending test..." : "Send test push"}
                           </button>
-                          <p className="self-center text-xs text-[#6e6e73]">Test push uses your signed-in session so you can verify delivery and click-through immediately on this device.</p>
+                          <p className="self-center text-xs text-[var(--ink-soft)]">Test push uses your signed-in session so you can verify delivery and click-through immediately on this device.</p>
                         </div>
-                        {pushMessage ? <p className="mt-3 text-xs text-[#0071e3]">{pushMessage}</p> : null}
+                        {pushMessage ? <p className="mt-3 text-xs text-[var(--accent-blue)]">{pushMessage}</p> : null}
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                         <button
                           onClick={() => handleNotificationChannelToggle("routineNotifications")}
-                          className={`rounded-xl border px-4 py-3 text-left transition ${settings.routineNotifications ? "bg-[#0071e3]/10 border-[#0071e3]/40" : "bg-white/40 border-white/40"}`}
+                          className={`rounded-xl border px-4 py-3 text-left transition ${settings.routineNotifications ? "bg-[var(--accent-blue)]/10 border-[var(--accent-blue)]/40" : "bg-white/40 border-white/40"}`}
                         >
-                          <p className="text-sm font-semibold text-[#1d1d1f]">Routine Alerts</p>
-                          <p className="text-xs text-[#6e6e73] mt-1">AM/PM completion and missed routine nudges</p>
+                          <p className="text-sm font-semibold text-[var(--ink)]">Routine Alerts</p>
+                          <p className="text-xs text-[var(--ink-soft)] mt-1">AM/PM completion and missed routine nudges</p>
                         </button>
                         <button
                           onClick={() => handleNotificationChannelToggle("challengeNotifications")}
-                          className={`rounded-xl border px-4 py-3 text-left transition ${settings.challengeNotifications ? "bg-[#0071e3]/10 border-[#0071e3]/40" : "bg-white/40 border-white/40"}`}
+                          className={`rounded-xl border px-4 py-3 text-left transition ${settings.challengeNotifications ? "bg-[var(--accent-blue)]/10 border-[var(--accent-blue)]/40" : "bg-white/40 border-white/40"}`}
                         >
-                          <p className="text-sm font-semibold text-[#1d1d1f]">Challenge Milestones</p>
-                          <p className="text-xs text-[#6e6e73] mt-1">Start updates and milestone-day achievements</p>
+                          <p className="text-sm font-semibold text-[var(--ink)]">Challenge Milestones</p>
+                          <p className="text-xs text-[var(--ink-soft)] mt-1">Start updates and milestone-day achievements</p>
                         </button>
                         <button
                           onClick={() => handleNotificationChannelToggle("progressNotifications")}
-                          className={`rounded-xl border px-4 py-3 text-left transition ${settings.progressNotifications ? "bg-[#0071e3]/10 border-[#0071e3]/40" : "bg-white/40 border-white/40"}`}
+                          className={`rounded-xl border px-4 py-3 text-left transition ${settings.progressNotifications ? "bg-[var(--accent-blue)]/10 border-[var(--accent-blue)]/40" : "bg-white/40 border-white/40"}`}
                         >
-                          <p className="text-sm font-semibold text-[#1d1d1f]">Progress Signals</p>
-                          <p className="text-xs text-[#6e6e73] mt-1">Improvements and streak notifications</p>
+                          <p className="text-sm font-semibold text-[var(--ink)]">Progress Signals</p>
+                          <p className="text-xs text-[var(--ink-soft)] mt-1">Improvements and streak notifications</p>
                         </button>
                         <button
                           onClick={() => handleNotificationChannelToggle("tipNotifications")}
-                          className={`rounded-xl border px-4 py-3 text-left transition ${settings.tipNotifications ? "bg-[#0071e3]/10 border-[#0071e3]/40" : "bg-white/40 border-white/40"}`}
+                          className={`rounded-xl border px-4 py-3 text-left transition ${settings.tipNotifications ? "bg-[var(--accent-blue)]/10 border-[var(--accent-blue)]/40" : "bg-white/40 border-white/40"}`}
                         >
-                          <p className="text-sm font-semibold text-[#1d1d1f]">Daily Tips</p>
-                          <p className="text-xs text-[#6e6e73] mt-1">One tactical optimization tip per day</p>
+                          <p className="text-sm font-semibold text-[var(--ink)]">Daily Tips</p>
+                          <p className="text-xs text-[var(--ink-soft)] mt-1">One tactical optimization tip per day</p>
                         </button>
                       </div>
 
                       <div className="grid grid-cols-1 gap-3 pt-1 sm:grid-cols-3">
                         <div className="af-card-secondary p-3">
-                          <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#5e5e5e]">Routine window</p>
-                          <p className="mt-2 text-sm font-semibold text-[#000000]">07:30 to 09:00</p>
-                          <p className="mt-1 text-xs text-[#5e5e5e]">Morning reminder block ({settings.timezone})</p>
+                          <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[var(--ink-soft)]">Routine window</p>
+                          <p className="mt-2 text-sm font-semibold text-[var(--ink)]">07:30 to 09:00</p>
+                          <p className="mt-1 text-xs text-[var(--ink-soft)]">Morning reminder block ({settings.timezone})</p>
                         </div>
                         <div className="af-card-secondary p-3">
-                          <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#5e5e5e]">Night window</p>
-                          <p className="mt-2 text-sm font-semibold text-[#000000]">20:00 to 22:00</p>
-                          <p className="mt-1 text-xs text-[#5e5e5e]">PM completion and streak nudges</p>
+                          <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[var(--ink-soft)]">Night window</p>
+                          <p className="mt-2 text-sm font-semibold text-[var(--ink)]">20:00 to 22:00</p>
+                          <p className="mt-1 text-xs text-[var(--ink-soft)]">PM completion and streak nudges</p>
                         </div>
                         <div className="af-card-secondary p-3">
-                          <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#5e5e5e]">Delivery state</p>
-                          <p className="mt-2 text-sm font-semibold text-[#000000]">{pushStatus === "enabled" ? "Subscribed" : "Not subscribed"}</p>
-                          <p className="mt-1 text-xs text-[#5e5e5e]">{pushDeliveryReady ? "Server path complete" : "Pending server follow-up"}</p>
+                          <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[var(--ink-soft)]">Delivery state</p>
+                          <p className="mt-2 text-sm font-semibold text-[var(--ink)]">{pushStatus === "enabled" ? "Subscribed" : "Not subscribed"}</p>
+                          <p className="mt-1 text-xs text-[var(--ink-soft)]">{pushDeliveryReady ? "Server path complete" : "Pending server follow-up"}</p>
                         </div>
                       </div>
                       
                       <div className="flex items-center justify-between">
                         <div>
-                          <h3 className="font-bold text-[#1d1d1f] mb-1">Email Updates</h3>
-                          <p className="text-sm text-[#6e6e73]">Product recommendations via email</p>
+                          <h3 className="font-bold text-[var(--ink)] mb-1">Email Updates</h3>
+                          <p className="text-sm text-[var(--ink-soft)]">Product recommendations via email</p>
                         </div>
                         <Toggle active={settings.emailUpdates} onClick={() => handleToggle("emailUpdates")} />
                       </div>
 
                       <div className="flex items-center justify-between">
                         <div>
-                          <h3 className="font-bold text-[#1d1d1f] mb-1">Weekly Report</h3>
-                          <p className="text-sm text-[#6e6e73]">Summary of your weekly progress</p>
+                          <h3 className="font-bold text-[var(--ink)] mb-1">Weekly Report</h3>
+                          <p className="text-sm text-[var(--ink-soft)]">Summary of your weekly progress</p>
                         </div>
                         <Toggle active={settings.weeklyReport} onClick={() => handleToggle("weeklyReport")} />
                       </div>
@@ -1121,16 +1121,16 @@ export default function SettingsPage() {
                     <div className="p-6 space-y-6 border-t border-white/40">
                       <div className="flex items-center justify-between">
                         <div>
-                          <h3 className="font-bold text-[#1d1d1f] mb-1">Data Collection</h3>
-                          <p className="text-sm text-[#6e6e73]">Allow anonymous usage stats to improve AI</p>
+                          <h3 className="font-bold text-[var(--ink)] mb-1">Data Collection</h3>
+                          <p className="text-sm text-[var(--ink-soft)]">Allow anonymous usage stats to improve AI</p>
                         </div>
                         <Toggle active={settings.dataCollection} onClick={() => handleToggle("dataCollection")} />
                       </div>
 
                       <div className="flex items-center justify-between">
                         <div>
-                          <h3 className="font-bold text-[#1d1d1f] mb-1">Two-Factor Authentication</h3>
-                          <p className="text-sm text-[#6e6e73]">Extra layer of security</p>
+                          <h3 className="font-bold text-[var(--ink)] mb-1">Two-Factor Authentication</h3>
+                          <p className="text-sm text-[var(--ink-soft)]">Extra layer of security</p>
                         </div>
                         <Toggle active={settings.twoFactor} onClick={() => handleToggle("twoFactor")} />
                       </div>
@@ -1138,7 +1138,7 @@ export default function SettingsPage() {
                       <div className="pt-4 border-t border-white/40">
                         <button className="w-full text-left p-4 rounded-xl bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition">
                           <p className="text-red-500 font-bold">Delete All Data</p>
-                          <p className="text-xs text-[#6e6e73] mt-1">Permanently remove all your data from this device</p>
+                          <p className="text-xs text-[var(--ink-soft)] mt-1">Permanently remove all your data from this device</p>
                         </button>
                       </div>
                     </div>
