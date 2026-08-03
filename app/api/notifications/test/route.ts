@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true, skipped: "skipped" in result ? result.skipped : null });
   } catch (error) {
+    console.error("[api/notifications/test] unhandled_error", error);
     return NextResponse.json({ ok: false, error: "notifications_test_failed" }, { status: 500 });
   }
 }

@@ -37,3 +37,25 @@ jobs:
 
       - name: Secret scan
         run: npm run check:secrets
+
+      - name: Dependency vulnerability scan
+        # Scoped to critical only for now: `npm audit` currently reports 5
+        # pre-existing high-severity advisories in next/postcss whose only
+        # fix is a Next.js 14->16 major upgrade (out of scope for this pass,
+        # needs its own dedicated regression cycle — see production
+        # readiness report). This still catches anything worse landing in
+        # the dependency tree going forward. Once that upgrade happens,
+        # tighten this back to --audit-level=high.
+        run: npm audit --audit-level=critical
+
+      - name: Production build
+        # NEXT_PUBLIC_* vars are inlined at build time and read at module
+        # scope by lib/supabaseClient.ts (createBrowserClient(...)), which
+        # every page imports transitively — the build will fail without
+        # these two configured as repository secrets (Settings > Secrets and
+        # variables > Actions). The anon key is meant to be public/exposed,
+        # safe to store as a secret or even a plain repo variable.
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}

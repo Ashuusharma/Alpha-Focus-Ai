@@ -9,23 +9,23 @@ export const runtime = "nodejs";
 // token, so this route is deliberately outside getRequestAuth/middleware's
 // user-auth paths.
 export async function POST(request: NextRequest) {
-  const rawBody = await request.text();
-  const signature = request.headers.get("x-webhook-signature") || "";
-  const timestamp = request.headers.get("x-webhook-timestamp") || "";
-
-  if (!signature || !timestamp) {
-    console.warn("[billing.webhook.cashfree] missing_signature_headers");
-    return NextResponse.json({ ok: false, error: "missing_signature" }, { status: 400 });
-  }
-
-  const provider = getPaymentProvider();
-  const isValid = provider.verifyWebhookSignature(rawBody, signature, timestamp);
-  if (!isValid) {
-    console.error("[billing.webhook.cashfree] signature_verification_failed");
-    return NextResponse.json({ ok: false, error: "invalid_signature" }, { status: 401 });
-  }
-
   try {
+    const rawBody = await request.text();
+    const signature = request.headers.get("x-webhook-signature") || "";
+    const timestamp = request.headers.get("x-webhook-timestamp") || "";
+
+    if (!signature || !timestamp) {
+      console.warn("[billing.webhook.cashfree] missing_signature_headers");
+      return NextResponse.json({ ok: false, error: "missing_signature" }, { status: 400 });
+    }
+
+    const provider = getPaymentProvider();
+    const isValid = provider.verifyWebhookSignature(rawBody, signature, timestamp);
+    if (!isValid) {
+      console.error("[billing.webhook.cashfree] signature_verification_failed");
+      return NextResponse.json({ ok: false, error: "invalid_signature" }, { status: 401 });
+    }
+
     const event = provider.parseWebhookEvent(rawBody);
     if (event.status !== "paid") {
       console.info("[billing.webhook.cashfree] non_paid_event_ignored", { providerOrderId: event.providerOrderId, status: event.status });

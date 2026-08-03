@@ -81,7 +81,7 @@ export default function PrivacyPolicyPage() {
             <Trash2 className="h-5 w-5 text-[#A04F39]" />
             <h2 className="text-2xl font-semibold">Data Deletion</h2>
           </div>
-          <p className="text-[#5F5A51]">Users can remove tracked data from Data Settings via the "Delete All Data" action.</p>
+          <p className="text-[#5F5A51]">Users can remove tracked data from Data Settings via the &quot;Delete All Data&quot; action.</p>
         </section>
       </main>
     </div>

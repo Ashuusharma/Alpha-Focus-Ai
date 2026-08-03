@@ -6,7 +6,7 @@ export type SavedPlan = {
   id: string;
   createdAt: string;
   answers: Record<string, string>;
-  recommendations: any[];
+  recommendations: unknown[];
 };
 
 export interface StoredUserProfile {

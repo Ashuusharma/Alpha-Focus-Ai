@@ -36,21 +36,26 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 
-  const payload = await getOrSetRequestCache(`dashboard:${authUser.id}`, 12_000, async () => {
-    const fullName = await fetchProfileName(authUser.id);
-    const name = (fullName || authUser.email?.split("@")[0] || "User").trim();
+  try {
+    const payload = await getOrSetRequestCache(`dashboard:${authUser.id}`, 12_000, async () => {
+      const fullName = await fetchProfileName(authUser.id);
+      const name = (fullName || authUser.email?.split("@")[0] || "User").trim();
 
-    const data = await getDashboardDataForViewer({
-      userId: authUser.id,
-      name,
+      const data = await getDashboardDataForViewer({
+        userId: authUser.id,
+        name,
+      });
+
+      return { ok: true, data };
     });
 
-    return { ok: true, data };
-  });
-
-  return NextResponse.json(payload, {
-    headers: {
-      "Cache-Control": "private, max-age=12, stale-while-revalidate=30",
-    },
-  });
+    return NextResponse.json(payload, {
+      headers: {
+        "Cache-Control": "private, max-age=12, stale-while-revalidate=30",
+      },
+    });
+  } catch (error) {
+    console.error("[api/dashboard] fetch_failed", error);
+    return NextResponse.json({ ok: false, error: "dashboard_fetch_failed" }, { status: 500 });
+  }
 }

@@ -1,11 +1,10 @@
 ﻿"use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import RoutineTracker from "@/components/dashboard/RoutineTracker";
 import HealthOverviewPanel from "@/components/dashboard/HealthOverviewPanel";
-import { useLocation } from "@/app/hooks/useLocation";
 
 type TrendPoint = {
   day: string;
@@ -193,7 +192,7 @@ export default function HomeDashboard({
           <section className="rounded-2xl border border-white/60 bg-white/60 p-6 shadow-sm backdrop-blur-md h-full flex flex-col">
             <h3 className="text-lg font-bold text-[#1d1d1f] mb-4">Clinical Insight</h3>
             <div className="flex-1 bg-white/40 rounded-xl p-5 border border-white/40">
-              <p className="text-[#1d1d1f] italic font-medium leading-relaxed">"{aiInsight}"</p>
+              <p className="text-[#1d1d1f] italic font-medium leading-relaxed">&quot;{aiInsight}&quot;</p>
             </div>
             <div className="mt-4 grid grid-cols-2 gap-4">
                <div className="bg-[#ededf2] p-3 rounded-xl">

@@ -14,7 +14,7 @@ interface RoutineComplianceTrackerProps {
 }
 
 export default function RoutineComplianceTracker({
-  routineTitle,
+  routineTitle: _routineTitle,
 }: RoutineComplianceTrackerProps) {
   const [items, setItems] = useState<RoutineChecklistItem[]>([
     {
@@ -60,7 +60,7 @@ export default function RoutineComplianceTracker({
         <span className="text-2xl">
           Check
         </span>
-        <h3 className="text-lg font-bold text-slate-900">Today's Routine Check</h3>
+        <h3 className="text-lg font-bold text-slate-900">Today&apos;s Routine Check</h3>
       </div>
 
       {/* Progress */}
@@ -116,7 +116,7 @@ export default function RoutineComplianceTracker({
       <div className="mt-6 p-4 bg-amber-50 rounded-lg border border-amber-200">
         <p className="text-sm text-amber-900">
            <strong>Keep it up!</strong> Completing your routine daily will show
-          results in 4 weeks. You're building a life-changing habit.
+          results in 4 weeks. You&apos;re building a life-changing habit.
         </p>
       </div>
     </div>

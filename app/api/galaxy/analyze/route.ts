@@ -12,6 +12,12 @@ import { getAIGovernanceConfig, estimateCostUsd } from "@/lib/ai/aiGovernanceCon
 import { canRunAnalyzer } from "@/lib/server/entitlements";
 import { VisionAnalysisResult, visionAnalysisResultSchema, VISION_ANALYSIS_SCHEMA_VERSION } from "@/types/visionAnalysis";
 
+// Vision AI calls can take up to VISION_AI_TIMEOUT_MS (25s default) plus
+// upload time and retries — well past Vercel's un-configured default
+// (10-15s), which would kill the function mid-request. Requires a paid
+// Vercel plan; Hobby caps maxDuration at 10s regardless of this setting.
+export const maxDuration = 60;
+
 type InputPayload = {
   images: string[];
   analyzerType: string;
@@ -349,20 +355,20 @@ export async function POST(request: NextRequest) {
     const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
     if (isRateLimited(`galaxy:analyze:${actor}`, getAIGovernanceConfig().maxVisionRequestsPerMinute, 60_000)) {
       await writeAuditLog({ action: "galaxy.analyze", userId: actor, ok: false, route: "/api/galaxy/analyze", detail: "rate_limited" });
-      return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+      return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
     }
 
     const raw = (await request.json()) as InputPayload;
     const validated = galaxyAnalyzeSchema.safeParse(raw);
     if (!validated.success) {
       await writeAuditLog({ action: "galaxy.analyze", userId: ip, ok: false, route: "/api/galaxy/analyze", detail: "validation_failed" });
-      return NextResponse.json({ error: "invalid_payload" }, { status: 400 });
+      return NextResponse.json({ ok: false, error: "invalid_payload" }, { status: 400 });
     }
 
     const body = validated.data as InputPayload;
 
     if (!Array.isArray(body.images) || body.images.length === 0) {
-      return NextResponse.json({ error: "No images provided" }, { status: 400 });
+      return NextResponse.json({ ok: false, error: "no_images_provided" }, { status: 400 });
     }
 
     // Server-side scan-limit enforcement (Phase 6) — previously only
@@ -376,7 +382,7 @@ export async function POST(request: NextRequest) {
       if (!entitlement.allowed) {
         await writeAuditLog({ action: "galaxy.analyze", userId: auth.userId, ok: false, route: "/api/galaxy/analyze", detail: "scan_limit_reached" });
         return NextResponse.json(
-          { error: "scan_limit_reached", used: entitlement.used, cap: entitlement.cap },
+          { ok: false, error: "scan_limit_reached", used: entitlement.used, cap: entitlement.cap },
           { status: 403 }
         );
       }
@@ -388,28 +394,28 @@ export async function POST(request: NextRequest) {
       const parsedData = parseDataUrl(imageData);
       if (!parsedData) {
         await writeAuditLog({ action: "upload.image", userId: actor, ok: false, route: "/api/galaxy/analyze", detail: "invalid_data_url" });
-        return NextResponse.json({ error: "invalid_image_data_url" }, { status: 400 });
+        return NextResponse.json({ ok: false, error: "invalid_image_data_url" }, { status: 400 });
       }
 
       if (!ALLOWED_IMAGE_MIME.has(parsedData.mime)) {
         await writeAuditLog({ action: "upload.image", userId: actor, ok: false, route: "/api/galaxy/analyze", detail: "mime_rejected" });
-        return NextResponse.json({ error: "invalid_image_mime" }, { status: 415 });
+        return NextResponse.json({ ok: false, error: "invalid_image_mime" }, { status: 415 });
       }
 
       if (parsedData.bytes.length <= 0 || parsedData.bytes.length > MAX_IMAGE_BYTES) {
         await writeAuditLog({ action: "upload.image", userId: actor, ok: false, route: "/api/galaxy/analyze", detail: "image_size_rejected" });
-        return NextResponse.json({ error: "image_too_large" }, { status: 413 });
+        return NextResponse.json({ ok: false, error: "image_too_large" }, { status: 413 });
       }
 
       if (!hasValidSignature(parsedData.mime, parsedData.bytes)) {
         await writeAuditLog({ action: "upload.image", userId: actor, ok: false, route: "/api/galaxy/analyze", detail: "signature_rejected" });
-        return NextResponse.json({ error: "invalid_image_signature" }, { status: 400 });
+        return NextResponse.json({ ok: false, error: "invalid_image_signature" }, { status: 400 });
       }
 
       totalBytes += parsedData.bytes.length;
       if (totalBytes > MAX_TOTAL_IMAGE_BYTES) {
         await writeAuditLog({ action: "upload.image", userId: actor, ok: false, route: "/api/galaxy/analyze", detail: "total_upload_size_rejected" });
-        return NextResponse.json({ error: "total_upload_too_large" }, { status: 413 });
+        return NextResponse.json({ ok: false, error: "total_upload_too_large" }, { status: 413 });
       }
 
       parsedImages.push(parsedData);
@@ -681,7 +687,15 @@ export async function POST(request: NextRequest) {
           },
           body: formData,
           cache: "no-store",
+          signal: AbortSignal.timeout(25_000),
+        }).catch((fetchError) => {
+          console.error("[api/galaxy/analyze] galaxy_provider_fetch_failed", { idx, message: fetchError instanceof Error ? fetchError.message : "unknown" });
+          return null;
         });
+
+        if (!response) {
+          return { ok: false, json: {}, original: imageData };
+        }
 
         const json = await response.json().catch(() => ({}));
         return { ok: response.ok, json, original: imageData };
@@ -737,14 +751,9 @@ export async function POST(request: NextRequest) {
       rawCount: successful.length,
     });
   } catch (error) {
+    console.error("[api/galaxy/analyze] unhandled_error", error);
     await writeAuditLog({ action: "galaxy.analyze", userId: "anonymous", ok: false, route: "/api/galaxy/analyze", detail: "internal_error" });
-    return NextResponse.json(
-      {
-        error: "Galaxy analyze failed",
-        detail: "Unknown error",
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: false, error: "analyze_failed" }, { status: 500 });
   }
 }
 

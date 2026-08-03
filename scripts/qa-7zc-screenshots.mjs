@@ -2,20 +2,6 @@ import fs from "node:fs";
 import path from "node:path";
 import { chromium } from "playwright";
 
-function loadEnvLocal(workspace) {
-  const envPath = path.join(workspace, ".env.local");
-  const raw = fs.readFileSync(envPath, "utf8");
-  const env = {};
-  for (const line of raw.split(/\r?\n/)) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-    const eq = trimmed.indexOf("=");
-    if (eq <= 0) continue;
-    env[trimmed.slice(0, eq).trim()] = trimmed.slice(eq + 1).trim();
-  }
-  return env;
-}
-
 const BASE_URL = process.env.E2E_BASE_URL || "http://localhost:3000";
 const OUT_DIR = path.join(process.cwd(), "playwright-artifacts", "7zc-final");
 
@@ -42,8 +28,6 @@ function timestampEmail() {
 }
 
 async function main() {
-  const workspace = process.cwd();
-  const env = loadEnvLocal(workspace);
   fs.mkdirSync(OUT_DIR, { recursive: true });
 
   const browser = await chromium.launch({ headless: true });

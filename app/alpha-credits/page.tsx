@@ -159,7 +159,6 @@ export default function AlphaCreditsPage() {
   const missions = useMemo(() => buildTodayMissions(alphaTransactions, now), [alphaTransactions, now]);
   const timeline = useMemo(() => buildTimelineItems(alphaSummary, alphaTransactions), [alphaSummary, alphaTransactions]);
   const rewardProgress = useMemo(() => getRewardProgress(summary.current_balance), [summary.current_balance]);
-  const completedMissionsCount = missions.filter(m => m.status === "completed").length;
   const completedCoreMissionCount = getCompletedCoreMissionCount(missions);
   const bonusProgress = Math.min(100, Math.round((completedCoreMissionCount / ALPHA_REWARD_SYSTEM.taskBonus.threshold) * 100));
   const missedMissionCount = missions.filter((mission) => mission.status === "missed").length;
@@ -418,7 +417,7 @@ export default function AlphaCreditsPage() {
             </div>
             <div className="rounded-[1.5rem] bg-white px-4 py-3 shadow-sm md:min-w-[220px]">
               <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-[0.16em] text-[#7A6D5A]">Today's bonus</span>
+                <span className="text-xs font-bold uppercase tracking-[0.16em] text-[#7A6D5A]">Today&apos;s bonus</span>
                 <span className="text-sm font-black text-[#111]">{completedCoreMissionCount}/{ALPHA_REWARD_SYSTEM.taskBonus.threshold}</span>
               </div>
               <ProgressBar value={bonusProgress} color="bg-gradient-to-r from-[#F2B637] to-[#D88A15]" trackColor="bg-[#F6E8C6]" height="h-3" />
@@ -649,7 +648,7 @@ export default function AlphaCreditsPage() {
                 />
               ) : (
                 <div className="relative border-l-2 border-[#F0F0F0] ml-3 pl-6 space-y-8 py-2">
-                  {timeline.slice(0, 10).map((item, idx) => (
+                  {timeline.slice(0, 10).map((item) => (
                     <div key={item.id} className="relative">
                       {/* Timeline dot */}
                       <div className="absolute -left-[31px] top-1 w-3 h-3 rounded-full bg-white border-2 border-[var(--accent-blue)] shadow-[0_0_0_4px_white]" />

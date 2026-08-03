@@ -385,7 +385,7 @@ export function setActiveChallengeId(id: string | null): void {
   }
 }
 
-export function calculateStreak(completedDays: number[], totalDays: number): { streak: number; longestStreak: number } {
+export function calculateStreak(completedDays: number[], _totalDays: number): { streak: number; longestStreak: number } {
   if (completedDays.length === 0) return { streak: 0, longestStreak: 0 };
   
   const sorted = [...completedDays].sort((a, b) => a - b);

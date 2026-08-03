@@ -82,7 +82,7 @@ export default function ProfilePage() {
   const joinedDate = user?.created_at;
 
   const trendData = useMemo(() => {
-    return assessments.slice(-10).map((a, i) => ({
+    return assessments.slice(-10).map((a) => ({
       date: formatDate(a.completed_at),
       score: Number(a.completeness_pct ?? 0),
       consistency: Number(a.completeness_pct ?? 0),
@@ -110,6 +110,25 @@ export default function ProfilePage() {
     }
     return streak;
   }, [routineLogs]);
+
+  // routineLogs is ordered newest-first (see lib/hydrateUserData.ts's
+  // `.order("log_date", { ascending: false })`), so a leading slice is the
+  // most recent N logged days — real adherence, not a placeholder.
+  const computeAdherencePct = (rows: RoutineRow[]) => {
+    if (!rows.length) return null;
+    const completed = rows.filter((row) => row.am_done && row.pm_done).length;
+    return Math.round((completed / rows.length) * 100);
+  };
+  const overallAdherencePct = useMemo(() => computeAdherencePct(routineLogs), [routineLogs]);
+  const lastWeekAdherencePct = useMemo(() => computeAdherencePct(routineLogs.slice(0, 7)), [routineLogs]);
+  const lastMonthAdherencePct = useMemo(() => computeAdherencePct(routineLogs.slice(0, 30)), [routineLogs]);
+
+  const scoreTrendLabel = useMemo(() => {
+    if (trendData.length < 2) return "Not enough data yet";
+    const delta = Math.round(trendData[trendData.length - 1].score - trendData[0].score);
+    if (delta === 0) return "Flat over this period";
+    return `${delta > 0 ? "+" : ""}${delta}% since first assessment`;
+  }, [trendData]);
 
   const timelineItems = [
     ...assessments.map((item) => ({
@@ -409,34 +428,42 @@ export default function ProfilePage() {
                   <h3 className="font-semibold text-[var(--ink)]">Alpha Score Progression</h3>
                   <div className="flex items-center gap-2 text-sm text-[var(--accent-blue)]">
                     <TrendingUp className="h-4 w-4" />
-                    <span>+12% Last 30 Days</span>
+                    <span>{scoreTrendLabel}</span>
                   </div>
                 </div>
-                <div className="h-64 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={trendData.length > 0 ? trendData : [{ date: "Week 1", score: 60, consistency: 50 }, { date: "Week 2", score: 65, consistency: 60 }, { date: "Week 3", score: 72, consistency: 70 }, { date: "Week 4", score: 78, consistency: 85 }]}>
-                      <defs>
-                        <linearGradient id="profileScoreStroke" x1="0" y1="0" x2="1" y2="0">
-                          <stop offset="0%" stopColor="var(--clinical-cyan)" />
-                          <stop offset="100%" stopColor="var(--accent-blue)" />
-                        </linearGradient>
-                        <linearGradient id="profileScoreFill" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="var(--accent-blue)" stopOpacity={0.28} />
-                          <stop offset="100%" stopColor="var(--accent-blue)" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid stroke="var(--border-hairline)" strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "var(--ink-soft)", fontSize: 10 }} dy={10} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fill: "var(--ink-soft)", fontSize: 10 }} domain={[0, 100]} />
-                      <Tooltip
-                        contentStyle={{ borderRadius: "var(--radius-card)", border: "1px solid var(--border-hairline)", boxShadow: "var(--shadow-raised)" }}
-                      />
-                      <Area type="monotone" dataKey="score" stroke="none" fill="url(#profileScoreFill)" isAnimationActive animationDuration={900} />
-                      <Line type="monotone" dataKey="score" stroke="url(#profileScoreStroke)" strokeWidth={3} dot={{ r: 4, fill: "var(--accent-blue)", strokeWidth: 0 }} activeDot={{ r: 6 }} name="Alpha Score" isAnimationActive animationDuration={900} />
-                      <Line type="monotone" dataKey="consistency" stroke="var(--accent-amber)" strokeWidth={2} dot={false} strokeDasharray="5 5" name="Consistency" isAnimationActive animationDuration={900} />
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                </div>
+                {trendData.length > 0 ? (
+                  <div className="h-64 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart data={trendData}>
+                        <defs>
+                          <linearGradient id="profileScoreStroke" x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0%" stopColor="var(--clinical-cyan)" />
+                            <stop offset="100%" stopColor="var(--accent-blue)" />
+                          </linearGradient>
+                          <linearGradient id="profileScoreFill" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="var(--accent-blue)" stopOpacity={0.28} />
+                            <stop offset="100%" stopColor="var(--accent-blue)" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid stroke="var(--border-hairline)" strokeDasharray="3 3" vertical={false} />
+                        <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "var(--ink-soft)", fontSize: 10 }} dy={10} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fill: "var(--ink-soft)", fontSize: 10 }} domain={[0, 100]} />
+                        <Tooltip
+                          contentStyle={{ borderRadius: "var(--radius-card)", border: "1px solid var(--border-hairline)", boxShadow: "var(--shadow-raised)" }}
+                        />
+                        <Area type="monotone" dataKey="score" stroke="none" fill="url(#profileScoreFill)" isAnimationActive animationDuration={900} />
+                        <Line type="monotone" dataKey="score" stroke="url(#profileScoreStroke)" strokeWidth={3} dot={{ r: 4, fill: "var(--accent-blue)", strokeWidth: 0 }} activeDot={{ r: 6 }} name="Alpha Score" isAnimationActive animationDuration={900} />
+                        <Line type="monotone" dataKey="consistency" stroke="var(--accent-amber)" strokeWidth={2} dot={false} strokeDasharray="5 5" name="Consistency" isAnimationActive animationDuration={900} />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <div className="flex h-64 w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-[var(--border-hairline)] bg-[var(--tint-neutral)] text-center">
+                    <TrendingUp className="h-6 w-6 text-[var(--ink-soft)]" />
+                    <p className="text-sm font-medium text-[var(--ink)]">No assessment history yet</p>
+                    <p className="max-w-xs text-xs text-[var(--ink-soft)]">Complete your first assessment to start tracking score progression here.</p>
+                  </div>
+                )}
               </MedicalCard>
 
               <MedicalCard className="p-6">
@@ -445,37 +472,37 @@ export default function ProfilePage() {
                   <div className="flex items-center justify-between p-4 bg-[var(--tint-neutral)] rounded-xl border border-[var(--border-hairline)]">
                     <div>
                       <p className="text-xs text-[var(--ink-soft)] uppercase tracking-wider">Current Protocol</p>
-                      <p className="font-bold text-[var(--ink)]">Optimized for Barrier Repair</p>
+                      <p className="font-bold text-[var(--ink)]">Your Active Protocol</p>
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-[var(--ink-soft)]">Adherence</p>
-                      <p className="font-bold text-[var(--accent-blue)]">92%</p>
+                      <p className="font-bold text-[var(--accent-blue)]">{overallAdherencePct === null ? "—" : `${overallAdherencePct}%`}</p>
                     </div>
                   </div>
-                  
+
                   <div className="relative pl-4 border-l-2 border-[var(--border-hairline)]">
                     <div className="mb-4">
                       <p className="text-xs text-[var(--ink-soft)] mb-1">Last Week</p>
                       <div className="flex items-center gap-2">
                          <div className="flex-1 h-2 bg-[var(--border-hairline)] rounded-full overflow-hidden">
-                           <div className="h-full bg-[var(--accent-blue)]" style={{ width: "85%" }}></div>
+                           <div className="h-full bg-[var(--accent-blue)]" style={{ width: `${lastWeekAdherencePct ?? 0}%` }}></div>
                          </div>
-                         <span className="text-xs font-semibold text-[var(--ink)]">85%</span>
+                         <span className="text-xs font-semibold text-[var(--ink)]">{lastWeekAdherencePct === null ? "No data" : `${lastWeekAdherencePct}%`}</span>
                       </div>
                     </div>
                     <div>
                       <p className="text-xs text-[var(--ink-soft)] mb-1">Last Month</p>
                       <div className="flex items-center gap-2">
                          <div className="flex-1 h-2 bg-[var(--border-hairline)] rounded-full overflow-hidden">
-                           <div className="h-full bg-[var(--ink-soft)]" style={{ width: "64%" }}></div>
+                           <div className="h-full bg-[var(--ink-soft)]" style={{ width: `${lastMonthAdherencePct ?? 0}%` }}></div>
                          </div>
-                         <span className="text-xs font-semibold text-[var(--ink)]">64%</span>
+                         <span className="text-xs font-semibold text-[var(--ink)]">{lastMonthAdherencePct === null ? "No data" : `${lastMonthAdherencePct}%`}</span>
                       </div>
                     </div>
                   </div>
 
                   <p className="text-xs text-[var(--ink-soft)] italic mt-4">
-                    "Consistent adherence correlates with a 40% faster visible improvement in skin texture."
+                    &quot;Consistent adherence correlates with a 40% faster visible improvement in skin texture.&quot;
                   </p>
                 </div>
               </MedicalCard>

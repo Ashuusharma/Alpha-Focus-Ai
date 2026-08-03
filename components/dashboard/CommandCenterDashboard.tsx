@@ -7,17 +7,12 @@ import {
   ArrowDownRight,
   ArrowRight,
   ArrowUpRight,
-  CalendarClock,
-  CheckCircle2,
-  CircleAlert,
-  Clock3,
   Database,
   Image as ImageIcon,
   ShieldAlert,
   ShoppingBag,
   Sparkles,
   Target,
-  TrendingUp,
 } from "lucide-react";
 import {
   CartesianGrid,
@@ -226,7 +221,7 @@ export default function CommandCenterDashboard({ data }: Props) {
               <div className="flex items-center justify-between rounded-lg bg-[#F8F6F0] p-3"><span className="font-semibold">Sleep</span><StatusDot active={data.routineStatus.sleepDone} /></div>
             </div>
             <div className="mt-4 rounded-xl border border-[#0071e3]/20 bg-[#0071e3]/10 p-4">
-              <p className="text-xs font-bold uppercase text-[#0071e3]">Today's Priority Action</p>
+              <p className="text-xs font-bold uppercase text-[#0071e3]">Today&apos;s Priority Action</p>
               <p className="mt-1 text-sm font-semibold">{data.routineStatus.todayPriorityAction}</p>
               <p className="mt-2 text-xs text-[#6e6e73]">{data.routineStatus.adherenceImpact}</p>
             </div>

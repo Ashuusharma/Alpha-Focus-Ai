@@ -13,29 +13,34 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 
-  const { data, error } = await supabase
-    .from("routine_logs")
-    .select("id,user_id,log_date,stress_level,created_at")
-    .eq("user_id", auth.userId)
-    .order("log_date", { ascending: false });
+  try {
+    const { data, error } = await supabase
+      .from("routine_logs")
+      .select("id,user_id,log_date,stress_level,created_at")
+      .eq("user_id", auth.userId)
+      .order("log_date", { ascending: false });
 
-  if (error) {
+    if (error) {
+      return NextResponse.json({ ok: false, error: "mood_log_fetch_failed" }, { status: 500 });
+    }
+
+    const logs = (data || []).map((row) => {
+      const stress = Number(row.stress_level || 0);
+      const mood = stress >= 70 ? "stressed" : stress <= 35 ? "calm" : "neutral";
+      return {
+        id: String(row.id),
+        userId: String(row.user_id),
+        date: String(row.log_date),
+        mood,
+        createdAt: row.created_at || new Date().toISOString(),
+      };
+    });
+
+    return NextResponse.json({ logs });
+  } catch (error) {
+    console.error("[api/logs/mood] fetch_failed", error);
     return NextResponse.json({ ok: false, error: "mood_log_fetch_failed" }, { status: 500 });
   }
-
-  const logs = (data || []).map((row) => {
-    const stress = Number(row.stress_level || 0);
-    const mood = stress >= 70 ? "stressed" : stress <= 35 ? "calm" : "neutral";
-    return {
-      id: String(row.id),
-      userId: String(row.user_id),
-      date: String(row.log_date),
-      mood,
-      createdAt: row.created_at || new Date().toISOString(),
-    };
-  });
-
-  return NextResponse.json({ logs });
 }
 
 export async function POST(request: NextRequest) {
@@ -87,6 +92,7 @@ export async function POST(request: NextRequest) {
     await writeAuditLog({ action: "logs.mood.write", userId: auth.userId, ok: true, route: "/api/logs/mood" });
     return NextResponse.json({ ok: true, log });
   } catch (error) {
+    console.error("[api/logs/mood] unhandled_error", error);
     return NextResponse.json({ ok: false, error: "mood_log_failed" }, { status: 500 });
   }
 }

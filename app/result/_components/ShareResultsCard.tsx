@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Share2, Download, X, Instagram, Twitter, Copy, Check, Sparkles } from "lucide-react";
+import { Download, X, Instagram, Twitter, Copy, Check, Sparkles } from "lucide-react";
 
 interface ShareResultsCardProps {
   isOpen: boolean;
@@ -31,7 +31,7 @@ export default function ShareResultsCard({
 
     try {
       // Dynamic import html2canvas (needs: npm install html2canvas)
-      // @ts-ignore - html2canvas is an optional dependency
+      // @ts-expect-error - html2canvas is an optional dependency, not installed
       const html2canvas = (await import("html2canvas")).default;
       const canvas = await html2canvas(cardRef.current, {
         backgroundColor: "#0B0F19",

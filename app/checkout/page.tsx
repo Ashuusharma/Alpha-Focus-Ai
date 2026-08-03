@@ -408,7 +408,7 @@ export default function CheckoutPage() {
                 <ShieldCheck className="h-6 w-6 text-[var(--accent-blue)] flex-shrink-0" />
                 <div>
                    <h4 className="font-bold text-[var(--ink)] text-sm">Satisfaction Guarantee</h4>
-                   <p className="text-xs text-[var(--ink-soft)] mt-1">If this regimen doesn't match your skin needs within 30 days, we'll replace it for free.</p>
+                   <p className="text-xs text-[var(--ink-soft)] mt-1">If this regimen doesn&apos;t match your skin needs within 30 days, we&apos;ll replace it for free.</p>
                 </div>
              </div>
           </div>

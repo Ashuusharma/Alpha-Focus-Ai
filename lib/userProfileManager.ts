@@ -293,7 +293,6 @@ export function calculateProgress(
 function updateProgressMetrics(history: UserHistory, newScan: ScanRecord) {
   if (history.scans.length <= 1) return;
 
-  const previousScan = history.scans[history.scans.length - 2];
   const issues = newScan.aiAnalysis.detectedIssues;
 
   // Build confidence trend for each issue

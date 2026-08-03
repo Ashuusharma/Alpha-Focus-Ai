@@ -166,7 +166,7 @@ function extractIssuesFromAnswers(
 function enrichIssues(
   photoIssues: DetectedIssue[],
   questionnaireIssues: { category: string; issues: string[] }[],
-  photoType: string | null
+  _photoType: string | null
 ): EnrichedIssue[] {
   const enriched: EnrichedIssue[] = [];
   const processed = new Set<string>();
@@ -345,7 +345,7 @@ function generateInsights(
   photoAnalysis: AnalysisResult | null,
   questionnaireAnswers: Record<string, string>,
   enrichedIssues: EnrichedIssue[],
-  recommendations: ScoredRecommendation[]
+  _recommendations: ScoredRecommendation[]
 ): AnalysisInsight[] {
   const insights: AnalysisInsight[] = [];
 

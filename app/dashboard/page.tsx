@@ -17,7 +17,6 @@ import {
   generateDailyProtocolTasks,
   getCurrentProtocolPhase,
   getProtocolTemplate,
-  type ProtocolTask,
 } from "@/lib/protocolTemplates";
 import { maybeSendRoutineReminder } from "@/lib/routineReminderSystem";
 import { categories, CategoryId } from "@/lib/questions";
@@ -89,34 +88,6 @@ type AlphaSikkaAwardResponse = {
   };
   error?: string;
 };
-
-const MORNING_UNLOCK_HOUR = 5;
-const NIGHT_UNLOCK_HOUR = 18;
-
-type UnlockState = {
-  amUnlocked: boolean;
-  pmUnlocked: boolean;
-  nextUnlockLabel: string | null;
-};
-
-function formatHour(hour24: number) {
-  const normalized = ((hour24 % 24) + 24) % 24;
-  const suffix = normalized >= 12 ? "PM" : "AM";
-  const h12 = normalized % 12 || 12;
-  return `${h12}:00 ${suffix}`;
-}
-
-function getUnlockState(now: Date): UnlockState {
-  const hour = now.getHours();
-  const amUnlocked = hour >= MORNING_UNLOCK_HOUR;
-  const pmUnlocked = hour >= NIGHT_UNLOCK_HOUR;
-
-  let nextUnlockLabel: string | null = null;
-  if (!amUnlocked) nextUnlockLabel = `Morning unlocks at ${formatHour(MORNING_UNLOCK_HOUR)}`;
-  else if (!pmUnlocked) nextUnlockLabel = `Night unlocks at ${formatHour(NIGHT_UNLOCK_HOUR)}`;
-
-  return { amUnlocked, pmUnlocked, nextUnlockLabel };
-}
 
 function normalizeDateKey(input: string) {
   return input.slice(0, 10);
@@ -239,14 +210,13 @@ export default function DashboardPage() {
   const [savingRoutine, setSavingRoutine] = useState(false);
   const [draftSleepHours, setDraftSleepHours] = useState<string>("");
   const [draftHydrationMl, setDraftHydrationMl] = useState<string>("");
-  const [routineDraftDirty, setRoutineDraftDirty] = useState(false);
   const [activeCategory, setActiveCategory] = useState<CategoryId | null>(null);
   const [progressSummary, setProgressSummary] = useState<ProgressSummary | null>(null);
   const [phaseName, setPhaseName] = useState<string>("Stabilization");
   const [programDay, setProgramDay] = useState<number>(1);
-  const [dailyGoal, setDailyGoal] = useState<string>("Daily recovery objective");
-  const [expectedResult, setExpectedResult] = useState<string>("Improved symptom control with consistency.");
-  const [nowTick, setNowTick] = useState<Date>(new Date());
+  // Tracked but not currently rendered anywhere on this page.
+  const [_dailyGoal, setDailyGoal] = useState<string>("Daily recovery objective");
+  const [_expectedResult, setExpectedResult] = useState<string>("Improved symptom control with consistency.");
   const rewardCatalog = useMemo(() => getRewardCatalog(), []);
 
   useEffect(() => {
@@ -309,7 +279,6 @@ export default function DashboardPage() {
 
     setDraftSleepHours(todayRoutine.sleep_hours == null ? "" : String(todayRoutine.sleep_hours));
     setDraftHydrationMl(todayRoutine.hydration_ml == null ? "" : String(todayRoutine.hydration_ml));
-    setRoutineDraftDirty(false);
   }, [user?.id, todayRoutine?.id, todayRoutine?.log_date]);
 
   useEffect(() => {
@@ -391,7 +360,6 @@ export default function DashboardPage() {
   useEffect(() => {
     const interval = setInterval(() => {
       maybeSendRoutineReminder();
-      setNowTick(new Date());
     }, 60 * 1000);
 
     return () => clearInterval(interval);
@@ -438,7 +406,12 @@ export default function DashboardPage() {
     };
   }, [user?.id]);
 
-  const saveTodayRoutine = async (updates: Partial<RoutineLogRow>) => {
+  // Not currently called from this page — the AM/PM checklist UI it was built
+  // for (ProtocolChecklist.tsx) was superseded by TreatmentPlan's task-based
+  // system, which awards routine completion via /api/alpha-sikka/earn
+  // instead. Kept (not deleted) since it's real reward/notification logic;
+  // renamed with `_` to mark it as intentionally unused rather than a bug.
+  const _saveTodayRoutine = async (updates: Partial<RoutineLogRow>) => {
     if (!user || !todayRoutine || savingRoutine) return;
     setSavingRoutine(true);
 
@@ -586,15 +559,6 @@ export default function DashboardPage() {
     setSavingRoutine(false);
   };
 
-  const saveMetricDraft = async () => {
-    if (!todayRoutine || savingRoutine) return;
-    await saveTodayRoutine({
-      sleep_hours: draftSleepHours === "" ? null : Number(draftSleepHours),
-      hydration_ml: draftHydrationMl === "" ? null : Number(draftHydrationMl),
-    });
-    setRoutineDraftDirty(false);
-  };
-
   const balance = Number(alphaSummary?.current_balance ?? 0);
   const alphaScore = Number((reports[0]?.alpha_score as number | undefined) ?? 0);
   const consistencyScore = useMemo(() => {
@@ -604,8 +568,6 @@ export default function DashboardPage() {
     const sleep = (todayRoutine?.sleep_hours || 0) >= 7 ? 25 : 0;
     return am + pm + hydration + sleep;
   }, [todayRoutine]);
-
-  const unlockState = useMemo(() => getUnlockState(nowTick), [nowTick]);
 
   const routineStreakDays = useMemo(() => calculateRoutineStreakDays(routines, todayRoutine), [routines, todayRoutine]);
   const treatmentCategories = useMemo(() => {
@@ -628,7 +590,6 @@ export default function DashboardPage() {
   const userName = String(profile?.full_name || user?.email?.split("@")[0] || "User");
   const transformationProgress = Math.max(0, Math.min(100, Math.round((Number(progressSummary?.improvement_pct || 0) + Number(consistencyScore)) / 2)));
   const confidenceScore = Number(progressSummary?.confidence_score || alphaScore || 0);
-  const focusScore = Number(progressSummary?.discipline_index || consistencyScore || 0);
   const recoveryVelocityLabel = Number(progressSummary?.recovery_velocity || 0) >= 70 ? "Fast" : Number(progressSummary?.recovery_velocity || 0) >= 40 ? "Moderate" : "Stabilizing";
 
   const weeklyProgressData = useMemo(() => {

@@ -13,33 +13,38 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 
-  const { data, error } = await supabase
-    .from("clinical_reports")
-    .select("id,user_id,created_at,report_payload")
-    .eq("user_id", auth.userId)
-    .order("created_at", { ascending: false });
+  try {
+    const { data, error } = await supabase
+      .from("clinical_reports")
+      .select("id,user_id,created_at,report_payload")
+      .eq("user_id", auth.userId)
+      .order("created_at", { ascending: false });
 
-  if (error) {
+    if (error) {
+      return NextResponse.json({ ok: false, error: "weekly_report_fetch_failed" }, { status: 500 });
+    }
+
+    const reports = (data || []).map((row) => {
+      const payload = (row.report_payload || {}) as Record<string, unknown>;
+      return {
+        id: String(row.id),
+        userId: String(row.user_id),
+        createdAt: row.created_at || new Date().toISOString(),
+        strengths: Array.isArray(payload.strengths) ? payload.strengths : [],
+        risks: Array.isArray(payload.risks) ? payload.risks : [],
+        suggestedFocus: typeof payload.suggestedFocus === "string" ? payload.suggestedFocus : "",
+        avgSleep: Number(payload.avgSleep || 0),
+        avgHydration: Number(payload.avgHydration || 0),
+        compliance: Number(payload.compliance || 0),
+        scoreDelta: Number(payload.scoreDelta || 0),
+      };
+    });
+
+    return NextResponse.json({ reports });
+  } catch (error) {
+    console.error("[api/reports/weekly] fetch_failed", error);
     return NextResponse.json({ ok: false, error: "weekly_report_fetch_failed" }, { status: 500 });
   }
-
-  const reports = (data || []).map((row) => {
-    const payload = (row.report_payload || {}) as Record<string, unknown>;
-    return {
-      id: String(row.id),
-      userId: String(row.user_id),
-      createdAt: row.created_at || new Date().toISOString(),
-      strengths: Array.isArray(payload.strengths) ? payload.strengths : [],
-      risks: Array.isArray(payload.risks) ? payload.risks : [],
-      suggestedFocus: typeof payload.suggestedFocus === "string" ? payload.suggestedFocus : "",
-      avgSleep: Number(payload.avgSleep || 0),
-      avgHydration: Number(payload.avgHydration || 0),
-      compliance: Number(payload.compliance || 0),
-      scoreDelta: Number(payload.scoreDelta || 0),
-    };
-  });
-
-  return NextResponse.json({ reports });
 }
 
 export async function POST(request: NextRequest) {
@@ -107,6 +112,7 @@ export async function POST(request: NextRequest) {
     await writeAuditLog({ action: "reports.weekly.write", userId: auth.userId, ok: true, route: "/api/reports/weekly" });
     return NextResponse.json({ ok: true, report: responseReport });
   } catch (error) {
+    console.error("[api/reports/weekly] write_failed", error);
     return NextResponse.json({ ok: false, error: "weekly_report_failed" }, { status: 500 });
   }
 }

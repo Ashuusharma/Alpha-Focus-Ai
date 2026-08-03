@@ -1007,7 +1007,7 @@ export default function TreatmentPlan({
               {group.tasks.length === 0 ? (
                 <div className="w-full rounded-[1.5rem] border-2 border-dashed border-[var(--border-hairline)] bg-[var(--tint-neutral)] p-8 text-center">
                   <CheckCircle2 className="mx-auto mb-2 h-6 w-6 text-[var(--accent-green)]" />
-                  <p className="text-sm font-semibold text-[var(--ink)]">You're clear for this window</p>
+                  <p className="text-sm font-semibold text-[var(--ink)]">You&apos;re clear for this window</p>
                   <p className="mt-1 text-xs text-[var(--ink-soft)]">No mandatory clinical tasks scheduled for this period.</p>
                 </div>
               ) : (

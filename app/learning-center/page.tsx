@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Container from "@/app/result/_components/Container";
-import { ArrowLeft, BookOpen, ChevronDown, Compass, FileText, ScanFace, ShieldCheck } from "lucide-react";
+import { ArrowLeft, BookOpen, ChevronDown, Compass, FileText, ScanFace } from "lucide-react";
 import { categories, questions, type CategoryId } from "@/lib/questions";
 
 const categoryInsights: Partial<Record<CategoryId, { headline: string; guidance: string[] }>> = {
@@ -260,7 +260,7 @@ export default function LearningCenterPage() {
                         <div className="grid gap-3 md:grid-cols-3">
                           {topQuestions.map((question) => (
                             <div key={question.id} className="border border-[var(--border-hairline)] bg-white p-4 text-sm text-[var(--ink)]">
-                              "{question.text}"
+                              &quot;{question.text}&quot;
                             </div>
                           ))}
                         </div>

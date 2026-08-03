@@ -16,7 +16,7 @@ type WalletSummaryPayload = {
   streak?: Record<string, unknown> | null;
 };
 
-export async function refreshAlphaWallet(userId: string) {
+export async function refreshAlphaWallet(_userId: string) {
   try {
     const headers = await getSupabaseAuthHeaders();
     if (!headers.Authorization) {

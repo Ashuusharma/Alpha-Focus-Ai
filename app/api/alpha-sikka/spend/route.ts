@@ -213,8 +213,9 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
+      console.error("[api/alpha-sikka/spend] insert_failed", { userId: authUser.id, detail: detail.slice(0, 500) });
       await writeAuditLog({ action: "alpha_sikka.spend", userId: authUser.id, ok: false, route: "/api/alpha-sikka/spend", detail: "insert_failed" });
-      return NextResponse.json({ ok: false, error: "insert_failed", detail }, { status: 500 });
+      return NextResponse.json({ ok: false, error: "insert_failed" }, { status: 500 });
     }
 
     const summary = await fetchSummary(config.baseUrl, config.serviceKey, authUser.id);
@@ -241,6 +242,7 @@ export async function POST(request: NextRequest) {
       toast: `-${body.amount} A$ spent`,
     });
   } catch (error) {
+    console.error("[api/alpha-sikka/spend] unhandled_error", error);
     return NextResponse.json({ ok: false, error: "alpha_sikka_spend_failed" }, { status: 500 });
   }
 }

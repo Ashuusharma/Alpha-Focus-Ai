@@ -13,27 +13,32 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 
-  const { data, error } = await supabase
-    .from("routine_logs")
-    .select("id,user_id,log_date,sleep_hours,created_at")
-    .eq("user_id", auth.userId)
-    .order("log_date", { ascending: false });
+  try {
+    const { data, error } = await supabase
+      .from("routine_logs")
+      .select("id,user_id,log_date,sleep_hours,created_at")
+      .eq("user_id", auth.userId)
+      .order("log_date", { ascending: false });
 
-  if (error) {
+    if (error) {
+      return NextResponse.json({ ok: false, error: "sleep_log_fetch_failed" }, { status: 500 });
+    }
+
+    const logs = (data || []).map((row) => ({
+      id: String(row.id),
+      userId: String(row.user_id),
+      date: String(row.log_date),
+      hours: Number(row.sleep_hours || 0),
+      quality: 0,
+      bedtime: undefined,
+      createdAt: row.created_at || new Date().toISOString(),
+    }));
+
+    return NextResponse.json({ logs });
+  } catch (error) {
+    console.error("[api/logs/sleep] fetch_failed", error);
     return NextResponse.json({ ok: false, error: "sleep_log_fetch_failed" }, { status: 500 });
   }
-
-  const logs = (data || []).map((row) => ({
-    id: String(row.id),
-    userId: String(row.user_id),
-    date: String(row.log_date),
-    hours: Number(row.sleep_hours || 0),
-    quality: 0,
-    bedtime: undefined,
-    createdAt: row.created_at || new Date().toISOString(),
-  }));
-
-  return NextResponse.json({ logs });
 }
 
 export async function POST(request: NextRequest) {
@@ -85,6 +90,7 @@ export async function POST(request: NextRequest) {
     await writeAuditLog({ action: "logs.sleep.write", userId: auth.userId, ok: true, route: "/api/logs/sleep" });
     return NextResponse.json({ ok: true, log });
   } catch (error) {
+    console.error("[api/logs/sleep] unhandled_error", error);
     return NextResponse.json({ ok: false, error: "sleep_log_failed" }, { status: 500 });
   }
 }

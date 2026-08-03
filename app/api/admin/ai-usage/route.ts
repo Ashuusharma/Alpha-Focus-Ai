@@ -135,6 +135,7 @@ export async function GET(request: NextRequest) {
   const days = Math.max(1, Math.min(90, Number(request.nextUrl.searchParams.get("days")) || DEFAULT_WINDOW_DAYS));
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 
+  try {
   const [rows, todaysSpendUsd, monthlySpendUsd] = await Promise.all([
     fetchUsageRows(since),
     getEstimatedSpendUsd("day"),
@@ -260,4 +261,8 @@ export async function GET(request: NextRequest) {
     topTokenConsumers,
     perModelUsage,
   });
+  } catch (error) {
+    console.error("[api/admin/ai-usage] fetch_failed", error);
+    return NextResponse.json({ ok: false, error: "ai_usage_fetch_failed" }, { status: 500 });
+  }
 }

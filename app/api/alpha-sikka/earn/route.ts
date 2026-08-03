@@ -452,8 +452,9 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ ok: false, error: "already_awarded" }, { status: 200 });
       }
 
+      console.error("[api/alpha-sikka/earn] insert_failed", { userId: authUser.id, detail: message.slice(0, 500) });
       await writeAuditLog({ action: "alpha_sikka.earn", userId: authUser.id, ok: false, route: "/api/alpha-sikka/earn", detail: "insert_failed" });
-      return NextResponse.json({ ok: false, error: "insert_failed", detail: message }, { status: 500 });
+      return NextResponse.json({ ok: false, error: "insert_failed" }, { status: 500 });
     }
 
     let streakBonus = 0;
@@ -542,6 +543,7 @@ export async function POST(request: NextRequest) {
       toast: `${amount + taskBonus + streakBonus - penaltyApplied >= 0 ? "+" : "-"}${Math.abs(amount + taskBonus + streakBonus - penaltyApplied)} A$ ${penaltyApplied > 0 ? "net" : "earned"}`,
     });
   } catch (error) {
+    console.error("[api/alpha-sikka/earn] unhandled_error", error);
     return NextResponse.json({ ok: false, error: "alpha_sikka_earn_failed" }, { status: 500 });
   }
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, ArrowLeft, MapPin, RefreshCcw, ShieldCheck, SlidersHorizontal } from "lucide-react";
+import { AlertTriangle, ArrowLeft, MapPin, RefreshCcw, SlidersHorizontal } from "lucide-react";
 import { useLocation } from "@/app/hooks/useLocation";
 
 type PermissionState = {

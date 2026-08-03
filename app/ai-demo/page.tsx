@@ -6,7 +6,7 @@ import { analyzeImage, AnalysisResult } from "@/lib/analyzeImage";
 import { analyzeWithAI, CombinedAnalysis } from "@/lib/aiAnalysisEngine";
 import Container from "@/app/result/_components/Container";
 import { motion, AnimatePresence } from "framer-motion";
-import { Brain, ScanFace, FileText, CheckCircle2, ArrowRight, Activity, Sparkles, Server, Lock } from "lucide-react";
+import { Brain, ScanFace, CheckCircle2, ArrowRight, Activity, Sparkles, Lock } from "lucide-react";
 
 export default function AITestPage() {
   const router = useRouter();

@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Star, Check, ShoppingCart, ArrowRight, AlertTriangle } from "lucide-react";
+import { X, Star, Check, ShoppingCart, AlertTriangle } from "lucide-react";
 import { useComparisonStore, CompareProduct } from "@/lib/comparisonStore";
 import { useCartStore } from "@/lib/cartStore";
 import { useIngredientBlacklistStore } from "@/lib/ingredientBlacklistStore";

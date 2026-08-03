@@ -1,5 +1,6 @@
 import "server-only";
 import { createHmac } from "crypto";
+import { secureCompare } from "@/lib/server/secureCompare";
 import {
   PaymentProvider,
   CreateOrderParams,
@@ -111,7 +112,7 @@ export class CashfreeProvider implements PaymentProvider {
   verifyWebhookSignature(rawBody: string, signature: string, timestamp: string): boolean {
     const { secretKey } = getCredentials();
     const expected = createHmac("sha256", secretKey).update(timestamp + rawBody).digest("base64");
-    return expected === signature;
+    return secureCompare(signature, expected);
   }
 
   parseWebhookEvent(rawBody: string): WebhookEvent {

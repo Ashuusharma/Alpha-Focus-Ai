@@ -6,10 +6,13 @@ import { useEffect, useState } from "react";
 import {
   getUserHistory,
   ScanRecord,
+  UserHistory,
   calculateProgress,
   getLatestScan,
   getPreviousScan,
 } from "@/lib/userProfileManager";
+
+type ProgressResult = ReturnType<typeof calculateProgress>;
 
 interface ProgressComparisonProps {
   showComparison?: boolean;
@@ -20,8 +23,8 @@ export default function ProgressComparison({
 }: ProgressComparisonProps) {
   const [latest, setLatest] = useState<ScanRecord | null>(null);
   const [previous, setPrevious] = useState<ScanRecord | null>(null);
-  const [progress, setProgress] = useState<any>(null);
-  const [history, setHistory] = useState<any>(null);
+  const [progress, setProgress] = useState<ProgressResult | null>(null);
+  const [history, setHistory] = useState<UserHistory | null>(null);
 
   useEffect(() => {
     const latest = getLatestScan();
@@ -228,7 +231,7 @@ export default function ProgressComparison({
                 Warning: Some issues may have increased
               </p>
               <p className="text-sm text-gray-500 mt-2">
-                Check if you're following the routine consistently. Adjust products if needed.
+                Check if you&apos;re following the routine consistently. Adjust products if needed.
               </p>
             </div>
           )}

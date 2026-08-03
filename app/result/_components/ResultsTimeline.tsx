@@ -11,7 +11,7 @@ interface ResultsTimelineProps {
   issue: string;
 }
 
-export default function ResultsTimeline({ issue }: ResultsTimelineProps) {
+export default function ResultsTimeline({ issue: _issue }: ResultsTimelineProps) {
   const phases: TimelinePhase[] = [
     {
       week: "Week 1-2",

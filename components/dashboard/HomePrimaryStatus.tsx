@@ -57,7 +57,7 @@ export default function HomePrimaryStatus({
             href="/assessment"
             className="rounded-xl border border-[#DDD7CC] bg-white px-4 py-3 text-center text-sm font-semibold text-[#0071e3] hover:bg-[#F7F4EE]"
           >
-            Log Today's Routine
+            Log Today&apos;s Routine
           </Link>
         </div>
 

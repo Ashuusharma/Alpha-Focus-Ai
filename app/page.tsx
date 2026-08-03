@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import { 
-  ArrowRight, Activity, ShieldCheck, Brain, TrendingUp,
+  ArrowRight, Activity, Brain, TrendingUp,
   Lock, Microscope, Camera, CloudRain, CalendarCheck, Zap,
   Repeat, Star, ChevronRight, CheckCircle2, LayoutDashboard, Target,
   UserCheck, Stethoscope, Droplets
@@ -518,7 +518,7 @@ export default function Home() {
                 We track progression ruthlessly. When you adhere to your assigned Alpha protocol, biology follows suit.
               </p>
               <p className="text-lg text-[#6e6e73] leading-relaxed">
-                This isn't a miraculous overnight cure. This is compound interest applied to your physical appearance and daily habits, resulting in an undeniable upward trend within 8 weeks.
+                This isn&apos;t a miraculous overnight cure. This is compound interest applied to your physical appearance and daily habits, resulting in an undeniable upward trend within 8 weeks.
               </p>
               <div className="pt-4">
                 <Link href="/image-analyzer" className="inline-flex font-bold text-[#0071e3] hover:text-[#1d1d1f] items-center gap-2 group transition-colors">

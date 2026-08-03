@@ -20,7 +20,7 @@ function isAuthorizedCron(request: NextRequest) {
   return bearerToken.length > 0 && allowedSecrets.some((secret) => secureCompare(bearerToken, secret));
 }
 
-export async function POST(request: NextRequest) {
+async function handleSchedulerRun(request: NextRequest) {
   try {
     if (!isAuthorizedCron(request)) {
       await writeAuditLog({ action: "notifications.scheduler.auth", userId: "scheduler", ok: false, route: "/api/notifications/scheduler", detail: "unauthorized" });
@@ -38,7 +38,19 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
+    console.error("[api/notifications/scheduler] unhandled_error", error);
     return NextResponse.json({ ok: false, error: "notifications_scheduler_failed" }, { status: 500 });
   }
+}
+
+export async function POST(request: NextRequest) {
+  return handleSchedulerRun(request);
+}
+
+// Vercel Cron Jobs always issue a GET request (see vercel.json) — without
+// this, the hourly cron trigger 405s and the scheduler silently never runs
+// in production.
+export async function GET(request: NextRequest) {
+  return handleSchedulerRun(request);
 }
 

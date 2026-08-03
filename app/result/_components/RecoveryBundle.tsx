@@ -3,12 +3,11 @@
 import { useCartStore } from "@/lib/cartStore";
 
 type RecoveryBundleProps = {
-  products: any[];
+  products: unknown[];
   onCheckout?: () => void;
 };
 
 export default function RecoveryBundle({
-  products,
   onCheckout,
 }: RecoveryBundleProps) {
   const { items } = useCartStore();

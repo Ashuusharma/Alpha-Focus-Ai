@@ -47,25 +47,14 @@ export default function RootLayout({
           name="viewport"
           content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
         />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              try {
-                const theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-                document.documentElement.setAttribute('data-theme', theme);
-                if (theme === 'dark') document.documentElement.classList.add('dark');
-              } catch (e) {}
-
-              try {
-                if ('serviceWorker' in navigator) {
-                  window.addEventListener('load', function () {
-                    navigator.serviceWorker.register('/service-worker.js').catch(function () {});
-                  });
-                }
-              } catch (e) {}
-            `,
-          }}
-        />
+        {/* Same-origin external file (not inline) so this runs before paint
+            (avoiding a theme flash) without requiring 'unsafe-inline' in the
+            CSP script-src. See public/theme-init.js. Deliberately
+            synchronous (not async/defer) — it must run and set data-theme
+            before first paint, which is the entire reason it isn't a
+            regular deferred script; the file is tiny and same-origin. */}
+        {/* eslint-disable-next-line @next/next/no-sync-scripts */}
+        <script src="/theme-init.js" />
       </head>
 
       <body className="font-apple-ui">

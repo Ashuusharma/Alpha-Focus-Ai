@@ -1,4 +1,4 @@
-import { categories, questions, CategoryId } from "./questions";
+import { categories, questions } from "./questions";
 
 type Answers = Record<string, string>;
 

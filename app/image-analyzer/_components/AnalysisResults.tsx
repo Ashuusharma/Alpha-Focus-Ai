@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { AnalysisResult } from "@/lib/analyzeImage";
 import { motion } from "framer-motion";
-import { AlertCircle, CheckCircle2, ArrowRight, RotateCcw, Sparkles, AlertTriangle, Lightbulb } from "lucide-react";
+import { AlertCircle, CheckCircle2, ArrowRight, RotateCcw, Sparkles, Lightbulb } from "lucide-react";
 
 interface AnalysisResultsProps {
   result: AnalysisResult;

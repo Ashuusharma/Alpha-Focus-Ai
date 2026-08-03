@@ -16,15 +16,14 @@ type ProgressRow = {
 
 type ChallengeRow = {
   user_id: string;
-  completed_days?: number[];
-  progress_payload?: { completedDays?: number[] };
+  progress?: number | null;
+  completed?: boolean | null;
   updated_at?: string;
 };
 
 type RewardSummaryRow = {
   user_id: string;
-  balance: number | null;
-  updated_at?: string;
+  current_balance: number | null;
 };
 
 function getSupabaseConfig() {
@@ -102,7 +101,7 @@ async function fetchLatestProgress(baseUrl: string, serviceKey: string, userId: 
 
 async function fetchChallengeProgress(baseUrl: string, serviceKey: string, userId: string) {
   const url = new URL(`${baseUrl}/rest/v1/challenge_progress`);
-  url.searchParams.set("select", "user_id,completed_days,progress_payload,updated_at");
+  url.searchParams.set("select", "user_id,progress,completed,updated_at");
   url.searchParams.set("user_id", `eq.${userId}`);
   url.searchParams.set("order", "updated_at.desc");
   url.searchParams.set("limit", "1");
@@ -120,7 +119,7 @@ async function fetchChallengeProgress(baseUrl: string, serviceKey: string, userI
 
 async function fetchRewardSummary(baseUrl: string, serviceKey: string, userId: string) {
   const url = new URL(`${baseUrl}/rest/v1/alpha_sikka_summary`);
-  url.searchParams.set("select", "user_id,balance,updated_at");
+  url.searchParams.set("select", "user_id,current_balance");
   url.searchParams.set("user_id", `eq.${userId}`);
   url.searchParams.set("limit", "1");
 
@@ -135,12 +134,12 @@ async function fetchRewardSummary(baseUrl: string, serviceKey: string, userId: s
   return rows[0] || null;
 }
 
-function extractCompletedDays(row: ChallengeRow | null) {
-  if (!row) return [] as number[];
-  if (Array.isArray(row.completed_days)) return row.completed_days.filter((x) => Number.isFinite(x));
-  if (row.progress_payload && Array.isArray(row.progress_payload.completedDays)) {
-    return row.progress_payload.completedDays.filter((x) => Number.isFinite(x));
-  }
+// challenge_progress has no write path anywhere in the app (verified: zero
+// insert/update call sites) and its live columns (progress, completed) don't
+// carry a per-day completion record. There is no real data source for a
+// completed-days list yet, so challenge_milestone/streak_at_risk notifications
+// stay inert (always []) until a real write path + day-tracking column exists.
+function extractCompletedDays(_row: ChallengeRow | null) {
   return [] as number[];
 }
 
@@ -238,7 +237,7 @@ export async function runNotificationScheduler(input?: { userId?: string; now?: 
     }
 
     const rewardSummary = await fetchRewardSummary(config.baseUrl, config.serviceKey, userId);
-    const balance = Number(rewardSummary?.balance || 0);
+    const balance = Number(rewardSummary?.current_balance || 0);
     const unlockedReward = [...rewardCatalog].reverse().find((reward) => balance >= reward.cost);
     if (unlockedReward) {
       const result = await createNotification({

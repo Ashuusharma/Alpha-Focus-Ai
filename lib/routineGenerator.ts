@@ -42,7 +42,7 @@ export interface RoutineProgram {
 export function generateRoutine(
   issues: EnrichedIssue[],
   recommendations: Recommendation[],
-  userAnswers: Record<string, string>
+  _userAnswers: Record<string, string>
 ): DailyRoutine {
   // Determine routine focus areas
   const focusAreas = extractFocusAreas(issues);
@@ -231,7 +231,7 @@ function generateMorningRoutine(
  */
 function generateAfternoonRoutine(
   issues: EnrichedIssue[],
-  recommendations: Recommendation[]
+  _recommendations: Recommendation[]
 ): RoutineStep[] {
   const steps: RoutineStep[] = [];
 
@@ -414,7 +414,7 @@ function generateRoutineName(focusAreas: string[]): string {
  */
 function generateRoutineNotes(
   issues: EnrichedIssue[],
-  focusAreas: string[]
+  _focusAreas: string[]
 ): string {
   const urgency =
     issues.length >= 3

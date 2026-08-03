@@ -63,7 +63,7 @@ export default function SocialProofWidget() {
 
             {/* Quote */}
             <p className="text-sm text-gray-700 italic mb-3 line-clamp-3">
-              "{story.quote}"
+              &quot;{story.quote}&quot;
             </p>
 
             {/* Rating */}

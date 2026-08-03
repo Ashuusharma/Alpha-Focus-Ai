@@ -20,7 +20,7 @@ export default function InsightsPanel({ aiInsight, warning, improvementNote }: I
         <p className="text-sm leading-6 text-text-secondary">{aiInsight} {warning} {improvementNote}</p>
         <div className="mt-4 flex flex-wrap gap-2">
           <a href="/result" className="rounded-xl bg-medical-gradient px-4 py-2 text-sm font-semibold text-[#F4F1EB]">View Full Protocol</a>
-          <a href="/tracking" className="rounded-xl border border-[#D9D2C7] bg-white px-4 py-2 text-sm font-semibold text-[#0071e3]">Log Today's Routine</a>
+          <a href="/tracking" className="rounded-xl border border-[#D9D2C7] bg-white px-4 py-2 text-sm font-semibold text-[#0071e3]">Log Today&apos;s Routine</a>
         </div>
       </div>
     </MedicalCard>

@@ -1,18 +1,14 @@
 ﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
 import {
-  Trophy, Flame, Target, ChevronLeft, ChevronRight, CheckCircle2, Circle,
-  Calendar, Star, Zap, Lock, ArrowRight, TrendingUp,
+  Trophy, Flame, ChevronLeft, ChevronRight, CheckCircle2, Circle,
 } from "lucide-react";
 
 import {
   Challenge,
   ChallengeProgress,
   getChallenges,
-  getCategoryIcon,
   loadChallengeProgress,
   saveChallengeProgress,
   getActiveChallengeId,
@@ -24,7 +20,6 @@ import { useRewardsStore } from "../../lib/rewardsStore";
 import { getSupabaseAuthHeaders } from "@/lib/auth/clientAuthHeaders";
 
 export default function ChallengesPage() {
-  const router = useRouter();
   const addCredits = useRewardsStore((s) => s.addCredits);
 
   const [challenges] = useState<Challenge[]>(getChallenges);
@@ -202,7 +197,7 @@ if (view === "list") {
 
           {/* Catalog */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {challenges.map((challenge, idx) => {
+            {challenges.map((challenge) => {
               const isActive = activeChallengeId === challenge.id;
               const savedProgress = loadChallengeProgress(challenge.id);
               const pct = savedProgress
@@ -377,7 +372,7 @@ if (view === "list") {
                    </div>
                    
                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {selectedChallenge.weeks[activeWeek].tasks.map((task, tIdx) => {
+                      {selectedChallenge.weeks[activeWeek].tasks.map((task) => {
                          const isDone = getDayStatus(task.day);
                          const isLocked = !isActive && !isDone;
 

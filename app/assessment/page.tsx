@@ -535,7 +535,7 @@ export default function AssessmentPage() {
               <Sparkles className="h-3.5 w-3.5" />
               {getCategoryLabel(activeCategory)} Assessment
             </span>
-            <h1 className="text-clinical-heading mt-4 text-3xl font-extrabold text-[var(--ink)]">Let's build your recovery plan</h1>
+            <h1 className="text-clinical-heading mt-4 text-3xl font-extrabold text-[var(--ink)]">Let&apos;s build your recovery plan</h1>
             <p className="mt-3 text-sm leading-relaxed text-[var(--ink-soft)]">{clinicalContextMessage}</p>
 
             <div className="mt-6 grid grid-cols-2 gap-3">

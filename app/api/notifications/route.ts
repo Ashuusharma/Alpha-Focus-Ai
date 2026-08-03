@@ -34,6 +34,7 @@ export async function GET(request: NextRequest) {
       unreadCount: result.unreadCount,
     });
   } catch (error) {
+    console.error("[api/notifications] list_failed", error);
     return NextResponse.json({ ok: false, error: "notifications_list_failed" }, { status: 500 });
   }
 }
@@ -89,6 +90,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true, notification: result.notification });
   } catch (error) {
+    console.error("[api/notifications] create_failed", error);
     return NextResponse.json({ ok: false, error: "notifications_create_failed" }, { status: 500 });
   }
 }

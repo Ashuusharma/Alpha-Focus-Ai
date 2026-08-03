@@ -13,7 +13,7 @@ export const runtime = "nodejs";
 async function checkOpenAIReachable(model: string): Promise<{ reachable: boolean; modelAvailable: boolean; status: number | null }> {
   try {
     const client = getOpenAIClient();
-    const models = await client.models.list();
+    const models = await client.models.list({ signal: AbortSignal.timeout(8_000) });
     const hasModel = Array.isArray(models.data) && models.data.some((item) => item.id === model);
     return { reachable: true, modelAvailable: hasModel, status: 200 };
   } catch {
@@ -31,59 +31,64 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
   }
 
-  const serverEnv = getServerEnvStatus();
-  const config = getProtocolGovernanceConfig();
-  const aiConfig = (() => {
-    try {
-      return getAIConfig();
-    } catch {
-      return null;
-    }
-  })();
+  try {
+    const serverEnv = getServerEnvStatus();
+    const config = getProtocolGovernanceConfig();
+    const aiConfig = (() => {
+      try {
+        return getAIConfig();
+      } catch {
+        return null;
+      }
+    })();
 
-  const model = aiConfig?.model || "gpt-5.4-mini";
-  const openAiProbe = aiConfig
-    ? await checkOpenAIReachable(model)
-    : { reachable: false, modelAvailable: false, status: null };
+    const model = aiConfig?.model || "gpt-5.4-mini";
+    const openAiProbe = aiConfig
+      ? await checkOpenAIReachable(model)
+      : { reachable: false, modelAvailable: false, status: null };
 
-  const governance = getProtocolGovernanceHealth();
-  const queueDepth = protocolRepoReady() ? await countPendingProtocolJobsTotal() : -1;
+    const governance = getProtocolGovernanceHealth();
+    const queueDepth = protocolRepoReady() ? await countPendingProtocolJobsTotal() : -1;
 
-  const tokenBudgetPerDay = Number(process.env.PROTOCOL_DAILY_TOKEN_BUDGET || 1200000);
-  const estimatedUsed = governance.averageInputTokens * governance.successfulRequests + governance.averageOutputTokens * governance.successfulRequests;
+    const tokenBudgetPerDay = Number(process.env.PROTOCOL_DAILY_TOKEN_BUDGET || 1200000);
+    const estimatedUsed = governance.averageInputTokens * governance.successfulRequests + governance.averageOutputTokens * governance.successfulRequests;
 
-  return NextResponse.json({
-    ok: true,
-    health: {
-      openAiConfigured: serverEnv.openAiConfigured,
-      apiReachable: openAiProbe.reachable,
-      apiStatus: openAiProbe.status,
-      modelAvailable: openAiProbe.modelAvailable,
-      model,
-      rateLimitStatus: "ok",
-      promptVersion: config.promptVersion,
-      workerStatus: process.env.PROTOCOL_WORKER_SECRET?.trim() ? "configured" : "missing_secret",
-      protocolVersion: buildProtocolVersions(config.promptVersion).protocolEngine,
-      supabaseConnected: protocolRepoReady() && serverEnv.supabaseConfigured,
-      vapidConfigured: serverEnv.vapidConfigured,
-      schedulerConfigured: serverEnv.schedulerConfigured,
-      cacheStatus: {
-        entries: governance.cacheEntries,
-        hitRatePct: governance.cacheHitRatePct,
+    return NextResponse.json({
+      ok: true,
+      health: {
+        openAiConfigured: serverEnv.openAiConfigured,
+        apiReachable: openAiProbe.reachable,
+        apiStatus: openAiProbe.status,
+        modelAvailable: openAiProbe.modelAvailable,
+        model,
+        rateLimitStatus: "ok",
+        promptVersion: config.promptVersion,
+        workerStatus: process.env.PROTOCOL_WORKER_SECRET?.trim() ? "configured" : "missing_secret",
+        protocolVersion: buildProtocolVersions(config.promptVersion).protocolEngine,
+        supabaseConnected: protocolRepoReady() && serverEnv.supabaseConfigured,
+        vapidConfigured: serverEnv.vapidConfigured,
+        schedulerConfigured: serverEnv.schedulerConfigured,
+        cacheStatus: {
+          entries: governance.cacheEntries,
+          hitRatePct: governance.cacheHitRatePct,
+        },
+        queueDepth,
+        estimatedTokenBudget: {
+          perDay: tokenBudgetPerDay,
+          estimatedUsed,
+          estimatedRemaining: Math.max(0, tokenBudgetPerDay - estimatedUsed),
+        },
+        lastSuccessfulRequest: governance.lastSuccessfulRequestAt,
+        metrics: {
+          averageInputTokens: governance.averageInputTokens,
+          averageOutputTokens: governance.averageOutputTokens,
+          averageCostPerReportUsd: governance.averageCostPerReportUsd,
+          averageLatencyMs: governance.averageLatencyMs,
+        },
       },
-      queueDepth,
-      estimatedTokenBudget: {
-        perDay: tokenBudgetPerDay,
-        estimatedUsed,
-        estimatedRemaining: Math.max(0, tokenBudgetPerDay - estimatedUsed),
-      },
-      lastSuccessfulRequest: governance.lastSuccessfulRequestAt,
-      metrics: {
-        averageInputTokens: governance.averageInputTokens,
-        averageOutputTokens: governance.averageOutputTokens,
-        averageCostPerReportUsd: governance.averageCostPerReportUsd,
-        averageLatencyMs: governance.averageLatencyMs,
-      },
-    },
-  });
+    });
+  } catch (error) {
+    console.error("[api/ai/health] health_check_failed", error);
+    return NextResponse.json({ ok: false, error: "health_check_failed" }, { status: 500 });
+  }
 }

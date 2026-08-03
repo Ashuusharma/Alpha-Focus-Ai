@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
     await writeAuditLog({ action: "execution.start", userId: auth.userId, ok: true, route: "/api/execution/start" });
     return NextResponse.json({ ok: true, sessionId: result.sessionId, startedAt: result.startedAt });
   } catch (error) {
+    console.error("[api/execution/start] unhandled_error", error);
     return NextResponse.json({ ok: false, error: "execution_start_failed" }, { status: 500 });
   }
 }

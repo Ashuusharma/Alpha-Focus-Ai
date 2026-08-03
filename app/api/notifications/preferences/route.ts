@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ ok: true, preferences: result.preferences });
   } catch (error) {
+    console.error("[api/notifications/preferences] read_failed", error);
     return NextResponse.json({ ok: false, error: "preferences_read_failed" }, { status: 500 });
   }
 }
@@ -63,6 +64,7 @@ export async function PATCH(request: NextRequest) {
     await writeAuditLog({ action: "notifications.preferences", userId: auth.userId, ok: true, route: "/api/notifications/preferences" });
     return NextResponse.json({ ok: true, preferences: result.preferences });
   } catch (error) {
+    console.error("[api/notifications/preferences] update_failed", error);
     return NextResponse.json({ ok: false, error: "preferences_update_failed" }, { status: 500 });
   }
 }

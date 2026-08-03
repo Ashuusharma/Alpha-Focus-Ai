@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Container from "@/app/result/_components/Container";
 import { useAssessments } from "@/lib/useUserData";
-import { ArrowLeft, TrendingUp, TrendingDown, BarChart2, Calendar, ArrowRight } from "lucide-react";
+import { ArrowLeft, TrendingUp, TrendingDown, BarChart2, Calendar } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function CompareResultsPage() {

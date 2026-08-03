@@ -13,34 +13,39 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 
-  const { data, error } = await supabase
-    .from("photo_scans")
-    .select("id,user_id,scan_date,image_url,captured_image_urls,analyzer_category,density_score,inflammation_score")
-    .eq("user_id", auth.userId)
-    .order("scan_date", { ascending: false });
+  try {
+    const { data, error } = await supabase
+      .from("photo_scans")
+      .select("id,user_id,scan_date,image_url,captured_image_urls,analyzer_category,density_score,inflammation_score")
+      .eq("user_id", auth.userId)
+      .order("scan_date", { ascending: false });
 
-  if (error) {
+    if (error) {
+      return NextResponse.json({ ok: false, error: "scan_history_fetch_failed" }, { status: 500 });
+    }
+
+    const scans = (data || []).map((row) => {
+      const captured = Array.isArray(row.captured_image_urls)
+        ? row.captured_image_urls.filter((item): item is string => typeof item === "string")
+        : [];
+      const fallbackUrl = typeof row.image_url === "string" && row.image_url ? [row.image_url] : [];
+
+      return {
+        id: String(row.id),
+        userId: String(row.user_id),
+        scanDate: row.scan_date || new Date().toISOString(),
+        skinScore: Number(row.inflammation_score || 0),
+        hairScore: Number(row.density_score || 0),
+        imageUrls: captured.length > 0 ? captured : fallbackUrl,
+        analyzerType: row.analyzer_category || undefined,
+      };
+    });
+
+    return NextResponse.json({ scans });
+  } catch (error) {
+    console.error("[api/scans/history] fetch_failed", error);
     return NextResponse.json({ ok: false, error: "scan_history_fetch_failed" }, { status: 500 });
   }
-
-  const scans = (data || []).map((row) => {
-    const captured = Array.isArray(row.captured_image_urls)
-      ? row.captured_image_urls.filter((item): item is string => typeof item === "string")
-      : [];
-    const fallbackUrl = typeof row.image_url === "string" && row.image_url ? [row.image_url] : [];
-
-    return {
-      id: String(row.id),
-      userId: String(row.user_id),
-      scanDate: row.scan_date || new Date().toISOString(),
-      skinScore: Number(row.inflammation_score || 0),
-      hairScore: Number(row.density_score || 0),
-      imageUrls: captured.length > 0 ? captured : fallbackUrl,
-      analyzerType: row.analyzer_category || undefined,
-    };
-  });
-
-  return NextResponse.json({ scans });
 }
 
 export async function POST(request: NextRequest) {
@@ -102,6 +107,7 @@ export async function POST(request: NextRequest) {
     await writeAuditLog({ action: "scans.history.write", userId: auth.userId, ok: true, route: "/api/scans/history" });
     return NextResponse.json({ ok: true, scan: responseScan });
   } catch (error) {
+    console.error("[api/scans/history] write_failed", error);
     return NextResponse.json({ ok: false, error: "scan_history_failed" }, { status: 500 });
   }
 }

@@ -4,14 +4,15 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, Check, Minus, Plus, ShoppingCart, Star } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { PRODUCT_CATALOG_DATA } from "@/lib/productCatalogData";
 import { trackRewardEvent } from "@/lib/rewardTracking";
 import { useCartStore } from "@/lib/cartStore";
 import { formatINR } from "@/lib/currency";
 
+const FALLBACK_IMAGE = "/images/report-fallback.svg";
+
 export default function ProductDetailPage() {
-  const router = useRouter();
   const params = useParams<{ productId: string }>();
   const searchParams = useSearchParams();
   const productId = params?.productId;
@@ -22,10 +23,28 @@ export default function ProductDetailPage() {
   const rewardDiscount = Number(searchParams?.get("reward") || 0);
   const rewardSource = searchParams?.get("source") || null;
   const unitPrice = 2400;
-  
+
   const product = PRODUCT_CATALOG_DATA.find(
     (p) => (p.sku && p.sku === decodedId) || p.name === decodedId
   );
+
+  const [imageSrc, setImageSrc] = useState(product?.imageUrl || FALLBACK_IMAGE);
+
+  // All hooks must run on every render regardless of whether `product`
+  // resolves — the "not found" branch used to return before these were
+  // declared, which breaks React's Rules of Hooks across a productId change.
+  useEffect(() => {
+    setImageSrc(product?.imageUrl || FALLBACK_IMAGE);
+  }, [product?.imageUrl]);
+
+  useEffect(() => {
+    if (!product || rewardSource !== "alpha-wallet" || rewardDiscount <= 0) return;
+    trackRewardEvent("product_clicked_from_reward", {
+      productId: product.sku || product.name,
+      discountPercent: rewardDiscount,
+      source: rewardSource,
+    });
+  }, [product, rewardDiscount, rewardSource]);
 
   if (!product) {
     return (
@@ -37,22 +56,6 @@ export default function ProductDetailPage() {
       </div>
     );
   }
-
-  const fallbackImage = "/images/report-fallback.svg";
-  const [imageSrc, setImageSrc] = useState(product.imageUrl || fallbackImage);
-
-  useEffect(() => {
-    setImageSrc(product.imageUrl || fallbackImage);
-  }, [product.imageUrl]);
-
-  useEffect(() => {
-    if (rewardSource !== "alpha-wallet" || rewardDiscount <= 0) return;
-    trackRewardEvent("product_clicked_from_reward", {
-      productId: product.sku || product.name,
-      discountPercent: rewardDiscount,
-      source: rewardSource,
-    });
-  }, [product.name, product.sku, rewardDiscount, rewardSource]);
 
   const handleAddToCart = () => {
     addItem({
@@ -112,7 +115,7 @@ export default function ProductDetailPage() {
               alt={product.name}
               fill
               className="object-cover"
-              onError={() => setImageSrc(fallbackImage)}
+              onError={() => setImageSrc(FALLBACK_IMAGE)}
               unoptimized
             />
             {product.tags && product.tags.includes("active") && (

@@ -10,7 +10,7 @@
     "dev:checked": "npm run check:assets && next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "check:assets": "node scripts/check-assets.mjs",
     "check:routes": "node scripts/check-routes.mjs",

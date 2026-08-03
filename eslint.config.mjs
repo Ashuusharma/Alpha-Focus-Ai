@@ -14,7 +14,20 @@ const eslintConfig = [
       "out/**",
       "build/**",
       "next-env.d.ts",
+      // Static assets served as-is, not application source.
+      "public/**",
     ],
+  },
+  {
+    rules: {
+      // This codebase's existing convention for intentionally-unused
+      // parameters (interface conformance, destructuring you only partly
+      // need) is an underscore prefix — recognize it instead of erroring.
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" },
+      ],
+    },
   },
 ];
 

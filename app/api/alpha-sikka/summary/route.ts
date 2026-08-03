@@ -181,6 +181,6 @@ export async function GET(request: NextRequest) {
       failingCall: "getOrSetRequestCache(alpha-summary)",
       error: error instanceof Error ? error.message : "unknown_error",
     });
-    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "summary_fetch_failed" }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "summary_fetch_failed" }, { status: 500 });
   }
 }

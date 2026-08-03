@@ -5,6 +5,10 @@ import { writeAuditLog } from "@/lib/server/auditLog";
 import { getRequestAuth } from "@/lib/auth/requestAuth";
 import { getAIConfig } from "@/lib/ai/config";
 
+// Calls OpenAI directly when not served from cache/fallback. Requires a
+// paid Vercel plan; Hobby caps maxDuration at 10s regardless of this setting.
+export const maxDuration = 30;
+
 type AdviceRequest = {
   issues: string[];
   answers?: Record<string, string>;
@@ -63,10 +67,6 @@ function getClientIp(req: NextRequest): string {
 
 function getActorKey(userId: string | null, ip: string): string {
   return userId ? `user:${userId}` : `ip:${ip}`;
-}
-
-function makeCacheKey(body: AdviceRequest): string {
-  return createHash("sha1").update(JSON.stringify(body)).digest("hex");
 }
 
 function makeScopedCacheKey(actorKey: string, body: AdviceRequest): string {
@@ -175,13 +175,13 @@ export async function POST(req: NextRequest) {
     const validated = aiAdviceSchema.safeParse(raw);
     if (!validated.success) {
       await writeAuditLog({ action: "ai.advice", userId: "anonymous", ok: false, route: "/api/ai/advice", detail: "validation_failed" });
-      return NextResponse.json({ error: "invalid_payload" }, { status: 400 });
+      return NextResponse.json({ ok: false, error: "invalid_payload" }, { status: 400 });
     }
 
     const body = validated.data as AdviceRequest;
 
     if (!Array.isArray(body.issues) || body.issues.length === 0) {
-      return NextResponse.json({ error: "issues are required" }, { status: 400 });
+      return NextResponse.json({ ok: false, error: "issues_required" }, { status: 400 });
     }
 
     const ip = getClientIp(req);
@@ -213,7 +213,7 @@ export async function POST(req: NextRequest) {
     }).length;
     if (estimatedChars > maxChars) {
       await writeAuditLog({ action: "ai.advice", userId: actorKey, ok: false, route: "/api/ai/advice", detail: "payload_too_large" });
-      return NextResponse.json({ error: "payload_too_large" }, { status: 413 });
+      return NextResponse.json({ ok: false, error: "payload_too_large" }, { status: 413 });
     }
 
     const cacheKey = makeScopedCacheKey(actorKey, body);

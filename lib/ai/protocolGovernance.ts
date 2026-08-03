@@ -183,7 +183,7 @@ export function getProtocolGovernanceConfig(): ProtocolGovernanceConfig {
   return DEFAULT_CONFIG;
 }
 
-export function selectProtocolModel(input: ProtocolInput): { tier: ProtocolModelTier; model: string } {
+export function selectProtocolModel(_input: ProtocolInput): { tier: ProtocolModelTier; model: string } {
   return { tier: "mini", model: MODEL_BY_TIER.mini };
 }
 

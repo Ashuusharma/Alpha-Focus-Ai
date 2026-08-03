@@ -22,6 +22,10 @@ import { recordAIUsage } from "@/lib/ai/aiUsageLog";
 import { getAIGovernanceConfig } from "@/lib/ai/aiGovernanceConfig";
 
 export const runtime = "nodejs";
+// Even in async mode this route does real DB/profile-building work before
+// enqueueing; synchronous (dev-only) mode also runs the full AI call inline.
+// Requires a paid Vercel plan; Hobby caps maxDuration at 10s regardless.
+export const maxDuration = 60;
 
 function hasFinalInput(body: {
   finalSubmission?: boolean;
