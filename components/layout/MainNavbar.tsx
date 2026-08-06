@@ -38,7 +38,9 @@ const LINKS = [
   { label: "Progress", href: "/alpha-credits" },
   { label: "Challenges", href: "/challenges" },
   { label: "Knowledge", href: "/learning-center" },
-  { label: "Shop", href: "/shop" },
+  // "Shop" intentionally removed from primary nav for the beta — /checkout's
+  // product-payment flow isn't real yet (see Phase 9S.1). Re-add once a real
+  // payment path exists. Cart/product catalog code is untouched.
 ] as const;
 
 // The floating nav shell's top padding + inner capsule height, in px. The

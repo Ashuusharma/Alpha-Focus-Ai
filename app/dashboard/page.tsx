@@ -635,7 +635,7 @@ export default function DashboardPage() {
 
   if (loading || !user) {
     return (
-      <main className="af-page min-h-screen px-4 py-6 sm:px-6 lg:px-8">
+      <div className="af-page min-h-screen px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl space-y-6">
           <SkeletonBlock className="h-48 rounded-[2rem] md:h-64" />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -645,13 +645,13 @@ export default function DashboardPage() {
           </div>
           <SkeletonCard />
         </div>
-      </main>
+      </div>
     );
   }
 
   return (
     <PullToRefresh onRefresh={() => hydrateUserData(user.id, { force: true, silent: true })}>
-    <main className="af-page min-h-screen px-4 py-6 sm:px-6 lg:px-8">
+    <div className="af-page min-h-screen px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl space-y-8 md:space-y-10">
         {/* 1. HERO — identity, recovery score, one primary + one secondary
             CTA. Migrated from the bespoke DashboardHero.tsx onto the shared
@@ -813,7 +813,7 @@ export default function DashboardPage() {
           </section>
         )}
       </div>
-    </main>
+    </div>
     </PullToRefresh>
   );
 }

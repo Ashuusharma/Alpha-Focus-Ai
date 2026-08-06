@@ -476,7 +476,7 @@ export default function ImageAnalyzerPage() {
         </div>
       </header>
 
-      <main className="af-page-frame mx-auto flex min-h-[calc(100vh-56px)] max-w-6xl flex-col justify-center px-4 py-10">
+      <div className="af-page-frame mx-auto flex min-h-[calc(100vh-56px)] max-w-6xl flex-col justify-center px-4 py-10">
         <AnimatePresence mode="wait">
           {step === "select" && (
             <motion.div
@@ -699,7 +699,7 @@ export default function ImageAnalyzerPage() {
             </motion.div>
           )}
         </AnimatePresence>
-      </main>
+      </div>
     </div>
   );
 }

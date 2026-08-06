@@ -91,7 +91,7 @@ export default function UpgradePageClient({ currentPlan }: { currentPlan: PlanId
       <Script src="https://sdk.cashfree.com/js/v3/cashfree.js" onLoad={() => setSdkReady(true)} />
 
       <div className="af-page pb-28">
-        <main className="max-w-7xl mx-auto px-4 pt-8 md:pt-12 space-y-8">
+        <div className="max-w-7xl mx-auto px-4 pt-8 md:pt-12 space-y-8">
           <section className="af-hero-dark p-8 md:p-10">
             <span className="af-page-kicker">
               <Sparkles className="h-3.5 w-3.5" />
@@ -179,7 +179,7 @@ export default function UpgradePageClient({ currentPlan }: { currentPlan: PlanId
               Start Free Trial Flow
             </Button>
           </section>
-        </main>
+        </div>
       </div>
     </>
   );

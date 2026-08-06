@@ -251,7 +251,7 @@ export default function AlphaCreditsPage() {
 
   return (
     <div className="af-page-shell px-4 pb-28 pt-8 md:px-8 md:pb-8">
-      <main className="mx-auto w-full max-w-6xl animate-in fade-in font-sans duration-700">
+      <div className="mx-auto w-full max-w-6xl animate-in fade-in font-sans duration-700">
         <div className="af-page-stack gap-10 md:gap-12">
       
       {/* Toast Messages */}
@@ -690,7 +690,7 @@ export default function AlphaCreditsPage() {
         </div>
       </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

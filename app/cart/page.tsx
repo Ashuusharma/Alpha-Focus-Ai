@@ -18,12 +18,17 @@ export default function CartPage() {
             <div className="max-w-2xl space-y-4">
               <div className="af-badge-row">
                 <span className="af-badge-chip text-[#0071e3]">Cart checkpoint</span>
-                <span className="af-badge-chip text-[#A46A2D]">Ready for checkout</span>
+                <span className="af-badge-chip text-[#A46A2D]">Checkout unavailable during beta</span>
               </div>
-              <h1 className="text-clinical-heading text-3xl font-extrabold tracking-tight md:text-4xl">Review your regimen before secure payment</h1>
-              <p className="max-w-xl text-sm leading-7 text-[#6e6e73]">This page is the handoff between recommendations and payment. Use it to confirm your routine stack, then continue to checkout where discounts and guarantees are already surfaced.</p>
+              <h1 className="text-clinical-heading text-3xl font-extrabold tracking-tight md:text-4xl">Review your regimen</h1>
+              <p className="max-w-xl text-sm leading-7 text-[#6e6e73]">Your cart is saved here. Product checkout isn&apos;t available yet during the beta — your recovery protocol and routine guidance are unaffected.</p>
               <div className="flex flex-wrap gap-3">
-                <button onClick={() => router.push("/checkout")} className="af-btn-primary px-5 py-3 text-sm">
+                <button
+                  disabled
+                  aria-disabled="true"
+                  title="Product checkout is not available during the beta"
+                  className="af-btn-primary px-5 py-3 text-sm disabled:cursor-not-allowed disabled:opacity-60"
+                >
                   Continue to checkout
                 </button>
                 <button onClick={() => router.push("/shop")} className="af-btn-outline px-5 py-3 text-sm">

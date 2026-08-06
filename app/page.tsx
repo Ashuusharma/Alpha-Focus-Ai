@@ -63,7 +63,7 @@ export default function Home() {
   const week8Score = useCountUp({ end: 78, start: 50, duration: 3000, trigger: isStatsInView });
 
   return (
-    <main className="af-page-shell min-h-screen text-[#ffffff] selection:bg-[#0071e3] selection:text-white">
+    <div className="af-page-shell min-h-screen text-[#ffffff] selection:bg-[#0071e3] selection:text-white">
       
       {/*  1. HERO SECTION (Authority + Transformation) */}
       <section className="nv-section-dark relative pt-16 pb-24 lg:pt-28 lg:pb-36 overflow-hidden">
@@ -684,7 +684,7 @@ export default function Home() {
            </div>
         </Container>
       </section>
-    </main>
+    </div>
   );
 }
 

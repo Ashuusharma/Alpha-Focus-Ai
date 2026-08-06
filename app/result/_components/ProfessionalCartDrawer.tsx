@@ -133,7 +133,7 @@ function CartHeader({
           x
         </button>
       </div>
-      <p className="mt-1 text-xs text-[#6A7F71]">Subtotal: {formatCurrency(subtotal)}  -  Clinical recommendations optimized</p>
+      <p className="mt-1 text-xs text-[#5F7A69]">Subtotal: {formatCurrency(subtotal)}  -  Clinical recommendations optimized</p>
     </div>
   );
 }
@@ -207,12 +207,12 @@ function CartItemsList({
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-[#1d1d1f]">{item.name}</p>
-                    <p className="mt-0.5 text-xs text-[#6A7F71]">{item.protocolTier || "Core Protocol"}</p>
+                    <p className="mt-0.5 text-xs text-[#5F7A69]">{item.protocolTier || "Core Protocol"}</p>
                     <p className="mt-1 text-xs text-[#4F6558]">{reason}</p>
                   </div>
                   <button
                     onClick={() => onRemove(item.id)}
-                    className="rounded-lg border border-[#E3DBCF] bg-white px-2.5 py-1.5 text-xs font-medium text-[#6A7F71]"
+                    className="rounded-lg border border-[#E3DBCF] bg-white px-2.5 py-1.5 text-xs font-medium text-[#5F7A69]"
                   >
                     Remove
                   </button>
@@ -381,22 +381,26 @@ function OrderSummary({
 
 function CheckoutCTA({
   disabled,
-  onCheckout,
   onContinueShopping,
 }: {
   disabled: boolean;
-  onCheckout: () => void;
   onContinueShopping: () => void;
 }) {
   return (
     <div className="px-5 pb-4 pt-4">
       <button
-        disabled={disabled}
-        onClick={onCheckout}
+        disabled
+        aria-disabled="true"
+        title="Product checkout is not available during the beta"
         className="w-full rounded-xl bg-[#0071e3] px-4 py-3 text-sm font-semibold text-[#F4F1EB] disabled:cursor-not-allowed disabled:opacity-60"
       >
-        Proceed to Secure Checkout
+        Checkout unavailable during beta
       </button>
+      {!disabled && (
+        <p className="mt-2 text-center text-[11px] text-[#5F7A69]">
+          Your cart is saved. Product checkout isn&apos;t available yet during the beta.
+        </p>
+      )}
       <button
         type="button"
         onClick={onContinueShopping}
@@ -530,10 +534,6 @@ export default function ProfessionalCartDrawer({ open, onClose }: { open?: boole
           <OrderSummary subtotal={subtotal} discount={appliedDiscountAmount} tax={tax} shipping={shipping} total={total} />
           <CheckoutCTA
             disabled={userItems.length === 0}
-            onCheckout={() => {
-              router.push("/checkout");
-              handleClose();
-            }}
             onContinueShopping={() => {
               router.push("/shop");
               handleClose();
