@@ -51,7 +51,7 @@ export default function DailyRoutine({ monthlyRecoveryPlan }: { monthlyRecoveryP
 
   return (
     <section id="routine" className="nv-section-white scroll-mt-24">
-      <h2 className="text-xl font-black text-[var(--ink)]">Daily Routine</h2>
+      <h2 className="af-heading-section font-black text-[var(--ink)]">Daily Routine</h2>
       <p className="mt-1 text-sm text-[var(--ink-soft)]">Your protocol broken down by time of day.</p>
 
       <div role="tablist" aria-label="Routine time of day" className="mt-5 flex flex-wrap gap-2">

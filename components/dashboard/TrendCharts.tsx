@@ -36,47 +36,52 @@ function clampPct(value: number) {
 
 function ChartCard({ title, children }: ChartCardProps) {
   return (
-    <div className="relative overflow-hidden border border-[#5e5e5e] bg-[#ffffff] p-6 shadow-[0_0_5px_rgba(0,0,0,0.3)]">
+    <div className="relative overflow-hidden rounded-[var(--radius-card)] border border-[var(--border-hairline)] bg-white p-6 shadow-[var(--shadow-soft)]">
       <div className="flex justify-between items-center mb-4">
-        <p className="text-xs font-black uppercase tracking-widest text-[#000000]">{title}</p>
-        <span className="text-[10px] font-black text-[#0b0f0c] bg-[#eff9db] px-2 py-0.5 border border-[#0071e3]">Target zone visible</span>
+        <p className="text-xs font-black uppercase tracking-widest text-[var(--ink)]">{title}</p>
+        <span className="rounded-full border border-[var(--accent-green)]/30 bg-[var(--accent-green)]/10 px-2 py-0.5 text-[10px] font-black text-[var(--accent-green)]">Target zone visible</span>
       </div>
       <div className="h-64 w-full">{children}</div>
     </div>
   );
 }
 
+// Chart colors reference the same tokens as the rest of the app
+// (--accent-blue for the plotted metric, --accent-green for the "target
+// zone" reference band, --ink-soft for axis/label text, --border-hairline
+// for gridlines) rather than the raw hex values these three charts used to
+// hardcode independently (#0071e3, #5e5e5e, #eff9db, #bff230 — none of
+// which trace to any Alpha Focus token; #bff230 in particular was an
+// unexplained lime-green half of a gradient with no comprehension purpose).
+const AXIS_TICK_STYLE = { fill: "var(--ink-soft)", fontSize: 10, fontWeight: 700 };
+const LABEL_STYLE = { fill: "var(--ink-soft)", fontSize: 10, fontWeight: 800 };
+const TOOLTIP_STYLE = { borderRadius: "12px", border: "none", boxShadow: "var(--shadow-raised)", fontSize: "12px", fontWeight: "bold" };
+
 export function SeverityTrendChart({ data }: { data: TrendPoint[] }) {
   return (
     <ChartCard title="Severity Index">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
-          <defs>
-            <linearGradient id="colorSeverity" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#0071e3" stopOpacity={0.22}/>
-              <stop offset="95%" stopColor="#0071e3" stopOpacity={0}/>
-            </linearGradient>
-          </defs>
-          <ReferenceArea y1={0} y2={35} fill="#eff9db" fillOpacity={0.9} />
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e5e5" />
-          <XAxis dataKey="label" tick={{ fill: "#5e5e5e", fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fill: "#5e5e5e", fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} domain={[0, 100]} />
-          <Tooltip 
-            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontSize: '12px', fontWeight: 'bold' }}
-            cursor={{ stroke: '#0071e3', strokeWidth: 1 }}
-            formatter={(value) => [`${clampPct(Number(value || 0))}%`, "Severity"]} 
+          <ReferenceArea y1={0} y2={35} fill="var(--accent-green)" fillOpacity={0.12} />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-hairline)" />
+          <XAxis dataKey="label" tick={AXIS_TICK_STYLE} axisLine={false} tickLine={false} />
+          <YAxis tick={AXIS_TICK_STYLE} axisLine={false} tickLine={false} domain={[0, 100]} />
+          <Tooltip
+            contentStyle={TOOLTIP_STYLE}
+            cursor={{ stroke: "var(--accent-blue)", strokeWidth: 1 }}
+            formatter={(value) => [`${clampPct(Number(value || 0))}%`, "Severity"]}
           />
-          <Line 
-            type="monotone" 
-            dataKey="severity" 
-            stroke="#0071e3" 
-            strokeWidth={4} 
-            dot={{ r: 4, fill: '#0071e3', strokeWidth: 2, stroke: '#fff' }} 
+          <Line
+            type="monotone"
+            dataKey="severity"
+            stroke="var(--accent-blue)"
+            strokeWidth={4}
+            dot={{ r: 4, fill: "var(--accent-blue)", strokeWidth: 2, stroke: "#fff" }}
             activeDot={{ r: 6, strokeWidth: 0 }}
             animationDuration={1500}
             animationEasing="ease-in-out"
           >
-            <LabelList dataKey="severity" position="top" formatter={(value) => `${clampPct(Number(value || 0))}%`} style={{ fill: "#5e5e5e", fontSize: 10, fontWeight: 800 }} />
+            <LabelList dataKey="severity" position="top" formatter={(value) => `${clampPct(Number(value || 0))}%`} style={LABEL_STYLE} />
           </Line>
         </LineChart>
       </ResponsiveContainer>
@@ -89,29 +94,23 @@ export function RoutineAdherenceChart({ data }: { data: TrendPoint[] }) {
     <ChartCard title="Adherence Rate">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
-          <defs>
-            <linearGradient id="colorAdherence" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#bff230" stopOpacity={1}/>
-              <stop offset="95%" stopColor="#0071e3" stopOpacity={1}/>
-            </linearGradient>
-          </defs>
-          <ReferenceArea y1={75} y2={100} fill="#eff9db" fillOpacity={0.9} />
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e5e5" />
-          <XAxis dataKey="label" tick={{ fill: "#5e5e5e", fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fill: "#5e5e5e", fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} domain={[0, 100]} />
-          <Tooltip 
-            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontSize: '12px', fontWeight: 'bold' }}
-            cursor={{ fill: '#f6fbe9' }}
-            formatter={(value) => [`${clampPct(Number(value || 0))}%`, "Adherence"]} 
+          <ReferenceArea y1={75} y2={100} fill="var(--accent-green)" fillOpacity={0.12} />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-hairline)" />
+          <XAxis dataKey="label" tick={AXIS_TICK_STYLE} axisLine={false} tickLine={false} />
+          <YAxis tick={AXIS_TICK_STYLE} axisLine={false} tickLine={false} domain={[0, 100]} />
+          <Tooltip
+            contentStyle={TOOLTIP_STYLE}
+            cursor={{ fill: "var(--tint-cool)" }}
+            formatter={(value) => [`${clampPct(Number(value || 0))}%`, "Adherence"]}
           />
-          <Bar 
-            dataKey="adherence" 
-            fill="url(#colorAdherence)" 
-            radius={[6, 6, 0, 0]} 
+          <Bar
+            dataKey="adherence"
+            fill="var(--accent-blue)"
+            radius={[6, 6, 0, 0]}
             animationDuration={1500}
             animationEasing="ease-in-out"
           >
-            <LabelList dataKey="adherence" position="top" formatter={(value) => `${clampPct(Number(value || 0))}%`} style={{ fill: "#5e5e5e", fontSize: 10, fontWeight: 800 }} />
+            <LabelList dataKey="adherence" position="top" formatter={(value) => `${clampPct(Number(value || 0))}%`} style={LABEL_STYLE} />
           </Bar>
         </BarChart>
       </ResponsiveContainer>
@@ -124,32 +123,26 @@ export function ConfidenceTrendChart({ data }: { data: TrendPoint[] }) {
     <ChartCard title="Confidence Level">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
-          <defs>
-            <linearGradient id="colorConfidence" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#0071e3" stopOpacity={0.22}/>
-              <stop offset="95%" stopColor="#0071e3" stopOpacity={0}/>
-            </linearGradient>
-          </defs>
-          <ReferenceArea y1={70} y2={100} fill="#eff9db" fillOpacity={0.9} />
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e5e5" />
-          <XAxis dataKey="label" tick={{ fill: "#5e5e5e", fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fill: "#5e5e5e", fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} domain={[0, 100]} />
-          <Tooltip 
-            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontSize: '12px', fontWeight: 'bold' }}
-            cursor={{ stroke: '#0071e3', strokeWidth: 1 }}
-            formatter={(value) => [`${clampPct(Number(value || 0))}%`, "Confidence"]} 
+          <ReferenceArea y1={70} y2={100} fill="var(--accent-green)" fillOpacity={0.12} />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-hairline)" />
+          <XAxis dataKey="label" tick={AXIS_TICK_STYLE} axisLine={false} tickLine={false} />
+          <YAxis tick={AXIS_TICK_STYLE} axisLine={false} tickLine={false} domain={[0, 100]} />
+          <Tooltip
+            contentStyle={TOOLTIP_STYLE}
+            cursor={{ stroke: "var(--accent-blue)", strokeWidth: 1 }}
+            formatter={(value) => [`${clampPct(Number(value || 0))}%`, "Confidence"]}
           />
-          <Line 
-            type="monotone" 
-            dataKey="confidence" 
-            stroke="#0071e3" 
-            strokeWidth={4} 
-            dot={{ r: 4, fill: '#0071e3', strokeWidth: 2, stroke: '#fff' }} 
+          <Line
+            type="monotone"
+            dataKey="confidence"
+            stroke="var(--accent-blue)"
+            strokeWidth={4}
+            dot={{ r: 4, fill: "var(--accent-blue)", strokeWidth: 2, stroke: "#fff" }}
             activeDot={{ r: 6, strokeWidth: 0 }}
             animationDuration={1500}
             animationEasing="ease-in-out"
           >
-            <LabelList dataKey="confidence" position="top" formatter={(value) => `${clampPct(Number(value || 0))}%`} style={{ fill: "#5e5e5e", fontSize: 10, fontWeight: 800 }} />
+            <LabelList dataKey="confidence" position="top" formatter={(value) => `${clampPct(Number(value || 0))}%`} style={LABEL_STYLE} />
           </Line>
         </LineChart>
       </ResponsiveContainer>

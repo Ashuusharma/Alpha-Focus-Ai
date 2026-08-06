@@ -16,7 +16,7 @@ export default function ThingsToAvoid({ thingsToAvoid }: { thingsToAvoid: Protoc
 
   return (
     <section id="avoid" className="nv-section-white scroll-mt-24">
-      <h2 className="text-xl font-black text-[var(--ink)]">Things To Avoid</h2>
+      <h2 className="af-heading-section font-black text-[var(--ink)]">Things To Avoid</h2>
       <p className="mt-1 text-sm text-[var(--ink-soft)]">Common setbacks this protocol is designed to route around.</p>
 
       <div className="mt-5 grid gap-4 md:grid-cols-2">

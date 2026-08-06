@@ -6,7 +6,7 @@ const MEALS = ["breakfast", "lunch", "dinner", "snacks"] as const;
 export default function LifestyleGuidance({ dietPlan }: { dietPlan: ProtocolReport["dietPlan"] }) {
   return (
     <section id="lifestyle" className="nv-section-white scroll-mt-24">
-      <h2 className="text-xl font-black text-[var(--ink)]">Lifestyle Guidance</h2>
+      <h2 className="af-heading-section font-black text-[var(--ink)]">Lifestyle Guidance</h2>
       <p className="mt-1 text-sm text-[var(--ink-soft)]">Diet and daily habits that support your recovery.</p>
 
       <div className="mt-5 grid gap-4 md:grid-cols-2">

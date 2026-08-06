@@ -1,0 +1,62 @@
+[
+  {
+    "route": "/assessment",
+    "formFactor": "mobile",
+    "scores": {
+      "performance": 69,
+      "accessibility": 94,
+      "best-practices": 100,
+      "seo": 100
+    }
+  },
+  {
+    "route": "/assessment",
+    "formFactor": "desktop",
+    "scores": {
+      "performance": 100,
+      "accessibility": 86,
+      "best-practices": 100,
+      "seo": 100
+    }
+  },
+  {
+    "route": "/image-analyzer",
+    "formFactor": "mobile",
+    "scores": {
+      "performance": 70,
+      "accessibility": 94,
+      "best-practices": 100,
+      "seo": 100
+    }
+  },
+  {
+    "route": "/image-analyzer",
+    "formFactor": "desktop",
+    "scores": {
+      "performance": 100,
+      "accessibility": 86,
+      "best-practices": 100,
+      "seo": 100
+    }
+  },
+  {
+    "route": "/dashboard",
+    "formFactor": "mobile",
+    "scores": {
+      "performance": 69,
+      "accessibility": 94,
+      "best-practices": 100,
+      "seo": 100
+    }
+  },
+  {
+    "route": "/dashboard",
+    "formFactor": "desktop",
+    "scores": {
+      "performance": 100,
+      "accessibility": 86,
+      "best-practices": 100,
+      "seo": 100
+    }
+  }
+]

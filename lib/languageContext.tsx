@@ -99,3 +99,14 @@ export function useLanguage() {
   }
   return context;
 }
+
+/**
+ * Picks the Hindi variant of a string when the active language is "hi" and
+ * a translation exists, falling back to the English value otherwise. Used
+ * for content authored directly on data (assessment questions, analyzer
+ * copy) rather than routed through the `t()` key lookup above.
+ */
+export function pickLang(en: string, hi: string | undefined, language: Language): string {
+  if (language === "hi" && hi) return hi;
+  return en;
+}

@@ -165,7 +165,9 @@
 
 /* Universal focus treatment — cyan is deliberately distinct from the blue/
    green theme accents so a focus ring always reads as "focus," not as a
-   themed highlight. Phase 7I (accessibility) extends usage of this. */
+   themed highlight. Phase 7I (accessibility) extends usage of this. Phase
+   9C.1 extracted the literal into --focus-ring/--focus-ring-glow (theme.css)
+   — same values, now a single source of truth. */
 .focus-ring:focus-visible,
 button:focus-visible,
 a:focus-visible,
@@ -173,9 +175,9 @@ input:focus-visible,
 textarea:focus-visible,
 select:focus-visible,
 [tabindex]:focus-visible {
-  outline: 2px solid #06b6d4;
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
-  box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.2);
+  box-shadow: 0 0 0 4px var(--focus-ring-glow);
 }
 
 /* Skip-to-content link (Phase 7C) — visually hidden until keyboard-focused,
@@ -269,6 +271,45 @@ h1, h2, h3, h4, h5, h6, .text-clinical-heading {
   font-weight: 600;
   letter-spacing: -0.28px;
   color: inherit;
+}
+
+/* Heading-tier vocabulary (Phase 9C.1 — Design Language v2 Foundations).
+   Three named size tiers, layered on top of the shared rule above (family/
+   weight/line-height/tracking are untouched — this only adds responsive
+   font-size). NOT applied to any existing component in this phase: a
+   codebase-wide census found real drift too broad to retrofit as a "no
+   page redesign" infrastructure change — current H2s alone range from
+   text-lg to text-5xl across 15+ files, H3s from text-sm to text-3xl
+   across 20+. Each later phase migrates the files it already touches onto
+   these classes as it goes (9C.2 Hero, 9C.5 Dashboard, 9C.6 Result, ...),
+   so migration has one fixed target instead of every phase re-deriving
+   its own sizes.
+     .af-heading-hero    — H1: Hero.tsx's existing "split" scale, the one
+                            shared hero primitive already in production.
+     .af-heading-section — H2: text-xl → sm:text-2xl, the single most
+                            common existing pairing, promoted to standard.
+     .af-heading-card    — H3/H4: text-lg flat, the most common card-title
+                            size found — no responsive step; card titles
+                            don't need one. */
+.af-heading-hero {
+  font-size: 1.875rem; /* text-3xl */
+}
+@media (min-width: 640px) {
+  .af-heading-hero { font-size: 2.25rem; } /* sm:text-4xl */
+}
+@media (min-width: 1024px) {
+  .af-heading-hero { font-size: 3rem; } /* lg:text-5xl */
+}
+
+.af-heading-section {
+  font-size: 1.25rem; /* text-xl */
+}
+@media (min-width: 640px) {
+  .af-heading-section { font-size: 1.5rem; } /* sm:text-2xl */
+}
+
+.af-heading-card {
+  font-size: 1.125rem; /* text-lg */
 }
 
 h1 {
@@ -409,7 +450,7 @@ a {
   position: relative;
   overflow: hidden;
   background:
-    radial-gradient(circle at 86% 4%, rgba(0, 113, 227, 0.3) 0%, rgba(0, 113, 227, 0) 28%),
+    radial-gradient(circle at 86% 4%, rgba(var(--glow-blue-rgb), 0.3) 0%, rgba(var(--glow-blue-rgb), 0) 28%),
     radial-gradient(circle at 6% 86%, rgba(52, 211, 153, 0.08) 0%, rgba(52, 211, 153, 0) 24%),
     linear-gradient(180deg, var(--bg-hero-dark-start) 0%, var(--bg-hero-dark-mid) 42%, var(--bg-hero-dark-end) 100%);
   color: #ffffff;
@@ -451,7 +492,7 @@ a {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: radial-gradient(circle at top right, rgba(0, 113, 227, 0.1), transparent 36%);
+  background: radial-gradient(circle at top right, rgba(var(--glow-blue-rgb), 0.1), transparent 36%);
 }
 
 /* nv-section — a section-shell pattern distinct from af-card, used for
@@ -461,7 +502,7 @@ a {
 .nv-section-dark {
   width: 100%;
   border-radius: 1.8rem;
-  padding: 40px 24px;
+  padding: var(--rhythm-standard);
   transition: transform var(--motion-base), box-shadow var(--motion-base);
   animation: nvSectionRise 420ms ease both;
 }
@@ -523,7 +564,7 @@ a {
 .nv-section-tint-warm {
   width: 100%;
   border-radius: 1.8rem;
-  padding: 40px 24px;
+  padding: var(--rhythm-standard);
   color: var(--ink);
   transition: transform var(--motion-base), box-shadow var(--motion-base);
   animation: nvSectionRise 420ms ease both;
@@ -695,6 +736,40 @@ a {
   box-shadow: var(--shadow-soft);
 }
 
+/* Shared interactive-card transition (Phase 9C.3, extended in the 9C.4
+   consistency audit to cover transform too — Hero's stat tiles had their
+   own separate "transition-transform duration-200" for the same hover-lift
+   effect this already handles for everything else). The one timing/easing
+   every interactive card uses for hover/select/lift state changes,
+   replacing each card's own separately-declared duration (200ms wasn't on
+   the --motion-* scale at all — not fast, not base). Non-interactive cards
+   (Stat/AICard) don't need this; nothing on them changes state. */
+.af-card-transition {
+  transition: background-color var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast), box-shadow var(--motion-fast), transform var(--motion-fast);
+}
+
+/* Shared nav icon-button treatment (Phase 9C.4) — the one hover/press
+   footprint every primary icon-only nav trigger uses (hamburger, bell,
+   cart, profile, drawer close). Meets the app's own --touch-target-min
+   (44px, Phase 7ZA) floor — each of these previously had an effective tap
+   area of icon+padding ≈ 40px, 4px under both that token and WCAG. */
+.af-nav-icon-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
+  border-radius: 999px;
+  transition: background-color var(--motion-fast), transform var(--motion-fast);
+}
+.af-nav-icon-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+.af-nav-icon-btn:active {
+  transform: scale(0.95);
+}
+
 .skeuo-button {
   border-radius: var(--radius-btn);
   border: 1px solid var(--border-hairline);
@@ -827,7 +902,7 @@ button:not([data-no-scale]):not(:disabled):hover {
 
 .af-input:focus {
   border-color: var(--accent-blue);
-  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.18);
+  box-shadow: 0 0 0 3px rgba(var(--glow-blue-rgb), 0.18);
 }
 
 .af-badge-row {

@@ -13,7 +13,7 @@ export default function RecommendedProducts({
 }) {
   return (
     <section id="products" className="nv-section-white scroll-mt-24">
-      <h2 className="text-xl font-black text-[var(--ink)]">Recommended Products</h2>
+      <h2 className="af-heading-section font-black text-[var(--ink)]">Recommended Products</h2>
       <p className="mt-1 text-sm text-[var(--ink-soft)]">Matched to the ingredients and routine above.</p>
 
       {products.length === 0 ? (

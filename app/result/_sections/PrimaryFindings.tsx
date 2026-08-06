@@ -22,7 +22,7 @@ export default function PrimaryFindings({
 
   return (
     <section id="findings" className="nv-section-white scroll-mt-24">
-      <h2 className="text-xl font-black text-[var(--ink)]">Primary Findings</h2>
+      <h2 className="af-heading-section font-black text-[var(--ink)]">Primary Findings</h2>
       <p className="mt-1 text-sm text-[var(--ink-soft)]">The clinical picture behind this protocol.</p>
 
       <div className="mt-5 grid gap-4 md:grid-cols-3">

@@ -4,7 +4,7 @@ import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import {
   Bell,
   MapPin,
@@ -73,6 +73,7 @@ const LOGO_SOURCES = [BRAND_LOGO_PRIMARY, BRAND_LOGO_FALLBACK, BRAND_LOGO_LEGACY
 export default function MainNavbar() {
   const pathname = usePathname();
   const mounted = useMounted();
+  const prefersReducedMotion = useReducedMotion();
   const isMobileViewport = useIsMobileViewport();
   const items = useCartStore((state) => state.items);
   const openCart = useCartStore((state) => state.openCart);
@@ -433,11 +434,11 @@ export default function MainNavbar() {
           <div className="flex items-center gap-2 md:gap-3 min-w-0">
             <button
               type="button"
-              className="md:hidden p-2 -ml-2 text-white hover:bg-white/10 rounded-full transition-colors"
+              className="af-nav-icon-btn md:hidden -ml-2 text-white"
               onClick={() => setMobileMenuOpen(true)}
               aria-label="Open menu"
             >
-              <Menu className="h-6 w-6" />
+              <Menu className="h-5 w-5" />
             </button>
 
             {/* Left: Logo */}
@@ -471,7 +472,7 @@ export default function MainNavbar() {
                   <motion.span
                     layoutId="nav-active-pill"
                     className="absolute inset-0 rounded-full bg-white/12 shadow-[0_10px_22px_rgba(0,0,0,0.25)]"
-                    transition={{ type: "spring", stiffness: 500, damping: 34 }}
+                    transition={prefersReducedMotion ? { duration: 0 } : { type: "spring", stiffness: 500, damping: 34 }}
                   />
                 )}
                 <span className="relative z-10">{link.label}</span>
@@ -536,7 +537,7 @@ export default function MainNavbar() {
                   void refreshNotifications();
                   setShowNotifications((current) => !current);
                 }}
-                className="relative rounded-full p-2.5 hover:bg-white/10 active:scale-95 transition-all duration-150"
+                className="af-nav-icon-btn"
                 aria-label="Notifications"
                 aria-expanded={showNotifications}
               >
@@ -573,7 +574,7 @@ export default function MainNavbar() {
               type="button"
               aria-label="Open cart drawer"
               onClick={() => openCart()}
-              className="relative rounded-full p-2.5 hover:bg-white/10 active:scale-95 transition-all duration-150"
+              className="af-nav-icon-btn"
             >
               <ShoppingCart className="h-5 w-5 text-white" />
               {cartCount > 0 && (
@@ -583,7 +584,7 @@ export default function MainNavbar() {
               )}
             </button>
 
-            <Link href="/profile" className="hidden sm:block rounded-full p-2.5 hover:bg-white/10 active:scale-95 transition-all duration-150">
+            <Link href="/profile" aria-label="Profile" className="af-nav-icon-btn hidden sm:flex">
               <User className="h-5 w-5 text-white" />
             </Link>
 
@@ -698,9 +699,10 @@ export default function MainNavbar() {
               />
               <button
                 onClick={() => setMobileMenuOpen(false)}
-                className="p-2 -mr-2 text-white/80 hover:text-white hover:bg-white/10 rounded-full"
+                aria-label="Close menu"
+                className="af-nav-icon-btn -mr-2 text-white/80 hover:text-white"
               >
-                <X className="h-6 w-6" />
+                <X className="h-5 w-5" />
               </button>
             </div>
 

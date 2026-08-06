@@ -1,17 +1,18 @@
 ﻿"use client";
 
 import { useContext, useEffect, useMemo, useState } from "react";
+import { Activity, ChevronDown, Flame, Sparkles, Target } from "lucide-react";
 import { AuthContext } from "@/contexts/AuthProvider";
 import { useUserStore } from "@/stores/useUserStore";
 import { hydrateUserData } from "@/lib/hydrateUserData";
 import PullToRefresh from "@/components/ui/PullToRefresh";
 import AnimatedCounter from "@/components/ui/AnimatedCounter";
+import StatCard from "@/components/ui/StatCard";
+import Hero from "@/components/ui/Hero";
+import ScanUsageRing from "@/components/ui/ScanUsageRing";
+import Button from "@/components/ui/Button";
 import { supabase } from "@/lib/supabaseClient";
 import { calculateProgressMetricsForCategory } from "@/lib/calculateProgressMetrics";
-import { useToast } from "@/app/toast/ToastContext";
-import { getRewardCatalog } from "@/lib/couponService";
-import { getRewardFeaturedProduct } from "@/lib/alphaRewardCommerce";
-import { createRewardUnlock } from "@/lib/rewardUnlockService";
 import {
   generateDailyProtocolMeta,
   generateDailyProtocolTasks,
@@ -20,11 +21,9 @@ import {
 } from "@/lib/protocolTemplates";
 import { maybeSendRoutineReminder } from "@/lib/routineReminderSystem";
 import { categories, CategoryId } from "@/lib/questions";
-import { getSupabaseAuthHeaders } from "@/lib/auth/clientAuthHeaders";
 import {
   AIInsightEngine,
   BeforeAfterTimeline,
-  DashboardHero,
   ProgressVisualization,
   RecoveryProgramNavigator,
   RewardProgress,
@@ -76,19 +75,6 @@ type AIInsight = {
   impact: "high" | "medium" | "low";
 };
 
-type AlphaSikkaAwardResponse = {
-  ok?: boolean;
-  awarded?: number;
-  taskBonus?: number;
-  streakBonus?: number;
-  penaltyApplied?: number;
-  toast?: string;
-  summary?: {
-    currentBalance?: number;
-  };
-  error?: string;
-};
-
 function normalizeDateKey(input: string) {
   return input.slice(0, 10);
 }
@@ -125,33 +111,6 @@ function calculateRoutineStreakDays(routineRows: Array<Record<string, unknown>>,
   return streak;
 }
 
-async function awardAlphaSikka(action: string, referenceId: string, metadata?: Record<string, unknown>) {
-  try {
-    const response = await fetch("/api/alpha-sikka/earn", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, referenceId, metadata }),
-    });
-
-    return (await response.json().catch(() => null)) as AlphaSikkaAwardResponse | null;
-  } catch {
-    // Reward write is best-effort and should never block routine save UX.
-    return null;
-  }
-}
-
-async function emitNotification(eventType: string, dedupeKey: string, metadata?: Record<string, unknown>) {
-  try {
-    const headers = await getSupabaseAuthHeaders({ "Content-Type": "application/json" });
-    await fetch("/api/notifications", {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ eventType, dedupeKey, metadata }),
-    });
-  } catch {
-    // Notifications are best-effort to avoid interrupting routine save.
-  }
-}
 
 function todayDateKey() {
   return new Date().toISOString().slice(0, 10);
@@ -196,7 +155,6 @@ function pickCategoryFromRecord(row: Record<string, unknown>): CategoryId | null
 
 export default function DashboardPage() {
   const { user, loading } = useContext(AuthContext);
-  const { showToast } = useToast();
   const storeLoading = useUserStore((state) => state.loading);
   const profile = useUserStore((state) => state.profile);
   const alphaSummary = useUserStore((state) => state.alphaSummary as Record<string, unknown> | null);
@@ -207,9 +165,6 @@ export default function DashboardPage() {
   const clinicalScores = useUserStore((state) => state.clinicalScores as Record<string, unknown> | null);
   const [refreshing, setRefreshing] = useState(false);
   const [todayRoutine, setTodayRoutine] = useState<RoutineLogRow | null>(null);
-  const [savingRoutine, setSavingRoutine] = useState(false);
-  const [draftSleepHours, setDraftSleepHours] = useState<string>("");
-  const [draftHydrationMl, setDraftHydrationMl] = useState<string>("");
   const [activeCategory, setActiveCategory] = useState<CategoryId | null>(null);
   const [progressSummary, setProgressSummary] = useState<ProgressSummary | null>(null);
   const [phaseName, setPhaseName] = useState<string>("Stabilization");
@@ -217,7 +172,6 @@ export default function DashboardPage() {
   // Tracked but not currently rendered anywhere on this page.
   const [_dailyGoal, setDailyGoal] = useState<string>("Daily recovery objective");
   const [_expectedResult, setExpectedResult] = useState<string>("Improved symptom control with consistency.");
-  const rewardCatalog = useMemo(() => getRewardCatalog(), []);
 
   useEffect(() => {
     if (!user) return;
@@ -260,36 +214,6 @@ export default function DashboardPage() {
 
     void loadTodayRoutine();
   }, [user?.id, routines]);
-
-  useEffect(() => {
-    if (!user || !todayRoutine) return;
-    const key = `dashboard_routine_draft:${user.id}:${normalizeDateKey(todayRoutine.log_date || todayDateKey())}`;
-    const stored = window.localStorage.getItem(key);
-
-    if (stored) {
-      try {
-        const draft = JSON.parse(stored) as { sleep_hours?: number | null; hydration_ml?: number | null };
-        setDraftSleepHours(draft.sleep_hours == null ? "" : String(draft.sleep_hours));
-        setDraftHydrationMl(draft.hydration_ml == null ? "" : String(draft.hydration_ml));
-        return;
-      } catch {
-        // Fall through to hydrated values.
-      }
-    }
-
-    setDraftSleepHours(todayRoutine.sleep_hours == null ? "" : String(todayRoutine.sleep_hours));
-    setDraftHydrationMl(todayRoutine.hydration_ml == null ? "" : String(todayRoutine.hydration_ml));
-  }, [user?.id, todayRoutine?.id, todayRoutine?.log_date]);
-
-  useEffect(() => {
-    if (!user || !todayRoutine) return;
-    const key = `dashboard_routine_draft:${user.id}:${normalizeDateKey(todayRoutine.log_date || todayDateKey())}`;
-    const draft = {
-      sleep_hours: draftSleepHours === "" ? null : Number(draftSleepHours),
-      hydration_ml: draftHydrationMl === "" ? null : Number(draftHydrationMl),
-    };
-    window.localStorage.setItem(key, JSON.stringify(draft));
-  }, [user?.id, todayRoutine?.log_date, draftSleepHours, draftHydrationMl]);
 
   useEffect(() => {
     if (!user) return;
@@ -405,159 +329,6 @@ export default function DashboardPage() {
       void supabase.removeChannel(channel);
     };
   }, [user?.id]);
-
-  // Not currently called from this page — the AM/PM checklist UI it was built
-  // for (ProtocolChecklist.tsx) was superseded by TreatmentPlan's task-based
-  // system, which awards routine completion via /api/alpha-sikka/earn
-  // instead. Kept (not deleted) since it's real reward/notification logic;
-  // renamed with `_` to mark it as intentionally unused rather than a bug.
-  const _saveTodayRoutine = async (updates: Partial<RoutineLogRow>) => {
-    if (!user || !todayRoutine || savingRoutine) return;
-    setSavingRoutine(true);
-
-    const previous = { ...todayRoutine };
-
-    const next = {
-      ...todayRoutine,
-      ...updates,
-      user_id: user.id,
-      log_date: todayRoutine.log_date || todayDateKey(),
-    } as RoutineLogRow & { user_id: string };
-
-    let persisted: RoutineLogRow | null = null;
-
-    if (todayRoutine.id) {
-      const { data } = await supabase
-        .from("routine_logs")
-        .update({
-          am_done: next.am_done,
-          pm_done: next.pm_done,
-          sleep_hours: next.sleep_hours,
-          hydration_ml: next.hydration_ml,
-          stress_level: next.stress_level,
-        })
-        .eq("id", todayRoutine.id)
-        .select("id,log_date,am_done,pm_done,sleep_hours,hydration_ml,stress_level")
-        .maybeSingle();
-
-      if (data) {
-        persisted = data as RoutineLogRow;
-        setTodayRoutine(persisted);
-      }
-    } else {
-      const { data } = await supabase
-        .from("routine_logs")
-        .insert(next)
-        .select("id,log_date,am_done,pm_done,sleep_hours,hydration_ml,stress_level")
-        .maybeSingle();
-
-      if (data) {
-        persisted = data as RoutineLogRow;
-        setTodayRoutine(persisted);
-      } else {
-        persisted = { ...todayRoutine, ...updates };
-        setTodayRoutine(persisted);
-      }
-    }
-
-    const settled = persisted || { ...previous, ...updates };
-    const dayRef = normalizeDateKey(settled.log_date || todayDateKey());
-
-    const rewardJobs: Array<Promise<AlphaSikkaAwardResponse | null>> = [];
-    const notificationJobs: Array<Promise<void>> = [];
-    const startingBalance = Number(alphaSummary?.current_balance ?? 0);
-
-    if (!previous.am_done && settled.am_done) {
-      rewardJobs.push(awardAlphaSikka("log_am_routine", `routine:${dayRef}:am`, { log_date: dayRef }));
-      notificationJobs.push(emitNotification("routine_completed", `routine_completed:${dayRef}:am`, { phase: "am", logDate: dayRef }));
-    }
-
-    if (!previous.pm_done && settled.pm_done) {
-      rewardJobs.push(awardAlphaSikka("log_pm_routine", `routine:${dayRef}:pm`, { log_date: dayRef }));
-      notificationJobs.push(emitNotification("routine_completed", `routine_completed:${dayRef}:pm`, { phase: "pm", logDate: dayRef }));
-    }
-
-    const prevHydrationGoal = (previous.hydration_ml || 0) >= 2500;
-    const nextHydrationGoal = (settled.hydration_ml || 0) >= 2500;
-    if (!prevHydrationGoal && nextHydrationGoal) {
-      rewardJobs.push(awardAlphaSikka("hydration_goal", `routine:${dayRef}:hydration_goal`, { hydration_ml: settled.hydration_ml || 0 }));
-    }
-
-    const prevSleepGoal = (previous.sleep_hours || 0) >= 7;
-    const nextSleepGoal = (settled.sleep_hours || 0) >= 7;
-    if (!prevSleepGoal && nextSleepGoal) {
-      rewardJobs.push(awardAlphaSikka("sleep_goal", `routine:${dayRef}:sleep_goal`, { sleep_hours: settled.sleep_hours || 0 }));
-    }
-
-    const prevFullDay = Boolean(previous.am_done) && Boolean(previous.pm_done) && prevHydrationGoal && prevSleepGoal;
-    const nextFullDay = Boolean(settled.am_done) && Boolean(settled.pm_done) && nextHydrationGoal && nextSleepGoal;
-    if (!prevFullDay && nextFullDay) {
-      rewardJobs.push(
-        awardAlphaSikka("full_day_completed", `routine:${dayRef}:full_day`, {
-          am_done: Boolean(settled.am_done),
-          pm_done: Boolean(settled.pm_done),
-          hydration_ml: settled.hydration_ml || 0,
-          sleep_hours: settled.sleep_hours || 0,
-        })
-      );
-      notificationJobs.push(
-        emitNotification("streak_milestone", `full_day_completed:${dayRef}`, {
-          logDate: dayRef,
-          consistencyScore: (Boolean(settled.am_done) ? 1 : 0) + (Boolean(settled.pm_done) ? 1 : 0),
-        })
-      );
-    }
-
-    if (notificationJobs.length) {
-      void Promise.all(notificationJobs);
-    }
-
-    if (rewardJobs.length) {
-      void Promise.allSettled(rewardJobs).then((results) => {
-        const payloads = results
-          .filter((result): result is PromiseFulfilledResult<AlphaSikkaAwardResponse | null> => result.status === "fulfilled")
-          .map((result) => result.value)
-          .filter((payload): payload is AlphaSikkaAwardResponse => Boolean(payload?.ok));
-
-        const totalAwarded = payloads.reduce((sum, payload) => sum + Number(payload.awarded || 0) + Number(payload.taskBonus || 0) + Number(payload.streakBonus || 0), 0);
-        const totalPenalty = payloads.reduce((sum, payload) => sum + Number(payload.penaltyApplied || 0), 0);
-        const latestBalance = payloads.reduce((current, payload) => {
-          const nextBalance = Number(payload.summary?.currentBalance || 0);
-          return nextBalance > 0 ? nextBalance : current;
-        }, startingBalance);
-        const unlockedReward = [...rewardCatalog]
-          .filter((reward) => startingBalance < reward.cost && latestBalance >= reward.cost)
-          .sort((left, right) => right.cost - left.cost)[0];
-
-        if (unlockedReward) {
-          const featuredProduct = getRewardFeaturedProduct(unlockedReward.discountPercent);
-          createRewardUnlock({
-            discountPercent: unlockedReward.discountPercent,
-            productId: featuredProduct?.sku || null,
-            rewardId: unlockedReward.id,
-            source: "reward_unlock",
-          });
-          showToast(
-            featuredProduct
-              ? `Unlocked ${unlockedReward.discountPercent}% OFF. ${featuredProduct.name} is now your best conversion move.`
-              : `Unlocked ${unlockedReward.discountPercent}% OFF. Your next product reward is ready.`,
-            "success",
-            6500
-          );
-        } else if (totalAwarded > 0 || totalPenalty > 0) {
-          const net = totalAwarded - totalPenalty;
-          const rewardMessage = net >= 0
-            ? `+${net} A$ synced${totalPenalty > 0 ? ` after ${totalPenalty} A$ penalty` : ""}`
-            : `${Math.abs(net)} A$ deducted after missed-day penalty`;
-          showToast(rewardMessage, net >= 0 ? "success" : "info", 5000);
-        }
-
-        void hydrateUserData(user.id, { force: true, silent: true });
-      });
-    }
-
-    setSavingRoutine(false);
-  };
 
   const balance = Number(alphaSummary?.current_balance ?? 0);
   const alphaScore = Number((reports[0]?.alpha_score as number | undefined) ?? 0);
@@ -785,7 +556,13 @@ export default function DashboardPage() {
       });
     }
 
-    return items.slice(0, 3);
+    // Dashboard "AI Guidance" shows exactly one focused recommendation, not
+    // competing cards (Phase 9C.5 IA rule) — the push order above already
+    // ranks real problems (hydration/sleep/adherence) ahead of the generic
+    // scan-cadence nudge and the positive-momentum fallback, so taking the
+    // first item is taking the single highest-priority one, not an
+    // arbitrary truncation.
+    return items.slice(0, 1);
   }, [routines, weeklyProgressData, scans]);
 
   const behaviorInsights = useMemo(() => {
@@ -876,72 +653,100 @@ export default function DashboardPage() {
     <PullToRefresh onRefresh={() => hydrateUserData(user.id, { force: true, silent: true })}>
     <main className="af-page min-h-screen px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl space-y-8 md:space-y-10">
+        {/* 1. HERO — identity, recovery score, one primary + one secondary
+            CTA. Migrated from the bespoke DashboardHero.tsx onto the shared
+            Hero primitive (Phase 9C.5) — the original had no CTA at all
+            despite being the hero, a real gap this migration closes. */}
         <section className="animate-in fade-in duration-500">
-          <DashboardHero
-            userName={userName}
-            categoryLabel={categoryLabel}
-            transformationProgress={transformationProgress}
-            phaseLabel={phaseName}
-            recoveryTrend={recoveryTrend}
-            confidenceScore={confidenceScore}
-            streakDays={routineStreakDays}
-            alphaBalance={balance}
-            dayLabel={`Day ${programDay} / 30`}
-            nextMilestone={nextMilestone}
+          <Hero
+            layout="split"
+            kicker={
+              <>
+                <Sparkles className="h-3.5 w-3.5" /> Today&apos;s Recovery
+              </>
+            }
+            title={
+              <>
+                Welcome back,<br /><span className="text-[var(--accent-green)]">{userName}</span>
+              </>
+            }
+            subtitle={`${categoryLabel} · Day ${programDay} / 30 · ${recoveryTrend} trajectory.`}
+            visual={
+              <ScanUsageRing
+                percent={transformationProgress}
+                variant="dark"
+                size={200}
+                strokeWidth={6}
+                centerValue={`${transformationProgress}%`}
+                centerLabel="Recovery Score"
+              />
+            }
+            stats={[
+              { icon: <Flame className="h-4 w-4" />, label: "Streak", value: `${routineStreakDays}d` },
+              { icon: <Target className="h-4 w-4" />, label: "Phase", value: phaseName },
+              { icon: <Activity className="h-4 w-4" />, label: "Confidence", value: `${confidenceScore}/100` },
+              { icon: <Sparkles className="h-4 w-4" />, label: "Alpha Sikka", value: balance },
+              { label: "Next Milestone", value: nextMilestone, wide: true },
+            ]}
+            cta={
+              <>
+                <Button
+                  variant="primary"
+                  onClick={() => document.getElementById("daily-execution-engine")?.scrollIntoView({ behavior: "smooth" })}
+                >
+                  Continue Today&apos;s Protocol
+                </Button>
+                <Button href="/recovery-program" variant="outline">
+                  View Full Program
+                </Button>
+              </>
+            }
           />
         </section>
 
-        <section className="animate-in fade-in duration-500 delay-75">
-          <EntitlementSummary />
-        </section>
-
-        {/* KPI - Recovery Intelligence (Phase 7ZB: moved ahead of the
-            routine/roadmap section to match Hero -> KPI -> Analytics ->
-            Recovery Timeline rhythm; tinted instead of flat white so five
-            consecutive white cards don't repeat back to back). */}
+        {/* 2. RECOVERY SNAPSHOT — exactly 4 key metrics, no more (IA rule).
+            Already compliant at 4; kept as-is. */}
         <section className="nv-section-tint-warm animate-in fade-in duration-500 delay-100">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--ink-soft)]">Recovery Intelligence</p>
-              <h2 className="text-xl font-black text-[var(--ink)]">Clinical Signal Summary</h2>
+              <h2 className="af-heading-section text-[var(--ink)]">Clinical Signal Summary</h2>
             </div>
             <p className="rounded-full bg-white px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.14em] text-[var(--accent-blue)] border border-[var(--accent-blue)]">
               {activeCategory ? `Category: ${categoryLabel}` : "No active category"}
             </p>
           </div>
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-[1.4rem] border border-[var(--border-hairline)] bg-white/70 p-4">
-              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--ink-soft)]">Severity Change</p>
-              <p className="mt-2 text-2xl font-black text-[var(--ink)]">
-                down <AnimatedCounter value={progressSummary?.improvement_pct ?? 0} suffix="%" />
-              </p>
-            </div>
-            <div className="rounded-[1.4rem] border border-[var(--border-hairline)] bg-white/70 p-4">
-              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--ink-soft)]">Consistency</p>
-              <p className="mt-2 text-2xl font-black text-[var(--ink)]">
-                <AnimatedCounter value={progressSummary?.consistency_score ?? consistencyScore} suffix="%" />
-              </p>
-            </div>
-            <div className="rounded-[1.4rem] border border-[var(--border-hairline)] bg-white/70 p-4">
-              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--ink-soft)]">Recovery Speed</p>
-              <p className="mt-2 text-2xl font-black text-[var(--ink)]">{recoveryVelocityLabel}</p>
-            </div>
-            <div className="rounded-[1.4rem] border border-[var(--border-hairline)] bg-white/70 p-4">
-              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--ink-soft)]">Confidence</p>
-              <p className="mt-2 text-2xl font-black text-[var(--ink)]">
-                <AnimatedCounter value={confidenceScore} />
-              </p>
-            </div>
+            <StatCard
+              label="Severity Change"
+              value={<>down <AnimatedCounter value={progressSummary?.improvement_pct ?? 0} suffix="%" /></>}
+            />
+            <StatCard
+              label="Consistency"
+              value={<AnimatedCounter value={progressSummary?.consistency_score ?? consistencyScore} suffix="%" />}
+            />
+            <StatCard label="Recovery Speed" value={recoveryVelocityLabel} />
+            <StatCard label="Confidence" value={<AnimatedCounter value={confidenceScore} />} />
           </div>
           <p className="mt-4 text-xs font-semibold text-[var(--ink-soft)]">{refreshing || storeLoading ? "Syncing latest data..." : "Realtime sync is active for routine, rewards, and progress signals."}</p>
         </section>
 
-        {/* Analytics */}
+        {/* 3. AI GUIDANCE — exactly one focused recommendation (IA rule);
+            aiInsights is already sliced to 1 highest-priority item above. */}
         <section className="nv-section-dark animate-in fade-in duration-500 delay-150">
-          <ProgressVisualization data={weeklyProgressData} />
+          <AIInsightEngine insights={aiInsights} behaviorInsights={behaviorInsights} />
         </section>
 
-        {/* Recovery Timeline / Today's Focus */}
+        {/* 4. RECOVERY JOURNEY — today's plan, trend evidence, and visual
+            evidence grouped under one heading instead of reading as three
+            disconnected bands. Each answers a genuinely different question
+            (what's my phase / are my numbers improving / what does visible
+            change look like) so none were removed, only grouped. */}
+        <div className="px-1">
+          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--ink-soft)]">Your Progress</p>
+          <h2 className="af-heading-section text-[var(--ink)]">Recovery Journey</h2>
+        </div>
+
         <section className="nv-section-tint-cool space-y-4 animate-in fade-in duration-500 delay-200" id="recovery-roadmap">
           <RecoveryProgramNavigator
             dayNumber={programDay}
@@ -963,28 +768,44 @@ export default function DashboardPage() {
           />
         </section>
 
-        <section className="nv-section-white animate-in fade-in duration-500 delay-300">
+        <section className="nv-section-dark animate-in fade-in duration-500 delay-300">
+          <ProgressVisualization data={weeklyProgressData} />
+        </section>
+
+        <section className="nv-section-white animate-in fade-in duration-500 delay-500">
           <BeforeAfterTimeline categoryLabel={categoryLabel} photos={beforeAfterPhotos} />
         </section>
 
-        {/* AI Health Coach - premium dark moment, matching the AI-banner
-            treatment used elsewhere (analyzer, protocol generation). */}
-        <section className="nv-section-dark animate-in fade-in duration-500 delay-500">
-          <AIInsightEngine insights={aiInsights} behaviorInsights={behaviorInsights} />
+        {/* 5. ACTIVITY — recent scans/reports/routine check-ins, useful for
+            confirming things are tracking, not itself a decision point. */}
+        <section className="animate-in fade-in duration-500 delay-700">
+          <ActivityTimeline items={activityItems} />
         </section>
 
-        {/* Rewards */}
-        <section className="nv-section-tint-warm animate-in fade-in duration-500 delay-700">
-          <RewardProgress balance={balance} streakDays={routineStreakDays} />
-        </section>
-
+        {/* 6. QUICK ACTIONS — checked against the Hero's new primary CTA;
+            none of these 4 duplicate it (that CTA scrolls to today's real
+            tasks, these are secondary shortcuts to other flows). */}
         <section className="animate-in fade-in duration-500 delay-700">
           <QuickActions />
         </section>
 
-        <section className="animate-in fade-in duration-500 delay-700">
-          <ActivityTimeline items={activityItems} />
-        </section>
+        {/* 7. OPTIONAL MODULES — billing status and reward-motivation don't
+            answer "what should I do today," so they're collapsed by default
+            (native <details>, zero custom JS) instead of competing for
+            attention with the decision-making sections above. */}
+        <details className="nv-section-tint-warm animate-in fade-in duration-500 delay-700 group">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--ink-soft)]">Optional</p>
+              <h2 className="af-heading-section text-[var(--ink)]">Account &amp; Rewards</h2>
+            </div>
+            <ChevronDown className="h-5 w-5 shrink-0 text-[var(--ink-soft)] transition-transform group-open:rotate-180" />
+          </summary>
+          <div className="mt-4 space-y-6">
+            <EntitlementSummary />
+            <RewardProgress balance={balance} streakDays={routineStreakDays} />
+          </div>
+        </details>
 
         {!profile && (
           <section className="nv-section-white text-sm text-[var(--ink-soft)]">

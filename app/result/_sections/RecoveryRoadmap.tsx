@@ -22,7 +22,7 @@ export default function RecoveryRoadmap({
 
   return (
     <section id="roadmap" className="nv-section-white scroll-mt-24">
-      <h2 className="text-xl font-black text-[var(--ink)]">Recovery Roadmap</h2>
+      <h2 className="af-heading-section font-black text-[var(--ink)]">Recovery Roadmap</h2>
       <p className="mt-1 text-sm text-[var(--ink-soft)]">What to expect, week by week, over your 30-day protocol.</p>
 
       <ol className="mt-5 space-y-3 border-l-2 border-[var(--border-hairline)] pl-5 md:pl-6">

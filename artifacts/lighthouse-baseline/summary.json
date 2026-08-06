@@ -1,0 +1,202 @@
+[
+  {
+    "route": "/assessment",
+    "formFactor": "mobile",
+    "error": "Command failed: npx --yes lighthouse http://localhost:3000/assessment --port=9222 --output=json --output-path=C:\\Users\\Badmash\\oneman-ai\\artifacts\\lighthouse-baseline\\_assessment-mobile.json --only-categories=performance,accessibility,best-practices,seo --chrome-flags=--headless --quiet --preset=perf --form-factor=mobile --screenEmulation.mobile --screenEmulation.width=390 --screenEmulation.height=844 --screenEmulation.deviceScaleFactor=2\nRuntime error encountered: The page did not paint any content. Please ensure you keep the browser window in the foreground during the load and try again. (NO_FCP)\n"
+  },
+  {
+    "route": "/assessment",
+    "formFactor": "desktop",
+    "scores": {
+      "performance": 52,
+      "accessibility": 90,
+      "best-practices": 100,
+      "seo": 100
+    }
+  },
+  {
+    "route": "/image-analyzer",
+    "formFactor": "mobile",
+    "error": "Command failed: npx --yes lighthouse http://localhost:3000/image-analyzer --port=9222 --output=json --output-path=C:\\Users\\Badmash\\oneman-ai\\artifacts\\lighthouse-baseline\\_image-analyzer-mobile.json --only-categories=performance,accessibility,best-practices,seo --chrome-flags=--headless --quiet --preset=perf --form-factor=mobile --screenEmulation.mobile --screenEmulation.width=390 --screenEmulation.height=844 --screenEmulation.deviceScaleFactor=2\nRuntime error encountered: The page did not paint any content. Please ensure you keep the browser window in the foreground during the load and try again. (NO_FCP)\n"
+  },
+  {
+    "route": "/image-analyzer",
+    "formFactor": "desktop",
+    "scores": {
+      "performance": 52,
+      "accessibility": 90,
+      "best-practices": 100,
+      "seo": 100
+    }
+  },
+  {
+    "route": "/dashboard",
+    "formFactor": "mobile",
+    "error": "Command failed: npx --yes lighthouse http://localhost:3000/dashboard --port=9222 --output=json --output-path=C:\\Users\\Badmash\\oneman-ai\\artifacts\\lighthouse-baseline\\_dashboard-mobile.json --only-categories=performance,accessibility,best-practices,seo --chrome-flags=--headless --quiet --preset=perf --form-factor=mobile --screenEmulation.mobile --screenEmulation.width=390 --screenEmulation.height=844 --screenEmulation.deviceScaleFactor=2\nRuntime error encountered: The page did not paint any content. Please ensure you keep the browser window in the foreground during the load and try again. (NO_FCP)\n"
+  },
+  {
+    "route": "/dashboard",
+    "formFactor": "desktop",
+    "scores": {
+      "performance": 51,
+      "accessibility": 90,
+      "best-practices": 100,
+      "seo": 100
+    }
+  },
+  {
+    "route": "/result",
+    "formFactor": "mobile",
+    "scores": {
+      "performance": 61,
+      "accessibility": 94,
+      "best-practices": 100,
+      "seo": 100
+    }
+  },
+  {
+    "route": "/result",
+    "formFactor": "desktop",
+    "scores": {
+      "performance": 69,
+      "accessibility": 90,
+      "best-practices": 100,
+      "seo": 100
+    }
+  },
+  {
+    "route": "/",
+    "formFactor": "mobile",
+    "error": "Command failed: npx --yes lighthouse http://localhost:3000/ --port=9222 --output=json --output-path=C:\\Users\\Badmash\\oneman-ai\\artifacts\\lighthouse-baseline\\_-mobile.json --only-categories=performance,accessibility,best-practices,seo --chrome-flags=--headless --quiet --preset=perf --form-factor=mobile --screenEmulation.mobile --screenEmulation.width=390 --screenEmulation.height=844 --screenEmulation.deviceScaleFactor=2\nRuntime error encountered: The page did not paint any content. Please ensure you keep the browser window in the foreground during the load and try again. (NO_FCP)\n"
+  },
+  {
+    "route": "/",
+    "formFactor": "desktop",
+    "scores": {
+      "performance": 51,
+      "accessibility": 88,
+      "best-practices": 100,
+      "seo": 100
+    }
+  },
+  {
+    "route": "/login",
+    "formFactor": "mobile",
+    "error": "Command failed: npx --yes lighthouse http://localhost:3000/login --port=9222 --output=json --output-path=C:\\Users\\Badmash\\oneman-ai\\artifacts\\lighthouse-baseline\\_login-mobile.json --only-categories=performance,accessibility,best-practices,seo --chrome-flags=--headless --quiet --preset=perf --form-factor=mobile --screenEmulation.mobile --screenEmulation.width=390 --screenEmulation.height=844 --screenEmulation.deviceScaleFactor=2\nRuntime error encountered: The page did not paint any content. Please ensure you keep the browser window in the foreground during the load and try again. (NO_FCP)\n"
+  },
+  {
+    "route": "/login",
+    "formFactor": "desktop",
+    "scores": {
+      "performance": 52,
+      "accessibility": 90,
+      "best-practices": 100,
+      "seo": 100
+    }
+  },
+  {
+    "route": "/saved-scans",
+    "formFactor": "mobile",
+    "error": "Command failed: npx --yes lighthouse http://localhost:3000/saved-scans --port=9222 --output=json --output-path=C:\\Users\\Badmash\\oneman-ai\\artifacts\\lighthouse-baseline\\_saved-scans-mobile.json --only-categories=performance,accessibility,best-practices,seo --chrome-flags=--headless --quiet --preset=perf --form-factor=mobile --screenEmulation.mobile --screenEmulation.width=390 --screenEmulation.height=844 --screenEmulation.deviceScaleFactor=2\nRuntime error encountered: The page did not paint any content. Please ensure you keep the browser window in the foreground during the load and try again. (NO_FCP)\n"
+  },
+  {
+    "route": "/saved-scans",
+    "formFactor": "desktop",
+    "scores": {
+      "performance": 50,
+      "accessibility": 90,
+      "best-practices": 100,
+      "seo": 100
+    }
+  },
+  {
+    "route": "/profile",
+    "formFactor": "mobile",
+    "error": "Command failed: npx --yes lighthouse http://localhost:3000/profile --port=9222 --output=json --output-path=C:\\Users\\Badmash\\oneman-ai\\artifacts\\lighthouse-baseline\\_profile-mobile.json --only-categories=performance,accessibility,best-practices,seo --chrome-flags=--headless --quiet --preset=perf --form-factor=mobile --screenEmulation.mobile --screenEmulation.width=390 --screenEmulation.height=844 --screenEmulation.deviceScaleFactor=2\nRuntime error encountered: The page did not paint any content. Please ensure you keep the browser window in the foreground during the load and try again. (NO_FCP)\n"
+  },
+  {
+    "route": "/profile",
+    "formFactor": "desktop",
+    "scores": {
+      "performance": 51,
+      "accessibility": 90,
+      "best-practices": 100,
+      "seo": 100
+    }
+  },
+  {
+    "route": "/settings",
+    "formFactor": "mobile",
+    "error": "Command failed: npx --yes lighthouse http://localhost:3000/settings --port=9222 --output=json --output-path=C:\\Users\\Badmash\\oneman-ai\\artifacts\\lighthouse-baseline\\_settings-mobile.json --only-categories=performance,accessibility,best-practices,seo --chrome-flags=--headless --quiet --preset=perf --form-factor=mobile --screenEmulation.mobile --screenEmulation.width=390 --screenEmulation.height=844 --screenEmulation.deviceScaleFactor=2\nRuntime error encountered: The page did not paint any content. Please ensure you keep the browser window in the foreground during the load and try again. (NO_FCP)\n"
+  },
+  {
+    "route": "/settings",
+    "formFactor": "desktop",
+    "scores": {
+      "performance": 51,
+      "accessibility": 90,
+      "best-practices": 100,
+      "seo": 100
+    }
+  },
+  {
+    "route": "/upgrade",
+    "formFactor": "mobile",
+    "error": "Command failed: npx --yes lighthouse http://localhost:3000/upgrade --port=9222 --output=json --output-path=C:\\Users\\Badmash\\oneman-ai\\artifacts\\lighthouse-baseline\\_upgrade-mobile.json --only-categories=performance,accessibility,best-practices,seo --chrome-flags=--headless --quiet --preset=perf --form-factor=mobile --screenEmulation.mobile --screenEmulation.width=390 --screenEmulation.height=844 --screenEmulation.deviceScaleFactor=2\nRuntime error encountered: The page did not paint any content. Please ensure you keep the browser window in the foreground during the load and try again. (NO_FCP)\n"
+  },
+  {
+    "route": "/upgrade",
+    "formFactor": "desktop",
+    "scores": {
+      "performance": 52,
+      "accessibility": 90,
+      "best-practices": 100,
+      "seo": 100
+    }
+  },
+  {
+    "route": "/shop",
+    "formFactor": "mobile",
+    "error": "Command failed: npx --yes lighthouse http://localhost:3000/shop --port=9222 --output=json --output-path=C:\\Users\\Badmash\\oneman-ai\\artifacts\\lighthouse-baseline\\_shop-mobile.json --only-categories=performance,accessibility,best-practices,seo --chrome-flags=--headless --quiet --preset=perf --form-factor=mobile --screenEmulation.mobile --screenEmulation.width=390 --screenEmulation.height=844 --screenEmulation.deviceScaleFactor=2\nRuntime error encountered: The page did not paint any content. Please ensure you keep the browser window in the foreground during the load and try again. (NO_FCP)\n"
+  },
+  {
+    "route": "/shop",
+    "formFactor": "desktop",
+    "scores": {
+      "performance": 63,
+      "accessibility": 90,
+      "best-practices": 100,
+      "seo": 100
+    }
+  },
+  {
+    "route": "/checkout",
+    "formFactor": "mobile",
+    "error": "Command failed: npx --yes lighthouse http://localhost:3000/checkout --port=9222 --output=json --output-path=C:\\Users\\Badmash\\oneman-ai\\artifacts\\lighthouse-baseline\\_checkout-mobile.json --only-categories=performance,accessibility,best-practices,seo --chrome-flags=--headless --quiet --preset=perf --form-factor=mobile --screenEmulation.mobile --screenEmulation.width=390 --screenEmulation.height=844 --screenEmulation.deviceScaleFactor=2\nRuntime error encountered: The page did not paint any content. Please ensure you keep the browser window in the foreground during the load and try again. (NO_FCP)\n"
+  },
+  {
+    "route": "/checkout",
+    "formFactor": "desktop",
+    "scores": {
+      "performance": 52,
+      "accessibility": 90,
+      "best-practices": 100,
+      "seo": 100
+    }
+  },
+  {
+    "route": "/alpha-credits",
+    "formFactor": "mobile",
+    "error": "Command failed: npx --yes lighthouse http://localhost:3000/alpha-credits --port=9222 --output=json --output-path=C:\\Users\\Badmash\\oneman-ai\\artifacts\\lighthouse-baseline\\_alpha-credits-mobile.json --only-categories=performance,accessibility,best-practices,seo --chrome-flags=--headless --quiet --preset=perf --form-factor=mobile --screenEmulation.mobile --screenEmulation.width=390 --screenEmulation.height=844 --screenEmulation.deviceScaleFactor=2\nRuntime error encountered: The page did not paint any content. Please ensure you keep the browser window in the foreground during the load and try again. (NO_FCP)\n"
+  },
+  {
+    "route": "/alpha-credits",
+    "formFactor": "desktop",
+    "scores": {
+      "performance": 50,
+      "accessibility": 90,
+      "best-practices": 100,
+      "seo": 100
+    }
+  }
+]

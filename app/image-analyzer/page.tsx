@@ -1,9 +1,9 @@
 "use client";
 
-import { useContext, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useContext, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, ChevronLeft, RotateCcw, ScanLine, Sparkles, ArrowRight, AlertTriangle, ImageIcon } from "lucide-react";
+import { Check, ChevronLeft, RotateCcw, ScanLine, Sparkles, ArrowRight, AlertTriangle, ImageIcon, Star } from "lucide-react";
 
 import { AnalyzerType, AnalysisResult, DetectedIssue } from "@/lib/analyzeImage";
 import { AuthContext } from "@/contexts/AuthProvider";
@@ -13,6 +13,7 @@ import { recalculateClinicalScores } from "@/lib/recalculateClinicalScores";
 import { getCategoryFromAnalyzer, buildCategoryPhotoMetrics } from "@/lib/clinicalFlow";
 import { getParentCategoryFromChild } from "@/lib/categorySync";
 import { uploadAnalyzerImagesToSupabase } from "@/lib/photoStorage";
+import { getConfidenceExplanation } from "@/lib/confidence";
 import MultiAngleUpload from "./_components/ImageUpload";
 import AnalyzerSelector from "./_components/AnalyzerSelector";
 import Button from "@/components/ui/Button";
@@ -130,6 +131,7 @@ function deriveSeverity(issues: DetectedIssue[]): AnalysisResult["severity"] {
   return "moderate";
 }
 
+
 function deriveConfidenceScore(apiConfidence: number | undefined, issues: DetectedIssue[]) {
   if (typeof apiConfidence === "number" && Number.isFinite(apiConfidence) && apiConfidence > 0) {
     return Math.max(0, Math.min(100, Math.round(apiConfidence)));
@@ -147,8 +149,14 @@ function assertValidImagePayload(result: AnalysisResult) {
   }
 }
 
+const VALID_ANALYZER_TYPES: AnalyzerType[] = [
+  "acne", "dark_circles", "anti_aging", "hair_loss", "scalp_health", "beard_growth",
+  "body_acne", "body_odor", "lip_care", "skin_dullness", "energy_fatigue", "fitness_recovery",
+];
+
 export default function ImageAnalyzerPage() {
   const router = useRouter();
+  const params = useSearchParams();
   const { user } = useContext(AuthContext);
 
   const [step, setStep] = useState<"select" | "upload" | "review" | "analyzing" | "done">("select");
@@ -158,6 +166,7 @@ export default function ImageAnalyzerPage() {
   const [analysisDetail, setAnalysisDetail] = useState("");
   const [qualitySignal, setQualitySignal] = useState<GalaxyQualitySignal | null>(null);
   const [pendingCategory, setPendingCategory] = useState<string | null>(null);
+  const [lastConfidence, setLastConfidence] = useState<number | null>(null);
 
   const handleQuestionsNavigation = () => {
     const selectedCategory = selectedType ? getCategoryFromAnalyzer(selectedType) : null;
@@ -204,6 +213,20 @@ export default function ImageAnalyzerPage() {
       })();
     }
   };
+
+  // Deep-link support: the AI Laboratory's analyzer cards link here with
+  // ?type=<category> so picking a card there jumps straight to the upload
+  // step instead of landing back on the same selector grid. Reuses
+  // handleTypeSelect exactly — same session-storage + user_active_analysis
+  // side effects as a manual click, just triggered once on mount.
+  useEffect(() => {
+    if (step !== "select") return;
+    const typeParam = params?.get("type");
+    if (typeParam && VALID_ANALYZER_TYPES.includes(typeParam as AnalyzerType)) {
+      handleTypeSelect(typeParam as AnalyzerType);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params]);
 
   // Step 2 -> Step 3: images are captured but NOT yet submitted for
   // analysis — the user reviews them first (previously this callback went
@@ -260,6 +283,7 @@ export default function ImageAnalyzerPage() {
       const galaxyIssues = galaxyData?.issues || [];
       const mergedIssues = mapGalaxyIssuesToDetectedIssues(galaxyIssues);
       const derivedConfidence = deriveConfidenceScore(galaxyData?.confidence, mergedIssues);
+      setLastConfidence(derivedConfidence);
 
       const finalResult: AnalysisResult = {
         type: selectedType,
@@ -629,6 +653,26 @@ export default function ImageAnalyzerPage() {
                 <h2 className="text-2xl font-bold text-[var(--ink)]">Analysis Complete</h2>
                 <p className="text-sm text-[var(--ink-soft)]">Your photos have been analyzed and saved. Continue to the assessment to build your personalized recovery plan.</p>
               </div>
+
+              {lastConfidence !== null && (() => {
+                const { stars, label, explanation } = getConfidenceExplanation(lastConfidence);
+                return (
+                  <div className="af-surface-soft max-w-md space-y-2 p-4 text-left">
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-0.5" aria-hidden="true">
+                        {[1, 2, 3, 4, 5].map((n) => (
+                          <Star
+                            key={n}
+                            className={`h-4 w-4 ${n <= stars ? "fill-[var(--accent-blue)] text-[var(--accent-blue)]" : "text-[var(--border-hairline)]"}`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-xs font-bold uppercase tracking-wide text-[var(--accent-blue)]">{label}</span>
+                    </div>
+                    <p className="text-xs leading-relaxed text-[var(--ink-soft)]">{explanation}</p>
+                  </div>
+                );
+              })()}
 
               {qualitySignal?.retakeRecommended && (
                 <div className="flex max-w-md items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-left text-sm text-amber-900">

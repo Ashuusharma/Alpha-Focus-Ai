@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { Home, Sparkles, FileText, TrendingUp, User } from "lucide-react";
 import { useMounted } from "@/app/hooks/useMounted";
 import { useIsKeyboardLikelyOpen } from "@/app/hooks/useIsKeyboardLikelyOpen";
@@ -24,6 +24,7 @@ const RIGHT_LINKS = [
 export default function BottomNav() {
   const pathname = usePathname();
   const mounted = useMounted();
+  const prefersReducedMotion = useReducedMotion();
   const keyboardOpen = useIsKeyboardLikelyOpen();
 
   if (!mounted || keyboardOpen) return null;
@@ -44,7 +45,7 @@ export default function BottomNav() {
           <motion.span
             layoutId="bottom-nav-active"
             className="absolute inset-x-2 top-0.5 h-0.5 rounded-full bg-[var(--accent-blue)]"
-            transition={{ type: "spring", stiffness: 500, damping: 34 }}
+            transition={prefersReducedMotion ? { duration: 0 } : { type: "spring", stiffness: 500, damping: 34 }}
           />
         )}
         <Icon className={`h-5 w-5 ${active ? "text-white" : "text-white/55"}`} strokeWidth={active ? 2.4 : 2} />

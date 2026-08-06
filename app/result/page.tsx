@@ -2,11 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FileWarning, Sparkles } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
+import { FileWarning } from "lucide-react";
 import { useCartStore } from "@/lib/cartStore";
 import { ProtocolReport } from "@/types/protocolReport";
 import { getSupabaseAuthHeaders } from "@/lib/auth/clientAuthHeaders";
 import Button from "@/components/ui/Button";
+import Timeline, { type TimelineStep } from "@/components/ui/Timeline";
+import LoadingExperience from "@/components/ui/LoadingExperience";
 import ProtocolTableOfContents, { ProtocolTocEntry } from "./_sections/ProtocolTableOfContents";
 import ProtocolHeader from "./_sections/ProtocolHeader";
 import PrimaryFindings from "./_sections/PrimaryFindings";
@@ -68,13 +71,18 @@ export default function ResultPage() {
   const searchParams = useSearchParams();
   const addItem = useCartStore((state) => state.addItem);
   const openCart = useCartStore((state) => state.openCart);
+  const prefersReducedMotion = useReducedMotion();
+  const reportRevealStagger = prefersReducedMotion ? 0 : 0.08;
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [report, setReport] = useState<ProtocolReport | null>(null);
   const [reportStatus, setReportStatus] = useState<string | null>(null);
-  const [pollAttempt, setPollAttempt] = useState(0);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
+  // Purely presentational — a brief "your plan is ready" beat shown once
+  // the real status flips to "ready", before the report itself renders.
+  // Does not delay or alter when the report is actually fetched/ready.
+  const [celebrating, setCelebrating] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -91,7 +99,6 @@ export default function ResultPage() {
       try {
         for (let attempt = 1; attempt <= REPORT_POLL_MAX_ATTEMPTS; attempt += 1) {
           if (cancelled) return;
-          setPollAttempt(attempt);
 
           const headers = await getSupabaseAuthHeaders();
           const res = await fetch(query, {
@@ -125,7 +132,12 @@ export default function ResultPage() {
             if (!cancelled) {
               setReport(payload.report.payload);
               setGeneratedAt(payload.report.generatedAt || null);
-              setLoading(false);
+              // Real data is already set above — this is a brief, purely
+              // presentational "your plan is ready" beat before the report
+              // itself renders, not a delay in when the work finishes.
+              setCelebrating(true);
+              await wait(900);
+              if (!cancelled) setLoading(false);
             }
             return;
           }
@@ -174,53 +186,38 @@ export default function ResultPage() {
   };
 
   if (loading) {
-    // Human-readable protocol-building journey, driven by the real
-    // reportStatus from the server plus poll count as a time proxy for how
-    // far into the (single, real) generating/processing phase we are - no
-    // raw status strings, queue positions, or check-counters shown to the
-    // user. See ../assessment/page.tsx for the same pattern on submission.
-    const loadingLabel = (() => {
-      if (!reportStatus || reportStatus === "queued") return "Understanding your clinical profile";
-      if (reportStatus === "generating" || reportStatus === "processing") {
-        if (pollAttempt <= 4) return "Building your daily protocol";
-        if (pollAttempt <= 9) return "Selecting your ingredients";
-        return "Final quality review";
-      }
-      return "Preparing your protocol";
-    })();
-    const loadingStages = ["Understanding your clinical profile", "Building your daily protocol", "Selecting your ingredients", "Final quality review"];
-    const currentStageIndex = Math.max(0, loadingStages.indexOf(loadingLabel));
+    // Real backend states only: protocol_reports.status is exactly
+    // queued -> processing -> ready|failed (confirmed against
+    // app/api/protocol/generate/route.ts and lib/protocol/jobProcessor.ts).
+    // The previous version subdivided "processing" into three labels
+    // purely by elapsed poll count - an honest but soft time-proxy, not
+    // real checkpoints. Two real pre-ready stages here, no more.
+    const loadingStages = ["Understanding your clinical profile", "Building your recovery plan"];
+    const currentStageIndex = reportStatus === "processing" ? 1 : 0;
+
+    // Continues the same 4-node journey the assessment submit screen
+    // shows, so the wait reads as one continuous journey across the
+    // page handoff rather than two unrelated loading screens.
+    const resultJourneySteps: TimelineStep[] = [
+      { label: "Scan", status: "done" },
+      { label: "Questions", status: "done" },
+      { label: "AI Reasoning", status: celebrating ? "done" : "current", progressWithinStep: 70 },
+      { label: "Recovery Plan", status: celebrating ? "current" : "upcoming" },
+    ];
 
     return (
-      <div className="af-page flex min-h-screen flex-col items-center justify-center px-4 py-20 text-center">
-        <div className="glass-card relative p-8">
-          <div className="relative h-24 w-24">
-            <div className="h-24 w-24 animate-spin rounded-full border-4 border-[var(--border-hairline)] border-t-[var(--accent-blue)]" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Sparkles className="h-8 w-8 animate-pulse text-[var(--accent-blue)]" />
-            </div>
-          </div>
+      <div className="af-page flex min-h-screen flex-col items-center justify-center px-4 py-16 text-center sm:py-20">
+        <div className="mb-8 w-full max-w-xs">
+          <Timeline steps={resultJourneySteps} />
         </div>
-
-        <div className="mt-6 max-w-xl space-y-2" role="status" aria-live="polite">
-          <h2 className="text-2xl font-bold text-[var(--ink)]">{loadingLabel}</h2>
-          <p className="text-sm text-[var(--ink-soft)]">This usually takes under a minute. Please keep this tab open.</p>
-        </div>
-
-        <div className="glass-card mt-6 w-full max-w-md p-5">
-          <div className="flex items-center gap-1.5">
-            {loadingStages.map((stage, index) => (
-              <div key={stage} className="h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--border-hairline)]">
-                <div
-                  className={`h-full rounded-full transition-all duration-500 ease-out ${index <= currentStageIndex ? "w-full bg-[var(--accent-blue)]" : "w-0"}`}
-                />
-              </div>
-            ))}
-          </div>
-          <p className="mt-3 text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-soft)]">
-            Step {currentStageIndex + 1} of {loadingStages.length}
-          </p>
-        </div>
+        <LoadingExperience
+          stages={loadingStages}
+          currentIndex={currentStageIndex}
+          isComplete={celebrating}
+          completeLabel="Your recovery plan is ready"
+          helperText="This usually takes under a minute. Please keep this tab open."
+          completeHelperText="Bringing your plan into view now."
+        />
       </div>
     );
   }
@@ -238,33 +235,60 @@ export default function ResultPage() {
     );
   }
 
+  // Staged reveal — the "seamless handoff" moment: sections fade/rise in
+  // with a short stagger on first render instead of appearing all at once.
+  // Runs once (this branch only mounts after `loading` flips false); the
+  // reduced-motion check keeps it to a plain opacity fade with no motion.
+  const revealContainer = {
+    hidden: {},
+    visible: { transition: { staggerChildren: reportRevealStagger } },
+  };
+  const revealItem = reportRevealStagger === 0
+    ? { hidden: { opacity: 0 }, visible: { opacity: 1 } }
+    : { hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } };
+
+  const sections = [
+    <ProtocolHeader
+      key="header"
+      category={searchParams?.get("category") || null}
+      level={searchParams?.get("level") || null}
+      currentDay={progress?.day ?? null}
+      currentWeek={progress?.week ?? null}
+      todaysFocus={report.monthlyRecoveryPlan.morning[0]?.title || null}
+    />,
+    <PrimaryFindings key="findings" issueSummary={report.issueSummary} confidenceNotes={report.confidenceNotes} />,
+    <RecoveryRoadmap
+      key="roadmap"
+      expectedTimeline={report.expectedTimeline}
+      weeklyMilestones={report.weeklyMilestones}
+      currentWeek={progress?.week ?? null}
+    />,
+    <ProtocolIngredients key="ingredients" ingredients={report.mainResolvingIngredients} />,
+    <DailyRoutine key="routine" monthlyRecoveryPlan={report.monthlyRecoveryPlan} />,
+    <LifestyleGuidance key="lifestyle" dietPlan={report.dietPlan} />,
+    <ThingsToAvoid key="avoid" thingsToAvoid={report.thingsToAvoid} />,
+    <RecommendedProducts key="products" products={report.recommendedProducts} onAddToCart={handleAddToCart} />,
+    <ProtocolFollowUp key="followup" motivation={report.motivation} />,
+  ];
+
   return (
     <div className="af-page min-h-screen">
       <ProtocolMobileActionBar />
       <main className="mx-auto flex max-w-6xl gap-6 px-4 py-6 pb-24 md:px-6 md:py-8 md:pb-8">
         <ProtocolTableOfContents entries={TOC_ENTRIES} />
 
-        <div className="flex min-w-0 flex-1 flex-col gap-4">
-          <ProtocolHeader
-            category={searchParams?.get("category") || null}
-            level={searchParams?.get("level") || null}
-            currentDay={progress?.day ?? null}
-            currentWeek={progress?.week ?? null}
-          />
-
-          <PrimaryFindings issueSummary={report.issueSummary} confidenceNotes={report.confidenceNotes} />
-          <RecoveryRoadmap
-            expectedTimeline={report.expectedTimeline}
-            weeklyMilestones={report.weeklyMilestones}
-            currentWeek={progress?.week ?? null}
-          />
-          <ProtocolIngredients ingredients={report.mainResolvingIngredients} />
-          <DailyRoutine monthlyRecoveryPlan={report.monthlyRecoveryPlan} />
-          <LifestyleGuidance dietPlan={report.dietPlan} />
-          <ThingsToAvoid thingsToAvoid={report.thingsToAvoid} />
-          <RecommendedProducts products={report.recommendedProducts} onAddToCart={handleAddToCart} />
-          <ProtocolFollowUp motivation={report.motivation} />
-        </div>
+        <motion.div
+          className="flex min-w-0 flex-1 flex-col gap-4"
+          initial="hidden"
+          animate="visible"
+          variants={revealContainer}
+        >
+          {sections.map((section) => (
+            <motion.div key={section.key} variants={revealItem} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
+              {section}
+            </motion.div>
+          ))}
+        </motion.div>
       </main>
     </div>
   );

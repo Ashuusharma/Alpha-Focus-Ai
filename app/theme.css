@@ -157,4 +157,33 @@
      bug fixed for the floating nav's height in Phase 7Z). */
   --bottom-nav-height: 4rem;
   --touch-target-min: 2.75rem;
+
+  /* Phase 9C.1 — Design Language v2 Foundations. Additive only; every
+     value below is extracted from something already shipping, not a new
+     design decision, so applying these tokens changes zero pixels. */
+
+  /* Focus ring — extracted from the pre-existing universal :focus-visible
+     rule in globals.css (Phase 7I). Deliberately a cyan distinct from every
+     brand accent, so a focus ring always reads as "focus," never as a
+     themed highlight — that reasoning already existed, this just names it. */
+  --focus-ring: #06b6d4;
+  --focus-ring-glow: rgba(6, 182, 212, 0.2);
+
+  /* Decorative glow blue — extracted from three identical rgba(0, 113, 227)
+     literals already duplicated across .af-hero-dark, .af-page-hero, and
+     .af-input:focus in globals.css. Intentionally left distinct from
+     --accent-blue (not reconciled with the brand palette here) — named
+     only so it stops being a repeated magic number in three places. */
+  --glow-blue-rgb: 0, 113, 227;
+
+  /* Section-rhythm vocabulary — named padding tiers for page-band spacing.
+     --rhythm-standard matches the exact "40px 24px" literal already
+     duplicated across .nv-section-white/dark/tint-cool/tint-warm, so
+     migrating those four rules onto it is a pure dedup with zero visual
+     change. --rhythm-tight/spacious extend the same vocabulary, built from
+     the existing --space-* scale, for bands later phases add — declared
+     now, not yet consumed anywhere but --rhythm-standard. */
+  --rhythm-tight: var(--space-lg) var(--space-lg);
+  --rhythm-standard: 2.5rem var(--space-lg);
+  --rhythm-spacious: var(--space-2xl) var(--space-lg);
 }
